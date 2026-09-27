@@ -84,7 +84,8 @@ public class ArcadeRaceGame : MonoBehaviour
         glassMaterial = CreateMaterial("Car Glass", new Color(0.03f, 0.15f, 0.22f), 0.1f, 0.8f);
         tireMaterial = CreateMaterial("Tire", new Color(0.012f, 0.012f, 0.015f), 0f, 0.15f);
         whiteMaterial = CreateMaterial("White", new Color(0.95f, 0.95f, 0.92f), 0f, 0.3f);
-        uiFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
+        // Unity 6 removed Arial.ttf from its built-in runtime fonts.
+        uiFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
 
         RenderSettings.ambientLight = new Color(0.22f, 0.25f, 0.32f);
         RenderSettings.fog = true;
