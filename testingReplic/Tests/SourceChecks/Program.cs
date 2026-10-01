@@ -39,6 +39,7 @@ internal static class Program
                 }
             }
             CheckContracts(roots);
+            CheckSceneBootstrap(sourceRoot, roots);
             CheckArabicShaping();
             if (Failures.Count > 0)
             {
@@ -47,7 +48,7 @@ internal static class Program
                 return 1;
             }
             Console.WriteLine("Source checks passed: " + files.Length +
-                " NewGaza .cs files parsed as C# 9 (player + editor/optional checks), integration signatures and Arabic shaping.");
+                " NewGaza .cs files parsed as C# 9 (player + editor/optional checks), integration signatures, GUID-independent scene bootstrap and Arabic shaping.");
             Console.WriteLine("Source-only check; Unity assemblies were not compiled and no Unity editor/player was run.");
             return 0;
         }
@@ -56,6 +57,36 @@ internal static class Program
             Console.Error.WriteLine("Source checks could not run: " + exception);
             return 1;
         }
+    }
+
+    private static void CheckSceneBootstrap(string sourceRoot,
+        Dictionary<string, CompilationUnitSyntax> roots)
+    {
+        string scene = File.ReadAllText(Path.Combine(sourceRoot, "Scenes", "NewGaza.unity"));
+        Require(!scene.Contains("m_Script:", StringComparison.Ordinal),
+            "The entry scene must not serialize per-machine MonoScript GUIDs.");
+        var bootstrap = roots["Runtime/GameSession.cs"].DescendantNodes()
+            .OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(m => m.Identifier.ValueText == "StartEntryScene");
+        Require(bootstrap != null, "Missing GUID-independent runtime session bootstrap.");
+        if (bootstrap == null) return;
+        Require(bootstrap.Modifiers.Any(SyntaxKind.StaticKeyword) &&
+            bootstrap.AttributeLists.SelectMany(a => a.Attributes).Any(a =>
+                a.Name.ToString() == "RuntimeInitializeOnLoadMethod" &&
+                a.ArgumentList?.ToString().Contains("RuntimeInitializeLoadType.AfterSceneLoad",
+                    StringComparison.Ordinal) == true),
+            "The session bootstrap must run after the entry scene loads.");
+        Require(bootstrap.DescendantNodes().OfType<LiteralExpressionSyntax>().Any(e =>
+                e.Token.ValueText == "Assets/NewGaza/Scenes/NewGaza.unity"),
+            "Bootstrap must be restricted to the NewGaza entry scene.");
+        Require(bootstrap.DescendantNodes().OfType<GenericNameSyntax>().Any(n =>
+                n.Identifier.ValueText == "AddComponent" &&
+                n.TypeArgumentList.Arguments.SingleOrDefault()?.ToString() == "GameSession"),
+            "Bootstrap must attach GameSession by type, not by a serialized script GUID.");
+        Require(bootstrap.DescendantNodes().OfType<GenericNameSyntax>().Any(n =>
+                n.Identifier.ValueText == "FindFirstObjectByType" &&
+                n.TypeArgumentList.Arguments.SingleOrDefault()?.ToString() == "GameSession"),
+            "Bootstrap must guard against creating a duplicate session.");
     }
 
     private static string FindSources(string[] args)
