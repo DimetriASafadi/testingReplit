@@ -1,2 +1,3 @@
 - [Arabic font coverage](arabic-font-coverage.md) — test connected forms, Latin digits and UI symbols together; an Arabic font can lack essential interface glyphs.
 - [Geographic sources and saves](geographic-sources-and-saves.md) — disambiguate Gaza map points; later expansions preserve neighborhood identity and earned access, not array positions.
+- [GitHub authentication paths](github-authentication-paths.md) — connector authorization can work while native Git push fails; preserve commit hashes and merge remote history before delivery.
