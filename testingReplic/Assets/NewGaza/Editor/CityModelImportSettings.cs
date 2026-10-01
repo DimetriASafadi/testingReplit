@@ -13,7 +13,9 @@ namespace NewGaza.Editor
         {
             ModelsPrefix + "apartment.obj",
             ModelsPrefix + "ruined_building.obj",
-            ModelsPrefix + "rubble_heap.obj"
+            ModelsPrefix + "rubble_heap.obj",
+            ModelsPrefix + "apartment_context.obj",
+            ModelsPrefix + "ruined_building_context.obj"
         };
         private static readonly string[] TexturePaths =
         {
@@ -42,7 +44,7 @@ namespace NewGaza.Editor
             foreach (string path in TexturePaths) success &= PrepareTexture(path);
 
             if (success)
-                Debug.Log("New Gaza imported model assets are prepared. Resource names remain apartment, ruined_building, rubble_heap and their *_albedo textures.");
+                Debug.Log("New Gaza imported model assets are prepared. Resource names remain apartment, ruined_building, rubble_heap, apartment_context, and ruined_building_context; context models reuse their source albedo textures.");
         }
 
         private static bool PrepareModel(string path)

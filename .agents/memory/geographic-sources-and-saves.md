@@ -14,3 +14,9 @@ Distinguish the original provisional-name replacement from later insertions into
 **Why:** Provisional names were ambiguous, but the verified geographic list is known. Reusing positional retention when inserting new neighborhoods would transfer completed work to the wrong places. The expansion therefore preserves previously earned access even across new unfinished districts, without completing the new content or granting duplicate rewards.
 
 **How to apply:** Future expansions need an explicit identity-aware migration. Keep historical achievement dates separate from completion of the expanded catalog. Never infer missing identities from a changed live list; use the frozen list belonging to the source save.
+
+Neighborhood realism requires continuous city fabric at one geographic scale, not small isolated displays around accurate pins.
+
+**Why:** The user rejected the miniature district presentation even after geographic centers were verified. Accurate points alone did not satisfy their request for extensive neighborhoods and streets connecting the city.
+
+**How to apply:** Preserve sourced city scale and neighborhood identity when expanding the world. Treat missing OSM heights as estimates, and never present fictional game damage or nearest-pin presentation cells as current damage surveys or official boundaries.

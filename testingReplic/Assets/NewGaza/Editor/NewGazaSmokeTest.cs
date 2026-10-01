@@ -69,6 +69,7 @@ namespace NewGaza.Editor
                 var lit = Resources.Load<Material>("NewGazaLit");
                 Require(lit != null, "URP material did not import.");
                 CheckImportedCityModels(world, lit);
+                CheckSourcedCityBasemap();
                 var fogShader = Resources.Load<Shader>("NewGazaFog");
                 Require(fogShader != null && fogShader.isSupported, "District fog shader missing or unsupported.");
                 for (int d = 0; d < session.State.districts.Length; d++)
@@ -115,10 +116,19 @@ namespace NewGaza.Editor
             Require(lit != null && lit.shader != null &&
                 lit.shader.name == "Universal Render Pipeline/Lit",
                 "NewGazaLit must retain the Universal Render Pipeline/Lit shader.");
-            Require(world.ImportedModelCount == 3,
-                "CityWorld must load all three imported city models without procedural fallback.");
-            string[] keys = { "apartment", "ruined_building", "rubble_heap" };
-            int[] triangleBudgets = { 2500, 4000, 1400 };
+            Require(world.ImportedModelCount == 5,
+                "CityWorld must explicitly load all three primary models and both context LOD models without procedural fallback.");
+            string[] keys =
+            {
+                "apartment", "ruined_building", "rubble_heap",
+                "apartment_context", "ruined_building_context"
+            };
+            string[] albedoKeys =
+            {
+                "apartment", "ruined_building", "rubble_heap",
+                "apartment", "ruined_building"
+            };
+            int[] triangleBudgets = { 2500, 4000, 1400, 350, 450 };
             var albedos = new Texture2D[keys.Length];
 
             for (int i = 0; i < keys.Length; i++)
@@ -128,8 +138,9 @@ namespace NewGaza.Editor
                 Require(source != null, "Missing imported model resource Models/" + key + ".");
                 if (source == null) continue;
 
-                Texture2D albedo = Resources.Load<Texture2D>("Models/" + key + "_albedo");
-                Require(albedo != null, "Missing imported albedo resource Models/" + key + "_albedo.");
+                Texture2D albedo = Resources.Load<Texture2D>("Models/" + albedoKeys[i] + "_albedo");
+                Require(albedo != null,
+                    "Missing primary imported albedo resource Models/" + albedoKeys[i] + "_albedo.");
                 if (albedo == null) continue;
                 albedos[i] = albedo;
                 Require(albedo.width <= 1024 && albedo.height <= 1024,
@@ -198,6 +209,81 @@ namespace NewGaza.Editor
             }
             Require(foundImportedRenderer,
                 "CityWorld did not create a runtime renderer using an imported model material.");
+            Require(albedos[3] == albedos[0] && albedos[4] == albedos[1],
+                "Context LOD models must reuse the apartment and ruined-building primary albedo PNG resources.");
+        }
+
+        private static void CheckSourcedCityBasemap()
+        {
+            TextAsset source = Resources.Load<TextAsset>("GazaBasemap");
+            Require(source != null, "Missing authentic GazaBasemap JSON Resources asset.");
+            if (source == null) return;
+
+            CityBasemap map = JsonUtility.FromJson<CityBasemap>(source.text);
+            Require(map != null && (map.schemaVersion == 1 || map.schema == 1),
+                "GazaBasemap must parse with the supported versioned city schema.");
+            if (map == null) return;
+            Require(map.roads != null && map.roads.Length >= 20 &&
+                map.buildings != null && map.buildings.Length >= 100 &&
+                map.areas != null && map.areas.Length >= 5,
+                "GazaBasemap must include the sourced city roads, building footprints and landuse areas.");
+            if (map.roads == null || map.buildings == null || map.areas == null) return;
+
+            int roadPoints = 0, buildingPoints = 0, areaPoints = 0;
+            float minX = float.PositiveInfinity, maxX = float.NegativeInfinity;
+            float minZ = float.PositiveInfinity, maxZ = float.NegativeInfinity;
+            for (int i = 0; i < map.roads.Length; i++)
+            {
+                CityBasemapRoad road = map.roads[i];
+                Require(road != null && road.points != null && road.points.Length >= 2,
+                    "Every sourced road must contain a valid point sequence.");
+                if (road == null || road.points == null) continue;
+                for (int p = 0; p < road.points.Length; p++)
+                    CheckFinitePoint(road.points[p], ref roadPoints,
+                        ref minX, ref maxX, ref minZ, ref maxZ);
+            }
+            for (int i = 0; i < map.buildings.Length; i++)
+            {
+                CityBasemapBuilding building = map.buildings[i];
+                Require(building != null && building.center != null &&
+                    building.outline != null && building.outline.Length >= 3,
+                    "Every sourced building footprint must contain a center and polygon outline.");
+                if (building == null) continue;
+                CheckFinitePoint(building.center, ref buildingPoints,
+                    ref minX, ref maxX, ref minZ, ref maxZ);
+                if (building.outline == null) continue;
+                for (int p = 0; p < building.outline.Length; p++)
+                    CheckFinitePoint(building.outline[p], ref buildingPoints,
+                        ref minX, ref maxX, ref minZ, ref maxZ);
+            }
+            for (int i = 0; i < map.areas.Length; i++)
+            {
+                CityBasemapArea area = map.areas[i];
+                Require(area != null && area.points != null && area.points.Length >= 3,
+                    "Every sourced landuse area must contain a polygon outline.");
+                if (area == null || area.points == null) continue;
+                for (int p = 0; p < area.points.Length; p++)
+                    CheckFinitePoint(area.points[p], ref areaPoints,
+                        ref minX, ref maxX, ref minZ, ref maxZ);
+            }
+            Require(roadPoints > 0 && buildingPoints > 0 && areaPoints > 0 &&
+                maxX - minX > 150f && maxZ - minZ > 150f,
+                "GazaBasemap must provide finite sourced coordinates spanning a contiguous urban area.");
+        }
+
+        private static void CheckFinitePoint(CityBasemapPoint point, ref int count,
+            ref float minX, ref float maxX, ref float minZ, ref float maxZ)
+        {
+            bool finite = point != null &&
+                !float.IsNaN(point.x) && !float.IsInfinity(point.x) &&
+                !float.IsNaN(point.z) && !float.IsInfinity(point.z);
+            Require(finite, "GazaBasemap feature coordinates must be finite.");
+            if (!finite) return;
+            count++;
+            minX = Mathf.Min(minX, point.x);
+            maxX = Mathf.Max(maxX, point.x);
+            minZ = Mathf.Min(minZ, point.z);
+            maxZ = Mathf.Max(maxZ, point.z);
         }
 
         private static void Require(bool condition, string message)

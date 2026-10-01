@@ -7,6 +7,12 @@ namespace NewGaza
     /// <summary>Transform-only animation. No rebuilding, physics simulation or saved state.</summary>
     public sealed class CityFleet : MonoBehaviour
     {
+        // Fleet mesh dimensions are authored in model-space metres; geographic
+        // city coordinates use 20 m per unit, so scale only the vehicle roots.
+        // The articulated excavator's horizontal reach is about 3.4 model units
+        // at maximum swing, so salvage clearance should reserve roughly .24 units.
+        private const float VehicleScale = .07f;
+
         private CityGeometry geometry;
         private Material yellow, glass, dark, iron, teal, rubble;
         private Transform excavator, turret, boom, stick, bucket, bulldozer, blade, truck, truckBed, cargo;
@@ -66,11 +72,11 @@ namespace NewGaza
             }
             if (stage == JobStage.Idle)
             {
-                excavator.localPosition = depot + new Vector3(0f,.18f,5.8f);
+                SetPose(excavator, depot, new Vector3(0f,.18f,5.8f));
                 excavator.localRotation = Quaternion.Euler(0f,180f,0f);
-                bulldozer.localPosition = depot + new Vector3(0f,.18f,-5.1f);
+                SetPose(bulldozer, depot, new Vector3(0f,.18f,-5.1f));
                 bulldozer.localRotation = Quaternion.Euler(0f,180f,0f);
-                truck.localPosition = depot + new Vector3(-1.5f,.18f,0f);
+                SetPose(truck, depot, new Vector3(-1.5f,.18f,0f));
                 truck.localRotation = Quaternion.identity;
                 truckBed.localRotation = Quaternion.identity;
                 cargo.gameObject.SetActive(false);
@@ -82,6 +88,25 @@ namespace NewGaza
             Transform root = new GameObject(name).transform;
             root.SetParent(parent, false);
             return root;
+        }
+
+        private Transform VehicleRoot(string name)
+        {
+            Transform root = Root(name, transform);
+            root.localScale = Vector3.one * VehicleScale;
+            return root;
+        }
+
+        // Offsets authored for model presentation are not geographic distances.
+        // Keep absolute/source coordinates (including truck route positions) intact.
+        private static Vector3 VehicleOffset(Vector3 modelOffset)
+        {
+            return modelOffset * VehicleScale;
+        }
+
+        private static void SetPose(Transform vehicle, Vector3 geographicPosition, Vector3 modelOffset)
+        {
+            vehicle.localPosition = geographicPosition + VehicleOffset(modelOffset);
         }
 
         private Transform Part(string name, Transform parent, Mesh mesh, Material material,
@@ -123,7 +148,7 @@ namespace NewGaza
 
         private void BuildExcavator()
         {
-            excavator = Root("Excavator • tracks / slewing cab / hydraulic arm",transform);
+            excavator = VehicleRoot("Excavator • tracks / slewing cab / hydraulic arm");
             var tracks = new CityMeshBatch(geometry);
             Tracks(tracks,.55f,1.95f);
             tracks.Box(yellow,new Vector3(0f,.48f,0f),new Vector3(.95f,.16f,1.1f));
@@ -167,7 +192,7 @@ namespace NewGaza
 
         private void BuildBulldozer()
         {
-            bulldozer = Root("Bulldozer • continuous tracks / engine / wide blade",transform);
+            bulldozer = VehicleRoot("Bulldozer • continuous tracks / engine / wide blade");
             var batch = new CityMeshBatch(geometry);
             Tracks(batch,.56f,1.95f);
             batch.Box(yellow,new Vector3(0f,.65f,.25f),new Vector3(.9f,.54f,1.15f));
@@ -194,7 +219,7 @@ namespace NewGaza
 
         private void BuildTruck()
         {
-            truck = Root("Tipper truck • six wheels / cab / lifting bed",transform);
+            truck = VehicleRoot("Tipper truck • six wheels / cab / lifting bed");
             var body = new CityMeshBatch(geometry);
             body.Box(dark,new Vector3(0f,.4f,0f),new Vector3(.95f,.17f,2.95f));
             body.Box(teal,new Vector3(0f,.86f,1.04f),new Vector3(1.13f,.95f,.86f));
@@ -248,8 +273,8 @@ namespace NewGaza
         {
             if (importedJob)
             {
-                route[0] = depot + new Vector3(-1.4f,.22f,-4.5f);
-                route[1] = depot + new Vector3(-1.4f,.22f,4.5f);
+                route[0] = depot + VehicleOffset(new Vector3(-1.4f,.22f,-4.5f));
+                route[1] = depot + VehicleOffset(new Vector3(-1.4f,.22f,4.5f));
                 route[2] = route[0];
                 routeCount = 3;
             }
@@ -257,8 +282,9 @@ namespace NewGaza
             {
                 // Direct illustrative dispatch between sourced work and depot coordinates.
                 // No implied street alignment or invented rectilinear road network.
-                route[0] = depot + new Vector3(-1.4f,.22f,-4.5f);
-                route[1] = new Vector3(jobCenter.x,.22f,jobCenter.z);
+                route[0] = depot + VehicleOffset(new Vector3(-1.4f,.22f,-4.5f));
+                route[1] = new Vector3(jobCenter.x,jobCenter.y +
+                    VehicleOffset(new Vector3(0f,.22f,0f)).y,jobCenter.z);
                 route[2] = route[0];
                 routeCount = 3;
             }
@@ -275,12 +301,12 @@ namespace NewGaza
             if (stage == JobStage.Idle || geometry == null) return;
             phase += Time.deltaTime;
             bool clearing = stage == JobStage.Clearing;
-            Vector3 work = importedJob ? depot + new Vector3(.3f,.2f,5.6f) :
-                new Vector3(jobCenter.x,.2f,jobCenter.z);
+            Vector3 work = importedJob ? depot + VehicleOffset(new Vector3(.3f,.2f,5.6f)) :
+                jobCenter + VehicleOffset(new Vector3(0f,.2f,0f));
             if (excavatorOwned)
             {
-                excavator.localPosition = clearing ? work :
-                    depot + new Vector3(.3f,.2f,5.6f);
+                if (clearing) SetPose(excavator, work, Vector3.zero);
+                else SetPose(excavator, depot, new Vector3(.3f,.2f,5.6f));
                 excavator.localRotation = Quaternion.Euler(0f,clearing ? 70f : 170f,0f);
                 turret.localRotation = Quaternion.Euler(0f,clearing ? Mathf.Sin(phase * .42f) * 32f : -25f,0f);
                 boom.localRotation = Quaternion.Euler(clearing ? -12f + Mathf.Sin(phase * 1.05f) * 13f : -9f,0f,0f);
@@ -289,8 +315,10 @@ namespace NewGaza
             }
             if (bulldozerOwned)
             {
-                bulldozer.localPosition = clearing ? work + new Vector3(3.1f,0f,Mathf.Sin(phase * .45f) * 1.15f) :
-                    depot + new Vector3(0f,.2f,-5.1f);
+                if (clearing)
+                    SetPose(bulldozer, work, new Vector3(.25f,0f,Mathf.Sin(phase * .45f) * .25f));
+                else
+                    SetPose(bulldozer, depot, new Vector3(0f,.2f,-5.1f));
                 bulldozer.localRotation = Quaternion.Euler(0f,clearing ? 0f : 180f,0f);
                 blade.localRotation = Quaternion.Euler(clearing ? Mathf.Sin(phase * .9f) * 4f : -8f,0f,0f);
             }
@@ -302,7 +330,8 @@ namespace NewGaza
                 {
                     if (distance > routeLengths[i]) { distance -= routeLengths[i]; continue; }
                     Vector3 direction = route[i + 1] - route[i];
-                    truck.localPosition = Vector3.Lerp(route[i],route[i + 1],distance / Mathf.Max(.001f,routeLengths[i]));
+                    SetPose(truck, Vector3.Lerp(route[i],route[i + 1],
+                        distance / Mathf.Max(.001f,routeLengths[i])), Vector3.zero);
                     if (direction.sqrMagnitude > .01f) truck.localRotation = Quaternion.LookRotation(direction,Vector3.up);
                     break;
                 }
@@ -312,15 +341,15 @@ namespace NewGaza
             }
             else if (stage == JobStage.Recycling)
             {
-                truck.localPosition = depot + new Vector3(-1.7f,.22f,2.4f);
+                SetPose(truck, depot, new Vector3(-1.7f,.22f,2.4f));
                 truck.localRotation = Quaternion.Euler(0f,180f,0f);
                 truckBed.localRotation = Quaternion.Euler(32f + Mathf.Sin(phase * .7f) * 9f,0f,0f);
                 cargo.gameObject.SetActive(Mathf.Sin(phase * .25f) > -.3f);
             }
             else
             {
-                truck.localPosition = importedJob ? depot + new Vector3(-1.7f,.22f,2.4f) :
-                    new Vector3(jobCenter.x + 2f,.22f,jobCenter.z - 2f);
+                if (importedJob) SetPose(truck, depot, new Vector3(-1.7f,.22f,2.4f));
+                else SetPose(truck, jobCenter, new Vector3(.25f,.22f,-.25f));
                 truck.localRotation = Quaternion.Euler(0f,180f,0f);
                 truckBed.localRotation = Quaternion.identity;
                 cargo.gameObject.SetActive(true);
