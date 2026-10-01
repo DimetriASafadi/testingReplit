@@ -1,1 +1,2 @@
 - [Arabic font coverage](arabic-font-coverage.md) — test connected forms, Latin digits and UI symbols together; an Arabic font can lack essential interface glyphs.
+- [Geographic sources and saves](geographic-sources-and-saves.md) — disambiguate Gaza map points; geographic reordering preserves legacy milestones, not provisional place names.

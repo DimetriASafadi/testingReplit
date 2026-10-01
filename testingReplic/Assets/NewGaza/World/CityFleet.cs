@@ -48,8 +48,7 @@ namespace NewGaza
             stage = state.jobStage;
             districtIndex = state.jobDistrict;
             jobCenter = transform.InverseTransformPoint(worldJobCenter);
-            // Caller gives city-local depot coordinates; the world normally has identity TRS.
-            depot = worldDepot;
+            depot = transform.InverseTransformPoint(worldDepot);
             excavatorOwned = state.excavators > 0;
             truckOwned = state.trucks > 0;
             bulldozerOwned = state.bulldozers > 0;
@@ -249,26 +248,20 @@ namespace NewGaza
         {
             if (importedJob)
             {
-                route[0] = depot + new Vector3(-5f,.22f,-4.5f);
-                route[1] = depot + new Vector3(-5f,.22f,4.5f);
+                route[0] = depot + new Vector3(-1.4f,.22f,-4.5f);
+                route[1] = depot + new Vector3(-1.4f,.22f,4.5f);
                 route[2] = route[0];
                 routeCount = 3;
-                routeLength = 18f;
-                routeLengths[0] = routeLengths[1] = 9f;
-                return;
             }
-            // Rectilinear route uses the shared city streets. Imported contracts remain
-            // at the depot; the coastline feeds its dedicated corniche road.
-            float nearestZ = -47.5f + Mathf.Clamp(Mathf.RoundToInt((jobCenter.z + 47.5f) / 19f),0,5) * 19f;
-            float accessX = districtIndex == 10 ? -30.1f : jobCenter.x < 0f ? 0f : 30.1f;
-            route[0] = new Vector3(30.1f,.22f,-35f);
-            route[1] = new Vector3(30.1f,.22f,nearestZ);
-            route[2] = new Vector3(accessX,.22f,nearestZ);
-            route[3] = new Vector3(accessX,.22f,jobCenter.z);
-            route[4] = route[2];
-            route[5] = route[1];
-            route[6] = route[0];
-            routeCount = 7;
+            else
+            {
+                // Direct illustrative dispatch between sourced work and depot coordinates.
+                // No implied street alignment or invented rectilinear road network.
+                route[0] = depot + new Vector3(-1.4f,.22f,-4.5f);
+                route[1] = new Vector3(jobCenter.x,.22f,jobCenter.z);
+                route[2] = route[0];
+                routeCount = 3;
+            }
             routeLength = 0f;
             for (int i = 0; i < routeCount - 1; i++)
             {
@@ -283,8 +276,7 @@ namespace NewGaza
             phase += Time.deltaTime;
             bool clearing = stage == JobStage.Clearing;
             Vector3 work = importedJob ? depot + new Vector3(.3f,.2f,5.6f) :
-                jobCenter + new Vector3(districtIndex == 10 ? 1.1f : -9.7f,.2f,
-                districtIndex == 10 ? -40f : -5.9f);
+                new Vector3(jobCenter.x,.2f,jobCenter.z);
             if (excavatorOwned)
             {
                 excavator.localPosition = clearing ? work :
@@ -328,7 +320,7 @@ namespace NewGaza
             else
             {
                 truck.localPosition = importedJob ? depot + new Vector3(-1.7f,.22f,2.4f) :
-                    jobCenter + new Vector3(districtIndex == 10 ? 6.5f : -12.6f,.22f,-5.8f);
+                    new Vector3(jobCenter.x + 2f,.22f,jobCenter.z - 2f);
                 truck.localRotation = Quaternion.Euler(0f,180f,0f);
                 truckBed.localRotation = Quaternion.identity;
                 cargo.gameObject.SetActive(true);

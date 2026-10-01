@@ -65,7 +65,8 @@ namespace NewGaza
             string date = DateTimeOffset.FromUnixTimeSeconds(session.State.cityCompletedUtc).ToString("yyyy-MM-dd");
             label.text = ArabicText.Shape("نيو غزة — مدينة تُبنى من جديد\n" +
                 session.State.playerName + " | الإنجاز 100% | الأحياء 10/10\n" +
-                "المشاريع " + projects + " | قيمة الاستثمارات " + investments.ToString("N0") + " | " + date);
+                "المشاريع " + projects + " | قيمة الاستثمارات " + investments.ToString("N0") + " | " + date +
+                "\n" + GameGeography.Attribution + " · openstreetmap.org/copyright");
             yield return new WaitForEndOfFrame();
             Texture2D image = null;
             try

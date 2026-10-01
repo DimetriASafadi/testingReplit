@@ -10,6 +10,7 @@
   <ItemGroup>
     <Compile Include="../../Assets/NewGaza/Core/GameModels.cs" Link="Core/GameModels.cs" />
     <Compile Include="../../Assets/NewGaza/Core/GameCatalog.cs" Link="Core/GameCatalog.cs" />
+    <Compile Include="../../Assets/NewGaza/Core/GameGeography.cs" Link="Core/GameGeography.cs" />
     <Compile Include="../../Assets/NewGaza/Core/EconomyService.cs" Link="Core/EconomyService.cs" />
     <Compile Include="Program.cs" />
   </ItemGroup>

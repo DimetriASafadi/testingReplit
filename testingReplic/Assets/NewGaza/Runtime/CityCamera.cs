@@ -14,7 +14,8 @@ namespace NewGaza
         private Camera view;
         private Vector3 focus;
         private Vector3 targetFocus;
-        private float yaw = 38;
+        // North-up by default; rotating the view never changes the geographic layout.
+        private float yaw;
         private float zoom = 24;
         private float targetZoom = 24;
         private const float Pitch = 53;
@@ -61,9 +62,8 @@ namespace NewGaza
 
         private Vector3 CityCentre()
         {
-            Vector3 centre = Vector3.zero;
-            for (int i = 0; i < GameCatalog.Districts.Length; i++) centre += world.DistrictPosition(i);
-            return centre / GameCatalog.Districts.Length;
+            return new Vector3((GameGeography.MapMinX + GameGeography.MapMaxX) * 0.5f, 0,
+                (GameGeography.MapMinZ + GameGeography.MapMaxZ) * 0.5f);
         }
 
         private float OverviewZoom()
@@ -73,9 +73,11 @@ namespace NewGaza
             Vector3 right = rotation * Vector3.right;
             Vector3 up = rotation * Vector3.up;
             float width = 0, height = 0;
-            for (int i = 0; i < GameCatalog.Districts.Length; i++)
+            for (int i = 0; i < 4; i++)
             {
-                var offset = world.DistrictPosition(i) - centre;
+                var corner = new Vector3(i % 2 == 0 ? GameGeography.MapMinX : GameGeography.MapMaxX,
+                    0, i < 2 ? GameGeography.MapMinZ : GameGeography.MapMaxZ);
+                var offset = corner - centre;
                 width = Mathf.Max(width, Mathf.Abs(Vector3.Dot(offset, right)) + 20);
                 height = Mathf.Max(height, Mathf.Abs(Vector3.Dot(offset, up)) + 20);
             }
@@ -85,7 +87,11 @@ namespace NewGaza
         private void Update()
         {
             if (session == null || !session.Ready) return;
-            if (finaleUntil > Time.unscaledTime) yaw += Time.unscaledDeltaTime * 5;
+            if (finaleUntil > Time.unscaledTime)
+            {
+                yaw += Time.unscaledDeltaTime * 5;
+                targetZoom = OverviewZoom();
+            }
             else if (!ModalOpen) ReadInput();
             else { held = false; multiTouch = false; }
             UpdatePose(false);
@@ -117,7 +123,7 @@ namespace NewGaza
                     else if (!beganOnUI && !IsUI(first) && !IsUI(second))
                     {
                         if (span > 20 && lastSpan > 20)
-                            targetZoom = Mathf.Clamp(targetZoom * lastSpan / span, 12, 125);
+                            targetZoom = Mathf.Clamp(targetZoom * lastSpan / span, 12, Mathf.Max(125, OverviewZoom()));
                         yaw -= Mathf.DeltaAngle(lastAngle, angle);
                     }
                     lastSpan = span;
@@ -140,7 +146,7 @@ namespace NewGaza
             var position = mouse.position.ReadValue();
             float scroll = mouse.scroll.ReadValue().y;
             if (!IsUI(position) && Mathf.Abs(scroll) > 0)
-                targetZoom = Mathf.Clamp(targetZoom - scroll * 0.035f, 12, 125);
+                targetZoom = Mathf.Clamp(targetZoom - scroll * 0.035f, 12, Mathf.Max(125, OverviewZoom()));
             if (mouse.rightButton.isPressed && !IsUI(position))
                 yaw += mouse.delta.ReadValue().x * 0.25f;
             Pointer(position, mouse.leftButton.isPressed);
@@ -167,8 +173,8 @@ namespace NewGaza
                     var before = GroundPoint(previous);
                     var after = GroundPoint(position);
                     targetFocus += before - after;
-                    targetFocus.x = Mathf.Clamp(targetFocus.x, -180, 180);
-                    targetFocus.z = Mathf.Clamp(targetFocus.z, -180, 180);
+                    targetFocus.x = Mathf.Clamp(targetFocus.x, GameGeography.MapMinX, GameGeography.MapMaxX);
+                    targetFocus.z = Mathf.Clamp(targetFocus.z, GameGeography.MapMinZ, GameGeography.MapMaxZ);
                 }
                 else if (!inspected && Time.unscaledTime - pressTime > 0.55f)
                 {
@@ -194,7 +200,7 @@ namespace NewGaza
 
         private void Tap(Vector2 position, bool inspect)
         {
-            if (!Physics.Raycast(view.ScreenPointToRay(position), out var hit, 600)) return;
+            if (!Physics.Raycast(view.ScreenPointToRay(position), out var hit, 1600)) return;
             var selected = hit.collider.GetComponentInParent<CitySelectable>();
             if (selected == null) return;
             if (!session.State.districts[selected.districtIndex].unlocked)
@@ -238,7 +244,7 @@ namespace NewGaza
             zoom = Mathf.Lerp(zoom, targetZoom, blend);
             view.orthographicSize = zoom;
             transform.rotation = Quaternion.Euler(Pitch, yaw, 0);
-            transform.position = focus - transform.forward * 210;
+            transform.position = focus - transform.forward * 700;
         }
         private void OnDisable() { held = false; multiTouch = false; ModalOpen = false; }
     }
