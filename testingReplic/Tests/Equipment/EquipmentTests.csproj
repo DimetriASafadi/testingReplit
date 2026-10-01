@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../Assets/NewGaza/Core/GameModels.cs" Link="Core/GameModels.cs" />
+    <Compile Include="../../Assets/NewGaza/World/CityFleet.cs" Link="World/CityFleet.cs" />
+    <Compile Include="../../Assets/NewGaza/World/CityGeometry.cs" Link="World/CityGeometry.cs" />
+    <Compile Include="../../Assets/NewGaza/World/EquipmentGeometry.cs" Link="World/EquipmentGeometry.cs" />
+    <Compile Include="../../Assets/NewGaza/World/EquipmentHydraulicLink.cs" Link="World/EquipmentHydraulicLink.cs" />
+    <Compile Include="../../Assets/NewGaza/World/EquipmentTrackRig.cs" Link="World/EquipmentTrackRig.cs" />
+    <Compile Include="../../Assets/NewGaza/World/EquipmentMotion.cs" Link="World/EquipmentMotion.cs" />
+    <Compile Include="UnityStubs.cs" />
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+</Project>

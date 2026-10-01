@@ -34,6 +34,9 @@ namespace NewGaza
         private float finaleUntil;
         private readonly List<RaycastResult> uiHits = new List<RaycastResult>();
         public static bool ModalOpen { get; set; }
+        // Audio follows the rendered, eased view, never the pinch target ahead of the image.
+        public Vector3 AudioFocus { get { return focus; } }
+        public float AudioZoom { get { return zoom; } }
 
         public void Initialize(GameSession game, CityWorld city)
         {

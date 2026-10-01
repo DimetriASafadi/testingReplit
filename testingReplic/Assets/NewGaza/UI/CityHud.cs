@@ -13,7 +13,7 @@ using UnityEngine.UI;
 namespace NewGaza
 {
     /// <summary>Native, session-owned Arabic mobile interface. No scene prefab or web view is required.</summary>
-    public sealed class CityHud : MonoBehaviour
+    public sealed partial class CityHud : MonoBehaviour
     {
         private enum Page { None, Map, Projects, Fleet, Investments, Resources, Gift, Settings, Finale }
         private sealed class Binding
@@ -843,6 +843,7 @@ namespace NewGaza
         {
             PageHeading("استراحة وخيارات", "تتوقف حركة كاميرا المدينة أثناء فتح القوائم؛ أوقات البناء والدخل الحقيقية لا تتوقف.");
             Note("اسم البنّاء: " + session.State.playerName, Muted);
+            BuildAudioSettings();
             var nameCard = ListCard("تعديل الاسم", 264);
             var field = Surface("Logical name entry", nameCard, Cream, false);
             PlaceCard(field, 16, 61, -32, 72);
@@ -1184,7 +1185,11 @@ namespace NewGaza
                 label.fontSize = labelSize;
             }
             label.raycastTarget = false;
-            if (action != null) button.onClick.AddListener(() => action());
+            if (action != null) button.onClick.AddListener(() =>
+            {
+                session.Audio?.PlayClick();
+                action();
+            });
             return button;
         }
         private static void ButtonText(Button button, string text)
