@@ -42,6 +42,7 @@ internal static class Program
             CheckSceneBootstrap(sourceRoot, roots);
             CheckDistrictFog(sourceRoot, roots);
             CheckWorldRenderingContracts(roots);
+            CheckHudIconContracts(roots);
             CheckArabicShaping();
             if (Failures.Count > 0)
             {
@@ -50,7 +51,7 @@ internal static class Program
                 return 1;
             }
             Console.WriteLine("Source checks passed: " + files.Length +
-                " NewGaza .cs files parsed as C# 9 (player + editor/optional checks), integration signatures, GUID-independent scene bootstrap, localized-fog/shader and geometry-UV/shadow/URP-light source checks, and Arabic shaping.");
+                " NewGaza .cs files parsed as C# 9 (player + editor/optional checks), integration signatures, GUID-independent scene bootstrap, localized-fog/shader and geometry-UV/shadow/URP-light source checks, procedural HUD icon coverage/ownership/navigation bindings, and Arabic shaping.");
             Console.WriteLine("Source-only check; Unity assemblies and shader were not compiled, and no Unity editor/player or GPU rendering was run.");
             return 0;
         }
@@ -173,6 +174,129 @@ internal static class Program
                 assignment.Right.IsKind(SyntaxKind.FalseLiteralExpression));
         Require(usesExplicitSunUrpSettings,
             "The directional sun must opt out of URP pipeline light settings to retain its configured bias.");
+    }
+
+    private static void CheckHudIconContracts(Dictionary<string, CompilationUnitSyntax> roots)
+    {
+        var icons = Type(roots, "UI/CityHudIcons.cs", "CityHudIcons", "NewGaza.UI");
+        if (icons == null) return;
+
+        Require(icons.BaseList?.Types.Any(t => Signature(t.Type) == "IDisposable") == true,
+            "CityHudIcons must implement IDisposable.");
+
+        var iconEnum = icons.Members.OfType<EnumDeclarationSyntax>()
+            .FirstOrDefault(e => e.Identifier.ValueText == "Icon");
+        string[] expectedIcons =
+        {
+            "None", "Map", "Projects", "Fleet", "Investment", "Resources",
+            "Gift", "Settings", "Close"
+        };
+        Require(iconEnum != null &&
+            iconEnum.Members.Select(m => m.Identifier.ValueText)
+                .SequenceEqual(expectedIcons, StringComparer.Ordinal),
+            "CityHudIcons.Icon must contain None and the eight supported HUD icons.");
+        Method(icons, "Get", "Sprite", "Icon");
+
+        var dispose = icons.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(m => m.Identifier.ValueText == "Dispose");
+        Require(dispose != null && Public(dispose) &&
+            Signature(dispose.ReturnType) == "void" &&
+            dispose.ParameterList.Parameters.Count == 0,
+            "CityHudIcons must expose public void Dispose().");
+        if (dispose != null)
+        {
+            string[] destroyedArrays = dispose.DescendantNodes()
+                .OfType<InvocationExpressionSyntax>()
+                .Where(call => call.Expression is MemberAccessExpressionSyntax destroy &&
+                    destroy.Expression.ToString() == "UnityEngine.Object" &&
+                    destroy.Name.Identifier.ValueText == "Destroy")
+                .Select(call => call.ArgumentList.Arguments.SingleOrDefault()?.Expression)
+                .OfType<ElementAccessExpressionSyntax>()
+                .Select(element => element.Expression.ToString())
+                .Distinct(StringComparer.Ordinal)
+                .OrderBy(name => name, StringComparer.Ordinal)
+                .ToArray();
+            Require(destroyedArrays.SequenceEqual(new[] { "sprites", "textures" },
+                    StringComparer.Ordinal),
+                "CityHudIcons.Dispose must destroy both cached sprites and their textures.");
+        }
+
+        var hud = Type(roots, "UI/CityHud.cs", "CityHud", "NewGaza");
+        if (hud == null) return;
+        var ownsIcons = hud.Members.OfType<FieldDeclarationSyntax>()
+            .Any(field => Signature(field.Declaration.Type) == "CityHudIcons" &&
+                field.Declaration.Variables.Any(variable => variable.Identifier.ValueText == "hudIcons"));
+        Require(ownsIcons, "CityHud must own its CityHudIcons instance.");
+
+        var initialize = hud.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(m => m.Identifier.ValueText == "Initialize");
+        bool createsOwnedIcons = initialize?.DescendantNodes()
+            .OfType<AssignmentExpressionSyntax>()
+            .Any(assignment => assignment.Left.ToString() == "hudIcons" &&
+                assignment.Right is ObjectCreationExpressionSyntax creation &&
+                Signature(creation.Type) == "CityHudIcons") == true;
+        Require(createsOwnedIcons, "CityHud.Initialize must create its owned CityHudIcons instance.");
+
+        var onDestroy = hud.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(m => m.Identifier.ValueText == "OnDestroy");
+        bool disposesOwnedIcons = onDestroy?.DescendantNodes()
+            .OfType<ConditionalAccessExpressionSyntax>()
+            .Any(access => access.Expression.ToString() == "hudIcons" &&
+                access.WhenNotNull is InvocationExpressionSyntax invocation &&
+                invocation.Expression is MemberBindingExpressionSyntax binding &&
+                binding.Name.Identifier.ValueText == "Dispose" &&
+                invocation.ArgumentList.Arguments.Count == 0) == true;
+        Require(disposesOwnedIcons, "CityHud.OnDestroy must dispose its owned CityHudIcons instance.");
+
+        var actionButton = hud.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(m => m.Identifier.ValueText == "ActionButton");
+        bool usesCachedIcon = actionButton?.DescendantNodes()
+            .OfType<AssignmentExpressionSyntax>()
+            .Any(assignment => assignment.Left.ToString() == "image.sprite" &&
+                assignment.Right is InvocationExpressionSyntax get &&
+                get.Expression is MemberAccessExpressionSyntax member &&
+                member.Expression.ToString() == "hudIcons" &&
+                member.Name.Identifier.ValueText == "Get" &&
+                get.ArgumentList.Arguments.SingleOrDefault()?.Expression.ToString() == "icon") == true;
+        bool iconDoesNotInterceptTouches = actionButton?.DescendantNodes()
+            .OfType<AssignmentExpressionSyntax>()
+            .Any(assignment => assignment.Left.ToString() == "image.raycastTarget" &&
+                assignment.Right.IsKind(SyntaxKind.FalseLiteralExpression)) == true;
+        Require(usesCachedIcon && iconDoesNotInterceptTouches,
+            "CityHud.ActionButton must use the cached icon sprite and keep its decoration image non-interactive.");
+
+        var buildHud = hud.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(m => m.Identifier.ValueText == "BuildHud");
+        string[] expectedNavigationIcons =
+        {
+            "CityHudIcons.Icon.Map", "CityHudIcons.Icon.Projects", "CityHudIcons.Icon.Fleet",
+            "CityHudIcons.Icon.Investment", "CityHudIcons.Icon.Resources"
+        };
+        string[] navigationIcons = buildHud?.DescendantNodes()
+            .OfType<InvocationExpressionSyntax>()
+            .Where(call => call.Expression is IdentifierNameSyntax identifier &&
+                identifier.Identifier.ValueText == "AddNav")
+            .Select(call => call.ArgumentList.Arguments.Count == 3
+                ? call.ArgumentList.Arguments[2].Expression.ToString()
+                : "")
+            .ToArray() ?? Array.Empty<string>();
+        Require(navigationIcons.SequenceEqual(expectedNavigationIcons, StringComparer.Ordinal),
+            "CityHud.BuildHud must explicitly provide an icon for each of the five navigation items.");
+
+        bool hasActionIcon(string methodName, string expectedIcon)
+        {
+            var method = hud.Members.OfType<MethodDeclarationSyntax>()
+                .FirstOrDefault(m => m.Identifier.ValueText == methodName);
+            return method?.DescendantNodes().OfType<InvocationExpressionSyntax>()
+                .Any(call => call.Expression is IdentifierNameSyntax identifier &&
+                    identifier.Identifier.ValueText == "ActionButton" &&
+                    call.ArgumentList.Arguments.Count >= 5 &&
+                    call.ArgumentList.Arguments[4].Expression.ToString() == expectedIcon) == true;
+        }
+        Require(hasActionIcon("BuildHud", "CityHudIcons.Icon.Gift") &&
+            hasActionIcon("BuildHud", "CityHudIcons.Icon.Settings") &&
+            hasActionIcon("BuildModalShell", "CityHudIcons.Icon.Close"),
+            "Gift, settings, and modal-close buttons must explicitly select their HUD icons.");
     }
 
     private static void CheckFogStateBindings(TypeDeclarationSyntax? city)
