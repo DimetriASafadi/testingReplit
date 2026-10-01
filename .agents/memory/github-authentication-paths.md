@@ -1,0 +1,10 @@
+---
+name: GitHub authentication paths
+description: Delivering changes safely when the GitHub connector works but native Git credentials do not.
+---
+
+GitHub connector authorization and the workspace's native Git authentication are separate paths. A working connector does not prove that command-line pushes are authenticated.
+
+**Why:** Native Git rejected authentication while the authorized connector successfully accessed the same repository with write permissions. The imported local branch also lacked some remote history despite a clean working tree.
+
+**How to apply:** If native push fails, use the authenticated connector proxy rather than extracting tokens or adding credentials to remote URLs. Check the actual remote head and integrate existing remote changes without force-pushing. When transferring Git objects through the API, preserve and verify their original hashes so local and remote histories remain compatible; only update the branch using a fast-forward operation.
