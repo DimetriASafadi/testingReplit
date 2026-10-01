@@ -50,7 +50,7 @@ namespace NewGaza
                 cam.clearFlags = CameraClearFlags.SolidColor;
                 cam.backgroundColor = new Color(0.48f, 0.72f, 0.76f);
                 cam.nearClipPlane = 0.3f;
-                cam.farClipPlane = 600f;
+                cam.farClipPlane = 1600f;
                 cam.allowHDR = false;
                 cam.GetUniversalAdditionalCameraData().renderPostProcessing = false;
                 cityCamera = cameraObject.AddComponent<CityCamera>();

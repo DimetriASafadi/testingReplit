@@ -6,7 +6,8 @@ using UnityEngine;
 namespace NewGaza
 {
     /// <summary>
-    /// Deterministic, authored coastal diorama, not a geographic reconstruction.
+    /// Geographic neighborhood centers and city-coast route with illustrative, authored
+    /// buildings. Tiles are NOT neighborhood boundaries or official district polygons.
     /// The session is the only owner of progress; this class is a disposable view.
     /// </summary>
     public sealed class CityWorld : MonoBehaviour
@@ -44,6 +45,7 @@ namespace NewGaza
         private GameObject districtSelection;
         private GameObject factory;
         private GameObject factorySite;
+        private GameObject completedCoastRoad;
         private CitySelectable factoryHit;
         private CityFleet fleet;
         private int selectedDistrict = -1;
@@ -54,7 +56,7 @@ namespace NewGaza
         private Material dark, iron, rubble, leaf, grass, yellow, white, water, sea, foam;
         private Material[] districtColors;
 
-        /// <summary>World bounds approximately x[-63,42], z[-49,49], buildings up to y=9.</summary>
+        /// <summary>Geographic bounds are supplied by GameGeography in city-local Unity units.</summary>
         public void Initialize(GameSession gameSession)
         {
             if (gameSession == null) throw new ArgumentNullException(nameof(gameSession));
@@ -69,7 +71,7 @@ namespace NewGaza
             session = gameSession;
             geometry = new CityGeometry();
             MakePalette();
-            cityRoot = new GameObject("New Gaza • coastal diorama").transform;
+            cityRoot = new GameObject("New Gaza • geographically placed neighborhood centers").transform;
             cityRoot.SetParent(transform, false);
             BuildLandscape();
             BuildDistricts();
@@ -130,58 +132,148 @@ namespace NewGaza
 
         private void BuildLandscape()
         {
-            var land = new CityMeshBatch(geometry);
-            land.Box(limestone, new Vector3(3f, -1.1f, 0f), new Vector3(78f, 2f, 98f));
-            land.Box(sand, new Vector3(3f, -.06f, 0f), new Vector3(78f, .2f, 97.8f));
-            land.Box(terracotta, new Vector3(3f, -1.95f, 0f), new Vector3(78f, .2f, 98f));
-            land.Box(sea, new Vector3(-51f, -.45f, 0f), new Vector3(24f, .35f, 98f));
-            land.Box(water, new Vector3(-40.2f, -.26f, 0f), new Vector3(5f, .12f, 98f));
-            land.Box(sand, new Vector3(-37.8f, -.08f, 0f), new Vector3(4f, .22f, 98f));
-            // The gently stepped shoreline is deliberately stylized, not a map.
-            for (int i = 0; i < 16; i++)
+            GeoPoint[] coast = GameGeography.Coastline;
+            GeoPoint[] road = GameGeography.RashidRoute;
+            if (coast == null || coast.Length < 2 || road == null || road.Length < 2)
+                throw new InvalidOperationException("City coast and Rashid route require at least two geographic points each.");
+            float south = GameGeography.MapMinZ - 15f;
+            float north = GameGeography.MapMaxZ + 15f;
+            float west = GameGeography.MapMinX - 18f;
+            float east = GameGeography.MapMaxX + 18f;
+            // Extend the surveyed shoreline to the edges of this CITY map, not the Strip.
+            var shore = new List<Vector3> { ExtrapolateAtZ(coast[0], coast[1], south) };
+            foreach (GeoPoint p in coast)
+                if (p.z > south && p.z < north) shore.Add(Point(p));
+            shore.Add(ExtrapolateAtZ(coast[coast.Length - 2], coast[coast.Length - 1], north));
+            var landscape = new CityMeshBatch(geometry);
+            for (int i = 0; i < shore.Count - 1; i++)
             {
-                float z = -45f + i * 6f;
-                land.Box(foam, new Vector3(-39.1f - .23f * Mathf.Sin(i * 1.8f), -.17f, z),
-                    new Vector3(.18f, .025f, 4.6f), 4f * Mathf.Sin(i));
-                land.Box(water, new Vector3(-47f - i % 3 * 2.7f, -.245f, z + 1.4f),
-                    new Vector3(3.2f, .02f, .08f), -12f);
+                Vector3 a = shore[i], b = shore[i + 1];
+                AddQuad(landscape, sea, new Vector3(west,-.25f,a.z),
+                    new Vector3(west,-.25f,b.z), b + Vector3.down * .25f, a + Vector3.down * .25f);
+                AddQuad(landscape, sand, a + new Vector3(0f,-.08f,0f),
+                    b + new Vector3(0f,-.08f,0f), b + new Vector3(2f,-.08f,0f),
+                    a + new Vector3(2f,-.08f,0f));
+                AddQuad(landscape, limestone, a + new Vector3(2f,-.09f,0f),
+                    b + new Vector3(2f,-.09f,0f), new Vector3(east,-.09f,b.z),
+                    new Vector3(east,-.09f,a.z));
+                landscape.Beam(foam, a + new Vector3(0f,-.065f,0f),
+                    b + new Vector3(0f,-.065f,0f), .18f);
             }
-            land.Build("Layered sand plinth / sea / shoreline", cityRoot, Vector3.zero);
-            var streets = new CityMeshBatch(geometry);
-            Road(streets, new Vector3(-30.1f,.1f,0f), 3.7f, 95f, true);
-            Road(streets, new Vector3(0f,.1f,0f), 3.8f, 95f, true);
-            Road(streets, new Vector3(30.1f,.1f,0f), 3.7f, 95f, true);
-            for (int row = 0; row <= 5; row++)
-                Road(streets, new Vector3(0f,.1f,-47.5f + row * 19f), 3.7f, 62f, false);
-            // Long corniche pedestrian ribbon, stone seawall and regularly spaced lamps.
-            streets.Box(sidewalk, new Vector3(-33.6f,.13f,0f), new Vector3(2.2f,.24f,96f));
-            streets.Box(limestone, new Vector3(-34.6f,.48f,0f), new Vector3(.25f,.65f,96f));
-            for (int i = 0; i < 24; i++)
+            landscape.Build("Geographic diagonal coastline • sea west / city east", cityRoot, Vector3.zero);
+            var ribbon = new CityMeshBatch(geometry);
+            // The sampled carriageway approaches within 2.2 units of the sea in
+            // northern Rimal. Map-scale ribbons must stay inside that clearance.
+            Path(ribbon, road, sidewalk, 1.8f, .08f);
+            ribbon.Build("Rashid coastal route • unfinished paving", cityRoot, Vector3.zero);
+            var completed = new CityMeshBatch(geometry);
+            Path(completed, road, asphalt, 1.2f, .19f);
+            for (int n = 0; n < 2; n++)
             {
-                float z = -45.5f + i * 4f;
-                Palm(streets, new Vector3(-32.9f,.22f,z), 2.5f + i % 3 * .25f, i * 41f);
-                if (i % 2 == 0) Bench(streets, new Vector3(-34f,.26f,z + 1.3f), 90f);
-                Lamp(streets, new Vector3(-28f,.25f,z + .9f), -90f);
-                if (i % 3 == 0)
+                float length = PathLength(road);
+                for (float d = 4f + n * 4f; d < length - 3f; d += n == 0 ? 8f : 16f)
                 {
-                    Lamp(streets, new Vector3(2.3f,.25f,z), 90f);
-                    Lamp(streets, new Vector3(32.4f,.25f,z), 90f);
+                    Vector3 direction;
+                    Vector3 at = RoutePoint(road, d, out direction);
+                    Vector3 inland = new Vector3(direction.z,0f,-direction.x);
+                    if (n == 0)
+                        completed.Box(white, at + Vector3.up * .235f,
+                            new Vector3(.045f,.025f,.55f),
+                            Mathf.Atan2(direction.x,direction.z) * Mathf.Rad2Deg);
+                    else
+                    {
+                        Palm(completed, at + inland * 3.3f + Vector3.up * .22f, 1.4f, d * 7f);
+                        Lamp(completed, at + inland * 1.6f + Vector3.up * .22f, 90f,.55f);
+                    }
                 }
             }
-            streets.Build("Connected roads / sidewalks / corniche", cityRoot, Vector3.zero);
-            var harbor = new CityMeshBatch(geometry);
-            harbor.Box(limestone, new Vector3(-43.8f,.05f,34f), new Vector3(10f,.6f,1.6f));
-            for (int i = 0; i < 7; i++)
-                harbor.Round(terracotta, new Vector3(-39.6f - i * 1.3f,-.75f,34f), new Vector3(.3f,1.4f,.3f));
-            Boat(harbor, new Vector3(-48f,-.1f,29f), 20f, 1.2f);
-            Boat(harbor, new Vector3(-53f,-.1f,-19f), -25f, .85f);
-            // Seafront lookout, retained as scenery rather than an economic project.
-            harbor.Round(sidewalk, new Vector3(-42.5f,.2f,43f), new Vector3(2.5f,.4f,2.5f));
-            harbor.Round(cream, new Vector3(-42.5f,1.7f,43f), new Vector3(1f,2.8f,1f));
-            harbor.Round(teal, new Vector3(-42.5f,3.35f,43f), new Vector3(1.3f,.55f,1.3f));
-            harbor.Add(geometry.Cone, terracotta, new Vector3(-42.5f,4f,43f),
-                new Vector3(1.6f,.8f,1.6f), Quaternion.identity);
-            harbor.Build("Fishing harbor / lookout", cityRoot, Vector3.zero);
+            completedCoastRoad = completed.Build("Completed Rashid road • full city-coast route",
+                cityRoot, Vector3.zero);
+            completedCoastRoad.SetActive(false);
+            // Maritime diorama details are illustrative, not mapped harbor facilities.
+            var maritime = new CityMeshBatch(geometry);
+            float coastalSpan = coast[coast.Length - 1].z - coast[0].z;
+            for (int i = 0; i < 2; i++)
+            {
+                float z = coast[0].z + coastalSpan * (i == 0 ? .24f : .76f);
+                Boat(maritime,new Vector3(ShoreX(z) - 8f,-.04f,z),
+                    i == 0 ? 20f : -25f, i == 0 ? 1.2f : .85f);
+            }
+            float lookoutZ = coast[0].z + coastalSpan * .88f;
+            Vector3 lookout = new Vector3(ShoreX(lookoutZ) + 2.5f,0f,lookoutZ);
+            maritime.Round(sidewalk,lookout + Vector3.up * .2f,new Vector3(2.5f,.4f,2.5f));
+            maritime.Round(cream,lookout + Vector3.up * 1.7f,new Vector3(1f,2.8f,1f));
+            maritime.Round(teal,lookout + Vector3.up * 3.35f,new Vector3(1.3f,.55f,1.3f));
+            maritime.Add(geometry.Cone,terracotta,lookout + Vector3.up * 4f,
+                new Vector3(1.6f,.8f,1.6f),Quaternion.identity);
+            maritime.Build("Illustrative boats / seafront lookout",cityRoot,Vector3.zero);
+            var arrow = new CityMeshBatch(geometry);
+            Vector3 northPoint = new Vector3(east - 8f,.25f,north - 10f);
+            arrow.Beam(teal,northPoint,northPoint + Vector3.forward * 6f,.36f);
+            arrow.Add(geometry.Cone,teal,northPoint + Vector3.forward * 6.5f,
+                new Vector3(1.9f,1.7f,.35f),Quaternion.Euler(90f,0f,0f));
+            arrow.Build("North ↑",cityRoot,Vector3.zero);
+        }
+
+        private static Vector3 Point(GeoPoint p) { return new Vector3(p.x,0f,p.z); }
+
+        private static Vector3 ExtrapolateAtZ(GeoPoint a, GeoPoint b, float z)
+        {
+            if (Mathf.Abs(b.z - a.z) < .001f) return new Vector3(a.x,0f,z);
+            return new Vector3(Mathf.LerpUnclamped(a.x,b.x,(z - a.z) / (b.z - a.z)),0f,z);
+        }
+
+        private void AddQuad(CityMeshBatch batch, Material material, Vector3 a, Vector3 b,
+            Vector3 c, Vector3 d)
+        {
+            var mesh = geometry.Own(new Mesh
+            {
+                vertices = new[] { a,b,c,d },
+                triangles = new[] { 0,1,2,0,2,3 }
+            });
+            mesh.RecalculateNormals();
+            batch.Add(mesh,material,Vector3.zero,Vector3.one,Quaternion.identity);
+        }
+
+        private static float PathLength(GeoPoint[] path)
+        {
+            float length = 0f;
+            for (int i = 1; i < path.Length; i++)
+                length += Vector3.Distance(Point(path[i - 1]),Point(path[i]));
+            return length;
+        }
+
+        private static Vector3 RoutePoint(GeoPoint[] path, float distance, out Vector3 direction)
+        {
+            for (int i = 1; i < path.Length; i++)
+            {
+                Vector3 delta = Point(path[i]) - Point(path[i - 1]);
+                float length = delta.magnitude;
+                if (length < .001f) continue;
+                if (distance <= length || i == path.Length - 1)
+                {
+                    direction = delta / length;
+                    return Point(path[i - 1]) + direction * Mathf.Clamp(distance,0f,length);
+                }
+                distance -= length;
+            }
+            direction = Vector3.forward;
+            return Point(path[path.Length - 1]);
+        }
+
+        private void Path(CityMeshBatch batch, GeoPoint[] path, Material material, float width, float y)
+        {
+            for (int i = 1; i < path.Length; i++)
+            {
+                Vector3 a = Point(path[i - 1]), b = Point(path[i]);
+                if ((a - b).sqrMagnitude < .001f) continue;
+                Vector3 tangent = (b - a).normalized;
+                Vector3 right = new Vector3(tangent.z,0f,-tangent.x) * (width * .5f);
+                AddQuad(batch,material,a - right + Vector3.up * y,
+                    b - right + Vector3.up * y,b + right + Vector3.up * y,
+                    a + right + Vector3.up * y);
+                batch.Round(material,b + Vector3.up * (y - .018f),new Vector3(width,.035f,width));
+            }
         }
 
         private void Road(CityMeshBatch batch, Vector3 point, float width, float length, bool vertical)
@@ -203,20 +295,36 @@ namespace NewGaza
         {
             int count = GameCatalog.Districts.Length;
             districts = new DistrictView[count];
+            int coastalIndex = count - 1;
+            GeoPoint[] route = GameGeography.RashidRoute;
+            float routeLength = PathLength(route);
+            Vector3 routeDirection;
+            Vector3 routeMidpoint = RoutePoint(route,routeLength * .5f,out routeDirection);
             for (int i = 0; i < count; i++)
             {
-                bool coast = i == 10;
+                bool coast = i == coastalIndex;
                 var definition = GameCatalog.Districts[i];
                 var district = new DistrictView();
-                district.center = coast ? new Vector3(-36.6f,0f,0f) :
-                    new Vector3(i % 2 == 0 ? -15f : 15f, 0f, -38f + i / 2 * 19f);
+                // Keep the sourced center exact; only illustrative tile geometry can shrink.
+                district.center = coast ? routeMidpoint : Point(GameGeography.DistrictPoint(i));
                 district.root = new GameObject("District " + (i + 1) + " • " + definition.name).transform;
                 district.root.SetParent(cityRoot, false);
                 district.root.localPosition = district.center;
+                if (!coast)
+                {
+                    float nearest = float.MaxValue;
+                    for (int j = 0; j < coastalIndex; j++)
+                        if (j != i)
+                            nearest = Mathf.Min(nearest,Vector3.Distance(district.center,Point(GameGeography.DistrictPoint(j))));
+                    float inlandClearance = district.center.x - ShoreX(district.center.z);
+                    district.root.localScale = Vector3.one *
+                        Mathf.Clamp(Mathf.Min((nearest - 1f) / 30f,
+                            (inlandClearance - 1f) / 14f),.06f,1f);
+                }
                 districts[i] = district;
                 var baseBatch = new CityMeshBatch(geometry);
-                Vector3 tileSize = coast ? new Vector3(3.7f,.15f,82f) : new Vector3(25.5f,.15f,14.8f);
-                baseBatch.Box(coast ? sand : limestone, new Vector3(0f,.075f,0f), tileSize);
+                Vector3 tileSize = new Vector3(25.5f,.15f,14.8f);
+                if (!coast) baseBatch.Box(limestone, new Vector3(0f,.075f,0f), tileSize);
                 if (!coast)
                 {
                     baseBatch.Box(districtColors[i], new Vector3(0f,.17f,-7.15f), new Vector3(25.4f,.12f,.28f));
@@ -233,27 +341,45 @@ namespace NewGaza
                     // columns, water urns, orchard rows, market awnings, or stepped gateways.
                     DistrictSignature(baseBatch, i);
                 }
-                GameObject baseObject = baseBatch.Build("District paving and identity", district.root, Vector3.zero);
-                AddHit(baseObject, i, -1, new Vector3(0f,.12f,0f), tileSize + new Vector3(0f,.1f,0f));
+                GameObject baseObject = baseBatch.Build("Illustrative center tile • not a district boundary",
+                    district.root, Vector3.zero);
+                if (!coast)
+                    AddHit(baseObject, i, -1, new Vector3(0f,.12f,0f), tileSize + new Vector3(0f,.1f,0f));
                 district.plots = new PlotView[definition.projects.Length];
                 int columns = definition.projects.Length <= 6 ? 3 : 4;
                 int rows = Mathf.Max(2, Mathf.CeilToInt(definition.projects.Length / (float)columns));
                 for (int p = 0; p < definition.projects.Length; p++)
                 {
-                    Vector3 size = coast ? new Vector3(3.2f,0f,Mathf.Min(9f,76f / Mathf.Max(1,definition.projects.Length))) :
+                    Vector3 size = coast ? new Vector3(7.6f,0f,Mathf.Min(11f,routeLength / Mathf.Max(1,definition.projects.Length) * .58f)) :
                         new Vector3(22.4f / columns,0f,12f / rows);
-                    Vector3 position = coast ?
-                        new Vector3(0f,.18f,-36f + (p + .5f) * 72f / Mathf.Max(1,definition.projects.Length)) :
-                        new Vector3(-11.2f + (p % columns + .5f) * size.x, .18f,
-                            -6f + (p / columns + .5f) * size.z);
+                    Vector3 position;
+                    if (coast)
+                    {
+                        Vector3 direction;
+                        Vector3 onRoute = RoutePoint(route,routeLength * (p + .5f) /
+                            definition.projects.Length,out direction);
+                        position = onRoute + new Vector3(direction.z,0f,-direction.x) * 9f -
+                            district.center + Vector3.up * .18f;
+                    }
+                    else position = new Vector3(-11.2f + (p % columns + .5f) * size.x, .18f,
+                        -6f + (p / columns + .5f) * size.z);
                     Transform anchor = new GameObject("Plot " + p + " • " + definition.projects[p].name).transform;
                     anchor.SetParent(district.root, false);
                     anchor.localPosition = position;
+                    if (coast)
+                    {
+                        Vector3 direction;
+                        RoutePoint(route,routeLength * (p + .5f) / definition.projects.Length,out direction);
+                        anchor.localRotation = Quaternion.LookRotation(direction,Vector3.up);
+                    }
                     district.plots[p] = new PlotView { anchor = anchor, size = size, definition = definition.projects[p] };
                     AddHit(anchor.gameObject, i, p, new Vector3(0f,1.1f,0f),
                         new Vector3(size.x * .85f,2.2f,size.z * .83f));
                 }
-                Vector3 salvagePos = coast ? new Vector3(0f,.2f,-42f) : new Vector3(-11f,.2f,-6.1f);
+                Vector3 salvagePos = coast ?
+                    new Vector3(routeDirection.z,0f,-routeDirection.x) * 17f +
+                    Vector3.up * .2f :
+                    new Vector3(-11f,.2f,-6.1f);
                 var salvage = new CityMeshBatch(geometry);
                 RubblePile(salvage, Vector3.zero, 1.1f, i + 31);
                 district.rubble = salvage.Build("Local rubble • clearing progress", district.root, salvagePos);
@@ -268,10 +394,11 @@ namespace NewGaza
                 badge.Box(white, new Vector3(-.13f,.1f,0f), new Vector3(.35f,.06f,.11f), -45f);
                 badge.Box(white, new Vector3(.15f,.1f,.09f), new Vector3(.6f,.06f,.11f), 45f);
                 district.badge = badge.Build("Claimed district medallion", district.root,
-                    coast ? new Vector3(0f,.3f,42f) : new Vector3(10.8f,.32f,-6.2f));
+                    coast ? Point(route[route.Length - 1]) - district.center + Vector3.up * .3f :
+                    new Vector3(10.8f,.32f,-6.2f));
                 district.badge.SetActive(false);
                 district.crane = BuildCrane(district.root,
-                    coast ? new Vector3(.7f,.25f,0f) : new Vector3(10.8f,.25f,5.5f));
+                    coast ? salvagePos + new Vector3(5f,.05f,1.5f) : new Vector3(10.8f,.25f,5.5f));
                 district.crane.SetActive(false);
             }
         }
@@ -363,8 +490,11 @@ namespace NewGaza
             int current = Mathf.Clamp(state.selectedDistrict,0,districts.Length - 1);
             factoryHit.districtIndex = current;
             if (current != selectedDistrict) FocusDistrict(current);
-            fleet.Refresh(state, DistrictPosition(Mathf.Clamp(state.jobDistrict,0,districts.Length - 1)),
-                new Vector3(35f,.2f,-35f));
+            ProjectState coastalRoad = FindProject(state.districts[districts.Length - 1],"road");
+            completedCoastRoad.SetActive(coastalRoad != null && coastalRoad.completed);
+            fleet.Refresh(state,
+                districts[Mathf.Clamp(state.jobDistrict,0,districts.Length - 1)].rubble.transform.position,
+                factorySite.transform.position);
         }
 
         private static ProjectState FindProject(DistrictState district, string id)
@@ -389,7 +519,7 @@ namespace NewGaza
                     MeshRenderer renderer = filter.GetComponent<MeshRenderer>();
                     renderer.enabled = false;
                     target.Add(filter.sharedMesh,renderer.sharedMaterial,plot.anchor.localPosition,
-                        Vector3.one,Quaternion.identity);
+                        Vector3.one,plot.anchor.localRotation);
                 }
             }
             // Source meshes remain cached for incremental stage changes. Only this district's
@@ -528,6 +658,15 @@ namespace NewGaza
             switch (project.kind)
             {
                 case ProjectKind.Road:
+                    if (district == GameCatalog.Districts.Length - 1)
+                    {
+                        // Completing this plot switches on the entire mapped coastal road
+                        // in Refresh; the plot itself is only its interactive marker.
+                        batch.Round(teal,new Vector3(0f,.35f,0f),new Vector3(1.6f,.35f,1.6f));
+                        batch.Box(white,new Vector3(0f,.56f,0f),new Vector3(.95f,.04f,.16f));
+                        batch.Box(white,new Vector3(0f,.56f,.31f),new Vector3(.65f,.04f,.11f));
+                        break;
+                    }
                     Road(batch, new Vector3(0f,.19f,0f), footprint.x * .55f, footprint.z * .95f, true);
                     for (int n = 0; n < 5; n++)
                         batch.Box(white,new Vector3(-footprint.x * .2f + n * footprint.x * .1f,.3f,0f),
@@ -812,12 +951,15 @@ namespace NewGaza
                     new Vector3(.07f,.28f,.28f),rotation);
         }
 
-        private void Lamp(CityMeshBatch batch, Vector3 pos, float yaw)
+        private void Lamp(CityMeshBatch batch, Vector3 pos, float yaw, float scale = 1f)
         {
-            Vector3 arm = Quaternion.Euler(0f,yaw,0f) * new Vector3(.45f,0f,0f);
-            batch.Round(teal,pos + new Vector3(0f,1.35f,0f),new Vector3(.085f,2.7f,.085f));
-            batch.Beam(teal,pos + Vector3.up * 2.65f,pos + Vector3.up * 2.65f + arm,.07f);
-            batch.Box(cream,pos + Vector3.up * 2.62f + arm,new Vector3(.3f,.13f,.2f),yaw);
+            Vector3 arm = Quaternion.Euler(0f,yaw,0f) * new Vector3(.45f * scale,0f,0f);
+            batch.Round(teal,pos + new Vector3(0f,1.35f * scale,0f),
+                new Vector3(.085f,2.7f,.085f) * scale);
+            batch.Beam(teal,pos + Vector3.up * (2.65f * scale),
+                pos + Vector3.up * (2.65f * scale) + arm,.07f * scale);
+            batch.Box(cream,pos + Vector3.up * (2.62f * scale) + arm,
+                new Vector3(.3f,.13f,.2f) * scale,yaw);
         }
 
         private void Boat(CityMeshBatch batch, Vector3 pos, float yaw, float scale)
@@ -835,6 +977,7 @@ namespace NewGaza
 
         private void BuildFactorySite()
         {
+            Vector3 depot = FactoryPosition();
             var batch = new CityMeshBatch(geometry);
             batch.Box(sidewalk,new Vector3(0f,.17f,0f),new Vector3(7.6f,.25f,12f));
             batch.Box(asphalt,new Vector3(-1.4f,.32f,0f),new Vector3(2.4f,.1f,11f));
@@ -845,8 +988,43 @@ namespace NewGaza
                 batch.Box(i % 2 == 0 ? teal : terracotta,new Vector3(2.3f,.94f,-3.8f + i * 2.3f),
                     new Vector3(1f,.06f,1.4f));
             }
-            factorySite = batch.Build("Recycling depot • dispatch apron",cityRoot,new Vector3(36f,0f,-35f));
+            factorySite = batch.Build("Recycling depot • dispatch apron",cityRoot,depot);
             factoryHit = AddHit(factorySite,0,-3,new Vector3(0f,1f,0f),new Vector3(7.6f,2f,12f));
+        }
+
+        private Vector3 FactoryPosition()
+        {
+            int count = GameCatalog.Districts.Length - 1;
+            Vector3 center = Vector3.zero;
+            for (int i = 0; i < count; i++) center += Point(GameGeography.DistrictPoint(i));
+            center /= count;
+            Vector3 best = center;
+            float bestScore = float.NegativeInfinity;
+            for (int x = -2; x <= 2; x++)
+                for (int z = -2; z <= 2; z++)
+                {
+                    Vector3 candidate = center + new Vector3(x * 9f,0f,z * 9f);
+                    if (candidate.x < ShoreX(candidate.z) + 16f) continue;
+                    float clearance = float.MaxValue;
+                    for (int i = 0; i < count; i++)
+                        clearance = Mathf.Min(clearance,Vector3.Distance(candidate,Point(GameGeography.DistrictPoint(i))));
+                    float score = clearance - Vector3.Distance(candidate,center) * .3f;
+                    if (score <= bestScore) continue;
+                    bestScore = score;
+                    best = candidate;
+                }
+            if (float.IsNegativeInfinity(bestScore))
+                throw new InvalidOperationException("No land position available for the recycling depot.");
+            return best;
+        }
+
+        private static float ShoreX(float z)
+        {
+            GeoPoint[] coast = GameGeography.Coastline;
+            for (int i = 1; i < coast.Length; i++)
+                if (z <= coast[i].z)
+                    return ExtrapolateAtZ(coast[i - 1],coast[i],z).x;
+            return ExtrapolateAtZ(coast[coast.Length - 2],coast[coast.Length - 1],z).x;
         }
 
         private void ReplaceFactory()
@@ -910,7 +1088,10 @@ namespace NewGaza
             selectedDistrict = index;
             DistrictView view = districts[index];
             districtSelection.transform.localPosition = view.center + Vector3.up * .32f;
-            districtSelection.transform.localScale = index == 10 ? new Vector3(3.5f,1f,83f) : new Vector3(25.6f,1f,14.9f);
+            // The final focus is a route midpoint marker, not a fictitious long parcel.
+            districtSelection.transform.localScale = index == districts.Length - 1 ?
+                new Vector3(5f,1f,5f) :
+                new Vector3(25.6f,1f,14.9f) * view.root.localScale.x;
             if (changed) SetSelectedPlot(-1);
             else SetSelectedPlot(selectedPlot);
         }
@@ -924,19 +1105,23 @@ namespace NewGaza
             DistrictView district = districts[selectedDistrict];
             if (index == -3)
             {
-                selection.transform.localPosition = new Vector3(36f,.46f,-35f);
+                selection.transform.position = factorySite.transform.position + transform.up * .46f;
+                selection.transform.rotation = factorySite.transform.rotation;
                 selection.transform.localScale = new Vector3(7.7f,1f,12.1f);
             }
             else if (index == -2)
             {
                 selection.transform.position = district.rubble.transform.position + transform.up * .2f;
-                selection.transform.localScale = new Vector3(2.3f,1f,2.2f);
+                selection.transform.rotation = district.root.rotation;
+                selection.transform.localScale = new Vector3(2.3f,1f,2.2f) * district.root.localScale.x;
             }
             else if (index >= 0 && index < district.plots.Length)
             {
                 PlotView plot = district.plots[index];
                 selection.transform.position = plot.anchor.position + transform.up * .18f;
-                selection.transform.localScale = new Vector3(plot.size.x * .9f,1f,plot.size.z * .88f);
+                selection.transform.rotation = plot.anchor.rotation;
+                selection.transform.localScale = new Vector3(plot.size.x * .9f,1f,
+                    plot.size.z * .88f) * district.root.localScale.x;
             }
             else selection.SetActive(false);
         }
@@ -947,16 +1132,22 @@ namespace NewGaza
             finale = true;
             // Visual celebration only: never alters completion flags or writes a save.
             var batch = new CityMeshBatch(geometry);
-            for (int i = 0; i < 18; i++)
+            GeoPoint[] route = GameGeography.RashidRoute;
+            float length = PathLength(route);
+            for (float d = 4f; d < length - 4f; d += 12f)
             {
-                Vector3 p = new Vector3(-32.8f,.4f,-42f + i * 5f);
+                Vector3 direction;
+                Vector3 p = RoutePoint(route,d,out direction) +
+                    new Vector3(direction.z,.4f,-direction.x) * 3.9f;
+                Vector3 along = direction * 4.5f;
                 batch.Beam(teal,p,p + Vector3.up * 3.1f,.06f);
-                batch.Box(i % 2 == 0 ? terracotta : teal,p + new Vector3(.25f,2.8f,0f),
+                batch.Box(((int)d / 12) % 2 == 0 ? terracotta : teal,p + new Vector3(.25f,2.8f,0f),
                     new Vector3(.5f,.45f,.035f));
-                batch.Beam(cream,p + new Vector3(0f,2.9f,0f),p + new Vector3(0f,2.9f,4.5f),.025f);
+                batch.Beam(cream,p + new Vector3(0f,2.9f,0f),p + Vector3.up * 2.9f + along,.025f);
                 for (int j = 0; j < 4; j++)
                     batch.Add(geometry.Cone,j % 2 == 0 ? yellow : cream,
-                        p + new Vector3(0f,2.74f,.6f + j),new Vector3(.2f,.3f,.15f),Quaternion.Euler(180f,0f,0f));
+                        p + Vector3.up * 2.74f + direction * (.6f + j),
+                        new Vector3(.2f,.3f,.15f),Quaternion.Euler(180f,0f,0f));
             }
             batch.Build("Finale • corniche celebration bunting",cityRoot,Vector3.zero);
             selection.SetActive(false);

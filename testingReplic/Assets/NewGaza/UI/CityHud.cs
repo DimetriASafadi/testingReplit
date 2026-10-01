@@ -533,7 +533,7 @@ namespace NewGaza
 
         private void BuildMap()
         {
-            PageHeading("خريطة الإعمار", "11 منطقة · اختر للزيارة دون تكلفة. تُفتح المنطقة التالية فقط بعد استلام مكافأة إنجاز 100%.");
+            PageHeading("خريطة الإعمار", "من الشجاعية شرقًا إلى البحر غربًا · مواقع مرجعية، وليست حدود الأحياء. استلام مكافأة 100% يفتح التالي.");
             for (int d = 0; d < GameCatalog.Districts.Length; d++)
             {
                 int index = d;
@@ -563,6 +563,10 @@ namespace NewGaza
                     description.SetText(d == 10 ? "مقفل حتى استلام مكافآت الأحياء العشرة. منطقة ختامية مميزة." :
                         "أكمل " + GameCatalog.Districts[d - 1].name + " بنسبة 100% واستلم المكافأة لفتح هذا الحي.");
             }
+            Note("السهم يشير إلى الشمال. مواقع الأحياء والساحل مستندة إلى خرائط؛ قطع البناء والطرق المحلية تمثيلية.", Muted);
+            Note(GameGeography.Attribution, Muted);
+            ListAction("حقوق بيانات OpenStreetMap",
+                () => Application.OpenURL("https://www.openstreetmap.org/copyright"), Card);
         }
 
         private void BuildProjects(bool investmentsOnly)

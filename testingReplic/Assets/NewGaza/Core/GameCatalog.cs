@@ -9,8 +9,8 @@ namespace NewGaza.Core
         public const long TruckCost = 6000;
         public const long BulldozerCost = 5000;
 
-        // Beyond Shujaiya and Zeitoun, neighborhood order is provisional content,
-        // not a statement about actual reconstruction priorities or boundaries.
+        // User-approved neighborhoods, unlocked east-to-west using mapped representative
+        // positions. This is game progression, not real reconstruction priorities.
         public static readonly DistrictDefinition[] Districts = BuildDistricts();
 
         public static GameState CreateNew(long now)
@@ -34,23 +34,21 @@ namespace NewGaza.Core
 
         private static DistrictDefinition[] BuildDistricts()
         {
-            string[] names =
-            {
-                "الشجاعية", "الزيتون", "التفاح", "الدرج", "الصبرة",
-                "تل الهوى", "الرمال", "الشيخ رضوان", "النصر", "الشاطئ", "شارع الرشيد"
-            };
+            var locations = GameGeography.Districts;
             string[] farms =
             {
-                "مشتل الشجاعية", "بستان الزيتون", "بستان التفاح", "حديقة أعشاب الدرج",
-                "مزرعة خضار الصبرة", "مشتل تل الهوى", "حديقة زهور الرمال",
-                "مزرعة الشيخ رضوان", "بستان النصر", "حديقة الشاطئ", "مشتل الساحل"
+                "مشتل الشجاعية", "بستان التفاح", "مزرعة الشيخ رضوان", "بستان الكرامة",
+                "حديقة أعشاب البلدة القديمة", "مزرعة خضار الصبرة", "بستان الزيتون",
+                "حديقة زهور الرمال", "مشتل تل الهوا", "مزرعة الشيخ عجلين", "مشتل الساحل"
             };
             string[] shops =
             {
-                "سوق الشجاعية", "معصرة الزيتون", "سوق التفاح", "متاجر الدرج",
-                "مخبز الصبرة", "مقهى تل الهوى", "مكتبة الرمال", "سوق الشيخ رضوان",
-                "متاجر النصر", "سوق الشاطئ", "فندق الضيافة الساحلي"
+                "سوق الشجاعية", "سوق التفاح", "سوق الشيخ رضوان", "متاجر الكرامة",
+                "سوق البلدة القديمة", "مخبز الصبرة", "معصرة الزيتون", "مكتبة الرمال",
+                "مقهى تل الهوا", "سوق الشيخ عجلين", "فندق الضيافة الساحلي"
             };
+            var names = new string[locations.Length];
+            for (int i = 0; i < locations.Length; i++) names[i] = locations[i].name;
             var result = new DistrictDefinition[names.Length];
             for (int i = 0; i < result.Length; i++)
             {
@@ -60,7 +58,7 @@ namespace NewGaza.Core
                     name = names[i],
                     rarity = finale ? "ختامي" : i < 3 ? "عادي" : i < 6 ? "نادر" : i < 8 ? "ملحمي" : "أسطوري",
                     description = finale
-                        ? "واجهة المدينة النهائية: الكورنيش والضيافة بعد استلام مكافآت الأحياء العشرة."
+                        ? "شارع الرشيد المطل على البحر، على امتداد ساحل المدينة؛ المشروع الختامي بعد الأحياء العشرة."
                         : "أعد بناء " + names[i] + " بالكامل، ثم استلم المكافأة لفتح الحي التالي.",
                     rubbleLoads = 4 + i,
                     completionReward = finale ? 1000000 : 100000 + i * 25000,

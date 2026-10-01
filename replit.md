@@ -11,4 +11,4 @@
 - Source checks: `dotnet run --project testingReplic/Tests/SourceChecks/SourceChecks.csproj --configuration Release`.
 - Keep `.meta` GUIDs with assets. A locally renamed Unity file in a user's stack trace may not exist in this workspace; distinguish copies instead of assuming an asset-cache problem.
 - No paid ad simulation, no fabricated reward callbacks. Real rewarded ads, native sharing/video capture, cloud saves, and store signing are not configured.
-- The current map is a stylized diorama, not verified geographic reconstruction. Later neighborhood order is provisional; do not imply official boundaries or reconstruction priorities.
+- Geography now uses cited representative district locations and generalized OSM coastline/Rashid route; see `testingReplic/GEOGRAPHY.md`. The ten user-approved districts unlock east-to-west from Shujaiya, then final Rashid. Preserve real north/south positions; illustrative project tiles are NOT official boundaries or a surveyed street/building map.

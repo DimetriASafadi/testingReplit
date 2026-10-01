@@ -12,7 +12,7 @@ internal static class Program
     {
         var tests = new Action[]
         {
-            Catalog, AffordableStart, InvalidActions, SalvagePhases, OfflineAndPersistence,
+            Catalog, Geography, AffordableStart, InvalidActions, SalvagePhases, OfflineAndPersistence,
             ProjectValidation, AgricultureAndIndustry, CommerceAndRemainders,
             DailyAndRollback, Upgrades, OverflowAndCorruption, RecyclingWaitsForStorage, TransactionAtomicity, AllDistrictProgression,
             EarnedProgressionWithoutGrants
@@ -78,7 +78,7 @@ internal static class Program
     {
         Equal(11, GameCatalog.Districts.Length, "Ten neighborhoods and final Rashid");
         Equal("الشجاعية", GameCatalog.Districts[0].name, "First district");
-        Equal("الزيتون", GameCatalog.Districts[1].name, "Second district");
+        Equal("التفاح", GameCatalog.Districts[1].name, "Second district follows east-to-west order");
         Equal("شارع الرشيد", GameCatalog.Districts[10].name, "Final district");
         string[] rarityTiers = { "عادي", "نادر", "ملحمي", "أسطوري" };
         var observedTiers = new HashSet<string>();
@@ -116,6 +116,72 @@ internal static class Program
         Equal(7200, Array.Find(first, p => p.id == "housing").durationSeconds, "Small house timer");
         Equal(150000L, Array.Find(first, p => p.id == "road").cost, "Road cost");
         Equal(64800, Array.Find(first, p => p.id == "road").durationSeconds, "Road timer");
+    }
+
+    private static void Geography()
+    {
+        string[] expected =
+        {
+            "الشجاعية", "التفاح", "الشيخ رضوان", "الكرامة", "البلدة القديمة",
+            "الصبرة", "الزيتون", "الرمال", "تل الهوا", "الشيخ عجلين", "شارع الرشيد"
+        };
+        string[] projectIds = { "water", "power", "housing", "road", "park", "services", "farm", "commerce", "industry" };
+        Equal(expected.Length, GameGeography.Districts.Length, "Exactly ten approved neighborhoods and final route");
+        var ids = new HashSet<string>();
+        var names = new HashSet<string>();
+        for (int d = 0; d < expected.Length; d++)
+        {
+            var location = GameGeography.Districts[d];
+            Equal(expected[d], location.name, "Verified geographic progression order");
+            Equal(location.name, GameCatalog.Districts[d].name, "Map and economy agree");
+            Check(ids.Add(location.id) && names.Add(location.name), "Unique geographic identity");
+            Check(location.latitude > 31.48 && location.latitude < 31.57 &&
+                location.longitude > 34.39 && location.longitude < 34.49, "Gaza reference point, not a similarly named locality");
+            Check(location.sourceUrl.StartsWith("https://"), "Every point has a source");
+            var point = GameGeography.DistrictPoint(d);
+            Check(point.x > GameGeography.MapMinX && point.x < GameGeography.MapMaxX &&
+                point.z > GameGeography.MapMinZ && point.z < GameGeography.MapMaxZ, "Camera bounds contain all districts");
+            if (d > 0 && d < 10)
+                Check(location.longitude < GameGeography.Districts[d - 1].longitude, "East-to-west normal district progression");
+            Equal(projectIds.Length, GameCatalog.Districts[d].projects.Length, "Legacy save project count unchanged");
+            for (int p = 0; p < projectIds.Length; p++)
+                Equal(projectIds[p], GameCatalog.Districts[d].projects[p].id, "Legacy milestone project IDs unchanged");
+        }
+        var origin = GameGeography.Project(GameGeography.OriginLatitude, GameGeography.OriginLongitude);
+        Check(Math.Abs(origin.x) < .001 && Math.Abs(origin.z) < .001, "Projection origin");
+        var east = GameGeography.Project(GameGeography.OriginLatitude, GameGeography.OriginLongitude + .01);
+        var north = GameGeography.Project(GameGeography.OriginLatitude + .01, GameGeography.OriginLongitude);
+        Check(east.x > 47 && east.x < 48 && Math.Abs(east.z) < .001, "Longitude projects east with latitude correction");
+        Check(north.z > 55 && north.z < 56 && Math.Abs(north.x) < .001, "Latitude projects north at fixed scale");
+        Equal(GameGeography.Coastline.Length, GameGeography.RashidRoute.Length, "Matched shoreline sampling");
+        double routeLength = 0;
+        for (int i = 0; i < GameGeography.Coastline.Length; i++)
+        {
+            var coast = GameGeography.Coastline[i];
+            var road = GameGeography.RashidRoute[i];
+            Check(road.x > coast.x, "Rashid is on land, not in the sea");
+            Check(Math.Abs(road.z - coast.z) < .001, "Same latitude for coast and road samples");
+            if (i > 0)
+            {
+                var previous = GameGeography.RashidRoute[i - 1];
+                Check(coast.z > GameGeography.Coastline[i - 1].z, "Coast ordered southwest to northeast");
+                Check(road.z > previous.z, "Route ordered southwest to northeast");
+                routeLength += Math.Sqrt(Math.Pow(road.x - previous.x, 2) + Math.Pow(road.z - previous.z, 2));
+            }
+        }
+        Check(routeLength / GameGeography.UnitsPerKilometre > 8 &&
+            routeLength / GameGeography.UnitsPerKilometre < 12, "Final route covers the city waterfront, not a tiny parcel");
+        Check(GameGeography.DistrictPoint(3).z > GameGeography.DistrictPoint(2).z,
+            "Karama stays north of Sheikh Radwan, never moved into a game grid");
+        var oldCheckpoint = GameCatalog.CreateNew(Epoch);
+        oldCheckpoint.coins = 43210;
+        oldCheckpoint.stock.iron = 7;
+        string json = JsonSerializer.Serialize(oldCheckpoint, new JsonSerializerOptions { IncludeFields = true });
+        var restored = new EconomyService(JsonSerializer.Deserialize<GameState>(json,
+            new JsonSerializerOptions { IncludeFields = true }));
+        Equal(43210L, restored.State.coins, "Existing schema retains coins");
+        Equal(7, restored.State.stock.iron, "Existing schema retains resources");
+        Equal(1, restored.State.version, "Geographic labels do not reset or change save schema");
     }
 
     private static void AffordableStart()
