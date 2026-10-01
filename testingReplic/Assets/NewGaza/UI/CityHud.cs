@@ -26,14 +26,22 @@ namespace NewGaza
             public Func<float> progress;
         }
 
-        private static readonly Color Navy = new Color32(13, 30, 45, 255);
-        private static readonly Color Panel = new Color32(22, 43, 58, 248);
-        private static readonly Color Card = new Color32(30, 53, 67, 255);
-        private static readonly Color Cream = new Color32(246, 240, 219, 255);
-        private static readonly Color Muted = new Color32(167, 190, 190, 255);
-        private static readonly Color Teal = new Color32(45, 155, 142, 255);
-        private static readonly Color Gold = new Color32(230, 190, 103, 255);
-        private static readonly Color Red = new Color32(248, 163, 140, 255);
+        private static readonly Color Navy = new Color32(23, 29, 34, 255);
+        private static readonly Color Panel = new Color32(34, 42, 47, 250);
+        private static readonly Color Card = new Color32(46, 56, 61, 255);
+        private static readonly Color Cream = new Color32(244, 243, 237, 255);
+        private static readonly Color Muted = new Color32(190, 200, 198, 255);
+        private static readonly Color Teal = new Color32(74, 117, 104, 255);
+        private static readonly Color SelectedNav = new Color32(76, 114, 103, 255);
+        private static readonly Color Gold = new Color32(216, 181, 105, 255);
+        private static readonly Color Red = new Color32(224, 123, 112, 255);
+        private sealed class NavItem
+        {
+            public Page page;
+            public Button button;
+            public ArabicLabel label;
+            public Image icon;
+        }
         private GameSession session;
         private CityWorld world;
         private CityCamera cityCamera;
@@ -51,6 +59,8 @@ namespace NewGaza
         private ArabicLabel modalTitle, modalSubtitle, toastLabel;
         private InputField nameInput;
         private readonly List<Binding> modalBindings = new List<Binding>();
+        private readonly List<NavItem> navItems = new List<NavItem>();
+        private CityHudIcons hudIcons;
         private Page page;
         private int selectedPlot = -1;
         private int lastDistrict = -1;
@@ -77,6 +87,8 @@ namespace NewGaza
             arabicFont = Resources.Load<Font>("NewGazaArabic");
             if (arabicFont == null)
                 throw new InvalidOperationException("الخط العربي مفقود: Resources/NewGazaArabic.ttf");
+            hudIcons?.Dispose();
+            hudIcons = new CityHudIcons();
             roundedSprite = CreateRoundedSprite();
             EnsureEventSystem();
             BuildCanvas();
@@ -123,12 +135,12 @@ namespace NewGaza
         private void BuildHud()
         {
             header = Surface("City header", safe, Panel);
-            titleLabel = Label(header, "غزة الجديدة", 32, Gold);
-            balanceLabel = Label(header, "", 25, Cream);
+            titleLabel = Label(header, "غزة الجديدة", 32, Cream);
+            balanceLabel = Label(header, "", 25, Gold);
             resourceLabel = Label(header, "", 18, Muted);
-            var gift = ActionButton(header, "هدية", () => OpenPage(Page.Gift), Teal);
+            var gift = ActionButton(header, "هدية", () => OpenPage(Page.Gift), Teal, CityHudIcons.Icon.Gift);
             gift.name = "Daily gift";
-            var settings = ActionButton(header, "خيارات", () => OpenPage(Page.Settings), Card);
+            var settings = ActionButton(header, "خيارات", () => OpenPage(Page.Settings), Card, CityHudIcons.Icon.Settings);
             settings.name = "Settings";
             var districtStrip = Rect("Neighborhood progress", header);
             districtLabel = Label(districtStrip, "", 18, Cream);
@@ -160,11 +172,11 @@ namespace NewGaza
             selectionObject.SetActive(false);
 
             navigation = Surface("Bottom navigation", safe, Navy);
-            AddNav("الخريطة", Page.Map);
-            AddNav("المشاريع", Page.Projects);
-            AddNav("الأسطول", Page.Fleet);
-            AddNav("استثمارات", Page.Investments);
-            AddNav("الموارد", Page.Resources);
+            AddNav("الخريطة", Page.Map, CityHudIcons.Icon.Map);
+            AddNav("المشاريع", Page.Projects, CityHudIcons.Icon.Projects);
+            AddNav("الأسطول", Page.Fleet, CityHudIcons.Icon.Fleet);
+            AddNav("استثمارات", Page.Investments, CityHudIcons.Icon.Investment);
+            AddNav("الموارد", Page.Resources, CityHudIcons.Icon.Resources);
 
             toastPanel = Surface("Notification", safe, Navy);
             toastObject = toastPanel.gameObject;
@@ -174,10 +186,30 @@ namespace NewGaza
             toastObject.SetActive(false);
         }
 
-        private void AddNav(string text, Page target)
+        private void AddNav(string text, Page target, CityHudIcons.Icon icon)
         {
-            var button = ActionButton(navigation, text, () => OpenPage(target), Panel);
+            var button = ActionButton(navigation, text, () => OpenPage(target), Card, icon, 16);
             button.name = target.ToString();
+            navItems.Add(new NavItem
+            {
+                page = target,
+                button = button,
+                label = button.GetComponentInChildren<ArabicLabel>(),
+                icon = button.transform.Find("Action icon")?.GetComponent<Image>()
+            });
+            RefreshNavigation();
+        }
+
+        private void RefreshNavigation()
+        {
+            foreach (var item in navItems)
+            {
+                bool selected = item.page == page;
+                item.button.GetComponent<Image>().color = selected ? SelectedNav : Card;
+                Color foreground = selected ? Cream : Muted;
+                if (item.label != null) item.label.color = foreground;
+                if (item.icon != null) item.icon.color = foreground;
+            }
         }
 
         private void Update()
@@ -270,10 +302,10 @@ namespace NewGaza
             Place(districtLabel.rectTransform, strip.rect.width * 0.44f, 0, strip.rect.width * 0.56f, 26, true);
             Place(strip.Find("Progress track") as RectTransform, 0, 9, strip.rect.width * 0.40f, 8, true);
             Place(activity, 12, head + 24, portrait ? width - 24 : 355, portrait ? 102 : 116, true);
-            Place(navigation, 12, 12, width - 24, 84, false);
+            Place(navigation, 12, 12, width - 24, 92, false);
             float navWidth = (width - 44) / 5f;
             for (int i = 0; i < navigation.childCount; i++)
-                Place(navigation.GetChild(i) as RectTransform, 10 + (4 - i) * navWidth, 10, navWidth - 5, 64, false);
+                Place(navigation.GetChild(i) as RectTransform, 10 + (4 - i) * navWidth, 8, navWidth - 5, 76, false);
             float tutorialWidth = portrait ? width - 24 : Mathf.Min(420, width * 0.38f);
             Place(tutorial, 12, 108, tutorialWidth, 122, false);
             Place(tutorialLabel.rectTransform, 128, 10, tutorialWidth - 142, 101, true);
@@ -437,6 +469,7 @@ namespace NewGaza
             modalBindings.Clear();
             nameInput = null;
             page = requested;
+            RefreshNavigation();
             CityCamera.ModalOpen = true;
             closingCameraBlock = false;
             BuildModalShell();
@@ -450,9 +483,9 @@ namespace NewGaza
             Stretch(blocker, 0, 0, 0, 0);
             modalObject = blocker.gameObject;
             modalPanel = Surface("Modal panel", blocker, Panel);
-            modalTitle = Label(modalPanel, "", 30, Gold);
+            modalTitle = Label(modalPanel, "", 30, Cream);
             modalSubtitle = Label(modalPanel, "", 17, Muted);
-            var close = ActionButton(modalPanel, "إغلاق ×", ClosePage, Card);
+            var close = ActionButton(modalPanel, "إغلاق", ClosePage, Card, CityHudIcons.Icon.Close);
             close.name = "Close modal";
             var scroll = Rect("Scrollable page", modalPanel);
             modalScroll = scroll.gameObject.AddComponent<ScrollRect>();
@@ -575,7 +608,7 @@ namespace NewGaza
             PageHeading(investmentsOnly ? "استثمارات منتجة" : "مشاريع الحي",
                 GameCatalog.Districts[d].name + " · الوقت حقيقي ويستمر خارج اللعبة. الإنشاء يحتاج تأكيداً؛ الاختيار لا يخصم أي عملة.");
             if (investmentsOnly)
-                Note("ابدأ الزراعة بـ 500 عملة فقط؛ احصد 1,500 بعد 5 دقائق ثم أعد الزراعة يدوياً. التجارة دخل متكرر؛ الصناعة تنتج مواد ودخلاً.", Gold);
+                Note("ابدأ الزراعة بـ 500 عملة فقط؛ احصد 1,500 بعد 5 دقائق ثم أعد الزراعة يدوياً. التجارة دخل متكرر؛ الصناعة تنتج مواد ودخلاً.", Muted);
             var definitions = GameCatalog.Districts[d].projects;
             if (!investmentsOnly && selectedPlot >= 0 && selectedPlot < definitions.Length)
                 ProjectCard(d, definitions[selectedPlot]);
@@ -598,7 +631,7 @@ namespace NewGaza
             CardLabel(card, definition.description, 58, 62, 17, Muted);
             CardLabel(card, N(definition.cost) + " عملة   ·   " + Duration(definition.durationSeconds) +
                 "\nخرسانة: " + N(definition.concreteCost) + "   ·   حديد: " + N(definition.ironCost), 128, 63, 19, Cream);
-            CardLabel(card, PrerequisiteText(district, definition), 200, 48, 17, Gold);
+            CardLabel(card, PrerequisiteText(district, definition), 200, 48, 17, Muted);
             var status = CardLabel(card, "", 254, 58, 18, Cream);
             Bind(status, () => ProjectStatus(district, definition) + (canStart &&
                 (!HasPrerequisite(district, definition) || !CanAfford(definition)) ? "\n" + MissingFor(definition, district) : ""));
@@ -734,7 +767,7 @@ namespace NewGaza
                 session.State.excavators > 0 && session.State.trucks > 0 && session.State.bulldozers > 0);
             if (session.State.factoryLevel == 0 || session.State.excavators == 0 || session.State.trucks == 0 || session.State.bulldozers == 0)
             {
-                Note("الفريق غير مكتمل. اشتر المعدات المطلوبة من «الأسطول» أولاً.", Gold);
+                Note("الفريق غير مكتمل. اشتر المعدات المطلوبة من «الأسطول» أولاً.", Muted);
                 ListAction("فتح الأسطول", () => OpenPage(Page.Fleet), Teal);
             }
             ResourceCard("concrete", "الخرسانة", () => session.State.stock.concrete, 20, "أساسية للمياه والمنازل والطريق. لا تبع احتياجات البناء.");
@@ -809,7 +842,7 @@ namespace NewGaza
         private void BuildSettings()
         {
             PageHeading("استراحة وخيارات", "تتوقف حركة كاميرا المدينة أثناء فتح القوائم؛ أوقات البناء والدخل الحقيقية لا تتوقف.");
-            Note("اسم البنّاء: " + session.State.playerName, Gold);
+            Note("اسم البنّاء: " + session.State.playerName, Muted);
             var nameCard = ListCard("تعديل الاسم", 264);
             var field = Surface("Logical name entry", nameCard, Cream, false);
             PlaceCard(field, 16, 61, -32, 72);
@@ -828,7 +861,7 @@ namespace NewGaza
             Stretch(editable.rectTransform, 12, 4, 12, 4);
             nameInput.textComponent = editable;
             nameInput.text = session.State.playerName;
-            var preview = CardLabel(nameCard, "", 142, 39, 20, Gold);
+            var preview = CardLabel(nameCard, "", 142, 39, 20, Cream);
             preview.SetText("معاينة: " + nameInput.text);
             nameInput.onValueChanged.AddListener(value => preview.SetText("معاينة: " + value));
             CardButton(nameCard, "حفظ الاسم", 0, 188, () =>
@@ -892,7 +925,7 @@ namespace NewGaza
             confirmationObject = shield.gameObject;
             confirmationPanel = Surface("Review before transaction", shield, Panel);
             Center(confirmationPanel, Mathf.Min(safe.rect.width - 32, 620), Mathf.Min(safe.rect.height - 32, 500));
-            var heading = Label(confirmationPanel, title, 26, Gold);
+            var heading = Label(confirmationPanel, title, 26, Cream);
             PlaceCard(heading.rectTransform, 20, 15, -40, 69);
             var scroll = Rect("Scrollable confirmation", confirmationPanel);
             Stretch(scroll, 20, 88, 20, 100);
@@ -960,6 +993,7 @@ namespace NewGaza
             nameInput = null;
             modalBindings.Clear();
             page = Page.None;
+            RefreshNavigation();
             ReleaseCameraAfterTouch();
         }
 
@@ -1021,7 +1055,7 @@ namespace NewGaza
             size.preferredHeight = height;
             var heading = Label(card, title, 24, Cream);
             PlaceCard(heading.rectTransform, 16, 8, -32, 47);
-            var accent = Surface("Gold accent", card, Gold, false);
+            var accent = Surface("Sage accent", card, Teal, false);
             accent.anchorMin = new Vector2(1, 0.16f);
             accent.anchorMax = new Vector2(1, 0.84f);
             accent.pivot = new Vector2(1, 0.5f);
@@ -1103,12 +1137,13 @@ namespace NewGaza
             label.verticalOverflow = VerticalWrapMode.Truncate;
             // Arabic fonts need room for ascenders and descenders. This keeps the
             // baselines readable while avoiding wasteful gaps in mobile cards.
-            label.lineSpacing = 0.92f;
+            label.lineSpacing = 1.04f;
             label.raycastTarget = false;
             label.SetText(text);
             return label;
         }
-        private Button ActionButton(Transform parent, string text, Action action, Color color)
+        private Button ActionButton(Transform parent, string text, Action action, Color color,
+            CityHudIcons.Icon icon = CityHudIcons.Icon.None, int labelSize = 20)
         {
             var rect = Surface(text, parent, color);
             var button = rect.gameObject.AddComponent<Button>();
@@ -1116,15 +1151,39 @@ namespace NewGaza
             button.navigation = new Navigation { mode = Navigation.Mode.None };
             var colors = button.colors;
             colors.normalColor = Color.white;
-            colors.highlightedColor = new Color(1.12f, 1.12f, 1.12f, 1);
-            colors.pressedColor = new Color(0.70f, 0.86f, 0.86f, 1);
+            // Keep the white-label contrast on sage buttons when hovered/focused.
+            colors.highlightedColor = new Color(0.94f, 1f, 0.96f, 1);
+            colors.pressedColor = new Color(0.76f, 0.84f, 0.81f, 1);
             colors.selectedColor = Color.white;
-            colors.disabledColor = new Color(0.55f, 0.58f, 0.58f, 0.72f);
+            colors.disabledColor = new Color(0.68f, 0.70f, 0.69f, 0.84f);
             colors.fadeDuration = 0.08f;
             button.colors = colors;
             var label = Label(rect, text, 20, Cream);
             label.alignment = TextAnchor.MiddleCenter;
-            Stretch(label.rectTransform, 7, 2, 7, 2);
+            label.fontSize = labelSize;
+            if (icon == CityHudIcons.Icon.None)
+            {
+                Stretch(label.rectTransform, 7, 2, 7, 2);
+            }
+            else
+            {
+                var iconRect = Rect("Action icon", rect);
+                iconRect.anchorMin = iconRect.anchorMax = new Vector2(0.5f, 1);
+                iconRect.pivot = new Vector2(0.5f, 1);
+                iconRect.anchoredPosition = new Vector2(0, -4);
+                iconRect.sizeDelta = new Vector2(22, 22);
+                var image = iconRect.gameObject.AddComponent<Image>();
+                image.sprite = hudIcons.Get(icon);
+                image.color = Cream;
+                image.raycastTarget = false;
+                var labelRect = label.rectTransform;
+                labelRect.anchorMin = Vector2.zero;
+                labelRect.anchorMax = new Vector2(1, 0.67f);
+                labelRect.offsetMin = new Vector2(2, 2);
+                labelRect.offsetMax = new Vector2(-2, 0);
+                label.fontSize = labelSize;
+            }
+            label.raycastTarget = false;
             if (action != null) button.onClick.AddListener(() => action());
             return button;
         }
@@ -1229,6 +1288,8 @@ namespace NewGaza
                 Destroy(roundedSprite);
                 Destroy(texture);
             }
+            hudIcons?.Dispose();
+            hudIcons = null;
         }
     }
 }
