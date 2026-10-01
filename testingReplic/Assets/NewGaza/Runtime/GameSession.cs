@@ -3,6 +3,7 @@ using NewGaza.Core;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+using UnityEngine.SceneManagement;
 
 namespace NewGaza
 {
@@ -22,6 +23,21 @@ namespace NewGaza
         private string startupError;
         private CityWorld world;
         private CityCamera cityCamera;
+
+        // NewGaza is delivered without script .meta files. Attach by type at runtime
+        // instead of storing a MonoScript GUID that will differ on each computer.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        private static void StartEntryScene()
+        {
+            var scene = SceneManager.GetActiveScene();
+            if (scene.path != "Assets/NewGaza/Scenes/NewGaza.unity" ||
+                FindFirstObjectByType<GameSession>() != null) return;
+            GameObject host = null;
+            foreach (var root in scene.GetRootGameObjects())
+                if (root.name == "New Gaza - Reconstruction Game") { host = root; break; }
+            if (host == null) host = new GameObject("New Gaza - Reconstruction Game");
+            host.AddComponent<GameSession>();
+        }
 
         private void Awake()
         {
