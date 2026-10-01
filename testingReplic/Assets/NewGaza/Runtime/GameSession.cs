@@ -64,7 +64,7 @@ namespace NewGaza
                 cameraObject.tag = "MainCamera";
                 var cam = cameraObject.GetComponent<Camera>();
                 cam.clearFlags = CameraClearFlags.SolidColor;
-                cam.backgroundColor = new Color(0.48f, 0.72f, 0.76f);
+                cam.backgroundColor = new Color(0.70f, 0.76f, 0.79f);
                 cam.nearClipPlane = 0.3f;
                 cam.farClipPlane = 1600f;
                 cam.allowHDR = false;
@@ -87,16 +87,24 @@ namespace NewGaza
 
         private void ConfigureLighting()
         {
-            RenderSettings.ambientMode = AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.65f, 0.73f, 0.79f);
+            // Neutral Mediterranean daylight, with darker sheltered walls/undersides.
+            // District access haze is local geometry, never distance fog over playable work.
+            RenderSettings.ambientMode = AmbientMode.Trilight;
+            RenderSettings.ambientSkyColor = new Color(0.60f, 0.66f, 0.73f);
+            RenderSettings.ambientEquatorColor = new Color(0.43f, 0.44f, 0.43f);
+            RenderSettings.ambientGroundColor = new Color(0.25f, 0.23f, 0.21f);
             RenderSettings.fog = false;
             var sunObject = new GameObject("Mediterranean sunlight");
             var sun = sunObject.AddComponent<Light>();
             sun.type = LightType.Directional;
             sun.intensity = 1.25f;
-            sun.color = new Color(1f, 0.92f, 0.79f);
+            sun.color = new Color(1f, 0.97f, 0.91f);
             sun.shadows = LightShadows.Soft;
-            sun.shadowStrength = 0.55f;
+            sun.shadowStrength = 0.70f;
+            sun.shadowBias = 0.025f;
+            sun.shadowNormalBias = 0.08f;
+            // URP otherwise replaces the Light bias with the pipeline asset defaults.
+            sun.GetUniversalAdditionalLightData().usePipelineSettings = false;
             sunObject.transform.rotation = Quaternion.Euler(50, -35, 0);
             RenderSettings.sun = sun;
             QualitySettings.shadowDistance = 100;
