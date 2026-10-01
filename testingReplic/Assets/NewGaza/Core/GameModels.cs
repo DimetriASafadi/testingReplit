@@ -24,6 +24,7 @@ namespace NewGaza.Core
     [Serializable]
     public class DistrictDefinition
     {
+        public string id;
         public string name;
         public string rarity;
         public string description;
@@ -45,6 +46,9 @@ namespace NewGaza.Core
     [Serializable]
     public class DistrictState
     {
+        public string id;
+        // Only v1 migration may preserve access across newly inserted, unclaimed districts.
+        public bool legacyAccess;
         public bool unlocked;
         public bool rewardClaimed;
         public int clearedLoads;
@@ -63,7 +67,7 @@ namespace NewGaza.Core
     [Serializable]
     public class GameState
     {
-        public int version = 1;
+        public int version = 2;
         public string playerName = "بنّاء المدينة";
         public long coins = 50000;
         public ResourceStock stock = new ResourceStock();

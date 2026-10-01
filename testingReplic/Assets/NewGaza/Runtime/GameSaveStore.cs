@@ -62,15 +62,17 @@ namespace NewGaza
                 || envelope.checksum != Hash(envelope.payload))
                 throw new InvalidDataException("Unsupported or damaged save envelope.");
             var state = JsonUtility.FromJson<GameState>(envelope.payload);
-            Validate(state);
+            // Verify the original payload checksum above, then validate the frozen old schema
+            // before migrating. Failures still propagate through Load's backup recovery.
+            state = GameStateMigration.Upgrade(state);
             // Domain validation is authoritative; invalid primary files must also try the backup.
-            new EconomyService(state);
+            Validate(state);
             return state;
         }
 
         public static void Validate(GameState state)
         {
-            if (state == null || state.version != 1 || state.coins < 0 || state.stock == null
+            if (state == null || state.version != 2 || state.coins < 0 || state.stock == null
                 || state.stock.concrete < 0 || state.stock.iron < 0 || state.stock.wood < 0 || state.stock.other < 0
                 || state.districts == null || state.districts.Length != GameCatalog.Districts.Length
                 || state.selectedDistrict < 0 || state.selectedDistrict >= state.districts.Length
@@ -83,7 +85,7 @@ namespace NewGaza
             {
                 var district = state.districts[i];
                 var definition = GameCatalog.Districts[i];
-                if (district == null || district.projects == null || district.projects.Length != definition.projects.Length
+                if (district == null || district.id != definition.id || district.projects == null || district.projects.Length != definition.projects.Length
                     || district.clearedLoads < 0 || district.clearedLoads > definition.rubbleLoads)
                     throw new InvalidDataException("Invalid district save.");
                 for (int p = 0; p < district.projects.Length; p++)
@@ -93,6 +95,7 @@ namespace NewGaza
             if (!state.districts[0].unlocked || !state.districts[state.selectedDistrict].unlocked
                 || (state.jobStage != JobStage.Idle && (state.jobDistrict < 0 || state.jobDistrict >= state.districts.Length)))
                 throw new InvalidDataException("Invalid district selection.");
+            new EconomyService(state);
         }
 
         public static void Save(GameState state)

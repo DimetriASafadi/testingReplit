@@ -14,7 +14,7 @@ namespace NewGaza
         public static void Capture(GameSession session, CityCamera camera)
         {
             if (capturing || session == null || !session.Ready) return;
-            if (session.State.cityCompletedUtc <= 0)
+            if (!session.Economy.CityComplete)
             {
                 session.Notify("تُفتح صورة الإنجاز بعد إكمال شارع الرشيد.");
                 return;
@@ -64,7 +64,8 @@ namespace NewGaza
             label.resizeTextMinSize = 16; label.resizeTextMaxSize = 25;
             string date = DateTimeOffset.FromUnixTimeSeconds(session.State.cityCompletedUtc).ToString("yyyy-MM-dd");
             label.text = ArabicText.Shape("نيو غزة — مدينة تُبنى من جديد\n" +
-                session.State.playerName + " | الإنجاز 100% | الأحياء 10/10\n" +
+                session.State.playerName + " | الإنجاز 100% | الأحياء " +
+                GameCatalog.NeighborhoodCount + "/" + GameCatalog.NeighborhoodCount + "\n" +
                 "المشاريع " + projects + " | قيمة الاستثمارات " + investments.ToString("N0") + " | " + date +
                 "\n" + GameGeography.Attribution + " · openstreetmap.org/copyright");
             yield return new WaitForEndOfFrame();

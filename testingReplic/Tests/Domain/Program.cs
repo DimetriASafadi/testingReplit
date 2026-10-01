@@ -15,7 +15,8 @@ internal static class Program
             Catalog, Geography, AffordableStart, InvalidActions, SalvagePhases, OfflineAndPersistence,
             ProjectValidation, AgricultureAndIndustry, CommerceAndRemainders,
             DailyAndRollback, Upgrades, OverflowAndCorruption, RecyclingWaitsForStorage, TransactionAtomicity, AllDistrictProgression,
-            EarnedProgressionWithoutGrants
+            EarnedProgressionWithoutGrants, LegacyMigrationBoundaries, LegacyTimersAndJobs,
+            ExpandedProgressionAndFinale, LegacyCorruption
         };
         foreach (var test in tests)
         {
@@ -76,22 +77,23 @@ internal static class Program
 
     private static void Catalog()
     {
-        Equal(11, GameCatalog.Districts.Length, "Ten neighborhoods and final Rashid");
+        Equal(13, GameCatalog.Districts.Length, "Twelve neighborhoods and final Rashid");
+        Equal(12, GameCatalog.NeighborhoodCount, "Neighborhood API");
         Equal("الشجاعية", GameCatalog.Districts[0].name, "First district");
         Equal("التفاح", GameCatalog.Districts[1].name, "Second district follows east-to-west order");
-        Equal("شارع الرشيد", GameCatalog.Districts[10].name, "Final district");
+        Equal("شارع الرشيد", GameCatalog.Districts[GameCatalog.FinalDistrictIndex].name, "Final district");
         string[] rarityTiers = { "عادي", "نادر", "ملحمي", "أسطوري" };
         var observedTiers = new HashSet<string>();
         int previousTier = -1;
-        for (int d = 0; d < 11; d++)
+        for (int d = 0; d < GameCatalog.Districts.Length; d++)
         {
             var definition = GameCatalog.Districts[d];
-            if (d < 10)
+            if (d < GameCatalog.NeighborhoodCount)
             {
                 int tier = Array.IndexOf(rarityTiers, definition.rarity);
                 Check(tier >= 0, "Normal districts use only the four source rarity classes");
                 Check(tier >= previousTier, "Rarity groups advance in sensible district order");
-                Equal(d < 3 ? rarityTiers[0] : d < 6 ? rarityTiers[1] : d < 8 ? rarityTiers[2] : rarityTiers[3],
+                Equal(d < 3 ? rarityTiers[0] : d < 8 ? rarityTiers[1] : d < 10 ? rarityTiers[2] : rarityTiers[3],
                     definition.rarity, "Expected rarity group");
                 previousTier = tier;
                 observedTiers.Add(definition.rarity);
@@ -122,11 +124,11 @@ internal static class Program
     {
         string[] expected =
         {
-            "الشجاعية", "التفاح", "الشيخ رضوان", "الكرامة", "البلدة القديمة",
-            "الصبرة", "الزيتون", "الرمال", "تل الهوا", "الشيخ عجلين", "شارع الرشيد"
+            "الشجاعية", "التفاح", "الشيخ رضوان", "الدرج", "الكرامة", "البلدة القديمة",
+            "النصر", "الصبرة", "الزيتون", "الرمال", "تل الهوا", "الشيخ عجلين", "شارع الرشيد"
         };
         string[] projectIds = { "water", "power", "housing", "road", "park", "services", "farm", "commerce", "industry" };
-        Equal(expected.Length, GameGeography.Districts.Length, "Exactly ten approved neighborhoods and final route");
+        Equal(expected.Length, GameGeography.Districts.Length, "Exactly twelve approved neighborhoods and final route");
         var ids = new HashSet<string>();
         var names = new HashSet<string>();
         for (int d = 0; d < expected.Length; d++)
@@ -141,7 +143,7 @@ internal static class Program
             var point = GameGeography.DistrictPoint(d);
             Check(point.x > GameGeography.MapMinX && point.x < GameGeography.MapMaxX &&
                 point.z > GameGeography.MapMinZ && point.z < GameGeography.MapMaxZ, "Camera bounds contain all districts");
-            if (d > 0 && d < 10)
+            if (d > 0 && d < GameCatalog.NeighborhoodCount)
                 Check(location.longitude < GameGeography.Districts[d - 1].longitude, "East-to-west normal district progression");
             Equal(projectIds.Length, GameCatalog.Districts[d].projects.Length, "Legacy save project count unchanged");
             for (int p = 0; p < projectIds.Length; p++)
@@ -171,7 +173,7 @@ internal static class Program
         }
         Check(routeLength / GameGeography.UnitsPerKilometre > 8 &&
             routeLength / GameGeography.UnitsPerKilometre < 12, "Final route covers the city waterfront, not a tiny parcel");
-        Check(GameGeography.DistrictPoint(3).z > GameGeography.DistrictPoint(2).z,
+        Check(GameGeography.DistrictPoint(4).z > GameGeography.DistrictPoint(2).z,
             "Karama stays north of Sheikh Radwan, never moved into a game grid");
         var oldCheckpoint = GameCatalog.CreateNew(Epoch);
         oldCheckpoint.coins = 43210;
@@ -181,7 +183,7 @@ internal static class Program
             new JsonSerializerOptions { IncludeFields = true }));
         Equal(43210L, restored.State.coins, "Existing schema retains coins");
         Equal(7, restored.State.stock.iron, "Existing schema retains resources");
-        Equal(1, restored.State.version, "Geographic labels do not reset or change save schema");
+        Equal(2, restored.State.version, "Stable district identity uses v2 schema");
     }
 
     private static void AffordableStart()
@@ -205,14 +207,14 @@ internal static class Program
     private static void InvalidActions()
     {
         var e = New();
-        Fail(e.SelectDistrict(-1)); Fail(e.SelectDistrict(11)); Fail(e.SelectDistrict(1));
+        Fail(e.SelectDistrict(-1)); Fail(e.SelectDistrict(GameCatalog.Districts.Length)); Fail(e.SelectDistrict(1));
         Fail(e.BuyEquipment("ad", Epoch)); Fail(e.BuyEquipment(null, Epoch));
         Fail(e.UpgradeFactory(Epoch)); Fail(e.UpgradeEquipment(Epoch));
         Fail(e.StartSalvage(0, Epoch)); Fail(e.StartSalvage(1, Epoch));
         Fail(e.StartProject(0, null, Epoch)); Fail(e.StartProject(-1, "farm", Epoch));
         Fail(e.StartProject(1, "farm", Epoch)); Fail(e.CollectIncome(0, "missing", Epoch));
         Fail(e.CollectIncome(0, "farm", Epoch)); Fail(e.ClaimDistrictReward(0, Epoch));
-        Fail(e.ClaimDistrictReward(10, Epoch)); Fail(e.SellResources("unknown", Epoch));
+        Fail(e.ClaimDistrictReward(GameCatalog.FinalDistrictIndex, Epoch)); Fail(e.SellResources("unknown", Epoch));
         Fail(e.BuyEquipment("truck", -1)); Fail(e.ClaimDailyGift(-1));
         Equal(50000L, e.State.coins, "Invalid actions never award or debit money");
         Equal(0f, e.Progress(-1), "Invalid district progress");
@@ -560,7 +562,7 @@ internal static class Program
     private static void AllDistrictProgression()
     {
         var e = New(); Fleet(e); Fund(e);
-        for (int district = 0; district < 11; district++)
+        for (int district = 0; district < GameCatalog.Districts.Length; district++)
         {
             Check(e.State.districts[district].unlocked, "District unlocked in sequence");
             Ok(e.SelectDistrict(district));
@@ -571,8 +573,8 @@ internal static class Program
             foreach (var definition in GameCatalog.Districts[district].projects)
                 CompleteProject(e, district, definition.id);
             Equal(1f, e.Progress(district), "Exactly 100 percent");
-            if (district < 10) Check(!e.State.districts[district + 1].unlocked, "Completion alone does not unlock");
-            if (district < 9) Check(!e.State.districts[10].unlocked, "Rashid requires all ten claimed");
+            if (district < GameCatalog.FinalDistrictIndex) Check(!e.State.districts[district + 1].unlocked, "Completion alone does not unlock");
+            if (district < GameCatalog.NeighborhoodCount) Check(!e.State.districts[GameCatalog.FinalDistrictIndex].unlocked, "Rashid requires all twelve claimed");
             if (district == 0)
             {
                 long beforeGift = e.State.coins;
@@ -592,10 +594,11 @@ internal static class Program
             if (district > 0) Ok(e.SelectDistrict(district - 1));
         }
         Check(e.State.cityCompletedUtc > 0, "Final completion timestamp");
-        Equal(1f, e.Progress(10), "Final corniche and hospitality complete");
+        Check(e.CityComplete, "All current rewards claimed");
+        Equal(1f, e.Progress(GameCatalog.FinalDistrictIndex), "Final corniche and hospitality complete");
         long coins = e.State.coins;
         Ok(e.ClaimDailyGift(e.State.lastSeenUtc));
-        Equal(coins + 14000, e.State.coins, "Gift scales with eleven claimed districts");
+        Equal(coins + 3000 + GameCatalog.Districts.Length * 1000L, e.State.coins, "Gift scales with all claimed districts");
         Ok(e.SelectDistrict(0)); Ok(e.StartSalvage(0, e.State.lastSeenUtc)); FinishJob(e);
         Equal(1f, e.Progress(0), "Return to previous district for imported recycling");
     }
@@ -604,7 +607,7 @@ internal static class Program
     {
         // End-to-end solvability uses only public actions and elapsed Unix time, no fixture money.
         var e = New(); Fleet(e);
-        for (int district = 0; district < 11; district++)
+        for (int district = 0; district < GameCatalog.Districts.Length; district++)
         {
             foreach (var definition in GameCatalog.Districts[district].projects)
             {
@@ -640,6 +643,330 @@ internal static class Program
             Ok(e.ClaimDistrictReward(district, e.State.lastSeenUtc));
             Check(e.State.coins >= 0 && e.State.stock.concrete >= 0 && e.State.stock.iron >= 0, "No negative economic state");
         }
-        Check(e.State.cityCompletedUtc > 0, "All eleven districts reachable without grants");
+        Check(e.State.cityCompletedUtc > 0 && e.CityComplete, "All current districts reachable without grants");
+    }
+
+    private static readonly string[] OldIds =
+    {
+        "shujaiya", "tuffah", "sheikh-radwan", "karama", "old-city", "sabra",
+        "zeitoun", "rimal", "tel-al-hawa", "sheikh-ijlin", "rashid"
+    };
+    private static readonly JsonSerializerOptions JsonOptions = new JsonSerializerOptions { IncludeFields = true };
+    private static string Json<T>(T value) { return JsonSerializer.Serialize(value, JsonOptions); }
+    private static int DistrictIndex(string id) { return Array.FindIndex(GameCatalog.Districts, d => d.id == id); }
+
+    private static GameState LegacyFixture(int claimedCount)
+    {
+        // Actual v1 wire shape: eleven positional districts, no district ID/access fields.
+        // Deliberately independent of CreateNew, geography, current balances and current project definitions.
+        string[] ids = { "water", "power", "housing", "road", "park", "services", "farm", "commerce", "industry" };
+        int[] durations = { 3600, 5400, 7200, 64800, 3600, 10800, 300, 3600, 900 };
+        var districts = new object[11];
+        for (int d = 0; d < districts.Length; d++)
+        {
+            bool complete = d < claimedCount;
+            var projects = new object[9];
+            long next = Epoch + d * 150000;
+            for (int p = 0; p < projects.Length; p++)
+            {
+                long finish = next + (d == 10 && p == 7 ? 14400 : durations[p]);
+                projects[p] = new
+                {
+                    id = ids[p], startedUtc = complete ? next : 0, finishUtc = complete ? finish : 0,
+                    completed = complete, lastIncomeUtc = complete && p != 6 && p != 8 ? finish : 0
+                };
+                next = finish;
+            }
+            districts[d] = new
+            {
+                unlocked = d <= claimedCount, rewardClaimed = complete,
+                clearedLoads = complete ? 4 + d : 0, projects
+            };
+        }
+        string payload = Json(new
+        {
+            version = 1, playerName = "لاعب قديم", coins = 7654321L,
+            stock = new { concrete = 4321, iron = 3210, wood = 219, other = 108 },
+            factoryLevel = 3, excavators = 2, trucks = 4, bulldozers = 3, equipmentLevel = 2,
+            selectedDistrict = Math.Min(claimedCount, 10), districts,
+            jobStage = 0, jobDistrict = 0, jobFinishUtc = 0L,
+            lastSeenUtc = Epoch + 2000000, lastGiftUtc = Epoch + 100,
+            cityCompletedUtc = claimedCount == 11 ? Epoch + 1900000 : 0
+        });
+        Check(!payload.Contains("legacyAccess") && !payload.Contains("shujaiya"), "True v1 fixture has no v2 district identity");
+        return JsonSerializer.Deserialize<GameState>(payload, JsonOptions);
+    }
+
+    private static void LegacyMigrationBoundaries()
+    {
+        for (int claims = 0; claims <= 11; claims++)
+        {
+            var old = LegacyFixture(claims);
+            string original = Json(old);
+            var migrated = GameStateMigration.Upgrade(old);
+            Equal(original, Json(old), "Migration never mutates input");
+            Equal(2, migrated.version, "Upgraded schema");
+            Equal(13, migrated.districts.Length, "Expansion length");
+            Equal(old.playerName, migrated.playerName, "Name retained");
+            Equal(old.coins, migrated.coins, "Migration creates no coins");
+            Equal(Json(old.stock), Json(migrated.stock), "All stock retained");
+            Equal(old.factoryLevel, migrated.factoryLevel, "Factory retained");
+            Equal(old.equipmentLevel, migrated.equipmentLevel, "Equipment level retained");
+            Equal(old.excavators, migrated.excavators, "Excavators retained");
+            Equal(old.trucks, migrated.trucks, "Trucks retained");
+            Equal(old.bulldozers, migrated.bulldozers, "Bulldozers retained");
+            Equal(old.lastSeenUtc, migrated.lastSeenUtc, "High-water retained");
+            Equal(old.lastGiftUtc, migrated.lastGiftUtc, "Gift deadline retained");
+            Equal(old.cityCompletedUtc, migrated.cityCompletedUtc, "Historical completion retained");
+            Equal(OldIds[old.selectedDistrict], migrated.districts[migrated.selectedDistrict].id, "Selected identity retained");
+            var economy = new EconomyService(migrated);
+            Check(!economy.CityComplete, "Even previously completed city needs expansion rewards");
+            for (int d = 0; d < OldIds.Length; d++)
+            {
+                int index = DistrictIndex(OldIds[d]);
+                var current = migrated.districts[index];
+                Equal(old.districts[d].unlocked, current.unlocked, "Previously earned access retained");
+                Equal(old.districts[d].unlocked, current.legacyAccess, "Persist explicit migration access only for unlocked old IDs");
+                Equal(old.districts[d].rewardClaimed, current.rewardClaimed, "Old rewards retained");
+                Equal(old.districts[d].clearedLoads, current.clearedLoads, "Old rubble retained");
+                Equal(Json(old.districts[d].projects), Json(current.projects), "Every old project and timestamp retained");
+                Equal(4 + d, GameCatalog.Districts[index].rubbleLoads, "Old rubble requirement does not rise with index");
+                Equal(d == 10 ? 1000000L : 100000L + d * 25000, GameCatalog.Districts[index].completionReward, "Old reward unchanged");
+                if (current.unlocked) Ok(economy.SelectDistrict(index));
+            }
+            var daraj = migrated.districts[DistrictIndex("daraj")];
+            var nasr = migrated.districts[DistrictIndex("nasr")];
+            Equal(claims >= 3, daraj.unlocked, "Eligible inserted Daraj opens on migration");
+            Check(!nasr.unlocked, "Nasr waits for full prefix including Daraj");
+            foreach (var fresh in new[] { daraj, nasr })
+            {
+                Check(!fresh.rewardClaimed && !fresh.legacyAccess && fresh.clearedLoads == 0, "New neighborhoods receive no work or rewards");
+                Equal(9, fresh.projects.Length, "Nine independent new projects");
+                foreach (var project in fresh.projects)
+                    Check(!project.completed && project.startedUtc == 0 && project.finishUtc == 0 && project.lastIncomeUtc == 0,
+                        "New projects have no free completion or inherited deadlines");
+            }
+            Check(!ReferenceEquals(daraj.projects, nasr.projects) && !ReferenceEquals(daraj.projects[0], nasr.projects[0]),
+                "Inserted districts have independent state");
+            string checkpoint = Json(migrated);
+            Equal(checkpoint, Json(GameStateMigration.Upgrade(migrated)), "Second migration is a no-op");
+            var reloaded = GameStateMigration.Upgrade(JsonSerializer.Deserialize<GameState>(checkpoint, JsonOptions));
+            Equal(checkpoint, Json(reloaded), "Reload does not duplicate, reset or unlock ahead");
+            new EconomyService(reloaded);
+        }
+    }
+
+    private static void LegacyTimersAndJobs()
+    {
+        foreach (int frontier in new[] { 0, 2, 3, 4, 5, 9, 10 })
+        foreach (JobStage stage in new[] { JobStage.Clearing, JobStage.Hauling, JobStage.Recycling })
+        {
+            var old = LegacyFixture(frontier);
+            old.jobDistrict = frontier;
+            old.jobStage = stage;
+            old.jobFinishUtc = old.lastSeenUtc + 60;
+            // Ongoing farm, water and power; later project deadlines must remain untouched at load.
+            var projects = old.districts[frontier].projects;
+            foreach (int p in new[] { 0, 1, 6 })
+            {
+                projects[p].startedUtc = old.lastSeenUtc;
+                projects[p].finishUtc = old.lastSeenUtc + (p == 0 ? 3600 : p == 1 ? 5400 : 300);
+            }
+            var e = new EconomyService(GameStateMigration.Upgrade(old));
+            int target = DistrictIndex(OldIds[frontier]);
+            Equal(target, e.State.jobDistrict, "Active job remapped by old identity");
+            Equal(target, e.State.selectedDistrict, "Active selection remapped by old identity");
+            Equal(stage, e.State.jobStage, "Job stage untouched");
+            Equal(old.jobFinishUtc, e.State.jobFinishUtc, "Job deadline untouched");
+            Equal(Json(projects), Json(e.State.districts[target].projects), "All concurrent deadlines untouched");
+            int stock = e.State.stock.concrete;
+            FinishJob(e);
+            Equal(1, e.State.districts[target].clearedLoads, "Job credits original neighborhood only");
+            Equal(stock + 120, e.State.stock.concrete, "Exactly one old-level job yield");
+            Equal(0, e.State.districts[DistrictIndex("daraj")].clearedLoads, "Job does not credit inserted district");
+            e.Tick(old.lastSeenUtc + 5400);
+            Check(e.FindProject(target, "water").completed && e.FindProject(target, "power").completed, "Build timers catch up after migration");
+            Ok(e.CollectIncome(target, "farm", e.State.lastSeenUtc));
+            Fail(e.CollectIncome(target, "farm", e.State.lastSeenUtc));
+        }
+
+        var completed = LegacyFixture(11);
+        int oldRimal = 7;
+        var commerce = completed.districts[oldRimal].projects[7];
+        commerce.lastIncomeUtc = completed.lastSeenUtc - 7200 - 123;
+        var farm = completed.districts[oldRimal].projects[6];
+        farm.startedUtc = completed.lastSeenUtc - 30;
+        farm.finishUtc = completed.lastSeenUtc + 270; // Completed milestone, new cycle in flight.
+        var industry = completed.districts[oldRimal].projects[8];
+        industry.startedUtc = 0;
+        industry.finishUtc = 0;
+        industry.lastIncomeUtc = completed.lastSeenUtc - 77; // Previously harvested batch.
+        completed.selectedDistrict = oldRimal;
+        var resumed = new EconomyService(GameStateMigration.Upgrade(completed));
+        int rimal = DistrictIndex("rimal");
+        Equal(Json(completed.districts[oldRimal].projects), Json(resumed.State.districts[rimal].projects), "Commerce remainder/replant/harvest state retained");
+        Equal(6000L, resumed.PendingIncome(rimal, "commerce", resumed.State.lastSeenUtc), "Accrued commerce unchanged");
+        Ok(resumed.CollectIncome(rimal, "commerce", resumed.State.lastSeenUtc));
+        Equal(completed.lastSeenUtc - 123, resumed.FindProject(rimal, "commerce").lastIncomeUtc, "Old commerce remainder survives");
+        Equal(0L, resumed.PendingIncome(rimal, "farm", resumed.State.lastSeenUtc), "Ongoing replant not granted early");
+        Equal(0L, resumed.PendingIncome(rimal, "industry", resumed.State.lastSeenUtc), "Harvested industry not regranted");
+        Ok(resumed.CollectIncome(rimal, "farm", farm.finishUtc));
+        Fail(resumed.CollectIncome(rimal, "farm", farm.finishUtc));
+
+        foreach (int frontier in new[] { 5, 10 })
+        {
+            var legacy = LegacyFixture(frontier);
+            var projects = legacy.districts[frontier].projects;
+            long baseline = legacy.lastSeenUtc - 30000;
+            projects[1].completed = true;
+            projects[1].startedUtc = baseline;
+            projects[1].finishUtc = baseline + 5400;
+            projects[1].lastIncomeUtc = projects[1].finishUtc;
+            projects[5].completed = true;
+            projects[5].startedUtc = projects[1].finishUtc;
+            projects[5].finishUtc = projects[5].startedUtc + 10800;
+            projects[5].lastIncomeUtc = projects[5].finishUtc;
+            projects[7].startedUtc = legacy.lastSeenUtc;
+            projects[7].finishUtc = legacy.lastSeenUtc + (frontier == 10 ? 14400 : 3600);
+            var building = new EconomyService(GameStateMigration.Upgrade(legacy));
+            int target = DistrictIndex(OldIds[frontier]);
+            Equal(Json(projects), Json(building.State.districts[target].projects), "In-flight ordinary/final commerce preserves exact v1 construction deadline");
+            Equal(0L, building.PendingIncome(target, "commerce", legacy.lastSeenUtc), "No income granted before commercial construction");
+            building.Tick(projects[7].finishUtc + 3599);
+            Equal(0L, building.PendingIncome(target, "commerce", building.State.lastSeenUtc), "Commercial clock remains anchored to old deadline");
+            Ok(building.CollectIncome(target, "commerce", projects[7].finishUtc + 3600));
+            Fail(building.CollectIncome(target, "commerce", projects[7].finishUtc + 3600));
+        }
+    }
+
+    private static void FinishDistrict(EconomyService economy, int district)
+    {
+        // Public actions only: no free inserted projects, rubble or completion.
+        for (int i = economy.State.districts[district].clearedLoads; i < GameCatalog.Districts[district].rubbleLoads; i++)
+        {
+            Ok(economy.StartSalvage(district, economy.State.lastSeenUtc));
+            FinishJob(economy);
+        }
+        foreach (var project in GameCatalog.Districts[district].projects)
+            if (!economy.FindProject(district, project.id).completed) CompleteProject(economy, district, project.id);
+    }
+
+    private static void ExpandedProgressionAndFinale()
+    {
+        int daraj = DistrictIndex("daraj"), nasr = DistrictIndex("nasr"), rashid = GameCatalog.FinalDistrictIndex;
+        foreach (int claims in new[] { 5, 9, 10, 11 })
+        {
+            var old = LegacyFixture(claims);
+            var e = new EconomyService(GameStateMigration.Upgrade(old));
+            long historical = e.State.cityCompletedUtc;
+            if (claims >= 10)
+            {
+                Ok(e.SelectDistrict(rashid)); // Legacy final access survives expansion.
+                if (claims == 10) FinishDistrict(e, rashid);
+                long balance = e.State.coins;
+                Fail(e.ClaimDistrictReward(rashid, e.State.lastSeenUtc));
+                Equal(balance, e.State.coins, "No final reward before all twelve (or twice)");
+            }
+            FinishDistrict(e, daraj);
+            Check(!e.State.districts[nasr].unlocked, "Building alone never opens Nasr");
+            long before = e.State.coins;
+            Ok(e.ClaimDistrictReward(daraj, e.State.lastSeenUtc));
+            Equal(before + GameCatalog.Districts[daraj].completionReward, e.State.coins, "Only earned inserted reward paid");
+            Check(e.State.districts[nasr].unlocked, "Claim traverses old claimed Karama/Old City to open Nasr");
+            Check(!e.CityComplete, "One inserted reward is insufficient");
+            var reload = GameStateMigration.Upgrade(JsonSerializer.Deserialize<GameState>(Json(e.State), JsonOptions));
+            e = new EconomyService(reload);
+            FinishDistrict(e, nasr);
+            Ok(e.ClaimDistrictReward(nasr, e.State.lastSeenUtc));
+            if (claims == 9)
+            {
+                Check(!e.State.districts[rashid].unlocked, "Non-grandfathered Rashid still waits for last old neighborhood");
+                int last = DistrictIndex("sheikh-ijlin");
+                FinishDistrict(e, last);
+                Ok(e.ClaimDistrictReward(last, e.State.lastSeenUtc));
+                Check(e.State.districts[rashid].unlocked, "All twelve now open new Rashid access");
+                FinishDistrict(e, rashid);
+            }
+            if (claims == 9 || claims == 10)
+            {
+                before = e.State.coins;
+                Ok(e.ClaimDistrictReward(rashid, e.State.lastSeenUtc));
+                Equal(before + 1000000, e.State.coins, "Unclaimed old final paid once only after all twelve");
+            }
+            if (claims >= 9)
+            {
+                Check(e.CityComplete, "Expanded city complete only when every current reward is claimed");
+                Check(e.State.cityCompletedUtc > 0, "Completion history recorded");
+                if (claims == 11) Equal(historical, e.State.cityCompletedUtc, "Original city completion history never overwritten");
+                before = e.State.coins;
+                Fail(e.ClaimDistrictReward(rashid, e.State.lastSeenUtc));
+                Equal(before, e.State.coins, "Expansion never reawards already claimed million");
+            }
+            else Check(!e.CityComplete, "Remaining old neighborhoods still require real work");
+        }
+    }
+
+    private static void LegacyCorruption()
+    {
+        var corruptions = new Action<GameState>[]
+        {
+            s => s.version = 0,
+            s => s.version = 3,
+            s => s.version = 2, // Cannot relabel an eleven-district file as current.
+            s => s.coins = -1,
+            s => s.stock = null,
+            s => s.stock.other = -1,
+            s => s.factoryLevel = 6,
+            s => s.trucks = 1001,
+            s => s.equipmentLevel = 0,
+            s => s.excavators = 0, // Upgraded equipment cannot exist without the purchased fleet.
+            s => s.lastGiftUtc = s.lastSeenUtc + 1,
+            s => s.cityCompletedUtc = s.lastSeenUtc - 1, // No final reward.
+            s => s.selectedDistrict = 11,
+            s => s.selectedDistrict = 10, // Locked selection.
+            s => s.districts = new DistrictState[13],
+            s => s.districts[2] = null,
+            s => s.districts[0].projects[0] = null,
+            s => s.districts[0].projects[0].id = "forged",
+            s => s.districts[0].projects[0].finishUtc++,
+            s => s.districts[0].projects[0].lastIncomeUtc = s.lastSeenUtc + 1,
+            s => s.districts[0].projects[0].lastIncomeUtc++, // Water cannot earn hourly income.
+            s => s.districts[0].projects[0].completed = false,
+            s => s.districts[0].clearedLoads = 3,
+            s => s.districts[4].unlocked = true, // Would appear close to insertion; still invalid v1.
+            s => { s.districts[3].unlocked = false; s.selectedDistrict = 0; }, // Earned frontier must already be open.
+            s => s.districts[10].clearedLoads = 1,
+            s => s.districts[10].projects[6].completed = true,
+            s => s.districts[3].id = "karama",
+            s => s.districts[3].legacyAccess = true,
+            s => s.jobDistrict = 11,
+            s => s.jobStage = (JobStage)99,
+            s => s.jobFinishUtc = 123, // Idle deadline impossible.
+            s => { s.jobStage = JobStage.Clearing; s.jobFinishUtc = s.lastSeenUtc + 20; s.jobDistrict = 10; },
+            s => { s.jobStage = JobStage.Clearing; s.jobFinishUtc = s.lastSeenUtc + 20; s.factoryLevel = 0; }
+        };
+        Throws(() => GameStateMigration.Upgrade(null));
+        foreach (var corrupt in corruptions)
+        {
+            var legacy = LegacyFixture(3);
+            corrupt(legacy);
+            string before = Json(legacy);
+            Throws(() => GameStateMigration.Upgrade(legacy));
+            Equal(before, Json(legacy), "Rejected legacy data is never rewritten");
+        }
+        // Frozen final commerce duration differs from ordinary shops.
+        var final = LegacyFixture(11);
+        final.districts[10].projects[7].finishUtc = final.districts[10].projects[7].startedUtc + 3600;
+        Throws(() => GameStateMigration.Upgrade(final));
+        var current = GameStateMigration.Upgrade(LegacyFixture(11));
+        current.districts[DistrictIndex("daraj")].legacyAccess = true;
+        Throws(() => GameStateMigration.Upgrade(current));
+        current = GameStateMigration.Upgrade(LegacyFixture(3));
+        current.districts[DistrictIndex("sabra")].legacyAccess = true;
+        current.districts[DistrictIndex("sabra")].unlocked = true;
+        Throws(() => GameStateMigration.Upgrade(current));
+        current = GameCatalog.CreateNew(Epoch);
+        current.districts[0].id = "tuffah";
+        Throws(() => GameStateMigration.Upgrade(current));
     }
 }

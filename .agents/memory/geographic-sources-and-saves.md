@@ -9,8 +9,8 @@ Do not resolve a neighborhood from its name alone or silently choose among confl
 
 **How to apply:** Recheck cited geographic features when changing data. Do not equate representative points with official boundaries, or move pins to make game progression a straight line.
 
-Preserve legacy progress by sequential milestone when applying the approved geographic reorder; do not remap old saves by provisional district names.
+Distinguish the original provisional-name replacement from later insertions into the verified geographic list. The former retained milestone progress; later insertions must preserve the identity and work of existing neighborhoods.
 
-**Why:** The former list included neighborhoods the user replaced, and progress was serialized without geographic identities. Name-based remapping would be ambiguous and could break sequential unlocks. Retaining milestone state preserves money, timers and completed work; this behavior is explained in the delivered project guide.
+**Why:** Provisional names were ambiguous, but the verified geographic list is known. Reusing positional retention when inserting new neighborhoods would transfer completed work to the wrong places. The expansion therefore preserves previously earned access even across new unfinished districts, without completing the new content or granting duplicate rewards.
 
-**How to apply:** Any future identity-based save migration needs an explicit migration design; do not infer geographic ownership from old array positions.
+**How to apply:** Future expansions need an explicit identity-aware migration. Keep historical achievement dates separate from completion of the expanded catalog. Never infer missing identities from a changed live list; use the frozen list belonging to the source save.
