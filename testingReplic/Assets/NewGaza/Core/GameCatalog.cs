@@ -12,6 +12,8 @@ namespace NewGaza.Core
         // User-approved neighborhoods, unlocked east-to-west using mapped representative
         // positions. This is game progression, not real reconstruction priorities.
         public static readonly DistrictDefinition[] Districts = BuildDistricts();
+        public static int NeighborhoodCount => Districts.Length - 1;
+        public static int FinalDistrictIndex => Districts.Length - 1;
 
         public static GameState CreateNew(long now)
         {
@@ -22,6 +24,7 @@ namespace NewGaza.Core
                 var definition = Districts[i];
                 var district = new DistrictState
                 {
+                    id = definition.id,
                     unlocked = i == 0,
                     projects = new ProjectState[definition.projects.Length]
                 };
@@ -37,14 +40,14 @@ namespace NewGaza.Core
             var locations = GameGeography.Districts;
             string[] farms =
             {
-                "مشتل الشجاعية", "بستان التفاح", "مزرعة الشيخ رضوان", "بستان الكرامة",
-                "حديقة أعشاب البلدة القديمة", "مزرعة خضار الصبرة", "بستان الزيتون",
+                "مشتل الشجاعية", "بستان التفاح", "مزرعة الشيخ رضوان", "مشتل الدرج", "بستان الكرامة",
+                "حديقة أعشاب البلدة القديمة", "مزرعة النصر", "مزرعة خضار الصبرة", "بستان الزيتون",
                 "حديقة زهور الرمال", "مشتل تل الهوا", "مزرعة الشيخ عجلين", "مشتل الساحل"
             };
             string[] shops =
             {
-                "سوق الشجاعية", "سوق التفاح", "سوق الشيخ رضوان", "متاجر الكرامة",
-                "سوق البلدة القديمة", "مخبز الصبرة", "معصرة الزيتون", "مكتبة الرمال",
+                "سوق الشجاعية", "سوق التفاح", "سوق الشيخ رضوان", "سوق الدرج", "متاجر الكرامة",
+                "سوق البلدة القديمة", "متاجر النصر", "مخبز الصبرة", "معصرة الزيتون", "مكتبة الرمال",
                 "مقهى تل الهوا", "سوق الشيخ عجلين", "فندق الضيافة الساحلي"
             };
             var names = new string[locations.Length];
@@ -52,16 +55,20 @@ namespace NewGaza.Core
             var result = new DistrictDefinition[names.Length];
             for (int i = 0; i < result.Length; i++)
             {
-                bool finale = i == 10;
+                bool finale = i == result.Length - 1;
+                // Preserve all existing per-ID prices, loads and rarity despite index shifts.
+                int oldIndex = GameStateMigration.LegacyIndex(locations[i].id);
+                int balanceIndex = oldIndex >= 0 ? oldIndex : locations[i].id == "daraj" ? 3 : 5;
                 result[i] = new DistrictDefinition
                 {
+                    id = locations[i].id,
                     name = names[i],
-                    rarity = finale ? "ختامي" : i < 3 ? "عادي" : i < 6 ? "نادر" : i < 8 ? "ملحمي" : "أسطوري",
+                    rarity = finale ? "ختامي" : balanceIndex < 3 ? "عادي" : balanceIndex < 6 ? "نادر" : balanceIndex < 8 ? "ملحمي" : "أسطوري",
                     description = finale
-                        ? "شارع الرشيد المطل على البحر، على امتداد ساحل المدينة؛ المشروع الختامي بعد الأحياء العشرة."
+                        ? "شارع الرشيد المطل على البحر، على امتداد ساحل المدينة؛ المشروع الختامي بعد الأحياء الاثني عشر."
                         : "أعد بناء " + names[i] + " بالكامل، ثم استلم المكافأة لفتح الحي التالي.",
-                    rubbleLoads = 4 + i,
-                    completionReward = finale ? 1000000 : 100000 + i * 25000,
+                    rubbleLoads = 4 + balanceIndex,
+                    completionReward = finale ? 1000000 : 100000 + balanceIndex * 25000,
                     projects = new[]
                     {
                         Project("water", "شبكة مياه " + names[i], ProjectKind.Water, 18000, 3600, 60, 15,

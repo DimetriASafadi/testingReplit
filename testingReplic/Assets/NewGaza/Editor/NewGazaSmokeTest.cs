@@ -60,14 +60,15 @@ namespace NewGaza.Editor
                 Require(Camera.main != null && Camera.main.isActiveAndEnabled, "Missing active tagged camera.");
                 Require(UnityEngine.Object.FindFirstObjectByType<CityWorld>() != null, "Missing city world.");
                 Require(UnityEngine.Object.FindFirstObjectByType<CityHud>() != null, "Missing HUD.");
-                Require(UnityEngine.Object.FindObjectsByType<CitySelectable>(FindObjectsSortMode.None).Length >= 11,
+                Require(UnityEngine.Object.FindObjectsByType<CitySelectable>(FindObjectsSortMode.None).Length >= Core.GameCatalog.Districts.Length,
                     "Missing selectable city districts/plots.");
                 Require(UnityEngine.Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() != null,
                     "Missing UI EventSystem.");
                 Require(Resources.Load<Font>("NewGazaArabic") != null, "Arabic font did not import.");
                 Require(Resources.Load<Material>("NewGazaLit") != null, "URP material did not import.");
                 Require(string.IsNullOrEmpty(session.SaveError), "Save could not be written.");
-                Require(session.State.districts.Length == 11, "Expected ten neighborhoods and final Rashid district.");
+                Require(session.State.districts.Length == Core.GameCatalog.Districts.Length,
+                    "Expected all catalog neighborhoods and the final Rashid district.");
                 Finish(true, "Startup, camera, city selection, HUD, font, material and local save passed in Unity Play Mode.");
             }
             catch (Exception e) { Finish(false, e.Message); }

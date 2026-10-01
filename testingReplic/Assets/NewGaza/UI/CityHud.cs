@@ -88,7 +88,7 @@ namespace NewGaza
             LayoutSafeArea(true);
             RefreshHud();
             structuralKey = StateKey();
-            finaleShown = session.State.cityCompletedUtc > 0;
+            finaleShown = session.Economy.CityComplete;
         }
 
         private static void EnsureEventSystem()
@@ -218,7 +218,7 @@ namespace NewGaza
             }
             RefreshHud();
             RefreshBindings();
-            if (!finaleShown && session.State.cityCompletedUtc > 0 && confirmationObject == null)
+            if (!finaleShown && session.Economy.CityComplete && confirmationObject == null)
             {
                 finaleShown = true;
                 OpenPage(Page.Finale);
@@ -351,7 +351,7 @@ namespace NewGaza
                 case 4: text = "ابدأ الإعمار\nأزل الركام ثم انقله ودوّره تلقائياً.\nالمواد تُحفظ للبناء أو البيع."; action = "إزالة"; break;
                 case 5: text = "العمل مستمر\nالمراحل تعمل أثناء غيابك.\nابدأ الزراعة لدخل قابل للتكرار."; action = "استثمر"; break;
                 case 6: text = "نمِّ ميزانيتك\nزراعة بـ 500 تعطي 1,500 بعد 5 دقائق.\nاحتفظ بمواد للمياه والمنازل."; action = "استثمر"; break;
-                case 8: text = "الحي جاهز 100%\nاستلم مكافأته لفتح الحي التالي.\nشارع الرشيد بعد الأحياء العشرة."; action = "مكافأة"; break;
+                case 8: text = "الحي جاهز 100%\nاستلم مكافأته لفتح الحي التالي.\nشارع الرشيد بعد إكمال الأحياء " + GameCatalog.NeighborhoodCount + "."; action = "مكافأة"; break;
                 default: text = "ابنِ بالتدرّج\nابدأ بشبكة المياه؛ ثم المنزل والطريق.\nراجع المواد والمتطلبات أولاً."; action = "المشاريع"; break;
             }
             tutorialLabel.SetText(text);
@@ -560,7 +560,7 @@ namespace NewGaza
                 BindButton(reward, () => session.State.districts[index].unlocked &&
                     !session.State.districts[index].rewardClaimed && session.Economy.Progress(index) >= 1f);
                 if (!state.unlocked)
-                    description.SetText(d == 10 ? "مقفل حتى استلام مكافآت الأحياء العشرة. منطقة ختامية مميزة." :
+                    description.SetText(d == GameCatalog.FinalDistrictIndex ? "مقفل حتى استلام مكافآت جميع الأحياء. منطقة ختامية مميزة." :
                         "أكمل " + GameCatalog.Districts[d - 1].name + " بنسبة 100% واستلم المكافأة لفتح هذا الحي.");
             }
             Note("السهم يشير إلى الشمال. مواقع الأحياء والساحل مستندة إلى خرائط؛ قطع البناء والطرق المحلية تمثيلية.", Muted);
@@ -841,7 +841,7 @@ namespace NewGaza
                 ClosePage();
             }, true, Teal, 1);
             Note("الكتابة داخل الحقل تستخدم ترتيب الإدخال المنطقي للحفاظ على المؤشر واللوحة الأصلية؛ المعاينة تعرض العربية المتصلة.", Muted);
-            ListAction(session.State.cityCompletedUtc > 0 ? "التقاط صورة مع ملخص المدينة" : "صورة الإنجاز · تُفتح بعد الرشيد",
+            ListAction(session.Economy.CityComplete ? "التقاط صورة مع ملخص المدينة" : "صورة الإنجاز · تُفتح بعد جميع الأحياء والرشيد",
                 () => { ClosePage(); CityCapture.Capture(session, cityCamera); }, Teal);
             ListAction("عرض ملخص الإنجاز", () => OpenPage(Page.Finale), Card);
             ListAction("إعادة تأطير المدينة", () => { ClosePage(); cityCamera.FrameCity(); }, Card);
@@ -860,7 +860,7 @@ namespace NewGaza
 
         private void BuildFinale()
         {
-            bool complete = session.State.cityCompletedUtc > 0;
+            bool complete = session.Economy.CityComplete;
             PageHeading(complete ? "غزة الجديدة · اكتمل الإعمار" : "رحلة الإعمار", "ملخص مدينتك · " + session.State.playerName);
             int claimed = 0, built = 0;
             foreach (var district in session.State.districts)
@@ -869,7 +869,8 @@ namespace NewGaza
                 foreach (var p in district.projects) if (p.completed) built++;
             }
             var card = ListCard(complete ? "مدينة تستحق الحياة" : "كل خطوة تصنع فرقاً", 390);
-            CardLabel(card, "مكافآت الأحياء المستلمة: " + claimed + " / 11\nالمشاريع المكتملة: " + built +
+            CardLabel(card, "مكافآت المناطق المستلمة (مع الرشيد): " + claimed + " / " +
+                GameCatalog.Districts.Length + "\nالمشاريع المكتملة: " + built +
                 "\nالرصيد: " + N(session.State.coins) + " عملة\nالأسطول: " + session.State.excavators + " حفارة · " +
                 session.State.trucks + " شاحنة · " + session.State.bulldozers + " جرافة\nالمصنع: المستوى " +
                 session.State.factoryLevel + (complete ? "\nتاريخ اكتمال المدينة: " + Stamp(session.State.cityCompletedUtc) : ""),

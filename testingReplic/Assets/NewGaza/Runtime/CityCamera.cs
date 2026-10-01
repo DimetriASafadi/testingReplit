@@ -49,7 +49,7 @@ namespace NewGaza
         public void FrameCity() { targetFocus = CityCentre(); targetZoom = OverviewZoom(); finaleUntil = 0; }
         public void PlayFinale()
         {
-            if (session.State.cityCompletedUtc <= 0)
+            if (!session.Economy.CityComplete)
             {
                 session.Notify("أكمل الأحياء وشارع الرشيد لعرض المشهد الختامي.");
                 return;

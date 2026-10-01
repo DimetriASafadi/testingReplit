@@ -130,6 +130,12 @@ namespace NewGaza
             return new Color(((hex >> 16) & 255) / 255f, ((hex >> 8) & 255) / 255f, (hex & 255) / 255f);
         }
 
+        private Material DistrictAccent(int index)
+        {
+            return districtColors[index == GameCatalog.FinalDistrictIndex ?
+                districtColors.Length - 1 : index % (districtColors.Length - 1)];
+        }
+
         private void BuildLandscape()
         {
             GeoPoint[] coast = GameGeography.Coastline;
@@ -327,14 +333,14 @@ namespace NewGaza
                 if (!coast) baseBatch.Box(limestone, new Vector3(0f,.075f,0f), tileSize);
                 if (!coast)
                 {
-                    baseBatch.Box(districtColors[i], new Vector3(0f,.17f,-7.15f), new Vector3(25.4f,.12f,.28f));
+                    baseBatch.Box(DistrictAccent(i), new Vector3(0f,.17f,-7.15f), new Vector3(25.4f,.12f,.28f));
                     baseBatch.Box(sidewalk, new Vector3(0f,.2f,0f), new Vector3(25f,.12f,1.25f));
                     baseBatch.Box(sidewalk, new Vector3(0f,.2f,0f), new Vector3(.8f,.12f,14f));
                     for (int corner = 0; corner < 4; corner++)
                     {
                         Vector3 p = new Vector3((corner % 2 == 0 ? -1f : 1f) * 11.9f,.22f,
                             (corner < 2 ? -1f : 1f) * 6.3f);
-                        baseBatch.Box(districtColors[i], p, new Vector3(1.1f,.3f,1.1f));
+                        baseBatch.Box(DistrictAccent(i), p, new Vector3(1.1f,.3f,1.1f));
                         Palm(baseBatch, p + Vector3.up * .15f, 2f + i % 3 * .3f, i * 24f + corner * 57f);
                     }
                     // Different edge monuments give every district a readable silhouette:
@@ -405,7 +411,7 @@ namespace NewGaza
 
         private void DistrictSignature(CityMeshBatch batch, int district)
         {
-            Material accent = districtColors[district];
+            Material accent = DistrictAccent(district);
             float z = 6.5f;
             switch (district % 5)
             {
@@ -559,7 +565,7 @@ namespace NewGaza
                     case ProjectKind.Park: hitHeight = 3.2f; break;
                     case ProjectKind.Services: hitHeight = 2.8f; break;
                     case ProjectKind.Investment:
-                        hitHeight = district == 10 && plot.definition.id == "commerce" ? 5.6f :
+                        hitHeight = district == GameCatalog.FinalDistrictIndex && plot.definition.id == "commerce" ? 5.6f :
                             plot.definition.id == "farm" ? 1.8f : 3.2f;
                         break;
                 }
@@ -628,7 +634,7 @@ namespace NewGaza
         private void Construction(CityMeshBatch batch, int district, Vector3 footprint)
         {
             float x = footprint.x * .34f, z = footprint.z * .32f;
-            float height = district == 10 ? 3.8f : 2.4f + district % 3 * .55f;
+            float height = district == GameCatalog.FinalDistrictIndex ? 3.8f : 2.4f + district % 3 * .55f;
             batch.Box(limestone, new Vector3(0f,.18f,0f), new Vector3(x * 2.1f,.22f,z * 2.1f));
             for (int i = 0; i < 4; i++)
             {
@@ -653,7 +659,7 @@ namespace NewGaza
         private void FinishedProject(CityMeshBatch batch, ProjectDefinition project, int district, int index, Vector3 footprint)
         {
             string id = (project.id ?? string.Empty).ToLowerInvariant();
-            Material accent = districtColors[Mathf.Min(district,districtColors.Length - 1)];
+            Material accent = DistrictAccent(district);
             float scale = Mathf.Min(footprint.x / 4.6f,footprint.z / 4.3f);
             switch (project.kind)
             {
@@ -688,11 +694,11 @@ namespace NewGaza
                         Farm(batch, footprint);
                     else if (id.Contains("factory") || id.Contains("workshop") || id.Contains("industry"))
                         Workshop(batch, footprint);
-                    else if (district == 10 || id.Contains("hotel")) Hotel(batch, footprint);
+                    else if (district == GameCatalog.FinalDistrictIndex || id.Contains("hotel")) Hotel(batch, footprint);
                     else Commerce(batch, footprint, accent);
                     break;
                 case ProjectKind.Landmark:
-                    if (district == 10 || id.Contains("hotel")) Hotel(batch, footprint);
+                    if (district == GameCatalog.FinalDistrictIndex || id.Contains("hotel")) Hotel(batch, footprint);
                     else Landmark(batch, footprint, accent, district);
                     break;
                 case ProjectKind.Services:

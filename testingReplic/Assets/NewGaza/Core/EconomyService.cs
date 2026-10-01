@@ -7,6 +7,15 @@ namespace NewGaza.Core
         private const long DaySeconds = 86400;
         private const int MaximumFleet = 1000;
         public GameState State { get; private set; }
+        public bool CityComplete
+        {
+            get
+            {
+                foreach (var district in State.districts)
+                    if (!district.rewardClaimed) return false;
+                return true;
+            }
+        }
 
         public EconomyService(GameState state)
         {
@@ -253,20 +262,18 @@ namespace NewGaza.Core
             if (!IsUnlocked(district)) return ActionResult.Fail("الحي مقفل");
             var state = State.districts[district];
             if (state.rewardClaimed) return ActionResult.Fail("تم استلام مكافأة هذا الحي سابقاً");
+            if (district == GameCatalog.FinalDistrictIndex)
+                for (int i = 0; i < GameCatalog.NeighborhoodCount; i++)
+                    if (!State.districts[i].rewardClaimed)
+                        return ActionResult.Fail("استلم مكافآت الأحياء الاثني عشر قبل مكافأة الرشيد");
             if (!IsComplete(district)) return ActionResult.Fail("أكمل إزالة الركام وجميع مشاريع الحي بنسبة ١٠٠٪ أولاً");
             long reward = GameCatalog.Districts[district].completionReward;
             if (reward <= 0 || !FitsCoins(reward)) return ActionResult.Fail("قيمة المكافأة غير صالحة أو الرصيد ممتلئ");
             State.coins += reward;
             state.rewardClaimed = true;
-            if (district < 9) State.districts[district + 1].unlocked = true;
-            else if (district == 9)
-            {
-                bool all = true;
-                for (int i = 0; i < 10; i++) all &= State.districts[i].rewardClaimed;
-                if (all) State.districts[10].unlocked = true;
-            }
-            else State.cityCompletedUtc = State.lastSeenUtc;
-            return ActionResult.Ok(district == 10 ? "اكتملت إعادة بناء المدينة وواجهة الرشيد!" : "تم استلام المكافأة وفتح الحي التالي");
+            GameStateMigration.ReconcileUnlocks(State);
+            if (CityComplete && State.cityCompletedUtc == 0) State.cityCompletedUtc = State.lastSeenUtc;
+            return ActionResult.Ok(CityComplete ? "اكتملت إعادة بناء المدينة وواجهة الرشيد!" : "تم استلام المكافأة وفتح الحي التالي");
         }
 
         public ActionResult ClaimDailyGift(long now)
@@ -344,7 +351,12 @@ namespace NewGaza.Core
         private bool ValidDistrict(int district) { return district >= 0 && district < State.districts.Length; }
         private bool IsUnlocked(int district)
         {
-            if (!ValidDistrict(district) || !State.districts[district].unlocked) return false;
+            return IsUnlocked(State, district);
+        }
+        private static bool IsUnlocked(GameState State, int district)
+        {
+            if (district < 0 || district >= State.districts.Length || !State.districts[district].unlocked) return false;
+            if (State.districts[district].legacyAccess) return true;
             for (int i = 0; i < district; i++)
                 if (!State.districts[i].rewardClaimed) return false;
             return true;
@@ -413,27 +425,41 @@ namespace NewGaza.Core
 
         private void ValidateState()
         {
+            ValidateState(State, GameCatalog.Districts, 2);
+        }
+
+        // The same authoritative rules validate frozen v1 data BEFORE any migration.
+        internal static void ValidateState(GameState State, DistrictDefinition[] catalog, int version)
+        {
             const string error = "بيانات الحفظ غير صالحة؛ لم تتم إعادة ضبط تقدمك";
-            if (State.version != 1 || State.coins < 0 || State.stock == null
+            if (State == null || State.version != version || State.coins < 0 || State.stock == null
                 || State.stock.concrete < 0 || State.stock.iron < 0 || State.stock.wood < 0 || State.stock.other < 0
                 || State.factoryLevel < 0 || State.factoryLevel > 5 || State.equipmentLevel < 1 || State.equipmentLevel > 5
                 || State.excavators < 0 || State.excavators > MaximumFleet || State.trucks < 0 || State.trucks > MaximumFleet
                 || State.bulldozers < 0 || State.bulldozers > MaximumFleet || State.lastSeenUtc < 0 || State.lastGiftUtc < 0
+                || (State.equipmentLevel > 1 && (State.excavators == 0 || State.trucks == 0 || State.bulldozers == 0))
                 || State.lastGiftUtc > State.lastSeenUtc || State.cityCompletedUtc < 0 || State.cityCompletedUtc > State.lastSeenUtc
-                || State.districts == null || State.districts.Length != GameCatalog.Districts.Length
-                || State.selectedDistrict < 0 || State.selectedDistrict >= GameCatalog.Districts.Length)
+                || State.districts == null || State.districts.Length != catalog.Length
+                || State.selectedDistrict < 0 || State.selectedDistrict >= catalog.Length)
                 throw new InvalidOperationException(error);
+            bool claimedPrefix = true;
             for (int d = 0; d < State.districts.Length; d++)
             {
                 var district = State.districts[d];
-                var definition = GameCatalog.Districts[d];
+                var definition = catalog[d];
                 if (district == null || district.clearedLoads < 0 || district.clearedLoads > definition.rubbleLoads
                     || district.projects == null || district.projects.Length != definition.projects.Length
-                    || (d == 0 && !district.unlocked) || (district.rewardClaimed && !district.unlocked))
+                    || (claimedPrefix && !district.unlocked) || (district.rewardClaimed && !district.unlocked)
+                    || (!district.unlocked && district.clearedLoads != 0)
+                    || (version == 2 && district.id != definition.id)
+                    || (version == 1 && (!string.IsNullOrEmpty(district.id) || district.legacyAccess))
+                    || (district.legacyAccess && (!district.unlocked || GameStateMigration.LegacyIndex(district.id) < 0)))
                     throw new InvalidOperationException(error);
                 if (district.unlocked)
                     for (int previous = 0; previous < d; previous++)
-                        if (!State.districts[previous].rewardClaimed) throw new InvalidOperationException(error);
+                        if (!State.districts[previous].rewardClaimed
+                            && (!district.legacyAccess || GameStateMigration.LegacyIndex(catalog[previous].id) >= 0))
+                            throw new InvalidOperationException(error);
                 for (int p = 0; p < district.projects.Length; p++)
                 {
                     var project = district.projects[p];
@@ -441,10 +467,19 @@ namespace NewGaza.Core
                         || project.startedUtc < 0 || project.finishUtc < 0 || project.lastIncomeUtc < 0
                         || project.startedUtc > State.lastSeenUtc || project.lastIncomeUtc > State.lastSeenUtc
                         || (project.finishUtc > 0 && project.finishUtc <= project.startedUtc)
+                        || (project.finishUtc > 0 && project.finishUtc - project.startedUtc != definition.projects[p].durationSeconds)
                         || (!district.unlocked && (project.completed || project.finishUtc != 0 || project.startedUtc != 0))
                         || (!project.completed && project.lastIncomeUtc != 0)
                         || (!project.completed && project.finishUtc == 0 && project.startedUtc != 0))
                         throw new InvalidOperationException(error);
+                    string prerequisite = definition.projects[p].prerequisite;
+                    if (prerequisite != null && (project.completed || project.finishUtc > 0))
+                    {
+                        var required = Array.Find(district.projects, candidate => candidate != null && candidate.id == prerequisite);
+                        if (required == null || !required.completed
+                            || (project.finishUtc > 0 && required.finishUtc > project.startedUtc))
+                            throw new InvalidOperationException(error);
+                    }
                     if (project.completed)
                     {
                         if (IsBatch(definition.projects[p]))
@@ -454,17 +489,26 @@ namespace NewGaza.Core
                                 throw new InvalidOperationException(error);
                         }
                         else if (project.finishUtc == 0 || project.finishUtc > State.lastSeenUtc
-                            || project.lastIncomeUtc < project.finishUtc)
+                            || project.lastIncomeUtc < project.finishUtc
+                            || (project.id != "commerce" && project.lastIncomeUtc != project.finishUtc))
                             throw new InvalidOperationException(error);
                     }
                 }
-                if (district.rewardClaimed && !IsComplete(d)) throw new InvalidOperationException(error);
+                if (district.rewardClaimed)
+                {
+                    if (district.clearedLoads != definition.rubbleLoads) throw new InvalidOperationException(error);
+                    foreach (var project in district.projects)
+                        if (!project.completed) throw new InvalidOperationException(error);
+                }
+                claimedPrefix &= district.rewardClaimed;
             }
             if (State.jobStage < JobStage.Idle || State.jobStage > JobStage.Recycling || State.jobFinishUtc < 0
-                || (State.jobStage != JobStage.Idle && (!IsUnlocked(State.jobDistrict) || State.jobFinishUtc == 0
+                || State.jobDistrict < 0 || State.jobDistrict >= catalog.Length
+                || (State.jobStage == JobStage.Idle && State.jobFinishUtc != 0)
+                || (State.jobStage != JobStage.Idle && (!IsUnlocked(State, State.jobDistrict) || State.jobFinishUtc == 0
                     || State.factoryLevel == 0 || State.excavators == 0 || State.trucks == 0 || State.bulldozers == 0)))
                 throw new InvalidOperationException(error);
-            if (!IsUnlocked(State.selectedDistrict) || (State.cityCompletedUtc > 0 && !State.districts[10].rewardClaimed))
+            if (!IsUnlocked(State, State.selectedDistrict) || (State.cityCompletedUtc > 0 && !State.districts[catalog.Length - 1].rewardClaimed))
                 throw new InvalidOperationException(error);
         }
     }

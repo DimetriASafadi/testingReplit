@@ -39,14 +39,16 @@ namespace NewGaza.Core
         public const string Attribution = "© OpenStreetMap contributors · ODbL 1.0";
 
         // Game progression is east-to-west by representative longitude, not a driving route.
-        // Legacy saves retain milestone indices and project IDs, not provisional names.
+        // Stable IDs allow explicit save migration when a neighborhood is inserted.
         public static readonly DistrictLocation[] Districts =
         {
             new DistrictLocation("shujaiya", "الشجاعية", 31.4979729, 34.4726451, "https://www.openstreetmap.org/node/13354378801"),
             new DistrictLocation("tuffah", "التفاح", 31.5158861, 34.4693028, "https://en.wikipedia.org/wiki/Tuffah"),
             new DistrictLocation("sheikh-radwan", "الشيخ رضوان", 31.5321920, 34.4667695, "https://www.openstreetmap.org/relation/3935884"),
+            new DistrictLocation("daraj", "الدرج", 31.5164710, 34.4655040, "https://en.wikipedia.org/wiki/Daraj_Quarter"),
             new DistrictLocation("karama", "الكرامة", 31.5487639, 34.4648283, "https://www.openstreetmap.org/way/1557437193"),
             new DistrictLocation("old-city", "البلدة القديمة", 31.5050311, 34.4641381, "https://www.openstreetmap.org/node/11300155754"),
+            new DistrictLocation("nasr", "النصر", 31.5340280, 34.4596056, "https://en.wikipedia.org/wiki/Nasser,_Gaza_City"),
             new DistrictLocation("sabra", "الصبرة", 31.5071510, 34.4519234, "https://www.openstreetmap.org/node/11300200739"),
             new DistrictLocation("zeitoun", "الزيتون", 31.4879035, 34.4445419, "https://www.openstreetmap.org/node/11298850625"),
             new DistrictLocation("rimal", "الرمال", 31.5200000, 34.4431000, "https://en.wikipedia.org/wiki/Rimal"),
