@@ -1,40 +1,72 @@
-# Project Brief
+# نيو غزة — ملف المشروع
 
-## Working direction
+## المرجع والهدف
 
-Evolve this Unity project into a strategy game centered on building and destructible areas.
+المرجع هو وثيقة «توصيف اللعبة» المرفقة من صاحب المشروع بتاريخ 2026-10-01.
+اللعبة محاكاة ثلاثية الأبعاد لإعادة الإعمار والإدارة والاقتصاد على الهواتف الذكية.
+ليست لعبة قتال: يبدأ اللاعب بمدينة متضررة ويحوّل الركام إلى موارد ثم إلى أحياء مكتملة.
 
-This is an early brief based only on the direction shared so far. Specific gameplay, setting, and technical requirements are still to be supplied by the project owner. Do not treat open questions below as decisions.
+## حالة التنفيذ
 
-## Confirmed so far
+هذه **نسخة تأسيسية أولى** داخل مشروع Unity الأصلي، وليست إصدار متجر جاهزًا.
+المجسمات الحالية مصممة برمجيًا بأسلوب مدينة ساحلية مبسطة؛ ليست نماذج فنية نهائية ولا خريطة جغرافية دقيقة.
+تجربة السباق القديمة محفوظة في `Assets/Scenes/SampleScene.unity`، وغير مفعّلة في بناء اللعبة الجديدة.
+المشهد الجديد: `Assets/NewGaza/Scenes/NewGaza.unity`.
 
-- The project is built with Unity 6.
-- The intended genre is strategy.
-- Building and destructible environments/areas are important parts of the game.
-- Detailed requirements will be provided before implementation begins.
+## أنظمة النسخة الأولى
 
-## Details to define
+- رصيد بداية 50,000 عملة.
+- شراء مصنع تدوير وحفارة وجرافة وشاحنات؛ المجموعة التعليمية مع شاحنتين تكلف 40,000.
+- دورة إزالة الركام ثم نقله ثم تدويره تلقائيًا مع عرض مراحل العمل والمعدات المتحركة.
+- مخزون الخرسانة والحديد والخشب والمواد الأخرى، وبيعها أو استخدامها في البناء.
+- خمسة مستويات للمصنع ولترقية المعدات.
+- عشرة أحياء وشارع الرشيد كمشروع ختامي مستقل.
+- الإنجاز يتطلب إنهاء ركام الحي ومشاريعه المطلوبة بالكامل. استلام مكافأة 100% يفتح الحي التالي، وليس بلوغ 75%.
+- العودة إلى الأحياء المفتوحة والاستفادة من استثماراتها.
+- مشاريع للمياه والكهرباء والسكن والطرق والحدائق والخدمات والزراعة والتجارة والإنتاج الصناعي.
+- زراعة بدورات يدوية، وإنتاج صناعي بمواد خام، وتجارة بدخل متكرر.
+- مؤقتات حقيقية للمشاريع تستمر أثناء الخروج، مثل المنزل 25,000/ساعتين والطريق 150,000/18 ساعة.
+- هدية مضمونة كل 24 ساعة، دون عجلة حظ.
+- حفظ محلي مع نسخة احتياطية؛ لا تُحذف بيانات اللاعب تلقائيًا عند تلف الحفظ.
+- واجهة عربية وتحكم باللمس، وتأكيد قبل الإنفاق من الواجهة.
+- عرض ختامي للمدينة وتصدير صورة PNG محلية ببيانات الإنجاز بعد إكمال الرشيد.
 
-- **Game setting and theme:** To be provided.
-- **Player perspective and camera:** To be provided.
-- **Single-player, multiplayer, or both:** To be provided.
-- **Core gameplay loop and win/loss conditions:** To be provided.
-- **What players can build, upgrade, and manage:** To be provided.
-- **How structures and terrain can be damaged or destroyed:** To be provided.
-- **Units, combat, resources, and progression:** To be provided.
-- **Controls and user interface:** To be provided.
-- **Target platform and performance requirements:** To be provided.
-- **Art direction, references, and audio:** To be provided.
-- **Scope and milestones for the first playable version:** To be provided.
+## التحكم
 
-## Current implementation note
+- نقرة: تحديد الحي أو قطعة المشروع وعرض تفاصيلها.
+- نقرة ثانية على الركام: بدء العمل إذا كانت المعدات متوفرة.
+- نقرة ثانية على استثمار مكتمل: تحصيل العائد المتاح.
+- الضغط المطوّل: فتح تفاصيل العنصر دون شراء تلقائي.
+- سحب إصبع واحد: تحريك الكاميرا.
+- تباعد/تقارب إصبعين: تكبير وتصغير.
+- تدوير إصبعين: دوران الكاميرا.
+- الفأرة: سحب بالزر الأيسر، عجلة للتقريب، وسحب بالزر الأيمن للدوران.
+- واجهة اللمس تمنع انتقال ضغطات الأزرار والسحب داخل القوائم إلى المدينة خلفها.
 
-The repository currently contains an early arcade racing prototype. It is not yet the strategy game described above. Keep it intact until the owner confirms what should be reused, replaced, or removed.
+## قرارات قابلة للمراجعة
 
-## Working approach
+- الشجاعية والزيتون أولًا. بقية الأسماء والترتيب مبدئية: التفاح، الدرج، الصبرة، تل الهوى، الرمال، الشيخ رضوان، النصر، الشاطئ.
+- التصنيفات: عادي، نادر، ملحمي، أسطوري؛ الرشيد مرحلة ختامية.
+- الأحياء تستخدم هيكل مشاريع مشتركًا في النسخة الأولى مع أسماء وتفاصيل بصرية مختلفة. التخصصات العميقة لكل حي لم تُستكمل بعد.
+- عقود ركام وارد متكررة بعد انتهاء الركام المحلي تمنع انقطاع مصدر الموارد. لا تمنح تقدمًا إضافيًا في إنجاز الحي.
+- توقيت اللعبة يعتمد على ساعة الجهاز مع منع تكرار العوائد بسبب رجوع الساعة؛ ليس نظام وقت خادميًا مقاومًا للتلاعب.
+- الصور تحفظ في مجلد بيانات اللعبة؛ لا تُرفع إلى خدمة خارجية.
 
-Once requirements are supplied:
+## ما لم يكتمل للإصدار النهائي
 
-1. Confirm the first playable scope and any important unknowns.
-2. Preserve the existing Unity project structure and build in small, testable steps.
-3. Verify each major gameplay feature in the Unity editor before expanding its scope.
+- اختبار Play Mode الفعلي واختبار الأداء واللمس والذاكرة والحرارة على أجهزة Android وiOS.
+- نماذج فنية نهائية وLOD ورسوم متحركة احترافية ومؤثرات صوتية وبصرية موسعة.
+- موقع الأحياء وحدودها بدقة جغرافية، وكتالوج موسع خاص بكل حي.
+- تشغيل شبكات المرافق تفصيليًا، مواسم ومحاصيل متعددة، وأسعار تشغيل مستقلة لكل آلة.
+- إعلانات بمكافأة من مزود حقيقي، إدارة الموافقات، الخصوصية، والتحقق من المكافأة. الزر الحالي غير مفعّل ولا يعطي مكافأة وهمية.
+- حفظ سحابي ووقت خادمي ومكافحة الغش.
+- تسجيل فيديو نهاية فعلي ومشاركة أصلية إلى معرض الهاتف والشبكات الاجتماعية.
+- توقيع التطبيقات ومعرّفات المتاجر والأيقونات وسياسات الخصوصية واختبارات القبول.
+
+## التحقق
+
+اختبارات الاقتصاد مستقلة عن Unity وتقيس التقدم والموارد والتوقيت والاستحقاقات.
+اختبارات المصدر تفحص صياغة C# والعربية؛ لا تعادل تجميع Unity أو تشغيل اللعبة.
+لم يكن محرر Unity متوفرًا في بيئة العمل وقت التنفيذ، ولذلك لا يوجد ادعاء باجتياز اختبار جهاز أو الحصول على APK/IPA معتمد.
+
+راجع `README.ar.md` للتشغيل والاختبار.

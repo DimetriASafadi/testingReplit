@@ -70,7 +70,7 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
-ProjectSettings/ProjectSettings.asset
+# Keep PlayerSettings versioned: mobile input/build settings must travel with the project.
 
 # JetBrains Rider IDE files
 .idea
@@ -78,3 +78,8 @@ ProjectSettings/ProjectSettings.asset
 # This may be different if it is changed in Android Resolver settings
 Assets/GeneratedLocalRepo/
 # source : https://github.com/firebase/quickstart-unity/issues/554#issuecomment-686876563
+
+# Source-only .NET verifier (the Unity-project *.csproj rule above is otherwise too broad).
+!/Tests/SourceChecks/SourceChecks.csproj
+/Tests/SourceChecks/obj/
+/Tests/SourceChecks/bin/
