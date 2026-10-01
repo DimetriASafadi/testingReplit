@@ -32,8 +32,10 @@ namespace NewGaza
             internal GameObject damagedPlots;
             internal GameObject finishedPlots;
             internal CitySelectable salvageHit;
+            internal DistrictFog fog;
             internal int rubbleRemaining = -1;
             internal bool unlocked;
+            internal bool fogged;
             internal bool rewarded;
         }
 
@@ -41,6 +43,8 @@ namespace NewGaza
         private CityGeometry geometry;
         private Transform cityRoot;
         private DistrictView[] districts;
+        private DistrictFog[] districtFogs;
+        private Material fogMaterial;
         private GameObject selection;
         private GameObject districtSelection;
         private GameObject factory;
@@ -54,6 +58,7 @@ namespace NewGaza
         private bool finale;
         private Material sand, limestone, cream, terracotta, teal, glass, asphalt, sidewalk;
         private Material dark, iron, rubble, leaf, grass, yellow, white, water, sea, foam;
+        private Material concrete, brick, windowFrame, rebarRust, waterTank, waterTankLight, patina;
         private Material[] districtColors;
 
         /// <summary>Geographic bounds are supplied by GameGeography in city-local Unity units.</summary>
@@ -62,6 +67,7 @@ namespace NewGaza
             if (gameSession == null) throw new ArgumentNullException(nameof(gameSession));
             if (session != null) session.Changed -= Refresh;
             if (session != null) session.PlotSelected -= SetSelectedPlot;
+            DisposeFogFields();
             if (cityRoot != null)
             {
                 cityRoot.gameObject.SetActive(false);
@@ -70,6 +76,7 @@ namespace NewGaza
             geometry?.Dispose();
             session = gameSession;
             geometry = new CityGeometry();
+            fogMaterial = CreateFogMaterial();
             MakePalette();
             cityRoot = new GameObject("New Gaza • geographically placed neighborhood centers").transform;
             cityRoot.SetParent(transform, false);
@@ -91,37 +98,44 @@ namespace NewGaza
 
         private void MakePalette()
         {
-            sand = geometry.Material("warm sand", Hex(0xDEC69B));
-            limestone = geometry.Material("limestone", Hex(0xD6B893));
-            cream = geometry.Material("ivory plaster", Hex(0xF4E7CE));
-            terracotta = geometry.Material("terracotta", Hex(0xBC6950));
-            teal = geometry.Material("petrol teal", Hex(0x277E80));
-            glass = geometry.Material("deep blue glazing", Hex(0x214F62), .5f);
-            asphalt = geometry.Material("blue slate streets", Hex(0x52676C));
-            sidewalk = geometry.Material("pale sandstone paving", Hex(0xEDDFC4));
-            dark = geometry.Material("charcoal rubber", Hex(0x293A40));
-            iron = geometry.Material("steel", Hex(0x91A5A6), .35f);
-            rubble = geometry.Material("dusty broken concrete", Hex(0xA69983));
-            leaf = geometry.Material("palm green", Hex(0x3F8063));
-            grass = geometry.Material("garden sage", Hex(0x8BA477));
-            yellow = geometry.Material("construction saffron", Hex(0xEFB745));
-            white = geometry.Material("road chalk", Hex(0xF9F1D9));
-            water = geometry.Material("shallow turquoise", Hex(0x56C6BB), .5f);
-            sea = geometry.Material("Mediterranean", Hex(0x268D9A), .6f);
-            foam = geometry.Material("sea foam", Hex(0xBEEADF), .2f);
+            sand = geometry.Material("warm coastal sand", Hex(0xCDBB9C), surface: SurfaceKind.Stone);
+            limestone = geometry.Material("weathered limestone", Hex(0xC9BBA4), surface: SurfaceKind.Stone);
+            cream = geometry.Material("aged off-white plaster", Hex(0xDED6C7), surface: SurfaceKind.Plaster);
+            terracotta = geometry.Material("muted brick and terracotta", Hex(0x986E5B));
+            teal = geometry.Material("muted utility teal", Hex(0x557675));
+            glass = geometry.Material("smoky blue-grey glazing", Hex(0x596B6C), .42f);
+            asphalt = geometry.Material("worn neutral asphalt", Hex(0x474744), surface: SurfaceKind.Asphalt);
+            sidewalk = geometry.Material("dusty limestone paving", Hex(0xC5BBA9), surface: SurfaceKind.Stone);
+            dark = geometry.Material("shadowed recess", Hex(0x454542));
+            iron = geometry.Material("weathered steel", Hex(0x777873), .3f);
+            rubble = geometry.Material("dusty broken concrete", Hex(0xAAA292), surface: SurfaceKind.Concrete);
+            leaf = geometry.Material("coastal palm green", Hex(0x55725B));
+            grass = geometry.Material("dry garden sage", Hex(0x92947A));
+            yellow = geometry.Material("construction ochre", Hex(0xC49D59));
+            white = geometry.Material("faded road marking", Hex(0xDDD8CA));
+            water = geometry.Material("muted shallow water", Hex(0x739C97), .42f);
+            sea = geometry.Material("Mediterranean blue-green", Hex(0x477C7B), .5f);
+            foam = geometry.Material("sea foam", Hex(0xC0C8B9), .15f);
+            concrete = geometry.Material("exposed grey concrete", Hex(0x99958A), surface: SurfaceKind.Concrete);
+            brick = geometry.Material("dusty masonry infill", Hex(0x9E806A), surface: SurfaceKind.Stone);
+            windowFrame = geometry.Material("weathered pale window frames", Hex(0xC5BBAA), surface: SurfaceKind.Stone);
+            rebarRust = geometry.Material("oxidized exposed reinforcing steel", Hex(0x795B47), .2f);
+            waterTank = geometry.Material("matte rooftop water tank", Hex(0x474A45), .08f);
+            waterTankLight = geometry.Material("sun-faded rooftop water tank", Hex(0xBDBCB3), .08f);
+            patina = geometry.Material("subtle plaster weathering", Hex(0xC6C0B5), surface: SurfaceKind.Plaster);
             districtColors = new[]
             {
-                geometry.Material("district ochre", Hex(0xD69B64)),
-                geometry.Material("district coral", Hex(0xD08068)),
-                geometry.Material("district sage", Hex(0x91A47C)),
-                geometry.Material("district blue", Hex(0x689EAA)),
-                geometry.Material("district rose", Hex(0xBB8476)),
-                geometry.Material("district mint", Hex(0x81B4A4)),
-                geometry.Material("district gold", Hex(0xC7AA69)),
-                geometry.Material("district slate", Hex(0x7B99A4)),
-                geometry.Material("district olive", Hex(0xA1A66D)),
-                geometry.Material("district clay", Hex(0xB7745A)),
-                geometry.Material("Rashid turquoise", Hex(0x4FAAA3))
+                geometry.Material("district muted ochre", Hex(0xA9987C)),
+                geometry.Material("district dusty rose", Hex(0xA68A7D)),
+                geometry.Material("district dry sage", Hex(0x929781)),
+                geometry.Material("district weathered blue grey", Hex(0x84928E)),
+                geometry.Material("district muted clay", Hex(0xAA8877)),
+                geometry.Material("district pale olive", Hex(0x9A9A7D)),
+                geometry.Material("district limestone gold", Hex(0xB0A17F)),
+                geometry.Material("district mineral grey", Hex(0x92958E)),
+                geometry.Material("district olive stone", Hex(0x9B9C7E)),
+                geometry.Material("district faded earth", Hex(0xA18572)),
+                geometry.Material("Rashid coastal stone", Hex(0x8D9A8E))
             };
         }
 
@@ -134,6 +148,32 @@ namespace NewGaza
         {
             return districtColors[index == GameCatalog.FinalDistrictIndex ?
                 districtColors.Length - 1 : index % (districtColors.Length - 1)];
+        }
+
+        private static Material CreateFogMaterial()
+        {
+            Shader shader = Resources.Load<Shader>("NewGazaFog");
+            if (shader == null)
+                throw new InvalidOperationException("New Gaza requires Resources/NewGazaFog (custom URP soft-fog shader).");
+            var material = new Material(shader) { name = "New Gaza • shared district dust / fog" };
+            material.SetColor("_FogColor", new Color(.79f, .81f, .78f, 1f));
+            material.SetFloat("_Softness", .16f);
+            return material;
+        }
+
+        private void DisposeFogFields()
+        {
+            if (districtFogs != null)
+            {
+                foreach (DistrictFog fog in districtFogs)
+                    if (fog != null) fog.Dispose();
+                districtFogs = null;
+            }
+            if (fogMaterial != null)
+            {
+                Destroy(fogMaterial);
+                fogMaterial = null;
+            }
         }
 
         private void BuildLandscape()
@@ -301,6 +341,7 @@ namespace NewGaza
         {
             int count = GameCatalog.Districts.Length;
             districts = new DistrictView[count];
+            districtFogs = new DistrictFog[count];
             int coastalIndex = count - 1;
             GeoPoint[] route = GameGeography.RashidRoute;
             float routeLength = PathLength(route);
@@ -406,6 +447,27 @@ namespace NewGaza
                 district.crane = BuildCrane(district.root,
                     coast ? salvagePos + new Vector3(5f,.05f,1.5f) : new Vector3(10.8f,.25f,5.5f));
                 district.crane.SetActive(false);
+
+                var fogCenters = new Vector3[district.plots.Length];
+                var fogRotations = new Quaternion[district.plots.Length];
+                var fogSizes = new Vector3[district.plots.Length];
+                for (int p = 0; p < district.plots.Length; p++)
+                {
+                    fogCenters[p] = district.plots[p].anchor.localPosition;
+                    fogRotations[p] = district.plots[p].anchor.localRotation;
+                    fogSizes[p] = district.plots[p].size;
+                }
+                DistrictState savedDistrict = session != null && session.State != null &&
+                    session.State.districts != null && i < session.State.districts.Length
+                    ? session.State.districts[i] : null;
+                bool initiallyFogged = savedDistrict != null && !savedDistrict.unlocked;
+                var fogObject = new GameObject("Soft localized dust / fog • locked district");
+                fogObject.transform.SetParent(district.root, false);
+                district.fog = fogObject.AddComponent<DistrictFog>();
+                district.fog.Initialize(fogMaterial, i, coast, fogCenters, fogRotations,
+                    fogSizes, initiallyFogged);
+                district.fogged = initiallyFogged;
+                districtFogs[i] = district.fog;
             }
         }
 
@@ -461,6 +523,8 @@ namespace NewGaza
                 DistrictView view = districts[d];
                 DistrictState district = state.districts[d];
                 view.unlocked = district.unlocked;
+                view.fogged = !district.unlocked;
+                if (view.fog != null) view.fog.Show(view.fogged);
                 view.rewarded = district.rewardClaimed;
                 view.badge.SetActive(district.rewardClaimed);
                 int remaining = Mathf.Max(0, GameCatalog.Districts[d].rubbleLoads - district.clearedLoads);
@@ -531,7 +595,7 @@ namespace NewGaza
             // Source meshes remain cached for incremental stage changes. Only this district's
             // presentation batch is replaced; normal one-second session ticks do no mesh work.
             district.damagedPlots = damaged.Build("District plot batch • ruins / foundations / construction",
-                district.root,Vector3.zero);
+                district.root,Vector3.zero,true);
             district.finishedPlots = finished.Build("District plot batch • completed architecture",
                 district.root,Vector3.zero,true);
         }
@@ -549,7 +613,7 @@ namespace NewGaza
             else FinishedProject(batch, plot.definition, district, index, footprint);
             plot.visual = batch.Build(stage == 0 ? "Damaged structure" : stage == 1 ? "Cleared foundation" :
                 stage == 2 ? "Under construction / scaffold" : "Completed • " + plot.definition.name,
-                plot.anchor, Vector3.zero, stage == 3);
+                plot.anchor, Vector3.zero, stage == 0 || stage == 3);
             // The selectable volume follows the architecture, so tapping an upper-storey
             // roof hits its own plot rather than the ground behind it in an angled view.
             float hitHeight = stage == 1 ? .65f : stage == 2 ? 4.5f : 2.2f;
@@ -586,32 +650,80 @@ namespace NewGaza
 
         private void Ruin(CityMeshBatch batch, int district, int plot, Vector3 footprint)
         {
-            float w = footprint.x * .7f;
-            float depth = footprint.z * .68f;
-            float h = .9f + (district + plot) % 3 * .35f;
-            batch.Box(rubble, new Vector3(-w * .5f,h * .5f,-depth * .18f), new Vector3(.24f,h,depth * .65f));
-            batch.Box(limestone, new Vector3(-w * .2f,h * .45f,depth * .45f), new Vector3(w * .65f,h * .9f,.2f));
-            batch.Box(rubble, new Vector3(w * .4f,h * .22f,depth * .28f), new Vector3(.26f,h * .44f,depth * .4f));
-            batch.Box(terracotta, new Vector3(-w * .17f,h + .1f,depth * .45f), new Vector3(w * .37f,.19f,.38f), 7f);
-            batch.Beam(iron, new Vector3(-w * .5f,h,0f), new Vector3(-w * .43f,h + .55f,.1f), .045f);
-            batch.Beam(iron, new Vector3(-w * .2f,h,depth * .45f),
-                new Vector3(-w * .1f,h + .6f,depth * .37f), .045f);
-            RubblePile(batch, new Vector3(w * .15f,.1f,-depth * .15f),
-                Mathf.Min(footprint.x,footprint.z) * .34f, district * 17 + plot * 31);
+            float w = footprint.x * .72f;
+            float depth = footprint.z * .7f;
+            float h = 1.02f + ((district * 3 + plot * 2) % 4) * .14f;
+            float front = -depth * .42f;
+            float rear = depth * .36f;
+            batch.Box(concrete,new Vector3(0f,.13f,0f),new Vector3(w * .84f,.18f,depth * .82f));
+
+            // Partial reinforced-concrete frame: missing bays leave the room volume visibly open.
+            float leftHeight = h * (.68f + (plot % 2) * .2f);
+            float rightHeight = h * (.48f + (district % 2) * .18f);
+            float rearHeight = h * (.72f + ((district + plot) % 2) * .16f);
+            Vector3 leftBase = new Vector3(-w * .37f,.22f,front);
+            Vector3 rightBase = new Vector3(w * .37f,.22f,front);
+            Vector3 rearBase = new Vector3(-w * .37f,.22f,rear);
+            batch.Box(concrete,leftBase + Vector3.up * leftHeight * .5f,
+                new Vector3(.2f,leftHeight,.2f));
+            batch.Box(concrete,rightBase + Vector3.up * rightHeight * .5f,
+                new Vector3(.2f,rightHeight,.2f));
+            batch.Box(concrete,rearBase + Vector3.up * rearHeight * .5f,
+                new Vector3(.2f,rearHeight,.2f));
+            batch.Beam(concrete,leftBase + Vector3.up * leftHeight,
+                new Vector3(-w * .08f,leftHeight + .04f,front),.18f);
+            batch.Beam(concrete,rearBase + Vector3.up * rearHeight,
+                new Vector3(-w * .08f,rearHeight + .04f,rear),.18f);
+
+            // Broken brick infill survives only in disconnected, jagged-edged wall patches.
+            batch.Box(brick,new Vector3(-w * .18f,.55f,front),new Vector3(w * .28f,.62f,.12f),-4f);
+            batch.Box(limestone,new Vector3(w * .23f,.44f,rear),new Vector3(w * .24f,.4f,.13f),6f);
+            batch.Box(concrete,new Vector3(w * .38f,.48f,depth * .04f),new Vector3(.13f,.72f,depth * .22f));
+            batch.Add(geometry.BrokenConcrete,concrete,new Vector3(-w * .18f,h * .7f,front - .07f),
+                new Vector3(w * .45f,.22f,depth * .31f),Quaternion.Euler(2f,7f,-4f));
+            batch.Add(geometry.BrokenConcrete,rubble,new Vector3(w * .18f,h * .53f,rear * .45f),
+                new Vector3(w * .35f,.18f,depth * .28f),Quaternion.Euler(-4f,31f,3f));
+
+            // Short exposed bars protrude from fractured column and slab ends.
+            batch.Beam(rebarRust,new Vector3(-w * .37f,.22f + leftHeight,front),
+                new Vector3(-w * .4f,.43f + leftHeight,front + .06f),.035f);
+            batch.Beam(rebarRust,new Vector3(-w * .34f,.22f + leftHeight,front),
+                new Vector3(-w * .29f,.39f + leftHeight,front - .03f),.03f);
+            batch.Beam(rebarRust,new Vector3(w * .37f,.22f + rightHeight,front),
+                new Vector3(w * .41f,.39f + rightHeight,front - .03f),.035f);
+            batch.Beam(rebarRust,new Vector3(-w * .37f,.22f + rearHeight,rear),
+                new Vector3(-w * .42f,.43f + rearHeight,rear + .04f),.035f);
+
+            RubblePile(batch,new Vector3(w * .13f,.1f,-depth * .12f),
+                Mathf.Min(footprint.x,footprint.z) * .34f,district * 17 + plot * 31);
         }
 
         private void RubblePile(CityMeshBatch batch, Vector3 pos, float size, int seed)
         {
             var random = new System.Random(seed);
-            for (int n = 0; n < 12; n++)
+            size = Mathf.Max(.25f,size);
+            for (int n = 0; n < 13; n++)
             {
-                float x = ((float)random.NextDouble() - .5f) * size * 1.4f;
-                float z = ((float)random.NextDouble() - .5f) * size * 1.25f;
-                float s = size * (.14f + (float)random.NextDouble() * .22f);
-                float y = .07f + Mathf.Max(0f, .5f - Mathf.Abs(x / size) - Mathf.Abs(z / size)) * size * .45f;
-                batch.Add(geometry.Box, n % 4 == 0 ? terracotta : rubble, pos + new Vector3(x,y,z),
-                    new Vector3(s,s * .65f,s * .9f),
-                    Quaternion.Euler(n * 17f % 35f,n * 73f,n * 7f % 25f));
+                float x = ((float)random.NextDouble() - .5f) * size * 1.45f;
+                float z = ((float)random.NextDouble() - .5f) * size * 1.3f;
+                float shard = size * (.18f + (float)random.NextDouble() * .25f);
+                float width = shard * (.75f + (float)random.NextDouble() * .8f);
+                float depth = shard * (.65f + (float)random.NextDouble() * .75f);
+                float thickness = shard * (.2f + (float)random.NextDouble() * .42f);
+                float mound = Mathf.Max(0f,.52f - Mathf.Abs(x / (size * .72f)) -
+                    Mathf.Abs(z / (size * .65f))) * size * .22f;
+                Vector3 scale = new Vector3(width,thickness,depth);
+                Vector3 center = pos + new Vector3(x,mound + thickness * .47f,z);
+                Quaternion rotation = Quaternion.Euler(
+                    ((float)random.NextDouble() - .5f) * 30f,
+                    (float)random.NextDouble() * 360f,
+                    ((float)random.NextDouble() - .5f) * 34f);
+                Material shardMaterial = n % 6 == 0 ? brick :
+                    n % 4 == 0 ? limestone : n % 3 == 0 ? concrete : rubble;
+                if (n % 5 == 0)
+                    batch.Add(geometry.Box,shardMaterial,center,scale,rotation);
+                else
+                    batch.Add(geometry.BrokenConcrete,shardMaterial,center,scale,rotation);
             }
         }
 
@@ -716,52 +828,205 @@ namespace NewGaza
 
         private void Housing(CityMeshBatch batch, Vector3 footprint, Material accent, int district, int index, bool tall)
         {
-            float w = footprint.x * .61f, d = footprint.z * .6f;
-            int floors = tall ? 3 + district % 2 : 1 + (district + index) % 2;
-            float h = floors * 1.05f;
+            float w = footprint.x * (.57f + (district + index) % 3 * .025f);
+            float d = footprint.z * (.56f + (district * 2 + index) % 4 * .018f);
+            int floors = tall && district >= 5 ? 3 + (district + index) % 2 :
+                1 + (district + index) % 2;
+            float h = floors * .98f;
             Building(batch, Vector3.zero, w,d,h,cream,accent,floors);
-            if (floors == 1)
-                batch.Add(geometry.Roof, terracotta, new Vector3(0f,h + .5f,0f),
-                    new Vector3(w + .25f,.65f,d + .3f),Quaternion.identity);
-            else
+            bool pergola = (district + index) % 4 == 2;
+
+            // Flat service roof with the small water tanks and solar arrays common to
+            // utilitarian apartment and courtyard-house silhouettes.
+            if ((district + index) % 3 != 1)
             {
-                batch.Box(accent,new Vector3(w * .22f,h + .45f,d * .14f),new Vector3(w * .3f,.55f,d * .38f));
-                SolarPanel(batch,new Vector3(-w * .2f,h + .32f,-d * .1f),Mathf.Min(.75f,w * .3f));
-                batch.Round(cream,new Vector3(w * .25f,h + .9f,d * .2f),new Vector3(.35f,.45f,.35f));
+                Material tankMaterial = (district + index) % 2 == 0 ? waterTank : waterTankLight;
+                batch.Box(iron,new Vector3(-w * .28f,h + .36f,d * .2f),new Vector3(.48f,.18f,.48f));
+                batch.Round(tankMaterial,new Vector3(-w * .28f,h + .68f,d * .2f),new Vector3(.54f,.55f,.54f));
+                batch.Round(dark,new Vector3(-w * .28f,h + .97f,d * .2f),new Vector3(.34f,.035f,.34f));
             }
-            batch.Box(terracotta,new Vector3(-w * .3f,.3f,-d * .67f),new Vector3(.65f,.4f,.4f));
-            Palm(batch,new Vector3(w * .65f,.15f,d * .25f),1.8f,index * 70f);
+            if (!pergola && (floors > 1 || (district + index) % 2 == 0))
+                SolarPanel(batch,new Vector3(w * .24f,h + .68f,-d * .16f),
+                    Mathf.Min(.62f,w * .28f));
+            if (pergola)
+            {
+                float shadeX = w * .31f;
+                float shadeZ = d * .17f;
+                float shadeWidth = w * .48f;
+                float shadeDepth = d * .38f;
+                float roofLevel = h + .34f;
+                for (int corner = 0; corner < 4; corner++)
+                {
+                    float sideX = corner % 2 == 0 ? -1f : 1f;
+                    float sideZ = corner < 2 ? -1f : 1f;
+                    batch.Box(iron,new Vector3(shadeX + sideX * shadeWidth * .5f,
+                        roofLevel + .29f,shadeZ + sideZ * shadeDepth * .5f),
+                        new Vector3(.045f,.58f,.045f));
+                }
+                batch.Box(iron,new Vector3(shadeX,roofLevel + .58f,shadeZ),
+                    new Vector3(shadeWidth,.045f,.045f));
+                batch.Box(iron,new Vector3(shadeX,roofLevel + .58f,shadeZ - shadeDepth * .35f),
+                    new Vector3(shadeWidth,.035f,.035f));
+                batch.Box(iron,new Vector3(shadeX,roofLevel + .58f,shadeZ + shadeDepth * .35f),
+                    new Vector3(shadeWidth,.035f,.035f));
+                batch.Box(iron,new Vector3(shadeX - shadeWidth * .35f,roofLevel + .58f,shadeZ),
+                    new Vector3(.035f,.035f,shadeDepth));
+                batch.Box(iron,new Vector3(shadeX + shadeWidth * .35f,roofLevel + .58f,shadeZ),
+                    new Vector3(.035f,.035f,shadeDepth));
+            }
+            if ((district + index) % 4 == 0)
+            {
+                Vector3 ac = new Vector3(w * .25f,h + .43f,d * .24f);
+                batch.Box(limestone,ac,new Vector3(.43f,.28f,.36f));
+                for (int grille = 0; grille < 3; grille++)
+                    batch.Box(iron,ac + new Vector3(0f,-.07f + grille * .07f,-.19f),
+                        new Vector3(.27f,.018f,.015f));
+            }
+            batch.Box(sidewalk,new Vector3(0f,.17f,-d * .5f - .16f),new Vector3(.82f,.12f,.34f));
+            if ((district + index) % 3 == 0)
+                Palm(batch,new Vector3(w * .72f,.15f,d * .3f),1.65f,index * 70f + district * 19f);
         }
 
         private void Building(CityMeshBatch batch, Vector3 pos, float w, float d, float h,
             Material body, Material accent, int floors)
         {
+            float floorHeight = h / Mathf.Max(1,floors);
             batch.Box(body,pos + new Vector3(0f,h * .5f + .16f,0f),new Vector3(w,h,d));
-            batch.Box(accent,pos + new Vector3(0f,h + .19f,0f),new Vector3(w + .18f,.22f,d + .18f));
-            batch.Box(limestone,pos + new Vector3(0f,.24f,0f),new Vector3(w + .13f,.26f,d + .13f));
-            batch.Box(teal,pos + new Vector3(0f,.55f,-d * .5f - .02f),new Vector3(.48f,.78f,.065f));
+            batch.Box(concrete,pos + new Vector3(0f,.24f,0f),new Vector3(w + .12f,.18f,d + .12f));
+            float roofY = h + .23f;
+            float parapetHeight = .27f;
+            batch.Box(concrete,pos + new Vector3(0f,roofY,0f),
+                new Vector3(w + .16f,.14f,d + .16f));
+            batch.Box(body,pos + new Vector3(0f,roofY + .07f + parapetHeight * .5f,-d * .5f),
+                new Vector3(w + .16f,parapetHeight,.1f));
+            batch.Box(body,pos + new Vector3(0f,roofY + .07f + parapetHeight * .5f,d * .5f),
+                new Vector3(w + .16f,parapetHeight,.1f));
+            batch.Box(body,pos + new Vector3(-w * .5f,roofY + .07f + parapetHeight * .5f,0f),
+                new Vector3(.1f,parapetHeight,d));
+            batch.Box(body,pos + new Vector3(w * .5f,roofY + .07f + parapetHeight * .5f,0f),
+                new Vector3(.1f,parapetHeight,d));
+
+            // Restrained floor bands and framed, recessed glazing keep the facade from
+            // reading as a single primitive block while all pieces remain one mesh batch.
             for (int floor = 0; floor < floors; floor++)
             {
-                float y = .85f + floor * (h / floors);
+                float y = .16f + floor * floorHeight + floorHeight * .55f;
+                float windowHeight = Mathf.Min(.46f,floorHeight * .5f);
+                float windowWidth = Mathf.Min(.5f,w * .18f);
+                if (floor > 0)
+                {
+                    float bandY = .16f + floor * floorHeight;
+                    batch.Box(windowFrame,pos + new Vector3(0f,bandY,-d * .5f - .018f),
+                        new Vector3(w,.045f,.045f));
+                    batch.Box(windowFrame,pos + new Vector3(0f,bandY,d * .5f + .018f),
+                        new Vector3(w,.045f,.045f));
+                }
                 for (int col = 0; col < 3; col++)
                 {
                     float x = (col - 1) * w * .29f;
-                    if (floor == 0 && col == 1) continue;
-                    batch.Box(glass,pos + new Vector3(x,y,-d * .5f - .028f),new Vector3(w * .17f,.42f,.06f));
-                    batch.Box(cream,pos + new Vector3(x,y - .27f,-d * .5f - .12f),new Vector3(w * .21f,.08f,.25f));
-                    batch.Box(glass,pos + new Vector3(x,y,d * .5f + .028f),new Vector3(w * .17f,.42f,.06f));
+                    if (floor == 0 && col == 1)
+                    {
+                        batch.Box(dark,pos + new Vector3(x,.68f,-d * .5f - .025f),new Vector3(.59f,1.04f,.045f));
+                        batch.Box(accent,pos + new Vector3(x,.68f,-d * .5f - .052f),new Vector3(.48f,.9f,.035f));
+                        batch.Box(windowFrame,pos + new Vector3(x,.68f,-d * .5f - .078f),
+                            new Vector3(.055f,.92f,.035f));
+                    }
+                    else
+                    {
+                        Vector3 front = pos + new Vector3(x,y,-d * .5f);
+                        FacadeWindow(batch,front,windowWidth,windowHeight,false,-1f);
+                        if (floor == 0 && col == 0)
+                        {
+                            Vector3 shutter = front + new Vector3(0f,windowHeight * .2f,-.09f);
+                            batch.Box(dark,shutter,new Vector3(windowWidth * .72f,.14f,.025f));
+                            for (int slat = 0; slat < 3; slat++)
+                                batch.Box(iron,shutter + Vector3.up * (-.04f + slat * .04f) +
+                                    Vector3.forward * -.018f,
+                                    new Vector3(windowWidth * .72f,.012f,.012f));
+                        }
+                        if (floor > 0 && col == (floor % 2 == 0 ? 0 : 2))
+                            Balcony(batch,x,front.y,front.z,windowWidth * 1.6f);
+                    }
+                    if (col != 1)
+                        FacadeWindow(batch,pos + new Vector3(x,y,d * .5f),
+                            windowWidth,windowHeight,false,1f);
                 }
-                for (int side = -1; side <= 1; side += 2)
-                {
-                    batch.Box(glass,pos + new Vector3(side * (w * .5f + .025f),y,-d * .22f),
-                        new Vector3(.06f,.43f,d * .23f));
-                    batch.Box(glass,pos + new Vector3(side * (w * .5f + .025f),y,d * .22f),
-                        new Vector3(.06f,.43f,d * .23f));
-                }
-                if (floor > 0)
-                    batch.Box(accent,pos + new Vector3(0f,y - .43f,-d * .5f - .16f),
-                        new Vector3(w * .94f,.1f,.3f));
+                FacadeWindow(batch,pos + new Vector3(-w * .5f,y,0f),
+                    Mathf.Min(.42f,d * .2f),windowHeight,true,-1f);
+                FacadeWindow(batch,pos + new Vector3(w * .5f,y,0f),
+                    Mathf.Min(.42f,d * .2f),windowHeight,true,1f);
             }
+            WeatheredFacade(batch,pos,w,d,h);
+        }
+
+        private void WeatheredFacade(CityMeshBatch batch, Vector3 pos, float w, float d, float h)
+        {
+            int seed = Mathf.RoundToInt(w * 100f) * 73856 ^
+                Mathf.RoundToInt(d * 100f) * 19349 ^
+                Mathf.RoundToInt(h * 100f) * 8349;
+            var random = new System.Random(seed);
+            for (int patch = 0; patch < 3; patch++)
+            {
+                float side = patch == 1 ? 1f : -1f;
+                float x = (random.Next(0,2) == 0 ? -1f : 1f) * w * .42f;
+                float y = .3f + (float)random.NextDouble() * Mathf.Max(.1f,h - .55f);
+                float patchWidth = w * (.065f + (float)random.NextDouble() * .04f);
+                float patchHeight = .12f + (float)random.NextDouble() * .1f;
+                Quaternion rotation = Quaternion.Euler(side < 0f ? 90f : -90f,0f,0f);
+                batch.Add(geometry.BrokenConcrete,patina,
+                    pos + new Vector3(x,y,side * (d * .5f + .004f)),
+                    new Vector3(patchWidth,.012f,patchHeight),rotation);
+            }
+        }
+
+        private void FacadeWindow(CityMeshBatch batch, Vector3 center, float width, float height,
+            bool sideWall, float outward)
+        {
+            float frame = .045f;
+            float paneWidth = Mathf.Max(.12f,width - frame * 2f);
+            float paneHeight = Mathf.Max(.16f,height - frame * 2f);
+            Vector3 normal = sideWall ? Vector3.right : Vector3.forward;
+            Vector3 recess = center + normal * (outward * .012f);
+            Vector3 glassPosition = center + normal * (outward * .036f);
+            Vector3 framePosition = center + normal * (outward * .066f);
+            batch.Box(dark,recess,sideWall ? new Vector3(.035f,height,width) :
+                new Vector3(width,height,.035f));
+            batch.Box(glass,glassPosition,sideWall ? new Vector3(.035f,paneHeight,paneWidth) :
+                new Vector3(paneWidth,paneHeight,.035f));
+            if (sideWall)
+            {
+                batch.Box(windowFrame,framePosition + Vector3.up * (height * .5f),
+                    new Vector3(.055f,frame,width + frame));
+                batch.Box(windowFrame,framePosition - Vector3.up * (height * .5f),
+                    new Vector3(.055f,frame,width + frame));
+                for (int edge = -1; edge <= 1; edge += 2)
+                    batch.Box(windowFrame,framePosition + Vector3.forward * edge * width * .5f,
+                        new Vector3(.055f,height,frame));
+            }
+            else
+            {
+                batch.Box(windowFrame,framePosition + Vector3.up * (height * .5f),
+                    new Vector3(width + frame,frame,.055f));
+                batch.Box(windowFrame,framePosition - Vector3.up * (height * .5f),
+                    new Vector3(width + frame,frame,.055f));
+                for (int edge = -1; edge <= 1; edge += 2)
+                    batch.Box(windowFrame,framePosition + Vector3.right * edge * width * .5f,
+                        new Vector3(frame,height,.055f));
+            }
+        }
+
+        private void Balcony(CityMeshBatch batch, float x, float windowY, float facadeZ, float width)
+        {
+            float floorY = windowY - .3f;
+            float frontZ = facadeZ - .34f;
+            batch.Box(concrete,new Vector3(x,floorY,facadeZ - .19f),new Vector3(width,.09f,.43f));
+            batch.Box(iron,new Vector3(x,floorY + .34f,frontZ),
+                new Vector3(width,.035f,.035f));
+            for (int post = -1; post <= 1; post++)
+                batch.Box(iron,new Vector3(x + post * width * .5f,floorY + .19f,frontZ),
+                    new Vector3(.035f,.3f,.035f));
+            batch.Box(iron,new Vector3(x,floorY + .19f,frontZ),
+                new Vector3(.025f,.035f,.035f));
         }
 
         private void Commerce(CityMeshBatch batch, Vector3 footprint, Material accent)
@@ -1087,6 +1352,11 @@ namespace NewGaza
             return transform.TransformPoint(districts[Mathf.Clamp(index,0,districts.Length - 1)].center);
         }
 
+        public bool IsDistrictFogged(int index)
+        {
+            return districts != null && index >= 0 && index < districts.Length && districts[index].fogged;
+        }
+
         public void FocusDistrict(int index)
         {
             if (districts == null || index < 0 || index >= districts.Length) return;
@@ -1167,6 +1437,7 @@ namespace NewGaza
                 session.Changed -= Refresh;
                 session.PlotSelected -= SetSelectedPlot;
             }
+            DisposeFogFields();
             geometry?.Dispose();
         }
     }

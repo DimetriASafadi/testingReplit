@@ -40,6 +40,8 @@ internal static class Program
             }
             CheckContracts(roots);
             CheckSceneBootstrap(sourceRoot, roots);
+            CheckDistrictFog(sourceRoot, roots);
+            CheckWorldRenderingContracts(roots);
             CheckArabicShaping();
             if (Failures.Count > 0)
             {
@@ -48,8 +50,8 @@ internal static class Program
                 return 1;
             }
             Console.WriteLine("Source checks passed: " + files.Length +
-                " NewGaza .cs files parsed as C# 9 (player + editor/optional checks), integration signatures, GUID-independent scene bootstrap and Arabic shaping.");
-            Console.WriteLine("Source-only check; Unity assemblies were not compiled and no Unity editor/player was run.");
+                " NewGaza .cs files parsed as C# 9 (player + editor/optional checks), integration signatures, GUID-independent scene bootstrap, localized-fog/shader and geometry-UV/shadow/URP-light source checks, and Arabic shaping.");
+            Console.WriteLine("Source-only check; Unity assemblies and shader were not compiled, and no Unity editor/player or GPU rendering was run.");
             return 0;
         }
         catch (Exception exception)
@@ -88,6 +90,256 @@ internal static class Program
                 n.TypeArgumentList.Arguments.SingleOrDefault()?.ToString() == "GameSession"),
             "Bootstrap must guard against creating a duplicate session.");
     }
+
+    private static void CheckDistrictFog(string sourceRoot,
+        Dictionary<string, CompilationUnitSyntax> roots)
+    {
+        var city = Type(roots, "World/CityWorld.cs", "CityWorld", "NewGaza");
+        Method(city, "IsDistrictFogged", "bool", "int");
+        var fog = Type(roots, "World/DistrictFog.cs", "DistrictFog", "NewGaza");
+        Require(fog?.Modifiers.Any(SyntaxKind.PublicKeyword) == true,
+            "DistrictFog must be public.");
+        Base(fog, "MonoBehaviour");
+        Method(fog, "Show", "void", "bool");
+
+        CheckFogStateBindings(city);
+        CheckNoFogColliders(fog);
+        CheckFogShader(sourceRoot, roots);
+        CheckNoGlobalDistanceFog(sourceRoot, roots);
+    }
+
+    private static void CheckWorldRenderingContracts(
+        Dictionary<string, CompilationUnitSyntax> roots)
+    {
+        var geometry = Type(roots, "World/CityGeometry.cs", "CityGeometry", "NewGaza");
+        var createBox = geometry?.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(m => m.Identifier.ValueText == "CreateBox");
+        Require(createBox != null, "CityGeometry: missing shared box mesh construction.");
+        if (createBox != null)
+        {
+            bool mapsPerFaceUvs = createBox.DescendantNodes()
+                .OfType<InvocationExpressionSyntax>()
+                .Any(call => call.Expression is MemberAccessExpressionSyntax add &&
+                    add.Expression.ToString() == "uv" &&
+                    add.Name.Identifier.ValueText == "Add" &&
+                    call.ArgumentList.Arguments.SingleOrDefault()?.Expression.ToString() == "faceUv[j]");
+            bool assignsUvsToMesh = createBox.DescendantNodes()
+                .OfType<InvocationExpressionSyntax>()
+                .Any(call => call.Expression is IdentifierNameSyntax make &&
+                    make.Identifier.ValueText == "Make" &&
+                    call.ArgumentList.Arguments.Count == 4 &&
+                    call.ArgumentList.Arguments[3].Expression.ToString() == "uv.ToArray()");
+            Require(mapsPerFaceUvs && assignsUvsToMesh,
+                "CityGeometry.CreateBox must assign per-face UVs to the generated mesh.");
+        }
+
+        var world = Type(roots, "World/CityWorld.cs", "CityWorld", "NewGaza");
+        var merge = world?.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(m => m.Identifier.ValueText == "MergeDistrictPlots");
+        Require(merge != null, "CityWorld: missing merged district presentation batches.");
+        if (merge != null)
+        {
+            var presentationBuilds = merge.DescendantNodes()
+                .OfType<InvocationExpressionSyntax>()
+                .Where(call => call.Expression is MemberAccessExpressionSyntax build &&
+                    build.Name.Identifier.ValueText == "Build" &&
+                    (build.Expression.ToString() == "damaged" ||
+                     build.Expression.ToString() == "finished"))
+                .ToArray();
+            string[] batches = presentationBuilds
+                .Select(call => ((MemberAccessExpressionSyntax)call.Expression).Expression.ToString())
+                .OrderBy(name => name, StringComparer.Ordinal)
+                .ToArray();
+            Require(batches.SequenceEqual(new[] { "damaged", "finished" }) &&
+                presentationBuilds.All(call =>
+                    call.ArgumentList.Arguments.LastOrDefault()?.Expression.IsKind(
+                        SyntaxKind.TrueLiteralExpression) == true),
+                "Both damaged and finished district presentation batches must build with shadow casting enabled.");
+        }
+
+        var session = Type(roots, "Runtime/GameSession.cs", "GameSession", "NewGaza");
+        var lighting = session?.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(m => m.Identifier.ValueText == "ConfigureLighting");
+        Require(lighting != null, "GameSession: missing daylight and URP lighting configuration.");
+        if (lighting == null) return;
+        bool usesExplicitSunUrpSettings = lighting.DescendantNodes()
+            .OfType<AssignmentExpressionSyntax>()
+            .Any(assignment => assignment.Left is MemberAccessExpressionSyntax property &&
+                property.Name.Identifier.ValueText == "usePipelineSettings" &&
+                property.Expression is InvocationExpressionSyntax getAdditionalData &&
+                getAdditionalData.Expression is MemberAccessExpressionSyntax getMethod &&
+                getMethod.Expression.ToString() == "sun" &&
+                getMethod.Name.Identifier.ValueText == "GetUniversalAdditionalLightData" &&
+                assignment.Right.IsKind(SyntaxKind.FalseLiteralExpression));
+        Require(usesExplicitSunUrpSettings,
+            "The directional sun must opt out of URP pipeline light settings to retain its configured bias.");
+    }
+
+    private static void CheckFogStateBindings(TypeDeclarationSyntax? city)
+    {
+        if (city == null) return;
+        var build = city.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(m => m.Identifier.ValueText == "BuildDistricts");
+        Require(build != null, "CityWorld: missing district construction/fog initialization.");
+        if (build == null) return;
+
+        VariableDeclaratorSyntax? initialFog = build.DescendantNodes()
+            .OfType<VariableDeclaratorSyntax>()
+            .FirstOrDefault(v => v.Identifier.ValueText == "initiallyFogged");
+        ExpressionSyntax? initialValue = initialFog?.Initializer?.Value;
+        bool readsSavedLockState = initialValue is BinaryExpressionSyntax conjunction &&
+            conjunction.IsKind(SyntaxKind.LogicalAndExpression) &&
+            conjunction.Left.ToString().Contains("savedDistrict != null", StringComparison.Ordinal) &&
+            conjunction.Right is PrefixUnaryExpressionSyntax negation &&
+            negation.IsKind(SyntaxKind.LogicalNotExpression) &&
+            negation.Operand is MemberAccessExpressionSyntax unlocked &&
+            unlocked.Name.Identifier.ValueText == "unlocked";
+        Require(readsSavedLockState,
+            "Initial fog must reflect the saved district's locked state, not readiness or construction progress.");
+
+        bool initializesFogWithInitialState = build.DescendantNodes()
+            .OfType<InvocationExpressionSyntax>()
+            .Any(call => call.Expression is MemberAccessExpressionSyntax member &&
+                member.Name.Identifier.ValueText == "Initialize" &&
+                member.Expression.ToString() == "district.fog" &&
+                call.ArgumentList.Arguments.LastOrDefault()?.Expression.ToString() == "initiallyFogged");
+        Require(initializesFogWithInitialState,
+            "DistrictFog.Initialize must receive the saved lock-state visibility.");
+
+        bool storesInitialFogState = build.DescendantNodes()
+            .OfType<AssignmentExpressionSyntax>()
+            .Any(assignment => assignment.Left.ToString() == "district.fogged" &&
+                assignment.Right.ToString() == "initiallyFogged");
+        Require(storesInitialFogState,
+            "CityWorld must bind its initial fog query state to the same saved lock state.");
+
+        var refresh = city.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(m => m.Identifier.ValueText == "Refresh");
+        Require(refresh != null, "CityWorld: missing district refresh for fog visibility.");
+        if (refresh == null) return;
+
+        bool derivesVisibilityFromUnlockOnly = refresh.DescendantNodes()
+            .OfType<AssignmentExpressionSyntax>()
+            .Any(assignment => assignment.Left.ToString() == "view.fogged" &&
+                assignment.Right is PrefixUnaryExpressionSyntax hidden &&
+                hidden.IsKind(SyntaxKind.LogicalNotExpression) &&
+                hidden.Operand is MemberAccessExpressionSyntax unlocked &&
+                unlocked.Expression.ToString() == "district" &&
+                unlocked.Name.Identifier.ValueText == "unlocked");
+        Require(derivesVisibilityFromUnlockOnly,
+            "Refreshed fog must track district.unlocked only; accessible unfinished buildings stay clear.");
+
+        bool sendsVisibilityToFog = refresh.DescendantNodes()
+            .OfType<InvocationExpressionSyntax>()
+            .Any(call => call.Expression is MemberAccessExpressionSyntax show &&
+                show.Expression.ToString() == "view.fog" &&
+                show.Name.Identifier.ValueText == "Show" &&
+                call.ArgumentList.Arguments.SingleOrDefault()?.Expression.ToString() == "view.fogged");
+        Require(sendsVisibilityToFog,
+            "CityWorld.Refresh must send the district's lock-state visibility to DistrictFog.Show.");
+
+        var initialize = city.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(m => m.Identifier.ValueText == "Initialize");
+        if (initialize == null)
+        {
+            Require(false, "CityWorld: missing initialization for initial fog refresh.");
+            return;
+        }
+        bool refreshesOnSessionChanges = initialize.DescendantNodes()
+            .OfType<AssignmentExpressionSyntax>()
+            .Any(assignment => assignment.IsKind(SyntaxKind.AddAssignmentExpression) &&
+                assignment.Left.ToString() == "session.Changed" &&
+                assignment.Right.ToString() == "Refresh");
+        Require(refreshesOnSessionChanges,
+            "CityWorld must refresh fog visibility when session district state changes.");
+
+        var directCalls = initialize.Body?.DescendantNodes()
+            .OfType<InvocationExpressionSyntax>()
+            .Where(call => call.Expression is IdentifierNameSyntax identifier &&
+                (identifier.Identifier.ValueText == "BuildDistricts" ||
+                 identifier.Identifier.ValueText == "Refresh"))
+            .ToArray() ?? Array.Empty<InvocationExpressionSyntax>();
+        int buildOrder = Array.FindIndex(directCalls, call =>
+            ((IdentifierNameSyntax)call.Expression).Identifier.ValueText == "BuildDistricts");
+        int refreshOrder = Array.FindIndex(directCalls, call =>
+            ((IdentifierNameSyntax)call.Expression).Identifier.ValueText == "Refresh");
+        Require(buildOrder >= 0 && refreshOrder > buildOrder,
+            "CityWorld.Initialize must refresh fog after district geometry and fog have been created.");
+    }
+
+    private static void CheckNoFogColliders(TypeDeclarationSyntax? fog)
+    {
+        if (fog == null) return;
+        bool hasColliderType = fog.DescendantNodes().OfType<TypeSyntax>().Any(type =>
+            Signature(type).EndsWith("Collider", StringComparison.Ordinal));
+        Require(!hasColliderType, "DistrictFog must remain collider-free.");
+    }
+
+    private static void CheckFogShader(string sourceRoot,
+        Dictionary<string, CompilationUnitSyntax> roots)
+    {
+        string path = Path.Combine(sourceRoot, "Resources", "NewGazaFog.shader");
+        Require(File.Exists(path), "Missing Resources/NewGazaFog.shader fog resource.");
+        if (!File.Exists(path)) return;
+
+        string shader = Compact(File.ReadAllText(path));
+        Require(shader.Contains("Shader\"NewGaza/SoftDistrictFog\"", StringComparison.Ordinal),
+            "Fog resource must declare the expected NewGaza/Soft District Fog shader.");
+        Require(shader.Contains("\"RenderPipeline\"=\"UniversalPipeline\"", StringComparison.Ordinal) &&
+            shader.Contains("Pass{Name\"SoftDistrictFog\"Tags{\"LightMode\"=\"UniversalForward\"}",
+                StringComparison.Ordinal) &&
+            shader.Contains("\"LightMode\"=\"UniversalForward\"", StringComparison.Ordinal) &&
+            shader.Contains("#include\"Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl\"",
+                StringComparison.Ordinal),
+            "Fog shader source must target URP and include its Core shader library.");
+        Require(shader.Contains("BlendSrcAlphaOneMinusSrcAlpha", StringComparison.Ordinal) &&
+            shader.Contains("ZTestLEqual", StringComparison.Ordinal) &&
+            shader.Contains("ZWriteOff", StringComparison.Ordinal) &&
+            shader.Contains("CullOff", StringComparison.Ordinal),
+            "Fog shader source must use transparent alpha blending, scene depth testing, no depth writes, and two-sided rendering.");
+        Require(shader.Contains("halfradialDistance=length(input.uv*2.0h-1.0h);", StringComparison.Ordinal) &&
+            shader.Contains("halfradialMask=1.0h-smoothstep(_Softness,1.0h,radialDistance);",
+                StringComparison.Ordinal) &&
+            shader.Contains("halfalpha=saturate(input.color.a*_FogOpacity*radialMask);",
+                StringComparison.Ordinal),
+            "Fog shader source must apply a soft radial falloff and per-mesh opacity.");
+
+        bool cityLoadsResource = roots.TryGetValue("World/CityWorld.cs", out CompilationUnitSyntax? cityRoot) &&
+            cityRoot.DescendantNodes().OfType<InvocationExpressionSyntax>().Any(call =>
+                call.Expression is MemberAccessExpressionSyntax member &&
+                member.Expression.ToString() == "Resources" &&
+                member.Name is GenericNameSyntax generic &&
+                generic.Identifier.ValueText == "Load" &&
+                generic.TypeArgumentList.Arguments.SingleOrDefault()?.ToString() == "Shader" &&
+                call.ArgumentList.Arguments.SingleOrDefault()?.Expression.ToString() == "\"NewGazaFog\"");
+        Require(cityLoadsResource,
+            "CityWorld must load the included Resources/NewGazaFog shader resource.");
+    }
+
+    private static void CheckNoGlobalDistanceFog(string sourceRoot,
+        Dictionary<string, CompilationUnitSyntax> roots)
+    {
+        var globalFogAssignments = roots.Values
+            .SelectMany(root => root.DescendantNodes().OfType<AssignmentExpressionSyntax>())
+            .Where(assignment => assignment.Left is MemberAccessExpressionSyntax member &&
+                member.Expression.ToString() == "RenderSettings" &&
+                member.Name.Identifier.ValueText == "fog")
+            .ToArray();
+        Require(globalFogAssignments.Any(assignment =>
+                assignment.Right.IsKind(SyntaxKind.FalseLiteralExpression)),
+            "Runtime must explicitly disable global RenderSettings.fog.");
+        Require(globalFogAssignments.All(assignment =>
+                assignment.Right.IsKind(SyntaxKind.FalseLiteralExpression)),
+            "Localized district fog must not enable global distance fog.");
+
+        string scenePath = Path.Combine(sourceRoot, "Scenes", "NewGaza.unity");
+        string scene = File.ReadAllText(scenePath);
+        Require(scene.Contains("m_Fog: 0", StringComparison.Ordinal),
+            "The entry scene must keep serialized global RenderSettings fog disabled.");
+    }
+
+    private static string Compact(string source) =>
+        new string(source.Where(c => !char.IsWhiteSpace(c)).ToArray());
 
     private static string FindSources(string[] args)
     {

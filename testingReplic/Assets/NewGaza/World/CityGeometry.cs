@@ -5,6 +5,15 @@ using UnityEngine.Rendering;
 
 namespace NewGaza
 {
+    internal enum SurfaceKind
+    {
+        None,
+        Plaster,
+        Concrete,
+        Stone,
+        Asphalt
+    }
+
     // Small reusable source meshes. Static details are merged by material into district-sized
     // chunks, rather than producing a Renderer (or a collider) for every window and leaf.
     internal sealed class CityGeometry : IDisposable
@@ -14,8 +23,11 @@ namespace NewGaza
         internal readonly Mesh Cone;
         internal readonly Mesh Roof;
         internal readonly Mesh Leaf;
+        internal readonly Mesh BrokenConcrete;
         private readonly List<Mesh> owned = new List<Mesh>();
         private readonly Dictionary<string, Material> materials = new Dictionary<string, Material>();
+        private readonly Dictionary<SurfaceKind, Texture2D> surfaceTextures =
+            new Dictionary<SurfaceKind, Texture2D>();
         private readonly Shader shader;
         private readonly Material materialTemplate;
 
@@ -32,9 +44,11 @@ namespace NewGaza
             Cone = CreateRound(8, 0.04f);
             Roof = CreateRoof();
             Leaf = CreateLeaf();
+            BrokenConcrete = CreateBrokenConcrete();
         }
 
-        internal Material Material(string key, Color color, float smoothness = 0.15f, float emission = 0f)
+        internal Material Material(string key, Color color, float smoothness = 0.15f,
+            float emission = 0f, SurfaceKind surface = SurfaceKind.None)
         {
             if (materials.TryGetValue(key, out Material existing)) return existing;
             var material = materialTemplate != null ? new Material(materialTemplate) : new Material(shader);
@@ -43,6 +57,8 @@ namespace NewGaza
             material.SetColor("_BaseColor", color);
             material.SetFloat("_Smoothness", smoothness);
             material.SetFloat("_Metallic", 0f);
+            if (surface != SurfaceKind.None)
+                material.SetTexture("_BaseMap", SurfaceTexture(surface));
             if (emission > 0f)
             {
                 material.EnableKeyword("_EMISSION");
@@ -64,9 +80,10 @@ namespace NewGaza
             UnityEngine.Object.Destroy(mesh);
         }
 
-        private Mesh Make(string name, Vector3[] vertices, int[] triangles)
+        private Mesh Make(string name, Vector3[] vertices, int[] triangles, Vector2[] uv = null)
         {
             var mesh = new Mesh { name = name, vertices = vertices, triangles = triangles };
+            if (uv != null) mesh.uv = uv;
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
             return Own(mesh);
@@ -76,6 +93,8 @@ namespace NewGaza
         {
             var vertices = new List<Vector3>();
             var triangles = new List<int>();
+            var uv = new List<Vector2>();
+            Vector2[] faceUv = { Vector2.zero, Vector2.up, Vector2.one, Vector2.right };
             Vector3[] corners =
             {
                 new Vector3(-.5f,-.5f,-.5f), new Vector3(.5f,-.5f,-.5f),
@@ -87,10 +106,96 @@ namespace NewGaza
             for (int i = 0; i < faces.Length; i += 4)
             {
                 int start = vertices.Count;
-                for (int j = 0; j < 4; j++) vertices.Add(corners[faces[i + j]]);
+                for (int j = 0; j < 4; j++)
+                {
+                    vertices.Add(corners[faces[i + j]]);
+                    uv.Add(faceUv[j]);
+                }
                 triangles.AddRange(new[] { start, start + 1, start + 2, start, start + 2, start + 3 });
             }
-            return Make("Shared hard-edged cube", vertices.ToArray(), triangles.ToArray());
+            return Make("Shared hard-edged cube", vertices.ToArray(), triangles.ToArray(), uv.ToArray());
+        }
+
+        private Texture2D SurfaceTexture(SurfaceKind kind)
+        {
+            if (surfaceTextures.TryGetValue(kind, out Texture2D existing)) return existing;
+            const int resolution = 64;
+            float offset = (int)kind * 17.31f;
+            float broadStrength, grainStrength, streakStrength;
+            switch (kind)
+            {
+                case SurfaceKind.Plaster:
+                    broadStrength = .12f;
+                    grainStrength = .018f;
+                    streakStrength = .045f;
+                    break;
+                case SurfaceKind.Concrete:
+                    broadStrength = .13f;
+                    grainStrength = .022f;
+                    streakStrength = .025f;
+                    break;
+                case SurfaceKind.Stone:
+                    broadStrength = .09f;
+                    grainStrength = .014f;
+                    streakStrength = .018f;
+                    break;
+                case SurfaceKind.Asphalt:
+                    broadStrength = .075f;
+                    grainStrength = .012f;
+                    streakStrength = .012f;
+                    break;
+                default:
+                    return null;
+            }
+
+            var pixels = new Color[resolution * resolution];
+            for (int y = 0; y < resolution; y++)
+                for (int x = 0; x < resolution; x++)
+                {
+                    float u = x / (float)resolution;
+                    float v = y / (float)resolution;
+                    float broad = TilePerlin(u,v,3.1f,offset + .7f,offset + 2.3f);
+                    float grain = TilePerlin(u,v,11f,offset + 4.1f,offset + 6.7f);
+                    float streaks = TilePerlin(u,v,7.5f,.8f,offset + 9.2f,offset + 11.4f);
+                    float value = 1f + (broad - .5f) * broadStrength +
+                        (grain - .5f) * grainStrength + (streaks - .5f) * streakStrength;
+                    pixels[y * resolution + x] = new Color(value,value,value,1f);
+                }
+
+            var texture = new Texture2D(resolution,resolution,TextureFormat.RGBA32,true,false)
+            {
+                name = "New Gaza • procedural " + kind.ToString().ToLowerInvariant() + " albedo",
+                wrapMode = TextureWrapMode.Repeat,
+                filterMode = FilterMode.Bilinear,
+                anisoLevel = 1
+            };
+            texture.SetPixels(pixels);
+            texture.Apply(true,false);
+            surfaceTextures.Add(kind,texture);
+            return texture;
+        }
+
+        private static float TilePerlin(float u, float v, float frequency, float offsetX,
+            float offsetY)
+        {
+            return TilePerlin(u,v,frequency,frequency,offsetX,offsetY);
+        }
+
+        private static float TilePerlin(float u, float v, float frequencyX, float frequencyY,
+            float offsetX, float offsetY)
+        {
+            float blendU = u * u * (3f - 2f * u);
+            float blendV = v * v * (3f - 2f * v);
+            float leftBottom = Mathf.PerlinNoise(offsetX + u * frequencyX,
+                offsetY + v * frequencyY);
+            float rightBottom = Mathf.PerlinNoise(offsetX + (u - 1f) * frequencyX,
+                offsetY + v * frequencyY);
+            float leftTop = Mathf.PerlinNoise(offsetX + u * frequencyX,
+                offsetY + (v - 1f) * frequencyY);
+            float rightTop = Mathf.PerlinNoise(offsetX + (u - 1f) * frequencyX,
+                offsetY + (v - 1f) * frequencyY);
+            return Mathf.Lerp(Mathf.Lerp(leftBottom,rightBottom,blendU),
+                Mathf.Lerp(leftTop,rightTop,blendU),blendV);
         }
 
         private Mesh CreateRound(int segments, float topRadius)
@@ -138,12 +243,69 @@ namespace NewGaza
                 new[] { 0,1,2,0,2,3,6,5,4,7,6,4 });
         }
 
+        private Mesh CreateBrokenConcrete()
+        {
+            // A shared, angular fragment mesh for collapsed slabs and rubble. Duplicated
+            // triangle vertices preserve the hard, chipped facets after mesh batching.
+            Vector3[] lower =
+            {
+                new Vector3(-.46f,-.46f,-.32f), new Vector3(-.31f,-.5f,-.48f),
+                new Vector3(.29f,-.47f,-.42f), new Vector3(.48f,-.5f,.08f),
+                new Vector3(.22f,-.46f,.45f), new Vector3(-.37f,-.5f,.34f)
+            };
+            Vector3[] upper =
+            {
+                new Vector3(-.34f,.18f,-.23f), new Vector3(-.22f,.34f,-.35f),
+                new Vector3(.22f,.11f,-.3f), new Vector3(.36f,.31f,.06f),
+                new Vector3(.16f,.23f,.31f), new Vector3(-.28f,.08f,.24f)
+            };
+            var vertices = new List<Vector3>(72);
+            var uv = new List<Vector2>(72);
+            var triangles = new List<int>(72);
+            for (int i = 0; i < 6; i++)
+            {
+                int next = (i + 1) % 6;
+                AddFragmentTriangle(vertices, uv, triangles, upper[0], upper[next], upper[i]);
+                AddFragmentTriangle(vertices, uv, triangles, lower[0], lower[i], lower[next]);
+                AddFragmentTriangle(vertices, uv, triangles, lower[i], upper[next], lower[next]);
+                AddFragmentTriangle(vertices, uv, triangles, lower[i], upper[i], upper[next]);
+            }
+            var mesh = new Mesh
+            {
+                name = "Shared irregular broken concrete shard",
+                vertices = vertices.ToArray(),
+                triangles = triangles.ToArray(),
+                uv = uv.ToArray()
+            };
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            return Own(mesh);
+        }
+
+        private static void AddFragmentTriangle(List<Vector3> vertices, List<Vector2> uv,
+            List<int> triangles, Vector3 a, Vector3 b, Vector3 c)
+        {
+            int start = vertices.Count;
+            vertices.Add(a);
+            vertices.Add(b);
+            vertices.Add(c);
+            uv.Add(new Vector2(a.x + .5f, a.z + .5f));
+            uv.Add(new Vector2(b.x + .5f, b.z + .5f));
+            uv.Add(new Vector2(c.x + .5f, c.z + .5f));
+            triangles.Add(start);
+            triangles.Add(start + 1);
+            triangles.Add(start + 2);
+        }
+
         public void Dispose()
         {
             foreach (Mesh mesh in owned) if (mesh != null) UnityEngine.Object.Destroy(mesh);
             owned.Clear();
             foreach (Material material in materials.Values) UnityEngine.Object.Destroy(material);
             materials.Clear();
+            foreach (Texture2D texture in surfaceTextures.Values)
+                if (texture != null) UnityEngine.Object.Destroy(texture);
+            surfaceTextures.Clear();
         }
     }
 

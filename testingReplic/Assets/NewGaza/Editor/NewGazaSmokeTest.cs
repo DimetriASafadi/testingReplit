@@ -58,7 +58,8 @@ namespace NewGaza.Editor
             try
             {
                 Require(Camera.main != null && Camera.main.isActiveAndEnabled, "Missing active tagged camera.");
-                Require(UnityEngine.Object.FindFirstObjectByType<CityWorld>() != null, "Missing city world.");
+                var world = UnityEngine.Object.FindFirstObjectByType<CityWorld>();
+                Require(world != null, "Missing city world.");
                 Require(UnityEngine.Object.FindFirstObjectByType<CityHud>() != null, "Missing HUD.");
                 Require(UnityEngine.Object.FindObjectsByType<CitySelectable>(FindObjectsSortMode.None).Length >= Core.GameCatalog.Districts.Length,
                     "Missing selectable city districts/plots.");
@@ -66,10 +67,43 @@ namespace NewGaza.Editor
                     "Missing UI EventSystem.");
                 Require(Resources.Load<Font>("NewGazaArabic") != null, "Arabic font did not import.");
                 Require(Resources.Load<Material>("NewGazaLit") != null, "URP material did not import.");
+                var fogShader = Resources.Load<Shader>("NewGazaFog");
+                Require(fogShader != null && fogShader.isSupported, "District fog shader missing or unsupported.");
+                for (int d = 0; d < session.State.districts.Length; d++)
+                    Require(world.IsDistrictFogged(d) == !session.State.districts[d].unlocked,
+                        "Fog/access mismatch in district " + d + "; unfinished unlocked districts must stay visible.");
+                foreach (var fog in world.GetComponentsInChildren<DistrictFog>(true))
+                {
+                    Require(fog.GetComponentsInChildren<Collider>(true).Length == 0,
+                        "Fog must not intercept city selection.");
+                    foreach (var renderer in fog.GetComponentsInChildren<MeshRenderer>(true))
+                    {
+                        Require(renderer.sharedMaterial != null && renderer.sharedMaterial.shader == fogShader,
+                            "Fog renderer does not use the retained fog shader.");
+                        bool fogExpected = false;
+                        for (int d = 0; d < session.State.districts.Length; d++)
+                            if (fog.transform.parent != null &&
+                                fog.transform.parent.name.StartsWith("District " + (d + 1) + " •", StringComparison.Ordinal))
+                                fogExpected = !session.State.districts[d].unlocked;
+                        Require(renderer.enabled == fogExpected,
+                            "Fog renderer visibility does not match district access after startup fade.");
+                    }
+                }
+                Require(world.GetComponentsInChildren<DistrictFog>(true).Length == Core.GameCatalog.Districts.Length,
+                    "Expected one fog component per district, including Rashid.");
+                foreach (var renderer in world.GetComponentsInChildren<MeshRenderer>(true))
+                    if (renderer.enabled && renderer.transform.parent != null &&
+                        renderer.transform.parent.name.StartsWith("District plot batch", StringComparison.Ordinal))
+                        Require(renderer.shadowCastingMode == UnityEngine.Rendering.ShadowCastingMode.On,
+                            "Visible district architecture batch must cast shadows.");
+                Require(RenderSettings.sun != null, "Missing directional daylight.");
+                var lightData = RenderSettings.sun.GetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalLightData>();
+                Require(lightData != null && !lightData.usePipelineSettings,
+                    "URP is overriding the configured neighborhood light bias.");
                 Require(string.IsNullOrEmpty(session.SaveError), "Save could not be written.");
                 Require(session.State.districts.Length == Core.GameCatalog.Districts.Length,
                     "Expected all catalog neighborhoods and the final Rashid district.");
-                Finish(true, "Startup, camera, city selection, HUD, font, material and local save passed in Unity Play Mode.");
+                Finish(true, "Startup, camera, city selection, HUD, font, retained fog shader, district fog/access and local save passed in Unity Play Mode.");
             }
             catch (Exception e) { Finish(false, e.Message); }
         }
