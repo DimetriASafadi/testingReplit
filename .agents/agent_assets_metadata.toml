@@ -5,14 +5,14 @@ generated = []
 id = "1fWh6uOeYQs-_P59ry1Dn"
 uri = "file://exports/NewGaza-Unity-Source.zip"
 type = "unspecified"
-title = "نيو غزة — النسخة النهائية بالمجسمات والتوزيع الجديد"
-description = "مشروع Unity مع المجسمات والخامات وملفات GLB المصدرية. يشمل آخر تعديل للشوارع. الملفات الجديدة بلا .meta؛ المصادر مرخصة CC0 ومذكورة داخل المشروع."
+title = "نيو غزة — مشروع Unity المحدث بالمعدات والصوت"
+description = "المصدر الكامل مع المعدات المتحركة و9 مؤثرات صوتية وإعدادات الصوت. تم فحص الأرشيف؛ دون ملفات NewGaza .meta. لم يُشغّل Unity أو الهاتف في هذه البيئة."
 logical_id = "5dbf8b92-3bf8-4fbf-a60d-a4baffa6cc98"
-content_hash = "sha256:ef80af83ffcc2ef12e39d865300b64fddc00d9ad664544084cf462001c54b1b0"
-size = 12702901
-mtime_ms = 1790876023424
-storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/5dbf8b92-3bf8-4fbf-a60d-a4baffa6cc98/de13c184-d47f-4690-a55c-513e632adb07"
-storage_version_token = "1790876071056682"
+content_hash = "sha256:4020f4e8308763d9b1bd8900ec2a697b11509bfb9f63cfe87fb2fffa4ba93d22"
+size = 17815101
+mtime_ms = 1790884778810
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/5dbf8b92-3bf8-4fbf-a60d-a4baffa6cc98/ea6514a8-f926-48dd-9562-9bc84209ea72"
+storage_version_token = "1790884926608222"
 content_type = "application/octet-stream"
 
 [[outputs]]
@@ -41,4 +41,146 @@ size = 653162
 mtime_ms = 1790875906333
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/78c0383d-5307-4cd4-9996-fe6f2f9234aa/d145afb4-b663-488d-a044-44d66b6371cb"
 storage_version_token = "1790876069527419"
+content_type = "image/png"
+
+[[outputs]]
+id = "Vvh-ocyV3HZtLle2uI7NN"
+uri = "file://exports/models/Gaza-City-Overview.png"
+type = "image"
+title = "معاينة المدينة والساحل"
+description = "معاينة خارجية من Blender للبيانات والهندسة المصدرية؛ ليست لقطة تشغيل Unity."
+logical_id = "3d8f4d8d-c6c1-4cc3-82b9-305291dbab83"
+content_hash = "sha256:6175d040eb2be346f6e0e52cb58e600f1aa843dd77e51b665e650c829ef3ee1b"
+size = 770418
+mtime_ms = 1790878912669
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/3d8f4d8d-c6c1-4cc3-82b9-305291dbab83/a9068088-fd50-4286-9d65-d1374d95e682"
+storage_version_token = "1790879300036104"
+content_type = "image/png"
+
+[[outputs]]
+id = "L6V631m0DWpdHI_E6AZo_"
+uri = "file://exports/models/Gaza-Urban-Neighborhood.png"
+type = "image"
+title = "معاينة النسيج العمراني"
+description = "مبانٍ مجسّمة من بصمات OSM مع المجسمات الفنية داخل حي الشجاعية. معاينة Blender، وليست تشغيلًا على الهاتف."
+logical_id = "8e1b084c-8c4f-4911-9b9a-1077b754c856"
+content_hash = "sha256:332a3f724c40686255f4a1d30d505d1900152ca250c05ec859d946ef20773c5b"
+size = 734371
+mtime_ms = 1790878922821
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/8e1b084c-8c4f-4911-9b9a-1077b754c856/c51af4b3-4a88-4d63-853a-3828f328bd53"
+storage_version_token = "1790879301437806"
+content_type = "image/png"
+
+[[outputs]]
+id = "2PFg5pY06GTdHr-wGRKoq"
+uri = "file://attached_assets/generated_audio/new-gaza-ui_confirm.mp3"
+type = "audio"
+title = "new-gaza-ui_confirm"
+description = "Generated sound effect: Restrained warm interface confirmation sound for a grounded city strategy game, a single short soft wooden mechanical click with tiny pleasant tonal tail, no loud flourish no …"
+logical_id = "7018bfa3-401c-492d-992b-37c18fd90b96"
+
+[[outputs]]
+id = "PidXSE5DpaDdX9UrhVAzj"
+uri = "file://attached_assets/generated_audio/new-gaza-ui_click.mp3"
+type = "audio"
+title = "new-gaza-ui_click"
+description = "Generated sound effect: One short soft tactile interface button tap for a realistic city strategy mobile game, restrained dry mechanical click with soft warm body, clean quiet non-musical sound, no e…"
+logical_id = "676fbf00-fbb7-48be-a255-450cab8dcfc6"
+
+[[outputs]]
+id = "YBSaDL6P0G8reNGJ6uPSh"
+uri = "file://attached_assets/generated_audio/new-gaza-dozer_engine.mp3"
+type = "audio"
+title = "new-gaza-dozer_engine"
+description = "Generated sound effect: Realistic compact tracked bulldozer diesel engine working under steady load, low warm diesel rumble, subtle mechanical chatter, close isolated recording, no voices music wind …"
+logical_id = "5935fab9-6a66-4ffb-8558-48e5e9347d20"
+
+[[outputs]]
+id = "03nkxTaNOw0L1U7vtbsf2"
+uri = "file://attached_assets/generated_audio/new-gaza-truck_engine.mp3"
+type = "audio"
+title = "new-gaza-truck_engine"
+description = "Generated sound effect: Realistic small construction dump truck diesel engine under gentle moving load, steady low-mid diesel rumble with restrained mechanical vibration, isolated close field recordi…"
+logical_id = "7146dae3-2c42-44cb-93fb-abc6221d0fb7"
+
+[[outputs]]
+id = "YhZIWCHInHlq-dnPPNCAp"
+uri = "file://attached_assets/generated_audio/new-gaza-excavator_engine.mp3"
+type = "audio"
+title = "new-gaza-excavator_engine"
+description = "Generated sound effect: Steady realistic compact excavator diesel engine at close working idle, low rumbling cylinders and mechanical vibration, steady moderate load, dry isolated recording, no voice…"
+logical_id = "20fe6622-d745-46cb-9ec1-9e1ba44f6ec4"
+
+[[outputs]]
+id = "iBE5OJ70K3Y4LSsX1B-7X"
+uri = "file://attached_assets/generated_audio/new-gaza-hydraulics.mp3"
+type = "audio"
+title = "new-gaza-hydraulics"
+description = "Generated sound effect: Realistic excavator hydraulics operating, restrained hydraulic pump whine, piston hiss and soft heavy metal pivot creaks, smooth recurring hydraulic movements, close dry isola…"
+logical_id = "4ceaaf41-c676-475f-ae5d-fe82011e1846"
+
+[[outputs]]
+id = "-s_1St8srXJNjHYxZ1FnF"
+uri = "file://attached_assets/generated_audio/new-gaza-tracks.mp3"
+type = "audio"
+title = "new-gaza-tracks"
+description = "Generated sound effect: Realistic slow construction machine steel caterpillar tracks on gravel, low gritty rolling crunch with rhythmic track clatter, isolated close recording, no engine or voices or…"
+logical_id = "ed103094-b519-4f65-bbca-ee244f8f305e"
+
+[[outputs]]
+id = "qz_U8f_KKqJ6pU_0M3wBs"
+uri = "file://attached_assets/generated_audio/new-gaza-coastal_surf.mp3"
+type = "audio"
+title = "new-gaza-coastal_surf"
+description = "Generated sound effect: Quiet Mediterranean beach surf, soft small shore waves and gentle water wash, calm natural continuous ambient loop, no wind music people or seagulls, subtle soft waves without…"
+logical_id = "2f063e2c-7cd2-41d6-8a8a-519fd4933293"
+
+[[outputs]]
+id = "cS87LrL3TI0p50JaJkfXo"
+uri = "file://attached_assets/generated_audio/new-gaza-wind_high.mp3"
+type = "audio"
+title = "new-gaza-wind_high"
+description = "Generated sound effect: Gentle open-sky dry coastal wind ambience heard while looking over a city from high above, soft wide airy breeze with restrained low gusts, calm clean spacious desert air, no …"
+logical_id = "ce03012e-9a5a-4fc9-a69a-7dd626592925"
+
+[[outputs]]
+id = "IpUL28eW13rZoTIWCVbuj"
+uri = "file://exports/audio/Camera-Audio-Demo.wav"
+type = "audio"
+title = "عينة الانتقال الصوتي مع الزوم — 15 ثانية"
+description = "هواء بعيد ثم محرك وهيدروليك قريبان ثم ابتعاد. عينة حسابية من مؤثرات اللعبة ومستوياتها الافتراضية، مع اتجاه صوت تقريبي؛ ليست تسجيل تشغيل Unity."
+logical_id = "2f84fab5-46d8-476e-8ad4-4131dcfb6ec7"
+content_hash = "sha256:d04ef35982e5e323544ab6d185ae8c6d579ec534f9812570cdc877e5d450a89a"
+size = 1440044
+mtime_ms = 1790881130680
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/2f84fab5-46d8-476e-8ad4-4131dcfb6ec7/3a48edfa-e37d-402e-985e-714b4b1c0559"
+storage_version_token = "1790884929338252"
+content_type = "audio/wav"
+
+[[outputs]]
+id = "ewmBCZkiAwrgEFn0Kgqoe"
+uri = "file://exports/equipment/Equipment-Offline-Hero.png"
+type = "image"
+title = "معاينة المعدات الثلاث — من هندسة المصدر"
+description = "الحفارة والشاحنة والجرافة. عرض خارجي Blender CPU من المجسمات وتحويلاتها وموادها الفعلية؛ خامات الضوضاء الحسابية تقريبية، وليس تصوير Unity."
+logical_id = "1f1ee067-b83c-44fd-9969-bff16bc0f930"
+content_hash = "sha256:8dab024a758a703a2766ba02e25997041ab5451fb1fff460f0fcd109b0b19961"
+size = 2551446
+mtime_ms = 1790885021155
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/1f1ee067-b83c-44fd-9969-bff16bc0f930/ff6791de-cefd-4796-aee1-2dccdfc290da"
+storage_version_token = "1790885145654484"
+content_type = "image/png"
+
+[[outputs]]
+id = "GB5tSr-U-WAzM7fUWuWRI"
+uri = "file://exports/equipment/Equipment-Offline-Poses.png"
+type = "image"
+title = "حالات العمل — تحميل ونقل وتفريغ"
+description = "لقطات من حالات الحركة المحسوبة في مصدر اللعبة، مرتبة للمقارنة. ليست تشغيلًا لمحرك Unity ولا تحققًا من عرض الهاتف."
+logical_id = "fa349a5f-80b8-40e0-9a88-c0b98cd0530d"
+content_hash = "sha256:a50c602ae7e0c6ce9d1447392f5eaddbd529d42bf34caa16d10f0194fddbff97"
+size = 4858321
+mtime_ms = 1790885064531
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/fa349a5f-80b8-40e0-9a88-c0b98cd0530d/c6459a07-e3c8-491e-8970-f1edda203f96"
+storage_version_token = "1790885147079540"
 content_type = "image/png"
