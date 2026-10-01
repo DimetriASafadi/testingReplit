@@ -1,0 +1,60 @@
+{
+  "formatVersion": 1,
+  "key": "apartment",
+  "sourceFile": "/home/runner/workspace/attached_assets/licensed_models/apartment.glb",
+  "targetTriangles": 2500,
+  "actualTriangles": 2487,
+  "triangleTolerance": 0.01,
+  "verifiedWithinBudget": true,
+  "vertexCount": 9247,
+  "dimensionsNormalizedBlenderXYZ": [
+    0.9561536908149719,
+    1.0,
+    2.010855197906494
+  ],
+  "origin": {
+    "originalWorldBoundsMin": [
+      -1.0318948030471802,
+      -1.4548730850219727,
+      -0.0032453828025609255
+    ],
+    "originalWorldBoundsMax": [
+      1.389253854751587,
+      1.077302098274231,
+      5.088592529296875
+    ],
+    "uniformScale": 0.3949173843091977,
+    "normalizedOriginBlender": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "pivot": "bottom-center"
+  },
+  "uvCoverage": {
+    "layer": "UVMap.001",
+    "loopCount": 7461,
+    "finiteLoopCount": 7461,
+    "bounds": {
+      "min": [
+        0.00035001750802621245,
+        0.00034999847412109375
+      ],
+      "max": [
+        0.9996500015258789,
+        0.9794886708259583
+      ]
+    }
+  },
+  "albedo": {
+    "file": "apartment_albedo.png",
+    "size": null,
+    "bakedDiffuseColorOnly": false,
+    "sourceMaterialCount": 1,
+    "uvLayer": "UVMap.001"
+  },
+  "preview": {
+    "file": "/home/runner/workspace/exports/models/apartment.png",
+    "status": "rendered"
+  }
+}

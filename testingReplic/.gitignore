@@ -84,5 +84,6 @@ Assets/GeneratedLocalRepo/
 
 # Source-only .NET verifier (the Unity-project *.csproj rule above is otherwise too broad).
 !/Tests/SourceChecks/SourceChecks.csproj
+!/Tests/Layout/LayoutTests.csproj
 /Tests/SourceChecks/obj/
 /Tests/SourceChecks/bin/

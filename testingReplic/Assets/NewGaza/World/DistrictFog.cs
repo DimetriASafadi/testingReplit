@@ -6,7 +6,7 @@ namespace NewGaza
 {
     /// <summary>
     /// One collider-free, soft radial cloud mesh for a district. District-local placement means
-    /// inland fog follows the existing tile scale and Rashid fog stays in separated plot patches.
+    /// inland and Rashid fog follow their respective project plots, not a rectangular district slab.
     /// </summary>
     public sealed class DistrictFog : MonoBehaviour
     {
@@ -18,8 +18,8 @@ namespace NewGaza
         private float opacity;
         private float targetOpacity;
 
-        internal void Initialize(Material sharedMaterial, int districtIndex, bool coastal,
-            Vector3[] plotCenters, Quaternion[] plotRotations, Vector3[] plotSizes,
+        internal void Initialize(Material sharedMaterial, int districtIndex, Vector3[] plotCenters,
+            Quaternion[] plotRotations, Vector3[] plotSizes,
             bool initiallyShown)
         {
             meshFilter = gameObject.AddComponent<MeshFilter>();
@@ -34,11 +34,8 @@ namespace NewGaza
             var uvs = new List<Vector2>();
             var colors = new List<Color>();
             var triangles = new List<int>();
-            if (coastal)
-                BuildCoastalPatches(districtIndex, plotCenters, plotRotations, plotSizes,
-                    vertices, uvs, colors, triangles);
-            else
-                BuildInlandCloud(districtIndex, vertices, uvs, colors, triangles);
+            BuildPlotPatches(districtIndex, plotCenters, plotRotations, plotSizes,
+                vertices, uvs, colors, triangles);
 
             mesh = new Mesh { name = "Localized soft dust / fog • district " + (districtIndex + 1) };
             mesh.SetVertices(vertices);
@@ -85,23 +82,7 @@ namespace NewGaza
             meshRenderer.SetPropertyBlock(properties);
         }
 
-        private static void BuildInlandCloud(int districtIndex, List<Vector3> vertices,
-            List<Vector2> uvs, List<Color> colors, List<int> triangles)
-        {
-            float variation = (districtIndex % 3 - 1) * .35f;
-            AddCard(new Vector3(-3f + variation, 7.4f, -1f), 15.5f, 8.7f, .34f, 0f,
-                vertices, uvs, colors, triangles);
-            AddCard(new Vector3(3.6f + variation, 8.2f, -1.2f), 14.5f, 8.4f, .30f, 0f,
-                vertices, uvs, colors, triangles);
-            AddCard(new Vector3(-5f + variation, 9.5f, 2.4f), 10.5f, 6.2f, .25f, 0f,
-                vertices, uvs, colors, triangles);
-            AddCard(new Vector3(1.4f + variation, 10.3f, 2.5f), 14.2f, 7.1f, .28f, 0f,
-                vertices, uvs, colors, triangles);
-            AddCard(new Vector3(7f + variation, 11.2f, 1.8f), 8.2f, 5.6f, .22f, 0f,
-                vertices, uvs, colors, triangles);
-        }
-
-        private static void BuildCoastalPatches(int districtIndex, Vector3[] centers,
+        private static void BuildPlotPatches(int districtIndex, Vector3[] centers,
             Quaternion[] rotations, Vector3[] sizes, List<Vector3> vertices,
             List<Vector2> uvs, List<Color> colors, List<int> triangles)
         {
@@ -111,16 +92,13 @@ namespace NewGaza
             {
                 Vector3 center = centers[i];
                 Quaternion rotation = rotations[i];
-                float width = Mathf.Clamp(sizes[i].x * 2.2f, 13f, 19f);
-                float depth = Mathf.Clamp(sizes[i].z * 1.65f, 13f, 19f);
-                float variation = ((districtIndex + i) % 3 - 1) * .45f;
-                AddCard(center + Vector3.up * 7.6f, width, depth, .32f, rotation.eulerAngles.y,
+                float width = Mathf.Clamp(sizes[i].x * 1.15f, 5.2f, 9.2f);
+                float depth = Mathf.Clamp(sizes[i].z * 1.15f, 5.2f, 10.5f);
+                float variation = ((districtIndex + i) % 3 - 1) * .3f;
+                AddCard(center + Vector3.up * 7.4f, width, depth, .31f, rotation.eulerAngles.y,
                     vertices, uvs, colors, triangles);
-                AddCard(center + rotation * new Vector3(variation - 2.1f, 9.2f, 1.1f),
-                    width * .77f, depth * .74f, .26f, rotation.eulerAngles.y,
-                    vertices, uvs, colors, triangles);
-                AddCard(center + rotation * new Vector3(2.4f - variation, 10.9f, -1.2f),
-                    width * .65f, depth * .68f, .22f, rotation.eulerAngles.y,
+                AddCard(center + rotation * new Vector3(variation - .35f, 9.2f, .25f),
+                    width * .82f, depth * .82f, .23f, rotation.eulerAngles.y,
                     vertices, uvs, colors, triangles);
             }
         }
