@@ -1,0 +1,16 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "1fWh6uOeYQs-_P59ry1Dn"
+uri = "file://exports/NewGaza-Unity-Source.zip"
+type = "unspecified"
+title = "نيو غزة — مشروع Unity الكامل"
+description = "نسخة المصدر التأسيسية مع مشهد اللعبة والواجهة العربية والأنظمة والاختبارات ودليل التشغيل والوثيقة الأصلية. ليست APK أو IPA."
+logical_id = "5dbf8b92-3bf8-4fbf-a60d-a4baffa6cc98"
+content_hash = "sha256:dfe76b4e64a9536932cba8041bd08b9828dfa9f5720b06452970c21e3d1c03ec"
+size = 591461
+mtime_ms = 1790866331342
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/5dbf8b92-3bf8-4fbf-a60d-a4baffa6cc98/6ba2234a-0041-4a4c-810d-95c66bb9e15b"
+storage_version_token = "1790866383010063"
+content_type = "application/octet-stream"

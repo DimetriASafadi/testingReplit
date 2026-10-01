@@ -1,0 +1,1 @@
+- [Arabic font coverage](arabic-font-coverage.md) — test connected forms, Latin digits and UI symbols together; an Arabic font can lack essential interface glyphs.
