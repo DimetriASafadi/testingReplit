@@ -6,11 +6,12 @@ namespace NewGaza
 {
     /// <summary>
     /// Deterministic, illustrative street-and-block placement. The layout is a generated
-    /// presentation policy, not a surveyed or official neighborhood boundary.
+    /// presentation policy, not a surveyed or official neighborhood boundary. Inland
+    /// streets use a bent north-south spine and two staggered side branches, not a loop.
     /// </summary>
     internal sealed class DistrictLayout
     {
-        internal const float SidewalkWidth = .78f;
+        internal const float SidewalkWidth = .42f;
         internal const float MaximumFootprintRadius = 15.6f;
 
         internal struct Street
@@ -70,13 +71,18 @@ namespace NewGaza
 
         private void Build(int plotCount)
         {
-            Vector3[] main = BuildMainStreet();
-            Vector3[] shortBranch = BuildBranch(main[0], new Vector2(-.5f, -5.9f));
-            Vector3[] northBranch = BuildBranch(main[5], new Vector2(.5f, 5.9f));
+            float layoutYaw = Range(-15f, 15f);
+            Vector3[] main = BuildMainStreet(layoutYaw);
+            Vector3[] westBranch = BuildBranch(main[1],
+                Rotate(new Vector2(-5.1f, -4.8f), layoutYaw),
+                Rotate(new Vector2(-10f, -4.5f), layoutYaw));
+            Vector3[] eastBranch = BuildBranch(main[2],
+                Rotate(new Vector2(5.1f, 4.2f), layoutYaw),
+                Rotate(new Vector2(10.5f, 5f), layoutYaw));
             var streets = new List<Street>();
-            AddStreetPath(streets, main, 1.62f);
-            AddStreetPath(streets, shortBranch, 1.2f);
-            AddStreetPath(streets, northBranch, 1.2f);
+            AddStreetPath(streets, main, 1.32f);
+            AddStreetPath(streets, westBranch, 1.05f);
+            AddStreetPath(streets, eastBranch, 1.05f);
             Streets = streets.ToArray();
 
             BuildUtilityCandidates();
@@ -90,31 +96,36 @@ namespace NewGaza
                 throw new InvalidOperationException("District layout contains intersecting project plots.");
         }
 
-        private Vector3[] BuildMainStreet()
+        private Vector3[] BuildMainStreet(float layoutYaw)
         {
             Vector2[] points =
             {
-                new Vector2(0f, -9f),
-                new Vector2(5.3f, -7.3f),
-                new Vector2(8.6f, -2.8f),
-                new Vector2(8.6f, 2.8f),
-                new Vector2(5.3f, 7.3f),
-                new Vector2(0f, 9f),
-                new Vector2(-5.3f, 7.3f),
-                new Vector2(-8.6f, 2.8f),
-                new Vector2(-8.6f, -2.8f),
-                new Vector2(-5.3f, -7.3f)
+                new Vector2(0f, -12f),
+                new Vector2(1f, -4f),
+                new Vector2(-.6f, 4f),
+                new Vector2(.6f, 12f)
             };
-            var result = new Vector3[points.Length + 1];
+            var result = new Vector3[points.Length];
             for (int i = 0; i < points.Length; i++)
             {
                 Vector2 point = points[i];
-                point.x += Range(-.22f, .22f);
-                point.y += Range(-.22f, .22f);
+                point.x += Range(i == 0 || i == points.Length - 1 ? -.18f : -.42f,
+                    i == 0 || i == points.Length - 1 ? .18f : .42f);
+                if (i > 0 && i < points.Length - 1)
+                    point.y += Range(-.28f, .28f);
+                point = Rotate(point, layoutYaw);
                 result[i] = new Vector3(point.x, 0f, point.y);
             }
-            result[result.Length - 1] = result[0];
             return result;
+        }
+
+        private static Vector2 Rotate(Vector2 point, float degrees)
+        {
+            float angle = degrees * (float)Math.PI / 180f;
+            float cosine = (float)Math.Cos(angle);
+            float sine = (float)Math.Sin(angle);
+            return new Vector2(point.x * cosine + point.y * sine,
+                -point.x * sine + point.y * cosine);
         }
 
         private Vector3[] BuildBranch(Vector3 start, params Vector2[] ends)
@@ -142,7 +153,7 @@ namespace NewGaza
 
         private Plot[] PlacePlots(int plotCount)
         {
-            float[] widthScales = { 1f, .96f, .92f, .88f, .84f, .8f, .76f };
+            float[] widthScales = { 1f, .96f, .92f, .88f, .84f, .8f, .76f, .72f, .68f };
             int bestCount = 0;
             int bestCandidates = 0;
             float bestScale = widthScales[0];
@@ -177,11 +188,42 @@ namespace NewGaza
                     if (selected.Count > bestCount) bestCount = selected.Count;
                     if (selected.Count == plotCount) return selected.ToArray();
                 }
+                var exactSelection = new List<Plot>(plotCount);
+                int searchNodes = 0;
+                Shuffle(candidates);
+                if (TryFindPlots(candidates, 0, exactSelection, plotCount, ref searchNodes, 250000))
+                    return exactSelection.ToArray();
             }
             throw new InvalidOperationException("Could not fit all " + plotCount +
                 " project plots and reserved street-side utilities inside the district footprint; best was " +
                 bestCount + "/" + plotCount + " from " + bestCandidates + " candidates at size " +
                 bestScale + ": " + bestPositions);
+        }
+
+        private static bool TryFindPlots(List<PlotCandidate> candidates, int start,
+            List<Plot> selected, int targetCount, ref int searchNodes, int nodeLimit)
+        {
+            if (selected.Count == targetCount) return true;
+            if (candidates.Count - start < targetCount - selected.Count) return false;
+            for (int i = start; i < candidates.Count; i++)
+            {
+                if (++searchNodes > nodeLimit) return false;
+                Plot candidate = candidates[i].plot;
+                bool overlaps = false;
+                for (int p = 0; p < selected.Count; p++)
+                    if (PlotsOverlap(candidate, selected[p], .18f))
+                    {
+                        overlaps = true;
+                        break;
+                    }
+                if (overlaps) continue;
+                selected.Add(candidate);
+                if (TryFindPlots(candidates, i + 1, selected, targetCount,
+                    ref searchNodes, nodeLimit))
+                    return true;
+                selected.RemoveAt(selected.Count - 1);
+            }
+            return false;
         }
 
         private List<PlotCandidate> BuildPlotCandidates(float sizeScale)
@@ -196,14 +238,14 @@ namespace NewGaza
                 Vector3 tangent = delta / length;
                 Vector3 normal = new Vector3(tangent.z, 0f, -tangent.x);
                 Quaternion rotation = Quaternion.LookRotation(tangent, Vector3.up);
-                float[] stations = { .31f, .5f, .69f };
+                float[] stations = { .06f, .5f, .94f };
 
                 for (int station = 0; station < stations.Length; station++)
                 {
                     for (int side = -1; side <= 1; side += 2)
                     {
-                        float depth = Range(4.15f, 4.65f) * sizeScale;
-                        float frontage = Range(4.15f, 4.75f) * sizeScale;
+                        float depth = Range(2.5f, 2.8f) * sizeScale;
+                        float frontage = Range(3.0f, 3.45f) * sizeScale;
                         float edgeInset = frontage * .5f + .08f;
                         if (length < edgeInset * 2f) continue;
                         float minT = edgeInset / length;
