@@ -191,8 +191,8 @@ public class ArcadeRaceGame : MonoBehaviour
 
         Rigidbody body = carObject.AddComponent<Rigidbody>();
         body.mass = 1100f;
-        body.drag = 0.45f;
-        body.angularDrag = 4f;
+        body.linearDamping = 0.45f;
+        body.angularDamping = 4f;
         body.interpolation = RigidbodyInterpolation.Interpolate;
         body.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
 
@@ -415,7 +415,7 @@ public class ArcadeCarController : MonoBehaviour
     private Quaternion startingRotation;
     private bool raceFinished;
 
-    public float CurrentSpeed => body == null ? 0f : body.velocity.magnitude;
+    public float CurrentSpeed => body == null ? 0f : body.linearVelocity.magnitude;
 
     private void Awake()
     {
@@ -436,7 +436,7 @@ public class ArcadeCarController : MonoBehaviour
             (keyboard.aKey.isPressed || keyboard.leftArrowKey.isPressed ? 1f : 0f);
         bool handbrake = keyboard.spaceKey.isPressed;
 
-        float forwardSpeed = Vector3.Dot(body.velocity, transform.forward);
+        float forwardSpeed = Vector3.Dot(body.linearVelocity, transform.forward);
         float targetSpeed = throttle >= 0f ? throttle * maxSpeed : throttle * reverseSpeed;
         float rate = throttle == 0f ? braking * 0.45f :
             (Mathf.Abs(targetSpeed) < Mathf.Abs(forwardSpeed) ? braking : acceleration);
@@ -448,7 +448,7 @@ public class ArcadeCarController : MonoBehaviour
 
         Vector3 desiredVelocity = transform.forward * forwardSpeed;
         float currentGrip = handbrake ? grip * 0.2f : grip;
-        body.velocity = Vector3.Lerp(body.velocity, desiredVelocity,
+        body.linearVelocity = Vector3.Lerp(body.linearVelocity, desiredVelocity,
             currentGrip * Time.fixedDeltaTime);
     }
 
@@ -460,7 +460,7 @@ public class ArcadeCarController : MonoBehaviour
 
     public void ResetCar()
     {
-        body.velocity = Vector3.zero;
+        body.linearVelocity = Vector3.zero;
         body.angularVelocity = Vector3.zero;
         body.position = startingPosition;
         body.rotation = startingRotation;
@@ -471,7 +471,7 @@ public class ArcadeCarController : MonoBehaviour
         raceFinished = finished;
         if (finished)
         {
-            body.velocity = Vector3.zero;
+            body.linearVelocity = Vector3.zero;
             body.angularVelocity = Vector3.zero;
         }
     }
