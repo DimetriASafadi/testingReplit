@@ -42,10 +42,16 @@ namespace NewGaza
             view = GetComponent<Camera>();
             view.orthographic = true;
             focus = targetFocus = world.DistrictPosition(session.State.selectedDistrict);
+            zoom = targetZoom = world.DistrictViewingSize(session.State.selectedDistrict);
             UpdatePose(true);
         }
 
-        public void Focus(Vector3 point) { targetFocus = point; targetZoom = 24; finaleUntil = 0; }
+        public void Focus(Vector3 point)
+        {
+            targetFocus = point;
+            targetZoom = world.DistrictViewingSize(session.State.selectedDistrict);
+            finaleUntil = 0;
+        }
         public void FrameCity() { targetFocus = CityCentre(); targetZoom = OverviewZoom(); finaleUntil = 0; }
         public void PlayFinale()
         {
@@ -123,7 +129,7 @@ namespace NewGaza
                     else if (!beganOnUI && !IsUI(first) && !IsUI(second))
                     {
                         if (span > 20 && lastSpan > 20)
-                            targetZoom = Mathf.Clamp(targetZoom * lastSpan / span, 12, Mathf.Max(125, OverviewZoom()));
+                            targetZoom = Mathf.Clamp(targetZoom * lastSpan / span, 0.6f, Mathf.Max(125, OverviewZoom()));
                         yaw -= Mathf.DeltaAngle(lastAngle, angle);
                     }
                     lastSpan = span;
@@ -146,7 +152,7 @@ namespace NewGaza
             var position = mouse.position.ReadValue();
             float scroll = mouse.scroll.ReadValue().y;
             if (!IsUI(position) && Mathf.Abs(scroll) > 0)
-                targetZoom = Mathf.Clamp(targetZoom - scroll * 0.035f, 12, Mathf.Max(125, OverviewZoom()));
+                targetZoom = Mathf.Clamp(targetZoom * Mathf.Exp(-scroll * 0.0015f), 0.6f, Mathf.Max(125, OverviewZoom()));
             if (mouse.rightButton.isPressed && !IsUI(position))
                 yaw += mouse.delta.ReadValue().x * 0.25f;
             Pointer(position, mouse.leftButton.isPressed);

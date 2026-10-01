@@ -1,3 +1,5 @@
 - [Arabic font coverage](arabic-font-coverage.md) — test connected forms, Latin digits and UI symbols together; an Arabic font can lack essential interface glyphs.
 - [Geographic sources and saves](geographic-sources-and-saves.md) — disambiguate Gaza map points; later expansions preserve neighborhood identity and earned access, not array positions.
 - [GitHub authentication paths](github-authentication-paths.md) — connector authorization can work while native Git push fails; preserve commit hashes and merge remote history before delivery.
+- [Headless 3D previews](headless-3d-previews.md) — use CPU rendering when no graphics context is available; native GPU initialization can abort before a fallback runs.
+- [Imported model UV channels](imported-model-uv-channels.md) — export the texture's actual UV channel; valid geometry and UV counts do not prove a correctly mapped albedo.

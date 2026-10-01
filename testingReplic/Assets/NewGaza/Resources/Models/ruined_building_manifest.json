@@ -1,0 +1,60 @@
+{
+  "formatVersion": 1,
+  "key": "ruined_building",
+  "sourceFile": "/home/runner/workspace/attached_assets/licensed_models/ruined_building.glb",
+  "targetTriangles": 4000,
+  "actualTriangles": 3980,
+  "triangleTolerance": 0.01,
+  "verifiedWithinBudget": true,
+  "vertexCount": 9962,
+  "dimensionsNormalizedBlenderXYZ": [
+    1.0,
+    0.9788320064544678,
+    2.393876314163208
+  ],
+  "origin": {
+    "originalWorldBoundsMin": [
+      -1.0212938785552979,
+      -1.0422061681747437,
+      -0.016747236251831055
+    ],
+    "originalWorldBoundsMax": [
+      1.1133698225021362,
+      1.0472710132598877,
+      5.093373775482178
+    ],
+    "uniformScale": 0.46845786505135995,
+    "normalizedOriginBlender": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "pivot": "bottom-center"
+  },
+  "uvCoverage": {
+    "layer": "UVMap.001",
+    "loopCount": 11940,
+    "finiteLoopCount": 11940,
+    "bounds": {
+      "min": [
+        0.00035001750802621245,
+        0.00034999847412109375
+      ],
+      "max": [
+        0.9996500015258789,
+        0.9996500015258789
+      ]
+    }
+  },
+  "albedo": {
+    "file": "ruined_building_albedo.png",
+    "size": null,
+    "bakedDiffuseColorOnly": false,
+    "sourceMaterialCount": 1,
+    "uvLayer": "UVMap.001"
+  },
+  "preview": {
+    "file": "/home/runner/workspace/exports/models/ruined_building.png",
+    "status": "rendered"
+  }
+}

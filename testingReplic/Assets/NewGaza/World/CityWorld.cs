@@ -7,11 +7,13 @@ namespace NewGaza
 {
     /// <summary>
     /// Geographic neighborhood centers and city-coast route with illustrative, authored
-    /// buildings. Tiles are NOT neighborhood boundaries or official district polygons.
+    /// layouts. Generated streetblocks are NOT official district polygons.
     /// The session is the only owner of progress; this class is a disposable view.
     /// </summary>
     public sealed class CityWorld : MonoBehaviour
     {
+        private const float CityGroundY = -.09f;
+
         private sealed class PlotView
         {
             internal Transform anchor;
@@ -41,12 +43,12 @@ namespace NewGaza
 
         private GameSession session;
         private CityGeometry geometry;
+        private CityModelLibrary modelLibrary;
         private Transform cityRoot;
         private DistrictView[] districts;
         private DistrictFog[] districtFogs;
         private Material fogMaterial;
         private GameObject selection;
-        private GameObject districtSelection;
         private GameObject factory;
         private GameObject factorySite;
         private GameObject completedCoastRoad;
@@ -62,6 +64,8 @@ namespace NewGaza
         private Material[] districtColors;
 
         /// <summary>Geographic bounds are supplied by GameGeography in city-local Unity units.</summary>
+        public int ImportedModelCount { get { return modelLibrary != null ? modelLibrary.ImportedModelCount : 0; } }
+
         public void Initialize(GameSession gameSession)
         {
             if (gameSession == null) throw new ArgumentNullException(nameof(gameSession));
@@ -73,9 +77,12 @@ namespace NewGaza
                 cityRoot.gameObject.SetActive(false);
                 Destroy(cityRoot.gameObject);
             }
+            modelLibrary?.Dispose();
+            modelLibrary = null;
             geometry?.Dispose();
             session = gameSession;
             geometry = new CityGeometry();
+            modelLibrary = new CityModelLibrary();
             fogMaterial = CreateFogMaterial();
             MakePalette();
             cityRoot = new GameObject("New Gaza • geographically placed neighborhood centers").transform;
@@ -200,9 +207,9 @@ namespace NewGaza
                 AddQuad(landscape, sand, a + new Vector3(0f,-.08f,0f),
                     b + new Vector3(0f,-.08f,0f), b + new Vector3(2f,-.08f,0f),
                     a + new Vector3(2f,-.08f,0f));
-                AddQuad(landscape, limestone, a + new Vector3(2f,-.09f,0f),
-                    b + new Vector3(2f,-.09f,0f), new Vector3(east,-.09f,b.z),
-                    new Vector3(east,-.09f,a.z));
+                AddQuad(landscape, limestone, a + new Vector3(2f,CityGroundY,0f),
+                    b + new Vector3(2f,CityGroundY,0f), new Vector3(east,CityGroundY,b.z),
+                    new Vector3(east,CityGroundY,a.z));
                 landscape.Beam(foam, a + new Vector3(0f,-.065f,0f),
                     b + new Vector3(0f,-.065f,0f), .18f);
             }
@@ -352,11 +359,25 @@ namespace NewGaza
                 bool coast = i == coastalIndex;
                 var definition = GameCatalog.Districts[i];
                 var district = new DistrictView();
-                // Keep the sourced center exact; only illustrative tile geometry can shrink.
+                DistrictLayout layout = coast ? null :
+                    DistrictLayout.Create(definition.id, definition.projects.Length);
+                Quaternion salvageRotation = Quaternion.identity;
+                Quaternion badgeRotation = Quaternion.identity;
+                Quaternion craneRotation = Quaternion.identity;
+                Vector3 salvagePos = coast ?
+                    new Vector3(routeDirection.z,0f,-routeDirection.x) * 17f :
+                    layout.FindRoadsidePosition(1.25f, 0, out salvageRotation);
+                Vector3 badgePos = coast ?
+                    Point(route[route.Length - 1]) - Point(routeMidpoint) :
+                    layout.FindRoadsidePosition(.72f, 1, out badgeRotation);
+                Vector3 cranePos = coast ?
+                    salvagePos + new Vector3(5f,0f,1.5f) :
+                    layout.FindRoadsidePosition(3.15f, 2, out craneRotation);
+                // Keep the sourced center exact; only the generated presentation footprint shrinks.
                 district.center = coast ? routeMidpoint : Point(GameGeography.DistrictPoint(i));
                 district.root = new GameObject("District " + (i + 1) + " • " + definition.name).transform;
                 district.root.SetParent(cityRoot, false);
-                district.root.localPosition = district.center;
+                district.root.localPosition = new Vector3(district.center.x, CityGroundY, district.center.z);
                 if (!coast)
                 {
                     float nearest = float.MaxValue;
@@ -365,87 +386,64 @@ namespace NewGaza
                             nearest = Mathf.Min(nearest,Vector3.Distance(district.center,Point(GameGeography.DistrictPoint(j))));
                     float inlandClearance = district.center.x - ShoreX(district.center.z);
                     district.root.localScale = Vector3.one *
-                        Mathf.Clamp(Mathf.Min((nearest - 1f) / 30f,
-                            (inlandClearance - 1f) / 14f),.06f,1f);
+                        Mathf.Clamp(Mathf.Min((nearest - 1f) / (layout.FootprintRadius * 2f),
+                            (inlandClearance - 1f) / layout.FootprintRadius),.06f,1f);
                 }
                 districts[i] = district;
-                var baseBatch = new CityMeshBatch(geometry);
-                Vector3 tileSize = new Vector3(25.5f,.15f,14.8f);
-                if (!coast) baseBatch.Box(limestone, new Vector3(0f,.075f,0f), tileSize);
                 if (!coast)
-                {
-                    baseBatch.Box(DistrictAccent(i), new Vector3(0f,.17f,-7.15f), new Vector3(25.4f,.12f,.28f));
-                    baseBatch.Box(sidewalk, new Vector3(0f,.2f,0f), new Vector3(25f,.12f,1.25f));
-                    baseBatch.Box(sidewalk, new Vector3(0f,.2f,0f), new Vector3(.8f,.12f,14f));
-                    for (int corner = 0; corner < 4; corner++)
-                    {
-                        Vector3 p = new Vector3((corner % 2 == 0 ? -1f : 1f) * 11.9f,.22f,
-                            (corner < 2 ? -1f : 1f) * 6.3f);
-                        baseBatch.Box(DistrictAccent(i), p, new Vector3(1.1f,.3f,1.1f));
-                        Palm(baseBatch, p + Vector3.up * .15f, 2f + i % 3 * .3f, i * 24f + corner * 57f);
-                    }
-                    // Different edge monuments give every district a readable silhouette:
-                    // columns, water urns, orchard rows, market awnings, or stepped gateways.
-                    DistrictSignature(baseBatch, i);
-                }
-                GameObject baseObject = baseBatch.Build("Illustrative center tile • not a district boundary",
-                    district.root, Vector3.zero);
-                if (!coast)
-                    AddHit(baseObject, i, -1, new Vector3(0f,.12f,0f), tileSize + new Vector3(0f,.1f,0f));
+                    BuildInlandStreets(layout, i, district.root);
                 district.plots = new PlotView[definition.projects.Length];
-                int columns = definition.projects.Length <= 6 ? 3 : 4;
-                int rows = Mathf.Max(2, Mathf.CeilToInt(definition.projects.Length / (float)columns));
                 for (int p = 0; p < definition.projects.Length; p++)
                 {
-                    Vector3 size = coast ? new Vector3(7.6f,0f,Mathf.Min(11f,routeLength / Mathf.Max(1,definition.projects.Length) * .58f)) :
-                        new Vector3(22.4f / columns,0f,12f / rows);
+                    Vector3 size = coast
+                        ? new Vector3(7.6f,0f,Mathf.Min(11f,routeLength / Mathf.Max(1,definition.projects.Length) * .58f))
+                        : layout.Plots[p].size;
                     Vector3 position;
+                    Quaternion rotation;
                     if (coast)
                     {
                         Vector3 direction;
                         Vector3 onRoute = RoutePoint(route,routeLength * (p + .5f) /
                             definition.projects.Length,out direction);
                         position = onRoute + new Vector3(direction.z,0f,-direction.x) * 9f -
-                            district.center + Vector3.up * .18f;
+                            district.center;
+                        rotation = Quaternion.LookRotation(direction,Vector3.up);
                     }
-                    else position = new Vector3(-11.2f + (p % columns + .5f) * size.x, .18f,
-                        -6f + (p / columns + .5f) * size.z);
+                    else
+                    {
+                        position = layout.Plots[p].position;
+                        rotation = layout.Plots[p].rotation;
+                    }
+                    position.y = 0f;
                     Transform anchor = new GameObject("Plot " + p + " • " + definition.projects[p].name).transform;
                     anchor.SetParent(district.root, false);
                     anchor.localPosition = position;
-                    if (coast)
-                    {
-                        Vector3 direction;
-                        RoutePoint(route,routeLength * (p + .5f) / definition.projects.Length,out direction);
-                        anchor.localRotation = Quaternion.LookRotation(direction,Vector3.up);
-                    }
+                    anchor.localRotation = rotation;
                     district.plots[p] = new PlotView { anchor = anchor, size = size, definition = definition.projects[p] };
                     AddHit(anchor.gameObject, i, p, new Vector3(0f,1.1f,0f),
                         new Vector3(size.x * .85f,2.2f,size.z * .83f));
                 }
-                Vector3 salvagePos = coast ?
-                    new Vector3(routeDirection.z,0f,-routeDirection.x) * 17f +
-                    Vector3.up * .2f :
-                    new Vector3(-11f,.2f,-6.1f);
                 var salvage = new CityMeshBatch(geometry);
-                RubblePile(salvage, Vector3.zero, 1.1f, i + 31);
-                district.rubble = salvage.Build("Local rubble • clearing progress", district.root, salvagePos);
-                district.salvageHit = AddHit(district.rubble, i, -2, new Vector3(0f,.65f,0f), new Vector3(2f,1.3f,1.8f));
-                var sign = new CityMeshBatch(geometry);
-                sign.Round(teal, new Vector3(0f,.15f,0f), new Vector3(1.3f,.16f,1.3f));
-                sign.Box(white, new Vector3(0f,.25f,0f), new Vector3(.65f,.04f,.15f), 45f);
-                sign.Box(white, new Vector3(0f,.25f,0f), new Vector3(.65f,.04f,.15f), -45f);
-                sign.Build("Rubble interaction marker", district.root, salvagePos);
+                float salvageHeight = modelLibrary.AddTo(salvage,"rubble_heap",Vector3.zero,
+                    new Vector3(2f,0f,1.8f),0f,1.5f);
+                district.rubble = salvage.Build("Imported rubble heap • clearing progress", district.root,
+                    new Vector3(salvagePos.x,0f,salvagePos.z));
+                district.rubble.transform.localRotation = salvageRotation;
+                district.salvageHit = AddHit(district.rubble, i, -2,
+                    new Vector3(0f,Mathf.Max(.35f,salvageHeight * .5f),0f),
+                    new Vector3(2f,Mathf.Max(.8f,salvageHeight),1.8f));
                 var badge = new CityMeshBatch(geometry);
                 badge.Round(yellow, Vector3.zero, new Vector3(1f,.15f,1f));
                 badge.Box(white, new Vector3(-.13f,.1f,0f), new Vector3(.35f,.06f,.11f), -45f);
                 badge.Box(white, new Vector3(.15f,.1f,.09f), new Vector3(.6f,.06f,.11f), 45f);
-                district.badge = badge.Build("Claimed district medallion", district.root,
-                    coast ? Point(route[route.Length - 1]) - district.center + Vector3.up * .3f :
-                    new Vector3(10.8f,.32f,-6.2f));
+                district.badge = badge.Build("Claimed district medallion • roadside", district.root,
+                    new Vector3(badgePos.x,0f,badgePos.z));
+                district.badge.transform.localRotation = badgeRotation;
                 district.badge.SetActive(false);
                 district.crane = BuildCrane(district.root,
-                    coast ? salvagePos + new Vector3(5f,.05f,1.5f) : new Vector3(10.8f,.25f,5.5f));
+                    new Vector3(cranePos.x,0f,cranePos.z));
+                district.crane.transform.localRotation = craneRotation;
+                if (!coast) district.crane.transform.localScale = Vector3.one * .58f;
                 district.crane.SetActive(false);
 
                 var fogCenters = new Vector3[district.plots.Length];
@@ -464,43 +462,64 @@ namespace NewGaza
                 var fogObject = new GameObject("Soft localized dust / fog • locked district");
                 fogObject.transform.SetParent(district.root, false);
                 district.fog = fogObject.AddComponent<DistrictFog>();
-                district.fog.Initialize(fogMaterial, i, coast, fogCenters, fogRotations,
+                district.fog.Initialize(fogMaterial, i, fogCenters, fogRotations,
                     fogSizes, initiallyFogged);
                 district.fogged = initiallyFogged;
                 districtFogs[i] = district.fog;
             }
         }
 
-        private void DistrictSignature(CityMeshBatch batch, int district)
+        private void BuildInlandStreets(DistrictLayout layout, int districtIndex, Transform root)
         {
-            Material accent = DistrictAccent(district);
-            float z = 6.5f;
-            switch (district % 5)
+            var batch = new CityMeshBatch(geometry);
+            for (int i = 0; i < layout.Streets.Length; i++)
             {
-                case 0:
-                    for (int k = 0; k < 3; k++)
-                    {
-                        batch.Round(cream, new Vector3(-2f + k * 2f,.7f,z), new Vector3(.45f,1.1f,.45f));
-                        batch.Round(accent, new Vector3(-2f + k * 2f,1.3f,z), new Vector3(.65f,.2f,.65f));
-                    }
-                    break;
-                case 1:
-                    batch.Box(accent, new Vector3(0f,.65f,z), new Vector3(3.5f,1f,.5f));
-                    batch.Box(cream, new Vector3(0f,1.3f,z), new Vector3(4f,.25f,.8f));
-                    break;
-                case 2:
-                    for (int k = 0; k < 4; k++) Palm(batch, new Vector3(-3f + k * 2f,.22f,z), 1.8f, k * 72f);
-                    break;
-                case 3:
-                    batch.Round(accent, new Vector3(0f,.6f,z), new Vector3(1.3f,.9f,1.3f));
-                    batch.Round(water, new Vector3(0f,1.08f,z), new Vector3(1.15f,.08f,1.15f));
-                    break;
-                default:
-                    batch.Box(accent, new Vector3(-1.1f,.9f,z), new Vector3(.4f,1.5f,.4f));
-                    batch.Box(accent, new Vector3(1.1f,.9f,z), new Vector3(.4f,1.5f,.4f));
-                    batch.Box(cream, new Vector3(0f,1.65f,z), new Vector3(2.6f,.3f,.5f));
-                    break;
+                DistrictLayout.Street street = layout.Streets[i];
+                Vector3 delta = street.end - street.start;
+                float length = delta.magnitude;
+                if (length < .1f) continue;
+                Vector3 tangent = delta / length;
+                Vector3 normal = new Vector3(tangent.z,0f,-tangent.x);
+                Vector3 midpoint = (street.start + street.end) * .5f;
+                float yaw = Mathf.Atan2(tangent.x,tangent.z) * Mathf.Rad2Deg;
+                float roadHalfWidth = street.width * .5f;
+                float sidewalkOffset = roadHalfWidth + DistrictLayout.SidewalkWidth * .5f;
+
+                batch.Box(asphalt,midpoint + Vector3.up * .04f,
+                    new Vector3(street.width,.08f,length + .12f),yaw);
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    batch.Box(limestone,midpoint + normal * side * (roadHalfWidth + .055f) +
+                        Vector3.up * .07f,new Vector3(.11f,.14f,length + .08f),yaw);
+                    batch.Box(sidewalk,midpoint + normal * side * sidewalkOffset +
+                        Vector3.up * .035f,
+                        new Vector3(DistrictLayout.SidewalkWidth,.07f,length + .14f),yaw);
+                }
+
+                // A small compound set of street-only hit volumes replaces the old district
+                // slab collider. Trim the ends so branches do not overlap at junctions.
+                float hitLength = length - street.width * 1.45f;
+                if (hitLength > .35f)
+                {
+                    var hitTarget = new GameObject("Street interaction • " + (i + 1)).transform;
+                    hitTarget.SetParent(root,false);
+                    hitTarget.localPosition = midpoint;
+                    hitTarget.localRotation = Quaternion.Euler(0f,yaw,0f);
+                    AddHit(hitTarget.gameObject,districtIndex,-1,
+                        Vector3.up * .13f,
+                        new Vector3(street.width * .92f,.26f,hitLength));
+                }
             }
+            for (int i = 0; i < layout.Streets.Length; i++)
+            {
+                DistrictLayout.Street street = layout.Streets[i];
+                batch.Round(asphalt,street.start + Vector3.up * .04f,
+                    new Vector3(street.width,.08f,street.width));
+                batch.Round(asphalt,street.end + Vector3.up * .04f,
+                    new Vector3(street.width,.08f,street.width));
+            }
+            batch.Build("Irregular branched streets • asphalt, curbs and sidewalks",
+                root,Vector3.zero);
         }
 
         private static CitySelectable AddHit(GameObject target, int district, int plot, Vector3 center, Vector3 size)
@@ -588,8 +607,9 @@ namespace NewGaza
                 {
                     MeshRenderer renderer = filter.GetComponent<MeshRenderer>();
                     renderer.enabled = false;
-                    target.Add(filter.sharedMesh,renderer.sharedMaterial,plot.anchor.localPosition,
-                        Vector3.one,plot.anchor.localRotation);
+                    Matrix4x4 mergedTransform = district.root.worldToLocalMatrix *
+                        filter.transform.localToWorldMatrix;
+                    target.Add(filter.sharedMesh,renderer.sharedMaterial,mergedTransform);
                 }
             }
             // Source meshes remain cached for incremental stage changes. Only this district's
@@ -606,18 +626,33 @@ namespace NewGaza
             plot.stage = stage;
             var batch = new CityMeshBatch(geometry);
             Vector3 footprint = new Vector3(plot.size.x * .82f,.12f,plot.size.z * .8f);
-            batch.Box(stage == 3 ? sidewalk : sand, new Vector3(0f,.04f,0f), footprint);
-            if (stage == 0) Ruin(batch, district, index, footprint);
+            // Ruins and housing sit on the shared terrain, not on rectangular display pads.
+            // Keep ground works only where a cleared/construction/infrastructure site needs them.
+            if (stage == 1 || stage == 2 || (stage == 3 && plot.definition.kind != ProjectKind.Housing))
+                batch.Box(stage == 3 ? sidewalk : sand, new Vector3(0f,.04f,0f), footprint);
+            float modelHeight = 0f;
+            if (stage == 0)
+            {
+                modelHeight = modelLibrary.AddTo(batch,"ruined_building",
+                    Vector3.zero,
+                    new Vector3(footprint.x * .76f,0f,footprint.z * .72f),0f,
+                    Mathf.Max(1f,Mathf.Min(footprint.x,footprint.z) * 1.2f));
+                AddImportedRubbleScatter(batch,footprint,district * 17 + index * 31);
+            }
             else if (stage == 1) ClearedPlot(batch, footprint);
             else if (stage == 2) Construction(batch, district, footprint);
+            else if (plot.definition.kind == ProjectKind.Housing)
+                modelHeight = modelLibrary.AddTo(batch,"apartment",Vector3.zero,
+                    new Vector3(footprint.x * .76f,0f,footprint.z * .76f),0f,8f);
             else FinishedProject(batch, plot.definition, district, index, footprint);
             plot.visual = batch.Build(stage == 0 ? "Damaged structure" : stage == 1 ? "Cleared foundation" :
                 stage == 2 ? "Under construction / scaffold" : "Completed • " + plot.definition.name,
                 plot.anchor, Vector3.zero, stage == 0 || stage == 3);
             // The selectable volume follows the architecture, so tapping an upper-storey
             // roof hits its own plot rather than the ground behind it in an angled view.
-            float hitHeight = stage == 1 ? .65f : stage == 2 ? 4.5f : 2.2f;
-            if (stage == 3)
+            float hitHeight = stage == 1 ? .65f : stage == 2 ? 4.5f :
+                modelHeight > 0f ? modelHeight : 2.2f;
+            if (stage == 3 && plot.definition.kind != ProjectKind.Housing)
             {
                 switch (plot.definition.kind)
                 {
@@ -635,7 +670,9 @@ namespace NewGaza
                 }
             }
             BoxCollider hit = plot.anchor.GetComponent<BoxCollider>();
-            hit.center = new Vector3(0f,hitHeight * .5f,0f);
+            float hitBaseY = stage == 0 || stage == 3 && plot.definition.kind == ProjectKind.Housing
+                ? .1f : 0f;
+            hit.center = new Vector3(0f,hitBaseY + hitHeight * .5f,0f);
             hit.size = new Vector3(plot.size.x * .85f,hitHeight,plot.size.z * .83f);
         }
 
@@ -643,9 +680,26 @@ namespace NewGaza
         {
             if (visual == null) return;
             visual.SetActive(false);
-            foreach (MeshFilter filter in visual.GetComponentsInChildren<MeshFilter>())
+            foreach (MeshFilter filter in visual.GetComponentsInChildren<MeshFilter>(true))
                 if (filter.sharedMesh != null) geometry.Release(filter.sharedMesh);
             Destroy(visual);
+        }
+
+        private void AddImportedRubbleScatter(CityMeshBatch batch, Vector3 footprint, int seed)
+        {
+            var random = new System.Random(seed);
+            for (int i = 0; i < 3; i++)
+            {
+                float width = footprint.x * (.2f + (float)random.NextDouble() * .12f);
+                float depth = footprint.z * (.2f + (float)random.NextDouble() * .12f);
+                float maxX = Mathf.Max(0f,footprint.x * .5f - width * .5f - .12f);
+                float maxZ = Mathf.Max(0f,footprint.z * .5f - depth * .5f - .12f);
+                float x = ((float)random.NextDouble() * 2f - 1f) * maxX;
+                float z = ((float)random.NextDouble() * 2f - 1f) * maxZ;
+                float yaw = (float)random.NextDouble() * 360f;
+                modelLibrary.AddTo(batch,"rubble_heap",new Vector3(x,0f,z),
+                    new Vector3(width,0f,depth),yaw,Mathf.Min(width,depth));
+            }
         }
 
         private void Ruin(CityMeshBatch batch, int district, int plot, Vector3 footprint)
@@ -1333,9 +1387,6 @@ namespace NewGaza
             Outline(ring,yellow,1f,1f,.06f);
             selection = ring.Build("Selected plot • saffron outline",cityRoot,Vector3.zero);
             selection.SetActive(false);
-            var districtRing = new CityMeshBatch(geometry);
-            Outline(districtRing,teal,1f,1f,.018f);
-            districtSelection = districtRing.Build("Focused district • teal border",cityRoot,Vector3.zero);
         }
 
         private static void Outline(CityMeshBatch batch, Material material, float width, float depth, float line)
@@ -1357,17 +1408,19 @@ namespace NewGaza
             return districts != null && index >= 0 && index < districts.Length && districts[index].fogged;
         }
 
+        public float DistrictViewingSize(int index)
+        {
+            if (districts == null || index < 0 || index >= districts.Length) return 24f;
+            // Sourced centers can be close together, so neighborhood presentations shrink.
+            // Inspect at the same scale; a fixed 24-unit camera made small ruins unreadable.
+            return Mathf.Max(1.25f, 20f * districts[index].root.lossyScale.x);
+        }
+
         public void FocusDistrict(int index)
         {
             if (districts == null || index < 0 || index >= districts.Length) return;
             bool changed = selectedDistrict != index;
             selectedDistrict = index;
-            DistrictView view = districts[index];
-            districtSelection.transform.localPosition = view.center + Vector3.up * .32f;
-            // The final focus is a route midpoint marker, not a fictitious long parcel.
-            districtSelection.transform.localScale = index == districts.Length - 1 ?
-                new Vector3(5f,1f,5f) :
-                new Vector3(25.6f,1f,14.9f) * view.root.localScale.x;
             if (changed) SetSelectedPlot(-1);
             else SetSelectedPlot(selectedPlot);
         }
@@ -1427,7 +1480,6 @@ namespace NewGaza
             }
             batch.Build("Finale • corniche celebration bunting",cityRoot,Vector3.zero);
             selection.SetActive(false);
-            districtSelection.SetActive(false);
         }
 
         private void OnDestroy()
@@ -1438,6 +1490,8 @@ namespace NewGaza
                 session.PlotSelected -= SetSelectedPlot;
             }
             DisposeFogFields();
+            modelLibrary?.Dispose();
+            modelLibrary = null;
             geometry?.Dispose();
         }
     }

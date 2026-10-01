@@ -1,0 +1,103 @@
+{
+  "formatVersion": 1,
+  "sourcePreparation": "Blender 4.4; authored mesh extraction, box-projected scanned concrete source in editable BLEND, diffuse-color-only atlas bake for GLB.",
+  "concreteAlbedoSource": "/tmp/gaza-art-assets/concrete_albedo.jpg",
+  "concreteAlbedoLicense": "CC0 (provided as verified by the asset curator)",
+  "generatedByAI": false,
+  "assets": [
+    {
+      "key": "apartment",
+      "sourceBlend": "apartment_source.blend",
+      "glb": "apartment.glb",
+      "bakedSourceAlbedo": "apartment_source_albedo.png",
+      "actualArtistAuthoredGeometry": true,
+      "sourceKind": "human-authored static meshes",
+      "sourceMaterialsBakedDiffuseColorOnly": true,
+      "sourceTriangleCountBeforeOptimization": 6862,
+      "sourceProvenance": {
+        "sourceArtist": "Quaternius",
+        "sourcePack": "Ultimate Textured Building Pack - Dec 2019",
+        "sourceLicense": "CC0 1.0 Universal (per source pack)",
+        "sourceUrl": "https://quaternius.com/packs/ultimatetexturedbuildings.html",
+        "sourceMeshObjects": [
+          "4Story_Mat"
+        ],
+        "sourceFile": "/tmp/gaza-art-assets/Ultimate Textured Building Pack - Dec 2019/Models with Materials/Blends/4Story_Mat.blend",
+        "selectionNotes": "One authored flat-roof four-storey building mesh; no dummy geometry, cameras, or lights."
+      }
+    },
+    {
+      "key": "rubble_heap",
+      "sourceBlend": "rubble_heap_source.blend",
+      "glb": "rubble_heap.glb",
+      "bakedSourceAlbedo": "rubble_heap_source_albedo.png",
+      "actualArtistAuthoredGeometry": true,
+      "sourceKind": "human-authored static meshes",
+      "sourceMaterialsBakedDiffuseColorOnly": true,
+      "sourceTriangleCountBeforeOptimization": 1426,
+      "sourceProvenance": {
+        "sourceArtist": "Fleurman",
+        "sourcePack": "Destroyed City Assets (2017)",
+        "sourceLicense": "CC0 (verified for the downloaded OpenGameArt source)",
+        "sourceUrl": "https://opengameart.org/content/destroyed-city-assets",
+        "sourceFile": "/tmp/gaza-art-assets/Destroyed_City_Assets.fbx",
+        "sourceMeshObjects": [
+          "Fleurman_Débri_1",
+          "Fleurman_Débri_2",
+          "Fleurman_Débri_3",
+          "Fleurman_Rock_1",
+          "Fleurman_Rock_2",
+          "Fleurman_Rock_3"
+        ],
+        "selectedOriginalNames": [
+          "Débri_1",
+          "Débri_2",
+          "Débri_3",
+          "Rock_1",
+          "Rock_2",
+          "Rock_3"
+        ],
+        "selectionNotes": "Only authored Débri_1-3 broken concrete pieces and Rock_1-3 fragments; the upright long shards were rigidly rotated and the six meshes repositioned into a low, overlapping heap. No geometry was added or removed. Excluded road pieces, building groups, cube dummy, camera, and light."
+      }
+    },
+    {
+      "key": "ruined_building",
+      "sourceBlend": "ruined_building_source.blend",
+      "glb": "ruined_building.glb",
+      "bakedSourceAlbedo": "ruined_building_source_albedo.png",
+      "actualArtistAuthoredGeometry": true,
+      "sourceKind": "human-authored static meshes",
+      "sourceMaterialsBakedDiffuseColorOnly": true,
+      "sourceTriangleCountBeforeOptimization": 4499,
+      "sourceProvenance": {
+        "sourceArtist": "Fleurman",
+        "sourcePack": "Destroyed City Assets (2017)",
+        "sourceLicense": "CC0 (verified for the downloaded OpenGameArt source)",
+        "sourceUrl": "https://opengameart.org/content/destroyed-city-assets",
+        "sourceFile": "/tmp/gaza-art-assets/Destroyed_City_Assets.fbx",
+        "sourceHierarchyRoot": "Colonne_1",
+        "sourceMeshObjects": [
+          "Fleurman_Colonne_1",
+          "Fleurman_Étage_5_4",
+          "Fleurman_Étage_4_6",
+          "Fleurman_Étage_4_5",
+          "Fleurman_Étage_3_6",
+          "Fleurman_Étage_3_5",
+          "Fleurman_Étage_2_6",
+          "Fleurman_Étage_2_5",
+          "Fleurman_Étage_1_6",
+          "Fleurman_Étage_1_5",
+          "Fleurman_Étage_1_2_2",
+          "Fleurman_Étage_1_1_2",
+          "Fleurman_Face_pleine_3_3",
+          "Fleurman_Face_pleine_2_3",
+          "Fleurman_Face_pleine_1_3",
+          "Fleurman_Face_3_3",
+          "Fleurman_Face_2_3",
+          "Fleurman_Face_1_3"
+        ],
+        "selectionNotes": "Selected one physically assembled authored ruin hierarchy only; excluded the two other spaced building variants, roads, debris, rocks, cube dummy, camera, and light."
+      }
+    }
+  ]
+}

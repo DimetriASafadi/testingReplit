@@ -76,8 +76,8 @@ namespace NewGaza
 
         internal void Release(Mesh mesh)
         {
-            owned.Remove(mesh);
-            UnityEngine.Object.Destroy(mesh);
+            if (mesh != null && owned.Remove(mesh))
+                UnityEngine.Object.Destroy(mesh);
         }
 
         private Mesh Make(string name, Vector3[] vertices, int[] triangles, Vector2[] uv = null)
@@ -319,12 +319,25 @@ namespace NewGaza
 
         internal void Add(Mesh mesh, Material material, Vector3 position, Vector3 scale, Quaternion rotation)
         {
+            Add(mesh, material, Matrix4x4.TRS(position, rotation, scale));
+        }
+
+        internal void Add(Mesh mesh, Material material, Matrix4x4 transform)
+        {
             if (!batches.TryGetValue(material, out List<CombineInstance> instances))
             {
                 instances = new List<CombineInstance>();
                 batches.Add(material, instances);
             }
-            instances.Add(new CombineInstance { mesh = mesh, transform = Matrix4x4.TRS(position, rotation, scale) });
+            // A Unity importer may split one OBJ into submeshes. Keep every face
+            // while applying the library's single baked albedo material.
+            for (int submesh = 0; submesh < mesh.subMeshCount; submesh++)
+                instances.Add(new CombineInstance
+                {
+                    mesh = mesh,
+                    subMeshIndex = submesh,
+                    transform = transform
+                });
         }
 
         internal void Box(Material material, Vector3 position, Vector3 scale, float yaw = 0f)

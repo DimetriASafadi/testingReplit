@@ -42,6 +42,7 @@ internal static class Program
             CheckSceneBootstrap(sourceRoot, roots);
             CheckDistrictFog(sourceRoot, roots);
             CheckWorldRenderingContracts(roots);
+            CheckImportedCityModelContracts(sourceRoot, roots);
             CheckHudIconContracts(roots);
             CheckArabicShaping();
             if (Failures.Count > 0)
@@ -51,7 +52,7 @@ internal static class Program
                 return 1;
             }
             Console.WriteLine("Source checks passed: " + files.Length +
-                " NewGaza .cs files parsed as C# 9 (player + editor/optional checks), integration signatures, GUID-independent scene bootstrap, localized-fog/shader and geometry-UV/shadow/URP-light source checks, procedural HUD icon coverage/ownership/navigation bindings, and Arabic shaping.");
+                " NewGaza .cs files parsed as C# 9 (player + editor/optional checks), integration signatures, GUID-independent scene bootstrap, imported city model/source-asset and runtime batching contracts, localized-fog/shader and geometry-UV/shadow/URP-light source checks, procedural HUD icon coverage/ownership/navigation bindings, and Arabic shaping.");
             Console.WriteLine("Source-only check; Unity assemblies and shader were not compiled, and no Unity editor/player or GPU rendering was run.");
             return 0;
         }
@@ -174,6 +175,234 @@ internal static class Program
                 assignment.Right.IsKind(SyntaxKind.FalseLiteralExpression));
         Require(usesExplicitSunUrpSettings,
             "The directional sun must opt out of URP pipeline light settings to retain its configured bias.");
+    }
+
+    private static void CheckImportedCityModelContracts(string sourceRoot,
+        Dictionary<string, CompilationUnitSyntax> roots)
+    {
+        string modelsDirectory = Path.Combine(sourceRoot, "Resources", "Models");
+        string[] modelKeys = { "apartment", "ruined_building", "rubble_heap" };
+        foreach (string key in modelKeys)
+        {
+            Require(File.Exists(Path.Combine(modelsDirectory, key + ".obj")),
+                "Missing converted imported model source Resources/Models/" + key + ".obj.");
+            Require(File.Exists(Path.Combine(modelsDirectory, key + "_albedo.png")),
+                "Missing imported model albedo Resources/Models/" + key + "_albedo.png.");
+        }
+
+        string importSettingsPath = Path.Combine(sourceRoot, "Editor", "CityModelImportSettings.cs");
+        Require(File.Exists(importSettingsPath), "Missing focused city model import settings postprocessor.");
+        if (File.Exists(importSettingsPath))
+        {
+            string settings = Compact(File.ReadAllText(importSettingsPath));
+            Require(settings.Contains("ModelsPrefix=\"Assets/NewGaza/Resources/Models/\"",
+                    StringComparison.Ordinal) &&
+                settings.Contains("path.StartsWith(ModelsPrefix,StringComparison.Ordinal)&&path.EndsWith(\".obj\",StringComparison.OrdinalIgnoreCase)",
+                    StringComparison.Ordinal),
+                "The model postprocessor must be restricted to OBJ assets below Resources/Models.");
+            Require(settings.Contains("importer.isReadable=true", StringComparison.Ordinal) &&
+                settings.Contains("importer.importNormals=ModelImporterNormals.Import", StringComparison.Ordinal) &&
+                settings.Contains("importer.materialImportMode=ModelImporterMaterialImportMode.None",
+                    StringComparison.Ordinal),
+                "City OBJ import must retain readable meshes and imported normals without generated materials.");
+            Require(settings.Contains("path.EndsWith(\"_albedo.png\",StringComparison.OrdinalIgnoreCase)",
+                    StringComparison.Ordinal) &&
+                settings.Contains("TextureImporterType.Default", StringComparison.Ordinal) &&
+                settings.Contains("importer.sRGBTexture=true", StringComparison.Ordinal) &&
+                settings.Contains("importer.maxTextureSize=1024", StringComparison.Ordinal) &&
+                settings.Contains("importer.mipmapEnabled=true", StringComparison.Ordinal) &&
+                settings.Contains("TextureImporterCompression.Compressed", StringComparison.Ordinal) &&
+                settings.Contains("TextureWrapMode.Repeat", StringComparison.Ordinal),
+                "City albedos must use the intended sRGB, mipmapped, compressed, repeating mobile import settings.");
+            Require(settings.Contains("[MenuItem(\"NewGaza/Prepareimportedcitymodels\"",
+                    StringComparison.Ordinal) &&
+                settings.Contains("importer.SaveAndReimport()", StringComparison.Ordinal) &&
+                !settings.Contains("SetPlatformTextureSettings", StringComparison.Ordinal),
+                "The preparation menu must reimport only changed known assets and preserve platform defaults.");
+            foreach (string key in modelKeys)
+                Require(settings.Contains("ModelsPrefix+\"" + key + ".obj\"", StringComparison.Ordinal) &&
+                    settings.Contains("ModelsPrefix+\"" + key + "_albedo.png\"", StringComparison.Ordinal),
+                    "The scoped preparation menu is missing the fixed asset path for " + key + ".");
+        }
+
+        var library = Type(roots, "World/CityModelLibrary.cs", "CityModelLibrary", "NewGaza");
+        if (library != null)
+        {
+            string source = Compact(library.ToString());
+            Require(source.Contains("Load(\"apartment\");Load(\"ruined_building\");Load(\"rubble_heap\");",
+                    StringComparison.Ordinal),
+                "CityModelLibrary must load each of the three native imported Resources models.");
+            Require(source.Contains("Resources.Load<GameObject>(resourcePath)", StringComparison.Ordinal) &&
+                source.Contains("Resources.Load<Texture2D>(resourcePath+\"_albedo\")", StringComparison.Ordinal),
+                "Imported models and their matching albedos must resolve through fixed Resources aliases.");
+            Require(source.Contains("Resources.Load<Material>(\"NewGazaLit\")", StringComparison.Ordinal) &&
+                source.Contains("newMaterial(template)", StringComparison.Ordinal) &&
+                source.Contains("material.SetTexture(\"_BaseMap\",albedo)", StringComparison.Ordinal),
+                "Imported models must clone the retained URP Lit material and bind their own albedo.");
+            Require(source.Contains("models.TryGetValue(key,outImportedModelcached)", StringComparison.Ordinal) &&
+                source.Contains("models.Add(key,imported)", StringComparison.Ordinal),
+                "Imported model source meshes/materials must be cached rather than regenerated per placement.");
+            Require(source.Contains("batch.Add(model.meshes[i],model.material,placement*model.childTransforms[i])",
+                    StringComparison.Ordinal),
+                "CityModelLibrary must pass imported source meshes and transforms to CityMeshBatch.");
+            Require(!source.Contains("Ruin(", StringComparison.Ordinal) &&
+                !source.Contains("proceduralfallback", StringComparison.Ordinal),
+                "Missing imported assets must not silently fall back to procedural replacement models.");
+
+            var dispose = library.Members.OfType<MethodDeclarationSyntax>()
+                .FirstOrDefault(method => method.Identifier.ValueText == "Dispose");
+            string disposeSource = dispose == null ? "" : Compact(dispose.ToString());
+            Require(disposeSource.Contains("Object.Destroy(material)", StringComparison.Ordinal) &&
+                !disposeSource.Contains("Object.Destroy(mesh)", StringComparison.Ordinal),
+                "CityModelLibrary may destroy its cloned materials but must never destroy imported source meshes.");
+        }
+
+        var geometry = Type(roots, "World/CityGeometry.cs", "CityGeometry", "NewGaza");
+        var release = geometry?.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "Release");
+        string releaseSource = release == null ? "" : Compact(release.ToString());
+        Require(releaseSource.Contains("owned.Remove(mesh)", StringComparison.Ordinal) &&
+            releaseSource.Contains("Object.Destroy(mesh)", StringComparison.Ordinal),
+            "CityGeometry.Release must destroy only meshes registered as geometry-owned.");
+
+        var meshBatch = Type(roots, "World/CityGeometry.cs", "CityMeshBatch", "NewGaza");
+        var add = meshBatch?.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "Add" &&
+                method.ParameterList.Parameters.Count == 3);
+        bool addsEverySubmesh = add?.Body?.DescendantNodes().OfType<ForStatementSyntax>()
+            .Any(loop => loop.Declaration?.Variables.Count == 1 &&
+                loop.Declaration.Variables[0].Identifier.ValueText == "submesh" &&
+                loop.Condition is BinaryExpressionSyntax condition &&
+                condition.IsKind(SyntaxKind.LessThanExpression) &&
+                condition.Left.ToString() == "submesh" &&
+                condition.Right.ToString() == "mesh.subMeshCount" &&
+                loop.Incrementors.Any(increment => increment is PostfixUnaryExpressionSyntax postfix &&
+                    postfix.IsKind(SyntaxKind.PostIncrementExpression) &&
+                    postfix.Operand.ToString() == "submesh") &&
+                loop.Statement.DescendantNodesAndSelf().OfType<ObjectCreationExpressionSyntax>()
+                    .Any(creation => Signature(creation.Type) == "CombineInstance" &&
+                        creation.Initializer?.Expressions.OfType<AssignmentExpressionSyntax>()
+                            .Any(assignment => assignment.Left.ToString() == "mesh" &&
+                                assignment.Right.ToString() == "mesh") == true &&
+                        creation.Initializer.Expressions.OfType<AssignmentExpressionSyntax>()
+                            .Any(assignment => assignment.Left.ToString() == "subMeshIndex" &&
+                                assignment.Right.ToString() == "submesh") &&
+                        creation.Initializer.Expressions.OfType<AssignmentExpressionSyntax>()
+                            .Any(assignment => assignment.Left.ToString() == "transform" &&
+                                assignment.Right.ToString() == "transform"))) == true;
+        bool inputMeshIsNotOwned = add != null &&
+            !add.DescendantNodes().OfType<InvocationExpressionSyntax>().Any(call =>
+                call.Expression is MemberAccessExpressionSyntax member &&
+                member.Name.Identifier.ValueText == "Own");
+        Require(addsEverySubmesh && inputMeshIsNotOwned,
+            "CityMeshBatch.Add must preserve every imported OBJ submesh without taking ownership of its source mesh.");
+        var build = meshBatch?.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "Build");
+        bool ownsCombinedOutput = build?.DescendantNodes().OfType<VariableDeclaratorSyntax>()
+            .Any(variable => variable.Identifier.ValueText == "mesh" &&
+                variable.Initializer?.Value.DescendantNodesAndSelf()
+                    .OfType<InvocationExpressionSyntax>().Any(call =>
+                        call.Expression is MemberAccessExpressionSyntax own &&
+                        own.Expression.ToString() == "geometry" &&
+                        own.Name.Identifier.ValueText == "Own" &&
+                        call.ArgumentList.Arguments.SingleOrDefault()?.Expression is
+                            ObjectCreationExpressionSyntax creation &&
+                        Signature(creation.Type) == "Mesh") == true) == true;
+        bool combinesOwnedOutput = build?.DescendantNodes().OfType<InvocationExpressionSyntax>()
+            .Any(call => call.Expression is MemberAccessExpressionSyntax combine &&
+                combine.Expression.ToString() == "mesh" &&
+                combine.Name.Identifier.ValueText == "CombineMeshes" &&
+                call.ArgumentList.Arguments.FirstOrDefault()?.Expression.ToString() ==
+                    "batch.Value.ToArray()") == true;
+        Require(ownsCombinedOutput && combinesOwnedOutput,
+            "CityMeshBatch must own the combined output, not imported source meshes.");
+
+        var world = Type(roots, "World/CityWorld.cs", "CityWorld", "NewGaza");
+        var releaseVisual = world?.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "ReleaseVisual");
+        bool deactivatesVisual = releaseVisual?.DescendantNodes()
+            .OfType<InvocationExpressionSyntax>().Any(call =>
+                call.Expression is MemberAccessExpressionSyntax setActive &&
+                setActive.Expression.ToString() == "visual" &&
+                setActive.Name.Identifier.ValueText == "SetActive" &&
+                call.ArgumentList.Arguments.SingleOrDefault()?.Expression.IsKind(
+                    SyntaxKind.FalseLiteralExpression) == true) == true;
+        bool releasesInactiveChildMeshes = releaseVisual?.DescendantNodes()
+            .OfType<ForEachStatementSyntax>().Any(loop =>
+                Signature(loop.Type) == "MeshFilter" && loop.Identifier.ValueText == "filter" &&
+                loop.Expression is InvocationExpressionSyntax children &&
+                children.Expression is MemberAccessExpressionSyntax getChildren &&
+                getChildren.Expression.ToString() == "visual" &&
+                getChildren.Name is GenericNameSyntax generic &&
+                generic.Identifier.ValueText == "GetComponentsInChildren" &&
+                generic.TypeArgumentList.Arguments.SingleOrDefault()?.ToString() == "MeshFilter" &&
+                children.ArgumentList.Arguments.SingleOrDefault()?.Expression.IsKind(
+                    SyntaxKind.TrueLiteralExpression) == true &&
+                loop.Statement.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>()
+                    .Any(call => call.Expression is MemberAccessExpressionSyntax release &&
+                        release.Expression.ToString() == "geometry" &&
+                        release.Name.Identifier.ValueText == "Release" &&
+                        call.ArgumentList.Arguments.SingleOrDefault()?.Expression.ToString() ==
+                            "filter.sharedMesh")) == true;
+        bool destroysOnlyVisualObject = releaseVisual != null &&
+            releaseVisual.DescendantNodes().OfType<InvocationExpressionSyntax>().Any(call =>
+                call.Expression is IdentifierNameSyntax destroy &&
+                destroy.Identifier.ValueText == "Destroy" &&
+                call.ArgumentList.Arguments.SingleOrDefault()?.Expression.ToString() == "visual") &&
+            !releaseVisual.DescendantNodes().OfType<InvocationExpressionSyntax>().Any(call =>
+                call.Expression is IdentifierNameSyntax destroy &&
+                destroy.Identifier.ValueText == "Destroy" &&
+                call.ArgumentList.Arguments.SingleOrDefault()?.Expression.ToString() ==
+                    "filter.sharedMesh");
+        Require(deactivatesVisual && releasesInactiveChildMeshes && destroysOnlyVisualObject,
+            "ReleaseVisual must include inactive children and release meshes only through geometry ownership, never destroy imported source meshes directly.");
+
+        var replacePlot = world?.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "ReplacePlot");
+        string replaceSource = replacePlot == null ? "" : Compact(replacePlot.ToString());
+        Require(replaceSource.Contains("if(stage==0)", StringComparison.Ordinal) &&
+            replaceSource.Contains("modelLibrary.AddTo(batch,\"ruined_building\"", StringComparison.Ordinal) &&
+            replaceSource.Contains("plot.definition.kind==ProjectKind.Housing", StringComparison.Ordinal) &&
+            replaceSource.Contains("modelLibrary.AddTo(batch,\"apartment\"", StringComparison.Ordinal),
+            "Damaged structures and completed housing must use their actual imported city models.");
+        Require(!replaceSource.Contains("Ruin(batch", StringComparison.Ordinal),
+            "The stage-zero imported building must not require the old procedural ruin mesh.");
+
+        var districtViewingSize = world?.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "DistrictViewingSize");
+        string districtZoomSource = districtViewingSize == null ? "" : Compact(districtViewingSize.ToString());
+        Require(districtZoomSource.Contains("districts[index].root.lossyScale.x", StringComparison.Ordinal),
+            "District viewing focus must scale with the real geographic district transform.");
+
+        var camera = Type(roots, "Runtime/CityCamera.cs", "CityCamera", "NewGaza");
+        string cameraSource = camera == null ? "" : Compact(camera.ToString());
+        Require(cameraSource.Contains("targetZoom=world.DistrictViewingSize(session.State.selectedDistrict)",
+                    StringComparison.Ordinal) &&
+                cameraSource.Contains("Mathf.Clamp(targetZoom*lastSpan/span,0.6f", StringComparison.Ordinal) &&
+                cameraSource.Contains("Mathf.Clamp(targetZoom*Mathf.Exp(-scroll*0.0015f),0.6f",
+                    StringComparison.Ordinal),
+            "District-scaled camera focus and the 0.6 minimum zoom must remain in the touch and mouse controls.");
+
+        string smokePath = Path.Combine(sourceRoot, "Editor", "NewGazaSmokeTest.cs");
+        Require(File.Exists(smokePath), "Missing New Gaza editor smoke test.");
+        if (File.Exists(smokePath))
+        {
+            string smoke = Compact(File.ReadAllText(smokePath));
+            Require(smoke.Contains("Resources.Load<GameObject>(\"Models/\"+key)", StringComparison.Ordinal) &&
+                smoke.Contains("Resources.Load<Texture2D>(\"Models/\"+key+\"_albedo\")",
+                    StringComparison.Ordinal) &&
+                smoke.Contains("lit.shader.name==\"UniversalRenderPipeline/Lit\"",
+                    StringComparison.Ordinal) &&
+                smoke.Contains("mesh.isReadable", StringComparison.Ordinal) &&
+                smoke.Contains("uvs.Length==vertices.Length", StringComparison.Ordinal) &&
+                smoke.Contains("normals.Length==vertices.Length", StringComparison.Ordinal),
+                "Unity smoke test must inspect the actual imported model resources, readable UVs and imported normals.");
+            Require(smoke.Contains("int[]triangleBudgets={2500,4000,1400}", StringComparison.Ordinal) &&
+                smoke.Contains("Mathf.CeilToInt(triangleBudgets[i]*1.01f)", StringComparison.Ordinal) &&
+                smoke.Contains("material.GetTexture(\"_BaseMap\")", StringComparison.Ordinal) &&
+                smoke.Contains("ShadowCastingMode.On", StringComparison.Ordinal),
+                "Unity smoke test must check per-model mobile triangle budgets, URP albedos and casting batch shadows.");
+        }
     }
 
     private static void CheckHudIconContracts(Dictionary<string, CompilationUnitSyntax> roots)

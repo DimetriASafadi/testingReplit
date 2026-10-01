@@ -66,7 +66,9 @@ namespace NewGaza.Editor
                 Require(UnityEngine.Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() != null,
                     "Missing UI EventSystem.");
                 Require(Resources.Load<Font>("NewGazaArabic") != null, "Arabic font did not import.");
-                Require(Resources.Load<Material>("NewGazaLit") != null, "URP material did not import.");
+                var lit = Resources.Load<Material>("NewGazaLit");
+                Require(lit != null, "URP material did not import.");
+                CheckImportedCityModels(world, lit);
                 var fogShader = Resources.Load<Shader>("NewGazaFog");
                 Require(fogShader != null && fogShader.isSupported, "District fog shader missing or unsupported.");
                 for (int d = 0; d < session.State.districts.Length; d++)
@@ -106,6 +108,96 @@ namespace NewGaza.Editor
                 Finish(true, "Startup, camera, city selection, HUD, font, retained fog shader, district fog/access and local save passed in Unity Play Mode.");
             }
             catch (Exception e) { Finish(false, e.Message); }
+        }
+
+        private static void CheckImportedCityModels(CityWorld world, Material lit)
+        {
+            Require(lit != null && lit.shader != null &&
+                lit.shader.name == "Universal Render Pipeline/Lit",
+                "NewGazaLit must retain the Universal Render Pipeline/Lit shader.");
+            Require(world.ImportedModelCount == 3,
+                "CityWorld must load all three imported city models without procedural fallback.");
+            string[] keys = { "apartment", "ruined_building", "rubble_heap" };
+            int[] triangleBudgets = { 2500, 4000, 1400 };
+            var albedos = new Texture2D[keys.Length];
+
+            for (int i = 0; i < keys.Length; i++)
+            {
+                string key = keys[i];
+                GameObject source = Resources.Load<GameObject>("Models/" + key);
+                Require(source != null, "Missing imported model resource Models/" + key + ".");
+                if (source == null) continue;
+
+                Texture2D albedo = Resources.Load<Texture2D>("Models/" + key + "_albedo");
+                Require(albedo != null, "Missing imported albedo resource Models/" + key + "_albedo.");
+                if (albedo == null) continue;
+                albedos[i] = albedo;
+                Require(albedo.width <= 1024 && albedo.height <= 1024,
+                    "Imported albedo exceeds its 1024-pixel mobile texture limit: " + key + ".");
+
+                MeshFilter[] filters = source.GetComponentsInChildren<MeshFilter>(true);
+                int meshCount = 0;
+                int triangleCount = 0;
+                bool hasDetailedMesh = false;
+                for (int f = 0; f < filters.Length; f++)
+                {
+                    Mesh mesh = filters[f].sharedMesh;
+                    if (mesh == null) continue;
+                    meshCount++;
+                    Require(mesh.isReadable,
+                        "Imported mesh is not CPU-readable for CityMeshBatch.CombineMeshes: " + key + ".");
+                    Vector3[] vertices = mesh.vertices;
+                    Vector2[] uvs = mesh.uv;
+                    Vector3[] normals = mesh.normals;
+                    Require(uvs.Length == vertices.Length,
+                        "Imported mesh UV count must equal its vertex count: " + key + ".");
+                    Require(normals.Length == vertices.Length,
+                        "Imported normals must be present for every source vertex: " + key + ".");
+                    bool hasNormal = false;
+                    for (int n = 0; n < normals.Length; n++)
+                        if (normals[n].sqrMagnitude > .5f) { hasNormal = true; break; }
+                    Require(hasNormal, "Imported mesh has no usable imported normals: " + key + ".");
+                    if (vertices.Length > 64) hasDetailedMesh = true;
+                    triangleCount += mesh.triangles.Length / 3;
+                }
+
+                Require(meshCount > 0, "Imported model contains no source meshes: " + key + ".");
+                Require(hasDetailedMesh,
+                    "Imported model must include a real mesh with more than 64 vertices: " + key + ".");
+                Require(triangleCount <= Mathf.CeilToInt(triangleBudgets[i] * 1.01f),
+                    "Imported model exceeds its mobile triangle budget of " +
+                    triangleBudgets[i] + " triangles (+1% tolerance): " + key +
+                    " has " + triangleCount + ".");
+            }
+
+            bool foundImportedRenderer = false;
+            foreach (MeshRenderer renderer in world.GetComponentsInChildren<MeshRenderer>(true))
+            {
+                Material material = renderer.sharedMaterial;
+                if (material == null || !material.name.StartsWith("New Gaza • imported ",
+                    StringComparison.Ordinal)) continue;
+
+                foundImportedRenderer = true;
+                Require(material.shader == lit.shader,
+                    "Imported model batch must use the retained URP Lit shader.");
+                Require(material.enableInstancing,
+                    "Imported model material must permit instancing.");
+                int modelIndex = -1;
+                for (int i = 0; i < keys.Length; i++)
+                    if (material.name.Contains("imported " + keys[i] + " albedo",
+                        StringComparison.Ordinal))
+                        modelIndex = i;
+                Require(modelIndex >= 0 && albedos[modelIndex] != null &&
+                    material.GetTexture("_BaseMap") == albedos[modelIndex],
+                    "Imported model material must bind its matching Resources albedo texture.");
+                if (renderer.transform.parent != null &&
+                    renderer.transform.parent.name.StartsWith("District plot batch",
+                        StringComparison.Ordinal))
+                    Require(renderer.shadowCastingMode == UnityEngine.Rendering.ShadowCastingMode.On,
+                        "Imported district plot batches must cast shadows.");
+            }
+            Require(foundImportedRenderer,
+                "CityWorld did not create a runtime renderer using an imported model material.");
         }
 
         private static void Require(bool condition, string message)
