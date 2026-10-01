@@ -14,6 +14,7 @@ namespace NewGaza
         public GameState State => Economy == null ? null : Economy.State;
         public bool Ready { get; private set; }
         public string SaveError { get; private set; }
+        public CityAudio Audio { get; private set; }
         public long Now => Math.Max(DateTimeOffset.UtcNow.ToUnixTimeSeconds(), State == null ? 0 : State.lastSeenUtc);
         public event Action Changed;
         public event Action<string> Notification;
@@ -71,6 +72,9 @@ namespace NewGaza
                 cam.GetUniversalAdditionalCameraData().renderPostProcessing = false;
                 cityCamera = cameraObject.AddComponent<CityCamera>();
                 cityCamera.Initialize(this, world);
+                Audio = new GameObject("Camera-focused city soundscape").AddComponent<CityAudio>();
+                Audio.transform.SetParent(transform, false);
+                Audio.Initialize(this, world, cityCamera, cam);
                 var hud = new GameObject("Arabic mobile HUD").AddComponent<CityHud>();
                 hud.Initialize(this, world, cityCamera);
                 Ready = true;
@@ -131,7 +135,13 @@ namespace NewGaza
             if (!Ready) return;
             Economy.Tick(Now);
             var result = action(Economy);
-            if (result.success) { Save(); Changed?.Invoke(); }
+            if (result.success)
+            {
+                Save();
+                Changed?.Invoke();
+                if (string.IsNullOrEmpty(SaveError)) Audio?.PlayConfirmation();
+            }
+            else Audio?.PlayFailure();
             Notify(result.message);
         }
 
@@ -139,7 +149,7 @@ namespace NewGaza
         {
             if (!Ready) return;
             var result = Economy.SelectDistrict(index);
-            if (!result.success) { Notify(result.message); return; }
+            if (!result.success) { Audio?.PlayFailure(); Notify(result.message); return; }
             world.FocusDistrict(index);
             cityCamera.Focus(world.DistrictPosition(index));
             Save();
@@ -179,6 +189,7 @@ namespace NewGaza
             {
                 SaveError = "تعذّر حفظ التقدم. تحقق من مساحة التخزين.";
                 Debug.LogError("New Gaza save failed: " + e.Message);
+                Audio?.PlayFailure();
                 Notify(SaveError);
             }
         }

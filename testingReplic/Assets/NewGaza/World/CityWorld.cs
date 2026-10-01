@@ -58,6 +58,7 @@ namespace NewGaza
         private GameObject completedCoastRoad;
         private CitySelectable factoryHit;
         private CityFleet fleet;
+        internal CityFleet Fleet { get { return fleet; } }
         private int selectedDistrict = -1;
         private int selectedPlot = -1;
         private int factoryLevel = -1;
@@ -1349,13 +1350,15 @@ namespace NewGaza
         {
             Vector3 depot = FactoryPosition();
             var batch = new CityMeshBatch(geometry);
-            batch.Box(sidewalk,new Vector3(0f,.17f,0f),new Vector3(7.6f,.25f,12f));
-            batch.Box(asphalt,new Vector3(-1.4f,.32f,0f),new Vector3(2.4f,.1f,11f));
+            // A thin apron at native grade, not a raised plinth engulfing the fleet.
+            // This child is scaled .2: pavement tops stay within .003 city units (6 cm).
+            batch.Box(sidewalk,new Vector3(0f,.004f,0f),new Vector3(7.6f,.012f,12f));
+            batch.Box(asphalt,new Vector3(-1.4f,.012f,0f),new Vector3(2.4f,.006f,11f));
             for (int i = 0; i < 4; i++)
             {
-                batch.Box(white,new Vector3(-1.3f,.38f,-4f + i * 2.3f),new Vector3(2f,.025f,.08f));
-                batch.Box(iron,new Vector3(2.3f,.55f,-3.8f + i * 2.3f),new Vector3(1.1f,.7f,1.5f));
-                batch.Box(i % 2 == 0 ? teal : terracotta,new Vector3(2.3f,.94f,-3.8f + i * 2.3f),
+                batch.Box(white,new Vector3(-1.3f,.016f,-4f + i * 2.3f),new Vector3(2f,.003f,.08f));
+                batch.Box(iron,new Vector3(2.3f,.372f,-3.8f + i * 2.3f),new Vector3(1.1f,.7f,1.5f));
+                batch.Box(i % 2 == 0 ? teal : terracotta,new Vector3(2.3f,.762f,-3.8f + i * 2.3f),
                     new Vector3(1f,.06f,1.4f));
             }
             factorySite = batch.Build("Recycling depot • dispatch apron",cityRoot,depot);

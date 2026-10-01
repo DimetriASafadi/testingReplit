@@ -48,6 +48,8 @@ internal static class Program
             CheckImportedCityModelContracts(sourceRoot, roots);
             CheckSourcedCityContext(sourceRoot, roots);
             CheckHudIconContracts(roots);
+            CheckAudioContracts(sourceRoot, roots);
+            CheckEquipmentContracts(roots);
             CheckArabicShaping();
             if (Failures.Count > 0)
             {
@@ -56,7 +58,7 @@ internal static class Program
                 return 1;
             }
             Console.WriteLine("Source checks passed: " + files.Length +
-                " NewGaza .cs files parsed as C# 9 (player + editor/optional checks), integration signatures, GUID-independent scene bootstrap, sourced Gaza basemap/urban batching, five imported city models, localized-fog/shader and geometry-UV/shadow/URP-light checks, procedural HUD icon coverage/ownership/navigation bindings, and Arabic shaping.");
+                " NewGaza .cs files parsed as C# 9 (player + editor/optional checks), integration signatures, GUID-independent scene bootstrap, sourced Gaza basemap/urban batching, five imported city models, localized-fog/shader and geometry-UV/shadow/URP-light checks, procedural HUD icon coverage/ownership/navigation bindings, native audio wiring/assets/preferences, equipment articulation contracts, and Arabic shaping.");
             Console.WriteLine("Source-only check; Unity assemblies and shader were not compiled, and no Unity editor/player or GPU rendering was run.");
             return 0;
         }
@@ -846,6 +848,19 @@ internal static class Program
             buildFactorySource.Contains("factorySite.transform.localScale=Vector3.one*.2f",
                 StringComparison.Ordinal),
             "Factory presentation scale must not scale its sourced world-position destination.");
+        float factoryApronScale = .2f;
+        float sidewalkTopCityUnits = (.004f + .012f * .5f) * factoryApronScale;
+        float asphaltTopCityUnits = (.012f + .006f * .5f) * factoryApronScale;
+        Require(buildFactorySource.Contains(
+                "batch.Box(sidewalk,newVector3(0f,.004f,0f),newVector3(7.6f,.012f,12f))",
+                StringComparison.Ordinal) &&
+            buildFactorySource.Contains(
+                "batch.Box(asphalt,newVector3(-1.4f,.012f,0f),newVector3(2.4f,.006f,11f))",
+                StringComparison.Ordinal) &&
+            buildFactorySource.Contains("factorySite.transform.localScale=Vector3.one*.2f",
+                StringComparison.Ordinal) &&
+            sidewalkTopCityUnits <= .004f && asphaltTopCityUnits <= .004f,
+            "Both factory-site native-grade apron slabs must remain at or below .004 city units after the authored .2 child scale.");
         Require(hasSourcedDepotApi,
             "GetDepotPosition must expose the sourced depot API with its required 1.5-unit clearance.");
         Require(testsAllSourcedClearances,
@@ -879,13 +894,25 @@ internal static class Program
             fleetSource.Contains("vehicle.localPosition=geographicPosition+VehicleOffset(modelOffset)",
                 StringComparison.Ordinal);
         bool destinationsStayInWorldSpace = fleetSource.Contains(
-                "jobCenter=transform.InverseTransformPoint(worldJobCenter)", StringComparison.Ordinal) &&
-            fleetSource.Contains("depot=transform.InverseTransformPoint(worldDepot)", StringComparison.Ordinal) &&
+                "nextJobCenter=transform.InverseTransformPoint(worldJobCenter)", StringComparison.Ordinal) &&
+            fleetSource.Contains("nextDepot=transform.InverseTransformPoint(worldDepot)",
+                StringComparison.Ordinal) &&
             fleetSource.Contains(
-                "newVector3(jobCenter.x,jobCenter.y+VehicleOffset(newVector3(0f,.22f,0f)).y,jobCenter.z)",
+                "newVector3(jobCenter.x,jobCenter.y+VehicleOffset(newVector3(0f,EquipmentMotion.TruckWorkRootHeightModel,0f)).y,jobCenter.z)",
                 StringComparison.Ordinal);
         Require(scalesOnlyVehicleMeshesAndModelOffsets && destinationsStayInWorldSpace,
             "Fleet roots must use the .07 model scale, scale only model-authored offsets, and retain geographic work/depot/route destinations unscaled.");
+        var groundedOffsets = fleet.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "ConfigureGroundedVehicleOffsets");
+        string groundedOffsetSource = groundedOffsets == null ? "" : Compact(groundedOffsets.ToString());
+        Require(fleetSource.Contains("NativeWorkSurfaceAboveGroundCityUnits=.006f",
+                StringComparison.Ordinal) &&
+            fleetSource.Contains("DepotApronAboveGroundCityUnits=.003f", StringComparison.Ordinal) &&
+            groundedOffsetSource.Contains("excavatorTracks.LowestShoeVertexYModel", StringComparison.Ordinal) &&
+            groundedOffsetSource.Contains("bulldozerTracks.LowestShoeVertexYModel", StringComparison.Ordinal) &&
+            groundedOffsetSource.Contains("FindLowestTruckWheelMeshYModel()", StringComparison.Ordinal) &&
+            groundedOffsetSource.Contains("EquipmentMotion.ConfigureGroundedRootHeights", StringComparison.Ordinal),
+            "Fleet ground roots must derive park/work/depot heights from actual authored shoe and tire mesh bottoms against native work/depot surfaces.");
 
         var createRoute = fleet.Members.OfType<MethodDeclarationSyntax>()
             .FirstOrDefault(method => method.Identifier.ValueText == "CreateRoute");
@@ -1141,6 +1168,608 @@ internal static class Program
             hasActionIcon("BuildHud", "CityHudIcons.Icon.Settings") &&
             hasActionIcon("BuildModalShell", "CityHudIcons.Icon.Close"),
             "Gift, settings, and modal-close buttons must explicitly select their HUD icons.");
+    }
+
+    private static void CheckAudioContracts(string sourceRoot,
+        Dictionary<string, CompilationUnitSyntax> roots)
+    {
+        var session = Type(roots, "Runtime/GameSession.cs", "GameSession", "NewGaza");
+        var start = session?.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "Start");
+        Require(start != null, "GameSession: missing runtime startup for audio wiring.");
+        if (start != null)
+        {
+            string[] requiredCalls =
+            {
+                "world.Initialize", "cityCamera.Initialize", "Audio.Initialize", "hud.Initialize"
+            };
+            string[] startupCalls = start.DescendantNodes().OfType<InvocationExpressionSyntax>()
+                .Select(call => call.Expression.ToString())
+                .Where(name => requiredCalls.Contains(name, StringComparer.Ordinal))
+                .ToArray();
+            Require(startupCalls.SequenceEqual(requiredCalls, StringComparer.Ordinal),
+                "GameSession must initialize the world, eased camera, camera-focused audio, then HUD in that order.");
+            bool listenerIsOnExistingCamera = start.DescendantNodes()
+                .OfType<ObjectCreationExpressionSyntax>()
+                .Any(creation => Signature(creation.Type) == "GameObject" &&
+                    creation.ArgumentList?.Arguments.Any(argument =>
+                        argument.Expression is TypeOfExpressionSyntax type &&
+                        Signature(type.Type) == "AudioListener") == true &&
+                    creation.ArgumentList.Arguments.Any(argument =>
+                        argument.Expression is TypeOfExpressionSyntax type &&
+                        Signature(type.Type) == "Camera"));
+            Require(listenerIsOnExistingCamera &&
+                !start.DescendantNodes().OfType<InvocationExpressionSyntax>().Any(call =>
+                    call.Expression is MemberAccessExpressionSyntax add &&
+                    add.Name.Identifier.ValueText == "AddComponent" &&
+                    add.Expression.ToString() == "gameObject" &&
+                    call.ArgumentList.Arguments.SingleOrDefault()?.Expression.ToString() == "AudioListener"),
+                "Startup must keep its sole AudioListener on the rendering camera and must not create a second listener.");
+            Require(start.DescendantNodes().OfType<AssignmentExpressionSyntax>().Any(assignment =>
+                    assignment.Left.ToString() == "Audio" &&
+                    assignment.Right is InvocationExpressionSyntax create &&
+                    create.Expression is MemberAccessExpressionSyntax add &&
+                    add.Name.Identifier.ValueText == "AddComponent" &&
+                    add.Name is GenericNameSyntax generic &&
+                    generic.TypeArgumentList.Arguments.SingleOrDefault()?.ToString() == "CityAudio"),
+                "GameSession must own the runtime CityAudio component.");
+        }
+
+        var camera = Type(roots, "Runtime/CityCamera.cs", "CityCamera", "NewGaza");
+        string cameraSource = camera == null ? "" : Compact(camera.ToString());
+        Require(cameraSource.Contains("publicVector3AudioFocus{get{returnfocus;}}", StringComparison.Ordinal) &&
+            cameraSource.Contains("publicfloatAudioZoom{get{returnzoom;}}", StringComparison.Ordinal) &&
+            !cameraSource.Contains("AudioFocus{get{returntargetFocus;}}", StringComparison.Ordinal) &&
+            !cameraSource.Contains("AudioZoom{get{returntargetZoom;}}", StringComparison.Ordinal),
+            "Audio focus/zoom must expose the eased rendered camera state, not targetFocus/targetZoom.");
+
+        var world = Type(roots, "World/CityWorld.cs", "CityWorld", "NewGaza");
+        string worldSource = world == null ? "" : Compact(world.ToString());
+        Require(worldSource.Contains("internalCityFleetFleet{get{returnfleet;}}", StringComparison.Ordinal) &&
+            worldSource.Contains("fleet=newGameObject(\"Salvagefleet•articulatedmachines\").AddComponent<CityFleet>()",
+                StringComparison.Ordinal) &&
+            worldSource.Contains("fleet.Initialize(geometry,yellow,glass,dark,iron,teal,rubble)", StringComparison.Ordinal),
+            "CityWorld must own and initialize its rendered CityFleet for the audio runtime.");
+
+        var audio = Type(roots, "Runtime/CityAudio.cs", "CityAudio", "NewGaza");
+        if (audio == null) return;
+        var channelEnum = roots["Runtime/CityAudio.cs"].DescendantNodes()
+            .OfType<EnumDeclarationSyntax>()
+            .FirstOrDefault(declaration => declaration.Identifier.ValueText == "CityAudioChannel");
+        Require(channelEnum != null &&
+            channelEnum.Members.Select(member => member.Identifier.ValueText)
+                .SequenceEqual(new[] { "Master", "Equipment", "Ambience", "Interface" },
+                    StringComparer.Ordinal),
+            "CityAudioChannel must keep its four stable master/equipment/ambience/interface values.");
+        string[] expectedClips =
+        {
+            "excavator_engine", "truck_engine", "dozer_engine", "hydraulics", "tracks",
+            "wind_high", "coastal_surf", "ui_click", "ui_confirm"
+        };
+        var initializeAudio = audio.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "Initialize");
+        string[] requiredLoads = initializeAudio?.DescendantNodes()
+            .OfType<InvocationExpressionSyntax>()
+            .Where(call => call.Expression is IdentifierNameSyntax identifier &&
+                identifier.Identifier.ValueText == "LoadRequired")
+            .Select(call => call.ArgumentList.Arguments.SingleOrDefault()?.Expression
+                .DescendantNodesAndSelf().OfType<LiteralExpressionSyntax>()
+                .FirstOrDefault(literal => literal.IsKind(SyntaxKind.StringLiteralExpression))
+                ?.Token.ValueText ?? "")
+            .ToArray() ?? Array.Empty<string>();
+        Require(requiredLoads.SequenceEqual(expectedClips, StringComparer.Ordinal),
+            "CityAudio.Initialize must load each of the nine authored resource clips once, with no synthesized or silent fallback.");
+        var loadRequired = audio.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "LoadRequired");
+        bool requiredResourceAndExplicitFailure = loadRequired != null &&
+            loadRequired.DescendantNodes().OfType<InvocationExpressionSyntax>().Count(call =>
+                call.Expression is MemberAccessExpressionSyntax load &&
+                load.Expression.ToString() == "Resources" &&
+                load.Name is GenericNameSyntax generic &&
+                generic.Identifier.ValueText == "Load" &&
+                generic.TypeArgumentList.Arguments.SingleOrDefault()?.ToString() == "AudioClip") == 1 &&
+            loadRequired.DescendantNodes().OfType<ThrowStatementSyntax>().Any(statement =>
+                statement.Expression?.ToString().Contains("InvalidOperationException", StringComparison.Ordinal) == true);
+        Require(requiredResourceAndExplicitFailure,
+            "A missing required audio asset must report a startup error instead of silently substituting another clip.");
+
+        var update = audio.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "Update");
+        string updateSource = update == null ? "" : Compact(update.ToString());
+        Require(updateSource.Contains("cityCamera.AudioFocus", StringComparison.Ordinal) &&
+            updateSource.Contains("cityCamera.AudioZoom", StringComparison.Ordinal) &&
+            updateSource.Contains("world.Fleet", StringComparison.Ordinal) &&
+            updateSource.Contains("TryGetMachineAudioState", StringComparison.Ordinal),
+            "CityAudio must mix against eased focus/zoom and the live CityWorld fleet audio state.");
+
+        var createVoice = audio.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "CreateVoice");
+        var initializeVoiceCount = initializeAudio?.DescendantNodes()
+            .OfType<AssignmentExpressionSyntax>().Any(assignment =>
+                assignment.Left.ToString() == "voiceCount" &&
+                assignment.Right.ToString() == "12") == true;
+        string voiceSource = createVoice == null ? "" : Compact(createVoice.ToString());
+        string initializeAudioSource = initializeAudio == null ? "" : Compact(initializeAudio.ToString());
+        bool usesFlatManualSpatialRolloff = voiceSource.Contains("source.rolloffMode=AudioRolloffMode.Custom",
+                StringComparison.Ordinal) &&
+            voiceSource.Contains("source.SetCustomCurve(AudioSourceCurveType.CustomRolloff,flatRolloff)",
+                StringComparison.Ordinal) &&
+            initializeAudioSource.Contains(
+                "newAnimationCurve(newKeyframe(0f,1f),newKeyframe(1f,1f))", StringComparison.Ordinal) &&
+            voiceSource.Contains("source.maxDistance=CityAudioMix.MaximumSourceDistance", StringComparison.Ordinal);
+        Require(initializeVoiceCount && usesFlatManualSpatialRolloff &&
+            voiceSource.Contains("source.playOnAwake=false", StringComparison.Ordinal),
+            "CityAudio must cap itself at twelve play-on-demand voices and use flat physical rolloff so its manual focus mix controls audibility.");
+        bool boundedLoopPool = audio.Members.OfType<FieldDeclarationSyntax>().Any(field =>
+                field.Declaration.Variables.Any(variable => variable.Identifier.ValueText == "loops" &&
+                    variable.Initializer != null &&
+                    Compact(variable.Initializer.Value.ToString()) == "newVoice[11]")) &&
+            initializeAudio?.DescendantNodes().OfType<AssignmentExpressionSyntax>().Any(assignment =>
+                assignment.Left.ToString() == "voiceCount" && assignment.Right.ToString() == "12") == true;
+        Require(boundedLoopPool,
+            "CityAudio's loop pool must remain bounded to the eleven looping voices plus one interface voice.");
+        var updateLoop = audio.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "UpdateLoop");
+        string loopSource = updateLoop == null ? "" : Compact(updateLoop.ToString());
+        var canPlayInterface = audio.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "CanPlayInterface");
+        string interfaceGate = canPlayInterface == null ? "" : Compact(canPlayInterface.ToString());
+        var applyMute = audio.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "ApplyMute");
+        string muteSource = applyMute == null ? "" : Compact(applyMute.ToString());
+        Require(loopSource.Contains("Volume(CityAudioChannel.Master)", StringComparison.Ordinal) &&
+            loopSource.Contains("Volume(channel)", StringComparison.Ordinal) &&
+            loopSource.Contains("voice.Source.volume=muted?0f:voice.Gain", StringComparison.Ordinal) &&
+            interfaceGate.Contains("!muted", StringComparison.Ordinal) &&
+            interfaceGate.Contains("Volume(CityAudioChannel.Master)>0f", StringComparison.Ordinal) &&
+            interfaceGate.Contains("Volume(CityAudioChannel.Interface)>0f", StringComparison.Ordinal) &&
+            muteSource.Contains("loops[i].Source.mute=muted", StringComparison.Ordinal) &&
+            muteSource.Contains("interfaceVoice.Source.mute=muted", StringComparison.Ordinal),
+            "Master/channel gains and mute must cover equipment, ambience and interface cues, including immediate silence of UI when muted.");
+
+        var prefs = Type(roots, "Runtime/CityAudioPreferences.cs", "CityAudioPreferences", "NewGaza");
+        string preferenceSource = prefs == null ? "" : Compact(prefs.ToString());
+        Require(preferenceSource.Contains("Prefix=\"NewGaza.audio.v1.\"", StringComparison.Ordinal) &&
+            preferenceSource.Contains("PlayerPrefs.SetFloat", StringComparison.Ordinal) &&
+            preferenceSource.Contains("PlayerPrefs.SetInt", StringComparison.Ordinal) &&
+            !preferenceSource.Contains("GameSaveStore", StringComparison.Ordinal) &&
+            !preferenceSource.Contains("GameState", StringComparison.Ordinal),
+            "Audio channel and mute preferences must use their isolated PlayerPrefs namespace, never mutate game saves/state.");
+
+        var hudAudio = Type(roots, "UI/CityHudAudio.cs", "CityHud", "NewGaza");
+        var hud = Type(roots, "UI/CityHud.cs", "CityHud", "NewGaza");
+        Require(hud != null && hud.Modifiers.Any(SyntaxKind.PartialKeyword) &&
+            hudAudio != null && hudAudio.Modifiers.Any(SyntaxKind.PartialKeyword),
+            "CityHud audio settings must extend the original CityHud through a matching partial declaration.");
+        var audioSettings = hudAudio?.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "BuildAudioSettings");
+        string[] settingsChannels = audioSettings?.DescendantNodes()
+            .OfType<InvocationExpressionSyntax>()
+            .Where(call => call.Expression is IdentifierNameSyntax name &&
+                name.Identifier.ValueText == "AudioVolumeRow")
+            .Select(call => call.ArgumentList.Arguments.Count > 2
+                ? call.ArgumentList.Arguments[2].Expression.ToString()
+                : "")
+            .ToArray() ?? Array.Empty<string>();
+        Require(settingsChannels.SequenceEqual(new[]
+                {
+                    "CityAudioChannel.Master", "CityAudioChannel.Equipment",
+                    "CityAudioChannel.Ambience", "CityAudioChannel.Interface"
+                }, StringComparer.Ordinal),
+            "The native audio settings page must expose all four master/equipment/ambience/interface channels.");
+        string settingsSource = audioSettings == null ? "" : Compact(audioSettings.ToString());
+        Require(settingsSource.Contains("audio.ToggleMute()", StringComparison.Ordinal) &&
+            settingsSource.Contains("audio.IsMuted", StringComparison.Ordinal),
+            "Audio settings must expose and reflect the global mute switch.");
+        var actionButton = hud?.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "ActionButton");
+        var buttonListener = actionButton?.DescendantNodes().OfType<InvocationExpressionSyntax>()
+            .Where(call => call.Expression is MemberAccessExpressionSyntax add &&
+                add.Expression.ToString() == "button.onClick" &&
+                add.Name.Identifier.ValueText == "AddListener")
+            .ToArray() ?? Array.Empty<InvocationExpressionSyntax>();
+        var listenerBody = buttonListener.SingleOrDefault()?.ArgumentList.Arguments
+            .SingleOrDefault()?.Expression.DescendantNodesAndSelf().OfType<BlockSyntax>()
+            .FirstOrDefault();
+        string listenerSource = listenerBody == null ? "" : Compact(listenerBody.ToString());
+        Require(buttonListener.Length == 1 &&
+            listenerSource.Contains("session.Audio?.PlayClick()", StringComparison.Ordinal) &&
+            listenerSource.Contains("action()", StringComparison.Ordinal) &&
+            listenerSource.IndexOf("session.Audio?.PlayClick()", StringComparison.Ordinal) <
+                listenerSource.IndexOf("action()", StringComparison.Ordinal),
+            "Each enabled ActionButton must have one click listener that plays one click before its action; disabled Unity buttons remain silent.");
+        var cardButton = hud?.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "CardButton");
+        var bindings = hud?.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "RefreshBindings");
+        Require(cardButton?.DescendantNodes().OfType<AssignmentExpressionSyntax>().Any(assignment =>
+                    assignment.Left.ToString() == "button.interactable" &&
+                    assignment.Right.ToString() == "enabled") == true &&
+            bindings?.DescendantNodes().OfType<AssignmentExpressionSyntax>().Any(assignment =>
+                    assignment.Left.ToString() == "bind.button.interactable" &&
+                    assignment.Right.ToString() == "bind.enabled()") == true,
+            "ActionButton listener delivery must remain guarded by Unity Button.interactable for disabled controls.");
+
+        var perform = session?.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "Perform");
+        string performSource = perform == null ? "" : Compact(perform.ToString());
+        var save = session?.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "Save");
+        string saveSource = save == null ? "" : Compact(save.ToString());
+        Require(performSource.Contains("Audio?.PlayConfirmation()", StringComparison.Ordinal) &&
+            performSource.Contains("Audio?.PlayFailure()", StringComparison.Ordinal) &&
+            saveSource.Contains("SaveError=", StringComparison.Ordinal) &&
+            saveSource.Contains("Audio?.PlayFailure()", StringComparison.Ordinal),
+            "Successful native actions must confirm, failed actions and caught save errors must play the failure cue.");
+
+        string importerPath = Path.Combine(sourceRoot, "Editor", "CityAudioImportSettings.cs");
+        Require(File.Exists(importerPath), "Missing scoped mobile audio import settings.");
+        if (File.Exists(importerPath))
+        {
+            string importer = Compact(File.ReadAllText(importerPath));
+            CompilationUnitSyntax importerRoot = (CompilationUnitSyntax)
+                CSharpSyntaxTree.ParseText(File.ReadAllText(importerPath),
+                    new CSharpParseOptions(LanguageVersion.CSharp9), importerPath).GetRoot();
+            bool referencesUnqualifiedSampleRateEnum = importerRoot.DescendantNodes()
+                .OfType<IdentifierNameSyntax>().Any(identifier =>
+                    identifier.Identifier.ValueText == "AudioSampleRateSetting" &&
+                    !(identifier.Parent is MemberAccessExpressionSyntax member &&
+                      member.Name == identifier));
+            bool importsUnityEngineForSampleRateEnum = importerRoot.Usings.Any(usingDirective =>
+                usingDirective.Name?.ToString() == "UnityEngine") ||
+                importerRoot.Usings.Any(usingDirective =>
+                    usingDirective.Alias?.Name.Identifier.ValueText == "AudioSampleRateSetting" &&
+                    usingDirective.Name?.ToString() == "UnityEngine.AudioSampleRateSetting");
+            Require(!referencesUnqualifiedSampleRateEnum || importsUnityEngineForSampleRateEnum,
+                "The unqualified AudioSampleRateSetting enum must resolve through an explicit UnityEngine import or type alias.");
+            Require(importer.Contains("AudioFolder=\"Assets/NewGaza/Resources/Audio/\"", StringComparison.Ordinal) &&
+                importer.Contains("assetPath.StartsWith(AudioFolder,System.StringComparison.OrdinalIgnoreCase)", StringComparison.Ordinal) &&
+                importer.Contains("importer.forceToMono=true", StringComparison.Ordinal) &&
+                importer.Contains("importer.preloadAudioData=true", StringComparison.Ordinal) &&
+                importer.Contains("importer.loadInBackground=false", StringComparison.Ordinal) &&
+                importer.Contains("AudioSampleRateSetting.OverrideSampleRate", StringComparison.Ordinal) &&
+                importer.Contains("sampleRateOverride=24000", StringComparison.Ordinal) &&
+                importer.Contains("AudioCompressionFormat.Vorbis", StringComparison.Ordinal) &&
+                importer.Contains("quality=0.6f", StringComparison.Ordinal) &&
+                importer.Contains("importer.SetOverrideSampleSettings(\"Android\",settings)", StringComparison.Ordinal) &&
+                importer.Contains("importer.SetOverrideSampleSettings(\"iPhone\",settings)", StringComparison.Ordinal),
+                "Audio importer overrides must be scoped to authored city sounds and target forced-mono 24 kHz Vorbis on Android/iPhone.");
+        }
+
+        CheckAudioResources(sourceRoot, expectedClips);
+    }
+
+    private static void CheckAudioResources(string sourceRoot, string[] expectedClips)
+    {
+        string audioDirectory = Path.Combine(sourceRoot, "Resources", "Audio");
+        string manifestPath = Path.Combine(audioDirectory, "AudioManifest.json");
+        Require(File.Exists(manifestPath), "Missing authored Resources/Audio/AudioManifest.json.");
+        if (!File.Exists(manifestPath)) return;
+
+        using JsonDocument manifest = JsonDocument.Parse(File.ReadAllText(manifestPath));
+        JsonElement root = manifest.RootElement;
+        Require(root.ValueKind == JsonValueKind.Object &&
+            root.TryGetProperty("schema", out JsonElement schema) &&
+            schema.ValueKind == JsonValueKind.Number && schema.GetInt32() == 1,
+            "AudioManifest.json must use supported schema version 1.");
+        if (!root.TryGetProperty("clips", out JsonElement clips) ||
+            clips.ValueKind != JsonValueKind.Array)
+        {
+            Require(false, "AudioManifest.json must list all authored audio clips.");
+            return;
+        }
+        Require(clips.GetArrayLength() == expectedClips.Length,
+            "AudioManifest.json must contain exactly the nine runtime-required clips.");
+        string[] actualKeys = clips.EnumerateArray()
+            .Where(clip => clip.ValueKind == JsonValueKind.Object &&
+                clip.TryGetProperty("key", out JsonElement key) &&
+                key.ValueKind == JsonValueKind.String)
+            .Select(clip => clip.GetProperty("key").GetString() ?? "")
+            .ToArray();
+        Require(actualKeys.OrderBy(key => key, StringComparer.Ordinal)
+                .SequenceEqual(expectedClips.OrderBy(key => key, StringComparer.Ordinal),
+                    StringComparer.Ordinal),
+            "AudioManifest.json must list the exact nine runtime resource keys.");
+
+        long pcmMemoryBytes = 0;
+        foreach (string key in expectedClips)
+        {
+            string path = Path.Combine(audioDirectory, key + ".wav");
+            Require(File.Exists(path), "Missing required authored audio asset Resources/Audio/" + key + ".wav.");
+            if (!File.Exists(path)) continue;
+            byte[] bytes = File.ReadAllBytes(path);
+            bool validWav = TryReadPcm16MonoWav(bytes, out int sampleRate,
+                out int sampleCount, out double rms, out double peak, out int dataBytes);
+            Require(validWav, key + ": expected a valid little-endian PCM16 mono WAV.");
+            if (!validWav) continue;
+            Require(sampleRate == 24000 && sampleCount > 0 && dataBytes > 0,
+                key + ": audio must contain non-empty 24 kHz mono PCM samples.");
+            Require(rms > 0.0001 && !double.IsNaN(rms) && !double.IsInfinity(rms) &&
+                peak > 0.0001 && peak < 0.999,
+                key + ": PCM samples must be finite, non-silent, and not clipped.");
+            pcmMemoryBytes += dataBytes;
+
+            JsonElement entry = default;
+            foreach (JsonElement candidate in clips.EnumerateArray())
+                if (candidate.ValueKind == JsonValueKind.Object &&
+                    candidate.TryGetProperty("key", out JsonElement candidateKey) &&
+                    candidateKey.ValueKind == JsonValueKind.String &&
+                    candidateKey.GetString() == key)
+                {
+                    entry = candidate;
+                    break;
+                }
+            bool hasEntry = entry.ValueKind == JsonValueKind.Object;
+            Require(hasEntry, "Audio manifest has no metrics entry for " + key + ".");
+            if (!hasEntry) continue;
+            string actualSha = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
+            string manifestSha = ManifestString(entry, "sha256");
+            Require(manifestSha.Length == 64 && manifestSha == actualSha,
+                key + ": manifest SHA-256 must be a valid digest matching the PCM WAV bytes.");
+            Require(ManifestInt(entry, "sampleRate") == sampleRate &&
+                ManifestInt(entry, "channels") == 1 &&
+                ManifestInt(entry, "bytes") == bytes.Length,
+                key + ": manifest sample rate, channel count, or file size disagrees with its WAV.");
+            double duration = sampleCount / (double)sampleRate;
+            Require(Math.Abs(ManifestDouble(entry, "durationSeconds") - duration) <= 0.0001,
+                key + ": manifest duration must match the PCM frame count.");
+            Require(Math.Abs(ManifestDouble(entry, "rms") - rms) <= 0.00002 &&
+                Math.Abs(ManifestDouble(entry, "peak") - peak) <= 0.00002,
+                key + ": manifest RMS/peak metrics must match the actual PCM samples.");
+        }
+        string[] wavNames = Directory.Exists(audioDirectory)
+            ? Directory.GetFiles(audioDirectory, "*.wav", SearchOption.TopDirectoryOnly)
+                .Select(path => Path.GetFileNameWithoutExtension(path))
+                .OrderBy(name => name, StringComparer.Ordinal)
+                .ToArray()
+            : Array.Empty<string>();
+        Require(wavNames.SequenceEqual(expectedClips.OrderBy(key => key, StringComparer.Ordinal),
+                StringComparer.Ordinal),
+            "Resources/Audio must contain only the nine explicitly manifested WAV clips.");
+        Require(pcmMemoryBytes <= 5L * 1024 * 1024,
+            "The complete uncompressed audio payload must remain within the 5 MiB mobile memory budget.");
+    }
+
+    private static bool TryReadPcm16MonoWav(byte[] bytes, out int sampleRate,
+        out int sampleCount, out double rms, out double peak, out int dataBytes)
+    {
+        sampleRate = sampleCount = dataBytes = 0;
+        rms = peak = 0d;
+        if (bytes == null || bytes.Length < 44 ||
+            System.Text.Encoding.ASCII.GetString(bytes, 0, 4) != "RIFF" ||
+            System.Text.Encoding.ASCII.GetString(bytes, 8, 4) != "WAVE") return false;
+        int format = 0, channels = 0, bits = 0, dataOffset = -1;
+        int offset = 12;
+        while (offset <= bytes.Length - 8)
+        {
+            string chunk = System.Text.Encoding.ASCII.GetString(bytes, offset, 4);
+            uint rawSize = BitConverter.ToUInt32(bytes, offset + 4);
+            if (rawSize > int.MaxValue) return false;
+            int size = (int)rawSize;
+            int chunkData = offset + 8;
+            if (chunkData > bytes.Length - size) return false;
+            if (chunk == "fmt " && size >= 16)
+            {
+                format = BitConverter.ToUInt16(bytes, chunkData);
+                channels = BitConverter.ToUInt16(bytes, chunkData + 2);
+                sampleRate = (int)BitConverter.ToUInt32(bytes, chunkData + 4);
+                bits = BitConverter.ToUInt16(bytes, chunkData + 14);
+            }
+            else if (chunk == "data")
+            {
+                dataOffset = chunkData;
+                dataBytes = size;
+            }
+            offset = chunkData + size + (size & 1);
+        }
+        if (format != 1 || channels != 1 || bits != 16 || sampleRate <= 0 ||
+            dataOffset < 0 || dataBytes < 2 || dataBytes % 2 != 0) return false;
+        sampleCount = dataBytes / 2;
+        double squared = 0d;
+        for (int i = 0; i < sampleCount; i++)
+        {
+            short value = BitConverter.ToInt16(bytes, dataOffset + i * 2);
+            if (value == short.MinValue || value == short.MaxValue) return false;
+            double normalized = value / 32768d;
+            double absolute = Math.Abs(normalized);
+            squared += normalized * normalized;
+            if (absolute > peak) peak = absolute;
+        }
+        rms = Math.Sqrt(squared / sampleCount);
+        return true;
+    }
+
+    private static string ManifestString(JsonElement entry, string property)
+    {
+        return entry.TryGetProperty(property, out JsonElement value) &&
+            value.ValueKind == JsonValueKind.String ? value.GetString() ?? "" : "";
+    }
+
+    private static int ManifestInt(JsonElement entry, string property)
+    {
+        return entry.TryGetProperty(property, out JsonElement value) &&
+            value.ValueKind == JsonValueKind.Number ? value.GetInt32() : -1;
+    }
+
+    private static double ManifestDouble(JsonElement entry, string property)
+    {
+        return entry.TryGetProperty(property, out JsonElement value) &&
+            value.ValueKind == JsonValueKind.Number ? value.GetDouble() : double.NaN;
+    }
+
+    private static void CheckEquipmentContracts(Dictionary<string, CompilationUnitSyntax> roots)
+    {
+        var fleet = Type(roots, "World/CityFleet.cs", "CityFleet", "NewGaza");
+        if (fleet == null) return;
+        string fleetSource = Compact(fleet.ToString());
+        var haulingSpeed = fleet.Members.OfType<FieldDeclarationSyntax>()
+            .SelectMany(field => field.Declaration.Variables)
+            .FirstOrDefault(variable => variable.Identifier.ValueText == "HaulingSpeed");
+        var updateTruckTrip = fleet.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "UpdateTruckTrip");
+        string truckTripSource = updateTruckTrip == null ? "" : Compact(updateTruckTrip.ToString());
+        Require(haulingSpeed?.Initializer?.Value.ToString() == ".22f" &&
+            truckTripSource.Contains("tripDistance+=HaulingSpeed*dt", StringComparison.Ordinal) &&
+            fleetSource.Contains("privateconstfloatVehicleScale=.07f", StringComparison.Ordinal),
+            "Truck hauling speed must be capped at 0.22 unscaled city units/second rather than scaled model distance.");
+        Require(truckTripSource.Contains("TruckTripState.TurningAtDepot", StringComparison.Ordinal) &&
+            truckTripSource.Contains("TruckTripState.TurningInAtWork", StringComparison.Ordinal) &&
+            truckTripSource.Contains("truck.localPosition=tripRoute[1]", StringComparison.Ordinal) &&
+            truckTripSource.Contains("truck.localPosition=tripRoute[0]", StringComparison.Ordinal) &&
+            truckTripSource.Contains("phase=0f", StringComparison.Ordinal),
+            "Truck heading changes must occur while stopped at route endpoints, with the excavation cycle reset only at the work dock.");
+        var initializeFleet = fleet.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "Initialize");
+        string transitionInitialization = initializeFleet == null ? "" :
+            Compact(initializeFleet.DescendantNodes().OfType<AssignmentExpressionSyntax>()
+                .FirstOrDefault(assignment => assignment.Left.ToString() == "transitionParts")?.Right.ToString() ?? "");
+        Require(transitionInitialization.Contains("excavator,turret,boom,stick,bucket,bulldozer,blade,truckBed",
+                StringComparison.Ordinal),
+            "Geographic truck routes must not be smoothed over the excavator's 1.15-second pose blend.");
+
+        var state = fleet.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "TryGetMachineAudioState");
+        Require(state != null && Signature(state.ReturnType) == "bool" &&
+            state.ParameterList.Parameters.Select(parameter =>
+                parameter.Type == null ? "" : Signature(parameter.Type))
+                .SequenceEqual(new[] { "int", "Vector3", "float", "float", "float" },
+                    StringComparer.Ordinal) &&
+            state.ParameterList.Parameters.Skip(1).All(parameter =>
+                parameter.Modifiers.Any(SyntaxKind.OutKeyword)),
+            "CityFleet must expose the fixed indexed machine audio-state contract consumed by CityAudio.");
+        if (state != null)
+        {
+            var mapping = state.DescendantNodes().OfType<SwitchStatementSyntax>()
+                .FirstOrDefault(statement => statement.Expression.ToString() == "index");
+            var mappedMachines = mapping?.Sections
+                .Where(section => section.Labels.OfType<CaseSwitchLabelSyntax>().Any())
+                .Select(section =>
+            {
+                string index = section.Labels.OfType<CaseSwitchLabelSyntax>()
+                    .Select(label => label.Value.ToString()).FirstOrDefault() ?? "";
+                string source = Compact(section.ToString());
+                string machine = new[] { "excavator", "truck", "bulldozer" }
+                    .FirstOrDefault(name => source.Contains("machine=" + name, StringComparison.Ordinal)) ?? "";
+                return index + ":" + machine;
+            }).ToArray() ?? Array.Empty<string>();
+            Require(mappedMachines.SequenceEqual(new[] { "0:excavator", "1:truck", "2:bulldozer" },
+                    StringComparer.Ordinal) &&
+                state.DescendantNodes().OfType<ReturnStatementSyntax>().Any(statement =>
+                    statement.Expression?.IsKind(SyntaxKind.FalseLiteralExpression) == true),
+                "CityFleet audio indices must stay stable: 0 excavator, 1 truck, 2 dozer, with unsupported/inactive machines silent.");
+        }
+
+        var geometry = Type(roots, "World/EquipmentGeometry.cs", "EquipmentGeometry", "NewGaza");
+        Require(geometry != null, "Missing production equipment geometry used by the runtime fleet.");
+        if (geometry != null)
+        {
+            string[] detailedShapes =
+            {
+                "TrackBelt", "TireTread", "BucketShell", "CurvedBlade", "TaperedBeam"
+            };
+            foreach (string shape in detailedShapes)
+                Require(geometry.Members.OfType<MethodDeclarationSyntax>().Any(method =>
+                        method.Identifier.ValueText == shape &&
+                        Compact(method.ToString()).Contains("owner.Own(mesh)", StringComparison.Ordinal)),
+                    "Production equipment shape " + shape + " must be an owned, generated render mesh.");
+        }
+
+        var trackRig = Type(roots, "World/EquipmentTrackRig.cs", "EquipmentTrackRig", "NewGaza");
+        Require(trackRig != null, "Missing production travel-driven crawler shoe/roller rig.");
+        if (trackRig != null)
+        {
+            var trackUpdate = trackRig.Members.OfType<MethodDeclarationSyntax>()
+                .FirstOrDefault(method => method.Identifier.ValueText == "Update");
+            string trackUpdateSource = trackUpdate == null ? "" : Compact(trackUpdate.ToString());
+            Require(trackUpdateSource.Contains("vehicle.localPosition", StringComparison.Ordinal) &&
+                trackUpdateSource.Contains("previousRotation*Vector3.forward", StringComparison.Ordinal) &&
+                trackUpdateSource.Contains("EquipmentGeometry.UpdateTrackShoeLoop", StringComparison.Ordinal) &&
+                trackUpdateSource.Contains("Quaternion.AngleAxis", StringComparison.Ordinal) &&
+                trackUpdateSource.Contains("track.rollers[roller].localRotation", StringComparison.Ordinal),
+                "Visible crawler shoes and rollers must circulate from measured vehicle displacement and stay still without travel.");
+        }
+
+        var hydraulic = Type(roots, "World/EquipmentHydraulicLink.cs",
+            "EquipmentHydraulicLink", "NewGaza");
+        if (hydraulic != null)
+        {
+            var follow = hydraulic.Members.OfType<MethodDeclarationSyntax>()
+                .FirstOrDefault(method => method.Identifier.ValueText == "Follow");
+            string source = follow == null ? "" : Compact(follow.ToString());
+            Require(source.Contains("Vector3direction=end-start", StringComparison.Ordinal) &&
+                source.Contains("barrel.localPosition=start+direction.normalized*(barrelLength*.5f)", StringComparison.Ordinal) &&
+                source.Contains("rod.localPosition=start+direction.normalized*(barrelLength+rodLength*.5f)",
+                    StringComparison.Ordinal) &&
+                source.Contains("basePin.localPosition=start", StringComparison.Ordinal) &&
+                source.Contains("rodPin.localPosition=end", StringComparison.Ordinal) &&
+                source.Contains("Mathf.Max(.04f,length*barrelFraction)", StringComparison.Ordinal) &&
+                source.Contains("Mathf.Max(.025f,length-barrelLength)", StringComparison.Ordinal),
+                "Hydraulic barrel, exposed rod and pinned eyes must follow real articulation anchors within bounded telescoping limits.");
+        }
+
+        var motion = Type(roots, "World/EquipmentMotion.cs", "EquipmentMotion", "NewGaza");
+        if (motion != null)
+        {
+            var dig = motion.Members.OfType<MethodDeclarationSyntax>()
+                .FirstOrDefault(method => method.Identifier.ValueText == "Dig");
+            string digSource = dig == null ? "" : Compact(dig.ToString());
+            var toothTip = motion.Members.OfType<MethodDeclarationSyntax>()
+                .FirstOrDefault(method => method.Identifier.ValueText == "BucketToothTip");
+            string toothTipSource = toothTip == null ? "" : Compact(toothTip.ToString());
+            Require(digSource.Contains("Mathf.Repeat(seconds,DigCycleSeconds)", StringComparison.Ordinal) &&
+                digSource.Contains("Mathf.SmoothStep(0f,1f,amount)", StringComparison.Ordinal) &&
+                digSource.Contains("Vector3.Lerp(DigTargets[segment],DigTargets[segment+1]", StringComparison.Ordinal) &&
+                digSource.Contains("SolveToothTarget(target,bucketAngle,boomPreference,stickPreference",
+                    StringComparison.Ordinal) &&
+                toothTipSource.Contains("newVector3(.17f,.99f,.36f)", StringComparison.Ordinal) &&
+                toothTipSource.Contains("newVector3(0f,-1.15f,.35f)", StringComparison.Ordinal) &&
+                toothTipSource.Contains("newVector3(0f,-.1964f,.52f)", StringComparison.Ordinal) &&
+                toothTipSource.Contains("returnyaw*(newVector3(.17f,.99f,.36f)+boom*arm)",
+                    StringComparison.Ordinal),
+                "Dig poses must solve a deterministic eased trajectory against the production boom/stick/bucket pivot chain and tooth-tip coordinate.");
+        }
+
+        var smoke = Type(roots, "Editor/NewGazaSmokeTest.cs", "NewGazaSmokeTest", "NewGaza.Editor");
+        if (smoke != null)
+        {
+            string smokeSource = Compact(smoke.ToString());
+            var smokePoseSampler = smoke.Members.OfType<MethodDeclarationSyntax>()
+                .FirstOrDefault(method => method.Identifier.ValueText == "CheckEquipmentContactAndTrackRuntime");
+            string smokeSamplerSource = smokePoseSampler == null ? "" : Compact(smokePoseSampler.ToString());
+            var cityWorld = Type(roots, "World/CityWorld.cs", "CityWorld", "NewGaza");
+            string cityWorldSource = cityWorld == null ? "" : Compact(cityWorld.ToString());
+            string[] requiredGroundSmokeTokens =
+            {
+                "CheckEquipmentContactAndTrackRuntime", "GetActualBucketToothTipWorldPoints",
+                "MeasureActualBedInterior", "CheckFleetGroundSupportClearance",
+                "\"PARK\"", "\"NORMALWORK\"", "\"IMPORTEDWORK\"",
+                "CheckLowestTreadVertex", "trackshoes", "trucktires",
+                "CheckTrackShoeMeshGeometry", "minimumArea", "signedVolume",
+                "edgeCount==18", "normalTangentDot<.0001f"
+            };
+            string missingGroundSmokeTokens = string.Join(", ", requiredGroundSmokeTokens
+                .Where(token => !smokeSource.Contains(token, StringComparison.Ordinal)));
+            Require(cityWorldSource.Contains("CityGroundY=-.09f", StringComparison.Ordinal) &&
+                smokeSource.Contains("TransformPoint(newVector3(0f,-.09f,0f))", StringComparison.Ordinal) &&
+                smokeSource.Contains("nativeSurfaceRise=pose==\"PARK\"?.003f:.006f",
+                    StringComparison.Ordinal),
+                "Unity smoke ground samples must reference CityWorld's native -.09 grade and tolerate only the measured native apron surface height.");
+            Require(string.IsNullOrEmpty(missingGroundSmokeTokens),
+                "Unity smoke must exercise live tooth/bed clearance and actual tread/tire support in park, normal-work, and imported-work poses. Missing source tokens: " +
+                missingGroundSmokeTokens);
+            Require(
+                smokeSource.Contains("CheckVisibleTrackTravel", StringComparison.Ordinal) &&
+                smokeSource.Contains("CheckTruckRouteRuntime", StringComparison.Ordinal) &&
+                smokeSource.Contains("maximumSpeed<=.35f", StringComparison.Ordinal) &&
+                smokeSource.Contains("truck.rotation*Vector3.forward", StringComparison.Ordinal) &&
+                smokeSource.Contains("world.Refresh()", StringComparison.Ordinal),
+                "Unity smoke must exercise visible crawler travel, capped truck-route speed/heading, and restore session-owned presentation.");
+            Require(smokeSamplerSource.Contains("Time.captureDeltaTime=sampleDelta", StringComparison.Ordinal) &&
+                smokeSamplerSource.Contains("PrivateField<float>(fleet,\"phase\")", StringComparison.Ordinal) &&
+                smokeSamplerSource.Contains("UpdateFleetOneFrame(fleet)", StringComparison.Ordinal) &&
+                !smokeSamplerSource.Contains("SetPrivateField(fleet,\"phase\"", StringComparison.Ordinal),
+                "Unity contact samples must advance the actual production phase via Time.captureDeltaTime and CityFleet.Update, never by assigning phase.");
+        }
     }
 
     private static void CheckFogStateBindings(TypeDeclarationSyntax? city)
