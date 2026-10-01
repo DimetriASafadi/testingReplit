@@ -244,7 +244,11 @@ namespace NewGaza
             zoom = Mathf.Lerp(zoom, targetZoom, blend);
             view.orthographicSize = zoom;
             transform.rotation = Quaternion.Euler(Pitch, yaw, 0);
-            transform.position = focus - transform.forward * 700;
+            // Orthographic framing does not depend on camera distance. Stay near the
+            // inspected neighborhood so its shadows are inside the mobile shadow range;
+            // pull back for the whole-city view to preserve the existing clipping bounds.
+            float distance = Mathf.Clamp(zoom * 2f + 10f, 35f, 700f);
+            transform.position = focus - transform.forward * distance;
         }
         private void OnDisable() { held = false; multiTouch = false; ModalOpen = false; }
     }
