@@ -41,6 +41,8 @@ namespace NewGaza
                 Load("apartment");
                 Load("ruined_building");
                 Load("rubble_heap");
+                Load("apartment_context");
+                Load("ruined_building_context");
             }
             catch
             {
@@ -54,7 +56,7 @@ namespace NewGaza
         /// resulting geometry height. Position is the center of its footprint at ground level.
         /// </summary>
         internal float AddTo(CityMeshBatch batch, string key, Vector3 position,
-            Vector3 availableFootprint, float yaw, float maxHeight)
+            Vector3 availableFootprint, float yaw, float maxHeight, bool footprintIsLocal = false)
         {
             if (batch == null) throw new ArgumentNullException(nameof(batch));
             if (!models.TryGetValue(key, out ImportedModel model))
@@ -67,8 +69,12 @@ namespace NewGaza
             float radians = yaw * Mathf.Deg2Rad;
             float cosine = Mathf.Abs(Mathf.Cos(radians));
             float sine = Mathf.Abs(Mathf.Sin(radians));
-            float rotatedWidth = cosine * bounds.size.x + sine * bounds.size.z;
-            float rotatedDepth = sine * bounds.size.x + cosine * bounds.size.z;
+            // OSM oriented parcels specify local dimensions, unlike the axis-aligned
+            // scatter envelope. Their yaw must not shrink the model a second time.
+            float rotatedWidth = footprintIsLocal ? bounds.size.x :
+                cosine * bounds.size.x + sine * bounds.size.z;
+            float rotatedDepth = footprintIsLocal ? bounds.size.z :
+                sine * bounds.size.x + cosine * bounds.size.z;
             float scale = Mathf.Min(availableFootprint.x / rotatedWidth,
                 availableFootprint.z / rotatedDepth, maxHeight / bounds.size.y);
             float height = bounds.size.y * scale;
@@ -91,10 +97,12 @@ namespace NewGaza
             if (source == null)
                 throw new InvalidOperationException("Missing imported New Gaza model resource: Resources/" +
                     resourcePath + ". Add the converted OBJ and its Unity-imported model asset.");
-            Texture2D albedo = Resources.Load<Texture2D>(resourcePath + "_albedo");
+            string textureResourcePath = key == "apartment_context" ? "Models/apartment" :
+                key == "ruined_building_context" ? "Models/ruined_building" : resourcePath;
+            Texture2D albedo = Resources.Load<Texture2D>(textureResourcePath + "_albedo");
             if (albedo == null)
                 throw new InvalidOperationException("Missing imported New Gaza albedo resource: Resources/" +
-                    resourcePath + "_albedo.png.");
+                    textureResourcePath + "_albedo.png.");
             Material template = Resources.Load<Material>("NewGazaLit");
             if (template == null || template.shader == null)
                 throw new InvalidOperationException("New Gaza imported models require Resources/NewGazaLit " +

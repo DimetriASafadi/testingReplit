@@ -68,8 +68,8 @@ namespace NewGaza
 
         private Vector3 CityCentre()
         {
-            return new Vector3((GameGeography.MapMinX + GameGeography.MapMaxX) * 0.5f, 0,
-                (GameGeography.MapMinZ + GameGeography.MapMaxZ) * 0.5f);
+            return new Vector3((world.MapMinX + world.MapMaxX) * 0.5f, 0,
+                (world.MapMinZ + world.MapMaxZ) * 0.5f);
         }
 
         private float OverviewZoom()
@@ -81,8 +81,8 @@ namespace NewGaza
             float width = 0, height = 0;
             for (int i = 0; i < 4; i++)
             {
-                var corner = new Vector3(i % 2 == 0 ? GameGeography.MapMinX : GameGeography.MapMaxX,
-                    0, i < 2 ? GameGeography.MapMinZ : GameGeography.MapMaxZ);
+                var corner = new Vector3(i % 2 == 0 ? world.MapMinX : world.MapMaxX,
+                    0, i < 2 ? world.MapMinZ : world.MapMaxZ);
                 var offset = corner - centre;
                 width = Mathf.Max(width, Mathf.Abs(Vector3.Dot(offset, right)) + 20);
                 height = Mathf.Max(height, Mathf.Abs(Vector3.Dot(offset, up)) + 20);
@@ -179,8 +179,8 @@ namespace NewGaza
                     var before = GroundPoint(previous);
                     var after = GroundPoint(position);
                     targetFocus += before - after;
-                    targetFocus.x = Mathf.Clamp(targetFocus.x, GameGeography.MapMinX, GameGeography.MapMaxX);
-                    targetFocus.z = Mathf.Clamp(targetFocus.z, GameGeography.MapMinZ, GameGeography.MapMaxZ);
+                    targetFocus.x = Mathf.Clamp(targetFocus.x, world.MapMinX, world.MapMaxX);
+                    targetFocus.z = Mathf.Clamp(targetFocus.z, world.MapMinZ, world.MapMaxZ);
                 }
                 else if (!inspected && Time.unscaledTime - pressTime > 0.55f)
                 {

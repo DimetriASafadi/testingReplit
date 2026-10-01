@@ -1,8 +1,11 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.IO.Compression;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text.Json;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -43,6 +46,7 @@ internal static class Program
             CheckDistrictFog(sourceRoot, roots);
             CheckWorldRenderingContracts(roots);
             CheckImportedCityModelContracts(sourceRoot, roots);
+            CheckSourcedCityContext(sourceRoot, roots);
             CheckHudIconContracts(roots);
             CheckArabicShaping();
             if (Failures.Count > 0)
@@ -52,7 +56,7 @@ internal static class Program
                 return 1;
             }
             Console.WriteLine("Source checks passed: " + files.Length +
-                " NewGaza .cs files parsed as C# 9 (player + editor/optional checks), integration signatures, GUID-independent scene bootstrap, imported city model/source-asset and runtime batching contracts, localized-fog/shader and geometry-UV/shadow/URP-light source checks, procedural HUD icon coverage/ownership/navigation bindings, and Arabic shaping.");
+                " NewGaza .cs files parsed as C# 9 (player + editor/optional checks), integration signatures, GUID-independent scene bootstrap, sourced Gaza basemap/urban batching, five imported city models, localized-fog/shader and geometry-UV/shadow/URP-light checks, procedural HUD icon coverage/ownership/navigation bindings, and Arabic shaping.");
             Console.WriteLine("Source-only check; Unity assemblies and shader were not compiled, and no Unity editor/player or GPU rendering was run.");
             return 0;
         }
@@ -181,11 +185,19 @@ internal static class Program
         Dictionary<string, CompilationUnitSyntax> roots)
     {
         string modelsDirectory = Path.Combine(sourceRoot, "Resources", "Models");
-        string[] modelKeys = { "apartment", "ruined_building", "rubble_heap" };
+        string[] modelKeys =
+        {
+            "apartment", "ruined_building", "rubble_heap",
+            "apartment_context", "ruined_building_context"
+        };
+        string[] primaryModelKeys = { "apartment", "ruined_building", "rubble_heap" };
         foreach (string key in modelKeys)
         {
             Require(File.Exists(Path.Combine(modelsDirectory, key + ".obj")),
                 "Missing converted imported model source Resources/Models/" + key + ".obj.");
+        }
+        foreach (string key in primaryModelKeys)
+        {
             Require(File.Exists(Path.Combine(modelsDirectory, key + "_albedo.png")),
                 "Missing imported model albedo Resources/Models/" + key + "_albedo.png.");
         }
@@ -220,21 +232,70 @@ internal static class Program
                 !settings.Contains("SetPlatformTextureSettings", StringComparison.Ordinal),
                 "The preparation menu must reimport only changed known assets and preserve platform defaults.");
             foreach (string key in modelKeys)
-                Require(settings.Contains("ModelsPrefix+\"" + key + ".obj\"", StringComparison.Ordinal) &&
-                    settings.Contains("ModelsPrefix+\"" + key + "_albedo.png\"", StringComparison.Ordinal),
-                    "The scoped preparation menu is missing the fixed asset path for " + key + ".");
+                Require(settings.Contains("ModelsPrefix+\"" + key + ".obj\"", StringComparison.Ordinal),
+                    "The scoped preparation menu is missing the fixed OBJ path for " + key + ".");
+            foreach (string key in primaryModelKeys)
+                Require(settings.Contains("ModelsPrefix+\"" + key + "_albedo.png\"", StringComparison.Ordinal),
+                    "The scoped preparation menu is missing the primary albedo path for " + key + ".");
         }
 
         var library = Type(roots, "World/CityModelLibrary.cs", "CityModelLibrary", "NewGaza");
         if (library != null)
         {
+            var addTo = library.Members.OfType<MethodDeclarationSyntax>()
+                .FirstOrDefault(method => method.Identifier.ValueText == "AddTo");
+            ParameterSyntax? footprintParameter = addTo?.ParameterList.Parameters.LastOrDefault();
+            Require(footprintParameter != null &&
+                Signature(footprintParameter.Type!) == "bool" &&
+                footprintParameter.Identifier.ValueText == "footprintIsLocal" &&
+                footprintParameter.Default?.Value.IsKind(SyntaxKind.FalseLiteralExpression) == true,
+                "CityModelLibrary must keep geographic hero placements unchanged and expose an optional local-OBB footprint flag.");
+
+            var constructor = library.Members.OfType<ConstructorDeclarationSyntax>()
+                .FirstOrDefault(ctor => ctor.ParameterList.Parameters.Count == 0);
+            string[] loadedModels = constructor?.DescendantNodes()
+                .OfType<InvocationExpressionSyntax>()
+                .Where(call => call.Expression is IdentifierNameSyntax load &&
+                    load.Identifier.ValueText == "Load")
+                .Select(call => call.ArgumentList.Arguments.SingleOrDefault()?.Expression
+                    .DescendantNodesAndSelf().OfType<LiteralExpressionSyntax>()
+                    .FirstOrDefault(literal => literal.IsKind(SyntaxKind.StringLiteralExpression))
+                    ?.Token.ValueText ?? "")
+                .ToArray() ?? Array.Empty<string>();
+            Require(modelKeys.All(key => loadedModels.Contains(key, StringComparer.Ordinal)),
+                "CityModelLibrary must explicitly load all three native models and both context LOD models.");
+
+            var loadMethod = library.Members.OfType<MethodDeclarationSyntax>()
+                .FirstOrDefault(method => method.Identifier.ValueText == "Load");
+            var loadCalls = loadMethod?.DescendantNodes().OfType<InvocationExpressionSyntax>().ToArray()
+                ?? Array.Empty<InvocationExpressionSyntax>();
+            bool loadsModelResources = loadCalls.Any(call =>
+                call.Expression is MemberAccessExpressionSyntax load &&
+                load.Expression.ToString() == "Resources" &&
+                load.Name is GenericNameSyntax generic &&
+                generic.Identifier.ValueText == "Load" &&
+                generic.TypeArgumentList.Arguments.SingleOrDefault()?.ToString() == "GameObject");
+            bool loadsAliasedTexture = loadCalls.Any(call =>
+                call.Expression is MemberAccessExpressionSyntax load &&
+                load.Expression.ToString() == "Resources" &&
+                load.Name is GenericNameSyntax generic &&
+                generic.Identifier.ValueText == "Load" &&
+                generic.TypeArgumentList.Arguments.SingleOrDefault()?.ToString() == "Texture2D" &&
+                call.ArgumentList.Arguments.SingleOrDefault()?.Expression.ToString()
+                    .Contains("_albedo", StringComparison.Ordinal) == true);
+            bool reusesPrimaryAlbedoAliases = loadMethod?.DescendantNodes()
+                .OfType<LiteralExpressionSyntax>()
+                .Where(literal => literal.IsKind(SyntaxKind.StringLiteralExpression))
+                .Select(literal => literal.Token.ValueText)
+                .Contains("Models/apartment", StringComparer.Ordinal) == true &&
+                loadMethod.DescendantNodes().OfType<LiteralExpressionSyntax>()
+                    .Where(literal => literal.IsKind(SyntaxKind.StringLiteralExpression))
+                    .Select(literal => literal.Token.ValueText)
+                    .Contains("Models/ruined_building", StringComparer.Ordinal);
+            Require(loadsModelResources && loadsAliasedTexture && reusesPrimaryAlbedoAliases,
+                "Imported OBJ resources must load through Resources aliases, with context LODs reusing the two primary PNG albedos.");
+
             string source = Compact(library.ToString());
-            Require(source.Contains("Load(\"apartment\");Load(\"ruined_building\");Load(\"rubble_heap\");",
-                    StringComparison.Ordinal),
-                "CityModelLibrary must load each of the three native imported Resources models.");
-            Require(source.Contains("Resources.Load<GameObject>(resourcePath)", StringComparison.Ordinal) &&
-                source.Contains("Resources.Load<Texture2D>(resourcePath+\"_albedo\")", StringComparison.Ordinal),
-                "Imported models and their matching albedos must resolve through fixed Resources aliases.");
             Require(source.Contains("Resources.Load<Material>(\"NewGazaLit\")", StringComparison.Ordinal) &&
                 source.Contains("newMaterial(template)", StringComparison.Ordinal) &&
                 source.Contains("material.SetTexture(\"_BaseMap\",albedo)", StringComparison.Ordinal),
@@ -370,9 +431,19 @@ internal static class Program
 
         var districtViewingSize = world?.Members.OfType<MethodDeclarationSyntax>()
             .FirstOrDefault(method => method.Identifier.ValueText == "DistrictViewingSize");
-        string districtZoomSource = districtViewingSize == null ? "" : Compact(districtViewingSize.ToString());
-        Require(districtZoomSource.Contains("districts[index].root.lossyScale.x", StringComparison.Ordinal),
-            "District viewing focus must scale with the real geographic district transform.");
+        string[] extentNames = { "radius", "extent", "bounds", "size", "footprint", "plot", "width", "height" };
+        string[] viewingNames = districtViewingSize?.DescendantNodes()
+            .OfType<IdentifierNameSyntax>().Select(name => name.Identifier.ValueText)
+            .Concat(districtViewingSize.DescendantNodes().OfType<MemberAccessExpressionSyntax>()
+                .Select(member => member.Name.Identifier.ValueText))
+            .ToArray() ?? Array.Empty<string>();
+        bool usesPresentationExtent = extentNames.Any(extent =>
+            viewingNames.Any(name => name.IndexOf(extent, StringComparison.OrdinalIgnoreCase) >= 0));
+        bool avoidsRootScaleZoom = districtViewingSize?.DescendantNodes()
+            .OfType<MemberAccessExpressionSyntax>()
+            .All(member => member.Name.Identifier.ValueText != "lossyScale") == true;
+        Require(usesPresentationExtent && avoidsRootScaleZoom,
+            "District viewing focus must frame a sourced district's actual urban presentation extent, not scale tiny isolated districts.");
 
         var camera = Type(roots, "Runtime/CityCamera.cs", "CityCamera", "NewGaza");
         string cameraSource = camera == null ? "" : Compact(camera.ToString());
@@ -389,20 +460,564 @@ internal static class Program
         {
             string smoke = Compact(File.ReadAllText(smokePath));
             Require(smoke.Contains("Resources.Load<GameObject>(\"Models/\"+key)", StringComparison.Ordinal) &&
-                smoke.Contains("Resources.Load<Texture2D>(\"Models/\"+key+\"_albedo\")",
+                smoke.Contains("Resources.Load<Texture2D>(\"Models/\"+albedoKeys[i]+\"_albedo\")",
+                    StringComparison.Ordinal) &&
+                smoke.Contains("world.ImportedModelCount==5", StringComparison.Ordinal) &&
+                smoke.Contains("albedos[3]==albedos[0]&&albedos[4]==albedos[1]",
                     StringComparison.Ordinal) &&
                 smoke.Contains("lit.shader.name==\"UniversalRenderPipeline/Lit\"",
                     StringComparison.Ordinal) &&
                 smoke.Contains("mesh.isReadable", StringComparison.Ordinal) &&
                 smoke.Contains("uvs.Length==vertices.Length", StringComparison.Ordinal) &&
                 smoke.Contains("normals.Length==vertices.Length", StringComparison.Ordinal),
-                "Unity smoke test must inspect the actual imported model resources, readable UVs and imported normals.");
-            Require(smoke.Contains("int[]triangleBudgets={2500,4000,1400}", StringComparison.Ordinal) &&
+                "Unity smoke test must inspect all five imported model resources, aliased context albedos, readable UVs and imported normals.");
+            Require(smoke.Contains("Resources.Load<TextAsset>(\"GazaBasemap\")", StringComparison.Ordinal) &&
+                smoke.Contains("JsonUtility.FromJson<CityBasemap>(source.text)", StringComparison.Ordinal) &&
+                smoke.Contains("float.IsNaN(point.x)", StringComparison.Ordinal) &&
+                smoke.Contains("float.IsInfinity(point.z)", StringComparison.Ordinal) &&
+                smoke.Contains("maxX-minX>150f&&maxZ-minZ>150f", StringComparison.Ordinal),
+                "Unity smoke test must parse GazaBasemap JSON and check finite feature coordinates across a wide city extent.");
+            Require(smoke.Contains("int[]triangleBudgets={2500,4000,1400,350,450}", StringComparison.Ordinal) &&
                 smoke.Contains("Mathf.CeilToInt(triangleBudgets[i]*1.01f)", StringComparison.Ordinal) &&
                 smoke.Contains("material.GetTexture(\"_BaseMap\")", StringComparison.Ordinal) &&
                 smoke.Contains("ShadowCastingMode.On", StringComparison.Ordinal),
-                "Unity smoke test must check per-model mobile triangle budgets, URP albedos and casting batch shadows.");
+                "Unity smoke test must check all five native-model triangle budgets, URP albedos and casting batch shadows.");
         }
+    }
+
+    private static void CheckSourcedCityContext(string sourceRoot,
+        Dictionary<string, CompilationUnitSyntax> roots)
+    {
+        CheckBasemapSourceArchive(sourceRoot);
+        string basemapPath = Path.Combine(sourceRoot, "Resources", "GazaBasemap.json");
+        Require(File.Exists(basemapPath), "Missing authentic Gaza city basemap Resources/GazaBasemap.json.");
+        if (File.Exists(basemapPath))
+        {
+            using (JsonDocument document = JsonDocument.Parse(File.ReadAllText(basemapPath)))
+            {
+                JsonElement root = document.RootElement;
+                bool hasSchema = root.TryGetProperty("schemaVersion", out JsonElement schema) &&
+                    schema.ValueKind == JsonValueKind.Number && schema.GetInt32() == 1;
+                bool hasMetadata = root.TryGetProperty("metadata", out JsonElement metadata);
+                string attribution = hasMetadata &&
+                    metadata.TryGetProperty("attribution", out JsonElement attributionElement)
+                    ? attributionElement.GetString() ?? "" : "";
+                string source = hasMetadata &&
+                    metadata.TryGetProperty("source", out JsonElement sourceElement)
+                    ? sourceElement.GetString() ?? "" : "";
+                Require(hasSchema && attribution.Contains("OpenStreetMap", StringComparison.OrdinalIgnoreCase) &&
+                    source.Contains("OpenStreetMap", StringComparison.OrdinalIgnoreCase),
+                    "City context must be the versioned, attributed OpenStreetMap source rather than illustrative geometry.");
+
+                bool hasRoads = root.TryGetProperty("roads", out JsonElement roads) &&
+                    roads.ValueKind == JsonValueKind.Array && roads.GetArrayLength() >= 20;
+                bool hasBuildings = root.TryGetProperty("buildings", out JsonElement buildings) &&
+                    buildings.ValueKind == JsonValueKind.Array && buildings.GetArrayLength() >= 100;
+                bool hasAreas = root.TryGetProperty("areas", out JsonElement areas) &&
+                    areas.ValueKind == JsonValueKind.Array && areas.GetArrayLength() >= 5;
+                double minX = double.PositiveInfinity, maxX = double.NegativeInfinity;
+                double minZ = double.PositiveInfinity, maxZ = double.NegativeInfinity;
+                bool finiteCoordinates = hasRoads && hasBuildings && hasAreas &&
+                    AccumulateFeaturePoints(roads, "points", false, ref minX, ref maxX, ref minZ, ref maxZ) &&
+                    AccumulateFeaturePoints(buildings, "outline", true, ref minX, ref maxX, ref minZ, ref maxZ) &&
+                    AccumulateFeaturePoints(areas, "points", false, ref minX, ref maxX, ref minZ, ref maxZ);
+                Require(hasRoads && hasBuildings && hasAreas && finiteCoordinates &&
+                    maxX - minX > 150 && maxZ - minZ > 150,
+                    "Gaza basemap must contain finite, nontrivial road, footprint and landuse coverage across an urban extent.");
+            }
+        }
+
+        var basemap = Type(roots, "World/CityBasemap.cs", "CityBasemap", "NewGaza");
+        if (basemap != null)
+        {
+            string basemapSource = Compact(basemap.ToString());
+            Require(basemapSource.Contains("JsonUtility.FromJson<CityBasemap>", StringComparison.Ordinal) &&
+                basemapSource.Contains("Resources.Load<TextAsset>(resourcePath)", StringComparison.Ordinal) &&
+                basemapSource.Contains("map.Validate(sourceName)", StringComparison.Ordinal),
+                "CityBasemap must load required JSON from Resources and validate its typed source data.");
+        }
+
+        var context = Type(roots, "World/CityUrbanContext.cs", "CityUrbanContext", "NewGaza");
+        if (context == null) return;
+        var contextSource = context.DescendantNodesAndSelf().ToArray();
+        bool usesSourcedFeatureCollections = new[] { "roads", "buildings", "areas" }.All(name =>
+            contextSource.OfType<IdentifierNameSyntax>().Any(identifier =>
+                identifier.Identifier.ValueText == name));
+        var contextChunk = context.Members.OfType<ClassDeclarationSyntax>()
+            .FirstOrDefault(type => type.Identifier.ValueText == "ContextChunk");
+        var chunkBuild = contextChunk?.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "Build");
+        bool hasBatchCollector = contextChunk != null &&
+            contextChunk.Members.OfType<FieldDeclarationSyntax>()
+            .Any(field => Signature(field.Declaration.Type) == "CityMeshBatch" &&
+                field.Declaration.Variables.Any(variable => variable.Identifier.ValueText == "models")) == true &&
+            contextChunk.DescendantNodes().OfType<InvocationExpressionSyntax>().Any(call =>
+                call.Expression is MemberAccessExpressionSyntax build &&
+                build.Expression.ToString() == "models" &&
+                build.Name.Identifier.ValueText == "Build" &&
+                call.ArgumentList.Arguments.Count == 3);
+        bool buildsOwnedChunkMeshes = chunkBuild != null && chunkBuild.DescendantNodes()
+            .OfType<VariableDeclaratorSyntax>().Any(variable =>
+                variable.Initializer?.Value is InvocationExpressionSyntax own &&
+                own.Expression is MemberAccessExpressionSyntax ownCall &&
+                ownCall.Expression.ToString() == "geometry" &&
+                ownCall.Name.Identifier.ValueText == "Own" &&
+                own.ArgumentList.Arguments.SingleOrDefault()?.Expression is ObjectCreationExpressionSyntax mesh &&
+                Signature(mesh.Type) == "Mesh") == true;
+        bool buildsChunkRenderers = chunkBuild != null &&
+            chunkBuild.DescendantNodes().OfType<InvocationExpressionSyntax>()
+            .Any(call => call.Expression is MemberAccessExpressionSyntax add &&
+                add.Name is GenericNameSyntax generic &&
+                generic.Identifier.ValueText == "AddComponent" &&
+                generic.TypeArgumentList.Arguments.SingleOrDefault()?.ToString() == "MeshFilter") == true &&
+            chunkBuild.DescendantNodes().OfType<InvocationExpressionSyntax>().Any(call =>
+                call.Expression is MemberAccessExpressionSyntax add &&
+                add.Name is GenericNameSyntax generic &&
+                generic.Identifier.ValueText == "AddComponent" &&
+                generic.TypeArgumentList.Arguments.SingleOrDefault()?.ToString() == "MeshRenderer") == true;
+        bool batchesAllChunks = context.Members.OfType<MethodDeclarationSyntax>()
+            .Where(method => method.Identifier.ValueText == "Build")
+            .SelectMany(method => method.DescendantNodes().OfType<InvocationExpressionSyntax>())
+            .Any(call => call.Expression is MemberAccessExpressionSyntax build &&
+                build.Expression.ToString() == "pair.Value" &&
+                build.Name.Identifier.ValueText == "Build");
+        bool usesLocalOsmFootprintDimensions = contextSource.OfType<InvocationExpressionSyntax>()
+            .Any(call => call.Expression is MemberAccessExpressionSyntax add &&
+                add.Name.Identifier.ValueText == "AddTo" &&
+                call.ArgumentList.Arguments.Count == 7 &&
+                call.ArgumentList.Arguments[3].Expression is ObjectCreationExpressionSyntax footprint &&
+                footprint.ArgumentList is ArgumentListSyntax footprintArguments &&
+                footprintArguments.Arguments.Any(argument =>
+                    argument.Expression.ToString() == "building.size.x") == true &&
+                footprintArguments.Arguments.Any(argument =>
+                    argument.Expression.ToString() == "building.size.z") &&
+                call.ArgumentList.Arguments[6].Expression.IsKind(SyntaxKind.TrueLiteralExpression));
+        bool createsObjectsOnlyAtChunkGranularity = contextSource
+            .OfType<ObjectCreationExpressionSyntax>()
+            .Where(creation => Signature(creation.Type) == "GameObject")
+            .All(creation => creation.Ancestors().OfType<ClassDeclarationSyntax>()
+                    .Any(type => type.Identifier.ValueText == "ContextChunk") &&
+                creation.Ancestors().OfType<MethodDeclarationSyntax>()
+                    .Any(method => method.Identifier.ValueText == "Build"));
+        var nestedContextTypes = context.Members.OfType<ClassDeclarationSyntax>().ToArray();
+        bool noPerBuildingBehaviours = context.BaseList?.Types.Any(type =>
+                Signature(type.Type) == "MonoBehaviour") != true &&
+            nestedContextTypes.All(type =>
+                type.BaseList?.Types.Any(baseType => Signature(baseType.Type) == "MonoBehaviour") != true) &&
+            contextSource.OfType<MethodDeclarationSyntax>().All(method =>
+                method.Identifier.ValueText != "Update");
+        bool hasNoPerBuildingBehavioursOrColliders =
+            noPerBuildingBehaviours &&
+            !contextSource.OfType<InvocationExpressionSyntax>().Any(call =>
+                call.Expression is MemberAccessExpressionSyntax addComponent &&
+                addComponent.Name is GenericNameSyntax generic &&
+                generic.Identifier.ValueText == "AddComponent" &&
+                generic.TypeArgumentList.Arguments.SingleOrDefault()?.ToString()
+                    .EndsWith("Collider", StringComparison.Ordinal) == true) &&
+            !contextSource.OfType<TypeSyntax>().Any(type =>
+                Signature(type).EndsWith("Collider", StringComparison.Ordinal));
+        Require(usesSourcedFeatureCollections && hasBatchCollector &&
+            buildsOwnedChunkMeshes && buildsChunkRenderers && batchesAllChunks &&
+            createsObjectsOnlyAtChunkGranularity &&
+            usesLocalOsmFootprintDimensions &&
+            hasNoPerBuildingBehavioursOrColliders,
+            "Sourced roads, landuse and footprints must be statically chunk-batched, with oriented parcel-local LOD placement and no per-building behaviours or colliders.");
+        CheckExtrudedContextBuildings(context, contextChunk, chunkBuild);
+        CheckSourcedUtilitiesAndDepot(context, roots);
+
+        var world = Type(roots, "World/CityWorld.cs", "CityWorld", "NewGaza");
+        if (world == null) return;
+        var initialize = world.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "Initialize");
+        var initializeCalls = initialize?.DescendantNodes().OfType<InvocationExpressionSyntax>()
+            .ToArray() ?? Array.Empty<InvocationExpressionSyntax>();
+        bool loadsTypedBasemap = initializeCalls.Any(call =>
+            call.Expression is MemberAccessExpressionSyntax load &&
+            load.Expression.ToString() == "CityBasemap" &&
+            load.Name.Identifier.ValueText == "LoadFromResources");
+        bool contextBuildsBeforeDistricts = initialize?.Body != null &&
+            initialize.Body.Statements.Select((statement, index) => new { statement, index })
+                .Where(item => item.statement.DescendantNodesAndSelf()
+                    .OfType<InvocationExpressionSyntax>().Any(call =>
+                        call.Expression is MemberAccessExpressionSyntax build &&
+                        build.Expression.ToString() == "CityUrbanContext" &&
+                        build.Name.Identifier.ValueText == "Build"))
+                .Select(item => item.index).DefaultIfEmpty(-1).Min() is int contextIndex &&
+            initialize.Body.Statements.Select((statement, index) => new { statement, index })
+                .Where(item => item.statement.DescendantNodesAndSelf()
+                    .OfType<InvocationExpressionSyntax>().Any(call =>
+                        call.Expression is IdentifierNameSyntax buildDistricts &&
+                        buildDistricts.Identifier.ValueText == "BuildDistricts"))
+                .Select(item => item.index).DefaultIfEmpty(int.MaxValue).Min() > contextIndex;
+        Require(loadsTypedBasemap && contextBuildsBeforeDistricts,
+            "CityWorld must load the required Gaza basemap and build its sourced context before native districts.");
+
+        var worldNames = world.DescendantNodesAndSelf().OfType<IdentifierNameSyntax>()
+            .Select(identifier => identifier.Identifier.ValueText).ToArray();
+        Require(worldNames.Contains("CityBasemap", StringComparer.Ordinal) &&
+            worldNames.Contains("CityUrbanContext", StringComparer.Ordinal),
+            "CityWorld must present the real sourced Gaza basemap through the shared urban-context renderer.");
+        bool doesNotShrinkDistrictRoots = !world.DescendantNodes()
+            .OfType<AssignmentExpressionSyntax>().Any(assignment =>
+                assignment.Left.ToString().EndsWith(".root.localScale", StringComparison.Ordinal) &&
+                assignment.Right.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>()
+                    .Any(call => call.Expression is MemberAccessExpressionSyntax clamp &&
+                        clamp.Expression.ToString() == "Mathf" &&
+                        clamp.Name.Identifier.ValueText == "Clamp"));
+        Require(doesNotShrinkDistrictRoots,
+            "District centers must retain geographic scale instead of shrinking isolated roots to fit.");
+        bool doesNotMutateSessionState = !world.DescendantNodes().OfType<AssignmentExpressionSyntax>()
+            .Any(assignment => assignment.Left.ToString()
+                .StartsWith("session.State", StringComparison.Ordinal));
+        Require(doesNotMutateSessionState,
+            "CityWorld and basemap presentation must leave saved core progress state owned by GameSession.");
+
+        var boundsProperties = world.Members.OfType<PropertyDeclarationSyntax>()
+            .Where(property => new[] { "MapMinX", "MapMaxX", "MapMinZ", "MapMaxZ" }
+                .Contains(property.Identifier.ValueText, StringComparer.Ordinal))
+            .ToArray();
+        bool mapBoundsIncludeSourcedExtents = boundsProperties.Length == 4 &&
+            boundsProperties.All(property => property.DescendantNodes()
+                .OfType<MemberAccessExpressionSyntax>().Any(member =>
+                    member.Expression.ToString() == "basemap.actualBounds"));
+        Require(mapBoundsIncludeSourcedExtents,
+            "CityWorld's public map bounds must union the OSM extents with the geographic game route.");
+
+        var palette = world.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "MakePalette");
+        bool retainsAnimatedSeaShader = palette?.DescendantNodes()
+            .OfType<InvocationExpressionSyntax>().Any(call =>
+                call.Expression is MemberAccessExpressionSyntax load &&
+                load.Expression.ToString() == "Resources" &&
+                load.Name is GenericNameSyntax generic &&
+                generic.Identifier.ValueText == "Load" &&
+                generic.TypeArgumentList.Arguments.SingleOrDefault()?.ToString() == "Shader" &&
+                call.ArgumentList.Arguments.SingleOrDefault()?.Expression.ToString() == "\"NewGazaSea\"") == true &&
+            palette.DescendantNodes().OfType<ObjectCreationExpressionSyntax>()
+                .Any(creation => Signature(creation.Type) == "Material" &&
+                    creation.ArgumentList?.Arguments.SingleOrDefault()?.Expression.ToString() == "seaShader");
+        Require(retainsAnimatedSeaShader,
+            "CityWorld must keep the retained custom URP animated-sea shader resource.");
+        CheckSeaUvAndFleetScale(world, roots);
+
+        var camera = Type(roots, "Runtime/CityCamera.cs", "CityCamera", "NewGaza");
+        if (camera != null)
+        {
+            bool cameraFramesUnionBounds = new[] { "MapMinX", "MapMaxX", "MapMinZ", "MapMaxZ" }
+                .All(bound => camera.DescendantNodes().OfType<MemberAccessExpressionSyntax>()
+                    .Any(member => member.Expression.ToString() == "world" &&
+                        member.Name.Identifier.ValueText == bound));
+            Require(cameraFramesUnionBounds,
+                "CityCamera overview framing and centre must include the basemap/game-route union bounds.");
+        }
+    }
+
+    private static void CheckExtrudedContextBuildings(TypeDeclarationSyntax context,
+        TypeDeclarationSyntax? contextChunk, MethodDeclarationSyntax? chunkBuild)
+    {
+        var volume = Type(new Dictionary<string, CompilationUnitSyntax>
+        {
+            { "World/CityUrbanContext.cs", (CompilationUnitSyntax)context.SyntaxTree.GetRoot() }
+        }, "World/CityUrbanContext.cs", "CityUrbanBuildingVolume", "NewGaza");
+        var volumeFields = volume?.Members.OfType<FieldDeclarationSyntax>().ToArray()
+            ?? Array.Empty<FieldDeclarationSyntax>();
+        bool plainVolumeDto = volume != null && volume.BaseList == null &&
+            volume.Members.OfType<MethodDeclarationSyntax>().Any() == false &&
+            volume.Members.OfType<PropertyDeclarationSyntax>().Any() == false &&
+            new[]
+            {
+                new { Name = "sourceBuildingId", Type = "string" },
+                new { Name = "height", Type = "float" },
+                new { Name = "outline", Type = "CityBasemapPoint[]" }
+            }.All(expected => volumeFields.Any(field =>
+                field.Modifiers.Any(SyntaxKind.ReadOnlyKeyword) &&
+                Signature(field.Declaration.Type) == expected.Type &&
+                field.Declaration.Variables.Any(variable =>
+                    variable.Identifier.ValueText == expected.Name)));
+        var volumeConstructor = volume?.Members.OfType<ConstructorDeclarationSyntax>()
+            .FirstOrDefault(constructor => constructor.ParameterList.Parameters.Count == 3);
+        string volumeConstructorSource = volumeConstructor == null
+            ? "" : Compact(volumeConstructor.ToString());
+        Require(plainVolumeDto && volumeConstructorSource.Contains(
+                "this.sourceBuildingId=sourceBuildingId", StringComparison.Ordinal) &&
+            volumeConstructorSource.Contains("this.height=height", StringComparison.Ordinal) &&
+            volumeConstructorSource.Contains("this.outline=outline", StringComparison.Ordinal),
+            "Extruded context volumes must remain plain immutable DTOs retaining the original source polygon and height.");
+
+        var extrude = context.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "AddExtrudedBuilding");
+        string extrudeSource = extrude == null ? "" : Compact(extrude.ToString());
+        string[] expectedWallTriangles =
+        {
+            "material,bottomA,topA,topB",
+            "material,bottomA,topB,bottomB",
+            "material,bottomA,bottomB,topB",
+            "material,bottomA,topB,topA"
+        };
+        string[] actualWallTriangles = extrude?.DescendantNodes()
+            .OfType<InvocationExpressionSyntax>()
+            .Where(call => call.Expression is MemberAccessExpressionSyntax add &&
+                add.Expression.ToString() == "chunk" &&
+                add.Name.Identifier.ValueText == "AddTriangle")
+            .Select(call => string.Join(",", call.ArgumentList.Arguments
+                .Select(argument => argument.Expression.ToString())))
+            .OrderBy(value => value, StringComparer.Ordinal)
+            .ToArray() ?? Array.Empty<string>();
+        bool buildsRoofAndExactWindingAwareWalls =
+            extrudeSource.Contains("AddPolygon(newList<Vector2>(outline),GroundY+building.height,material,chunks,geometry,owner)",
+                StringComparison.Ordinal) &&
+            extrudeSource.Contains("List<float>cuts=SegmentChunkCuts(a.x,a.y,b.x,b.y)",
+                StringComparison.Ordinal) &&
+            extrudeSource.Contains("Vector2low=Vector2.LerpUnclamped(a,b,t0)", StringComparison.Ordinal) &&
+            extrudeSource.Contains("Vector2high=Vector2.LerpUnclamped(a,b,t1)", StringComparison.Ordinal) &&
+            actualWallTriangles.SequenceEqual(expectedWallTriangles.OrderBy(value => value,
+                StringComparer.Ordinal), StringComparer.Ordinal) &&
+            extrudeSource.Contains("owner.triangleCount+=2", StringComparison.Ordinal) &&
+            extrudeSource.Contains("owner.extrudedVolumes.Add(newCityUrbanBuildingVolume(building.FeatureId,building.height,building.outline))",
+                StringComparison.Ordinal);
+        var clippedPolygons = context.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "AddClippedPolygon");
+        string clippedSource = clippedPolygons == null ? "" : Compact(clippedPolygons.ToString());
+        bool ownsAndCountsGeneratedSurfaces = chunkBuild != null &&
+            clippedSource.Contains("chunk.AddTopTriangle(material,clipped[0],clipped[i],clipped[i+1],y)",
+                StringComparison.Ordinal) &&
+            clippedSource.Contains("owner.triangleCount++", StringComparison.Ordinal) &&
+            Compact(chunkBuild.ToString()).Contains("geometry.Own(newMesh", StringComparison.Ordinal) &&
+            Compact(chunkBuild.ToString()).Contains("mesh.RecalculateNormals()", StringComparison.Ordinal) &&
+            Compact(chunkBuild.ToString()).Contains("mesh.RecalculateBounds()", StringComparison.Ordinal) &&
+            Compact(chunkBuild.ToString()).Contains("mesh.SetTriangles(indices[pair.Key],0,true)",
+                StringComparison.Ordinal);
+        Require(buildsRoofAndExactWindingAwareWalls && ownsAndCountsGeneratedSurfaces,
+            "Context buildings must emit roof polygons and exact winding-aware walls from every source edge, count generated triangles on their owner, and build owned normaled meshes.");
+    }
+
+    private static void CheckSourcedUtilitiesAndDepot(TypeDeclarationSyntax context,
+        Dictionary<string, CompilationUnitSyntax> roots)
+    {
+        var utilityPlacement = context.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "PlaceUtilities");
+        string utilitySource = utilityPlacement == null ? "" : Compact(utilityPlacement.ToString());
+        bool reservesFullUtilityClearances =
+            utilitySource.Contains("newCityUrbanUtilityKind(\"salvage\",.30f)", StringComparison.Ordinal) &&
+            utilitySource.Contains("newCityUrbanUtilityKind(\"crane\",.30f)", StringComparison.Ordinal) &&
+            utilitySource.Contains("newCityUrbanUtilityKind(\"badge\",.07f)", StringComparison.Ordinal);
+        Require(reservesFullUtilityClearances,
+            "Sourced utility clearances must reserve the full .30 salvage/crane and .07 badge world-space radii.");
+
+        var depotApi = context.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "GetDepotPosition");
+        bool hasSourcedDepotApi = depotApi != null &&
+            Signature(depotApi.ReturnType) == "Vector3" &&
+            depotApi.ParameterList.Parameters.Count == 2 &&
+            Signature(depotApi.ParameterList.Parameters[0].Type!) == "Vector3" &&
+            depotApi.ParameterList.Parameters[0].Identifier.ValueText == "preferredPosition" &&
+            Signature(depotApi.ParameterList.Parameters[1].Type!) == "float" &&
+            depotApi.ParameterList.Parameters[1].Identifier.ValueText == "clearanceRadius" &&
+            depotApi.ParameterList.Parameters[1].Default?.Value.ToString() == "1.5f" &&
+            Compact(depotApi.ToString()).Contains(
+                "FindDepotPosition(sourceMap,preferredPosition,clearanceRadius,roadIndex,footprintIndex,utilities)",
+                StringComparison.Ordinal);
+        var depotSearch = context.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "FindDepotPosition");
+        string depotSearchSource = depotSearch == null ? "" : Compact(depotSearch.ToString());
+        bool testsAllSourcedClearances = new[]
+            {
+                "IsInsideWaterOrShore", "BuildingFootprintsClear", "RoadRibbonClear",
+                "NearRoadEdge", "DepotOverlapsUtility"
+            }.All(name => depotSearchSource.Contains(name + "(", StringComparison.Ordinal));
+        var world = Type(roots, "World/CityWorld.cs", "CityWorld", "NewGaza");
+        var factoryPosition = world?.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "FactoryPosition");
+        string factorySource = factoryPosition == null ? "" : Compact(factoryPosition.ToString());
+        var buildFactory = world?.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "BuildFactorySite");
+        string buildFactorySource = buildFactory == null ? "" : Compact(buildFactory.ToString());
+        Require(factorySource.Contains("center/=count", StringComparison.Ordinal),
+            "Factory depot search must start at the average of the representative inland district centers.");
+        Require(factorySource.Contains("urbanContext.GetDepotPosition(center,1.5f)",
+                StringComparison.Ordinal),
+            "Factory depot search must use the sourced city-context pad finder.");
+        Require(factorySource.Contains("depot.x<=ShoreX(depot.z)+1.5f", StringComparison.Ordinal) &&
+            factorySource.Contains("depot.y=CityGroundY", StringComparison.Ordinal),
+            "Factory depot placement must stay inland of the shoreline and sit at city ground height.");
+        Require(buildFactorySource.Contains(
+                "factorySite=batch.Build(\"Recyclingdepot•dispatchapron\",cityRoot,depot)",
+                StringComparison.Ordinal) &&
+            buildFactorySource.Contains("factorySite.transform.localScale=Vector3.one*.2f",
+                StringComparison.Ordinal),
+            "Factory presentation scale must not scale its sourced world-position destination.");
+        Require(hasSourcedDepotApi,
+            "GetDepotPosition must expose the sourced depot API with its required 1.5-unit clearance.");
+        Require(testsAllSourcedClearances,
+            "Sourced depot search must reject water/shore, buildings, road ribbons and utility envelopes.");
+    }
+
+    private static void CheckSeaUvAndFleetScale(TypeDeclarationSyntax world,
+        Dictionary<string, CompilationUnitSyntax> roots)
+    {
+        var addQuad = world.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "AddQuad");
+        bool mapsSeaDepthToShoreUv = addQuad?.DescendantNodes()
+            .OfType<AssignmentExpressionSyntax>().Any(assignment =>
+                assignment.Left.ToString() == "uv" &&
+                assignment.Right is ConditionalExpressionSyntax mapping &&
+                mapping.Condition.ToString() == "material == sea" &&
+                Compact(mapping.WhenTrue.ToString()) ==
+                    "new[]{Vector2.zero,Vector2.up,Vector2.one,Vector2.right}" &&
+                Compact(mapping.WhenFalse.ToString()) ==
+                    "new[]{newVector2(a.x,a.z),newVector2(b.x,b.z),newVector2(c.x,c.z),newVector2(d.x,d.z)}") == true;
+        Require(mapsSeaDepthToShoreUv,
+            "The sea mesh must map normalized west/deep-to-shore UVs for the animated sea shader while retaining world UVs on land.");
+
+        var fleet = Type(roots, "World/CityFleet.cs", "CityFleet", "NewGaza");
+        if (fleet == null) return;
+        string fleetSource = Compact(fleet.ToString());
+        bool scalesOnlyVehicleMeshesAndModelOffsets =
+            fleetSource.Contains("privateconstfloatVehicleScale=.07f", StringComparison.Ordinal) &&
+            fleetSource.Contains("root.localScale=Vector3.one*VehicleScale", StringComparison.Ordinal) &&
+            fleetSource.Contains("returnmodelOffset*VehicleScale", StringComparison.Ordinal) &&
+            fleetSource.Contains("vehicle.localPosition=geographicPosition+VehicleOffset(modelOffset)",
+                StringComparison.Ordinal);
+        bool destinationsStayInWorldSpace = fleetSource.Contains(
+                "jobCenter=transform.InverseTransformPoint(worldJobCenter)", StringComparison.Ordinal) &&
+            fleetSource.Contains("depot=transform.InverseTransformPoint(worldDepot)", StringComparison.Ordinal) &&
+            fleetSource.Contains(
+                "newVector3(jobCenter.x,jobCenter.y+VehicleOffset(newVector3(0f,.22f,0f)).y,jobCenter.z)",
+                StringComparison.Ordinal);
+        Require(scalesOnlyVehicleMeshesAndModelOffsets && destinationsStayInWorldSpace,
+            "Fleet roots must use the .07 model scale, scale only model-authored offsets, and retain geographic work/depot/route destinations unscaled.");
+
+        var createRoute = fleet.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "CreateRoute");
+        var depotApronAssignments = createRoute?.DescendantNodes()
+            .OfType<AssignmentExpressionSyntax>()
+            .Where(assignment => assignment.Left.ToString().StartsWith("route[", StringComparison.Ordinal) &&
+                assignment.Right is BinaryExpressionSyntax sum &&
+                sum.IsKind(SyntaxKind.AddExpression) &&
+                sum.Left.ToString() == "depot" &&
+                sum.Right is InvocationExpressionSyntax offset &&
+                offset.Expression.ToString() == "VehicleOffset")
+            .ToArray() ?? Array.Empty<AssignmentExpressionSyntax>();
+        var depotApronVectors = depotApronAssignments.Select(assignment =>
+        {
+            var sum = (BinaryExpressionSyntax)assignment.Right;
+            var offset = (InvocationExpressionSyntax)sum.Right;
+            return offset.ArgumentList.Arguments.SingleOrDefault()?.Expression
+                as ObjectCreationExpressionSyntax;
+        }).ToArray();
+        bool scalesEveryCompleteApronVector = depotApronVectors.Length == 3 &&
+            depotApronVectors.All(vector => vector != null &&
+                Signature(vector.Type) == "Vector3" &&
+                vector.ArgumentList?.Arguments.Count == 3 &&
+                vector.ArgumentList.Arguments[0].Expression.ToString() == "-1.4f" &&
+                (vector.ArgumentList.Arguments[2].Expression.ToString() == "-4.5f" ||
+                 vector.ArgumentList.Arguments[2].Expression.ToString() == "4.5f")) &&
+            depotApronVectors.Count(vector => vector?.ArgumentList?.Arguments.Count == 3 &&
+                vector.ArgumentList.Arguments[2].Expression.ToString() == "-4.5f") == 2 &&
+            depotApronVectors.Count(vector => vector?.ArgumentList?.Arguments.Count == 3 &&
+                vector.ArgumentList.Arguments[2].Expression.ToString() == "4.5f") == 1;
+        Require(scalesEveryCompleteApronVector,
+            "All three depot-relative CreateRoute apron endpoints must pass their complete ±4.5 m Vector3 through VehicleOffset.");
+        Require(4.71f * .07f + .24f < 1.5f,
+            "The scaled 4.71 m apron offset plus the .24 m vehicle envelope must fit inside the 1.5 m depot-pad clearance.");
+    }
+
+    private static void CheckBasemapSourceArchive(string sourceRoot)
+    {
+        DirectoryInfo? assetsDirectory = Directory.GetParent(sourceRoot);
+        DirectoryInfo? projectDirectory = assetsDirectory?.Parent;
+        if (projectDirectory == null) return;
+        string mapDataDirectory = Path.Combine(projectDirectory.FullName, "MapData");
+        string metadataPath = Path.Combine(mapDataDirectory, "GazaBasemap.metadata.json");
+        if (!File.Exists(metadataPath)) return;
+
+        using (JsonDocument document = JsonDocument.Parse(File.ReadAllText(metadataPath)))
+        {
+            JsonElement metadata = document.RootElement;
+            string sourceHash = "";
+            foreach (string name in new[]
+                {
+                    "sourceRawSHA256", "sourceRawSha256", "sourceUncompressedSha256",
+                    "rawSHA256", "rawSha256", "sourceSha256"
+                })
+            {
+                if (metadata.TryGetProperty(name, out JsonElement hash) &&
+                    hash.ValueKind == JsonValueKind.String)
+                {
+                    sourceHash = hash.GetString() ?? "";
+                    if (sourceHash.Length > 0) break;
+                }
+            }
+            if (sourceHash.Length == 0) return;
+
+            string namedSource = metadata.TryGetProperty("sourceFile", out JsonElement sourceFile) &&
+                sourceFile.ValueKind == JsonValueKind.String
+                ? Path.GetFileName(sourceFile.GetString() ?? "") : "";
+            string[] candidateNames =
+            {
+                "GazaBasemap-source.json.gz",
+                "GazaBasemap-source.json",
+                namedSource
+            };
+            string archivePath = candidateNames.Where(name => !string.IsNullOrWhiteSpace(name))
+                .Select(name => Path.Combine(mapDataDirectory, name))
+                .FirstOrDefault(File.Exists) ?? "";
+            // The raw archive may be excluded from a checkout; when present, verify either
+            // its bytes or the decompressed source bytes against the recorded source SHA-256.
+            if (archivePath.Length == 0) return;
+
+            using (Stream file = File.OpenRead(archivePath))
+            using (Stream content = archivePath.EndsWith(".gz", StringComparison.OrdinalIgnoreCase)
+                ? (Stream)new GZipStream(file, CompressionMode.Decompress, leaveOpen: false)
+                : file)
+            using (SHA256 sha = SHA256.Create())
+            {
+                string actualHash = BitConverter.ToString(sha.ComputeHash(content))
+                    .Replace("-", "").ToLowerInvariant();
+                Require(string.Equals(actualHash, sourceHash, StringComparison.OrdinalIgnoreCase),
+                    "GazaBasemap source archive must match its metadata RawSHA-256 after gzip decompression.");
+            }
+        }
+    }
+
+    private static bool AccumulateFeaturePoints(JsonElement features, string pointProperty,
+        bool includeCenter, ref double minX, ref double maxX, ref double minZ, ref double maxZ)
+    {
+        bool foundPoint = false;
+        foreach (JsonElement feature in features.EnumerateArray())
+        {
+            if (includeCenter && feature.TryGetProperty("center", out JsonElement center))
+            {
+                if (!AccumulatePoint(center, ref minX, ref maxX, ref minZ, ref maxZ)) return false;
+                foundPoint = true;
+            }
+            if (!feature.TryGetProperty(pointProperty, out JsonElement points) ||
+                points.ValueKind != JsonValueKind.Array) return false;
+            foreach (JsonElement point in points.EnumerateArray())
+            {
+                if (!AccumulatePoint(point, ref minX, ref maxX, ref minZ, ref maxZ)) return false;
+                foundPoint = true;
+            }
+        }
+        return foundPoint;
+    }
+
+    private static bool AccumulatePoint(JsonElement point, ref double minX, ref double maxX,
+        ref double minZ, ref double maxZ)
+    {
+        if (point.ValueKind != JsonValueKind.Object ||
+            !point.TryGetProperty("x", out JsonElement x) ||
+            !point.TryGetProperty("z", out JsonElement z) ||
+            x.ValueKind != JsonValueKind.Number || z.ValueKind != JsonValueKind.Number)
+            return false;
+        double px = x.GetDouble(), pz = z.GetDouble();
+        if (double.IsNaN(px) || double.IsInfinity(px) || double.IsNaN(pz) || double.IsInfinity(pz))
+            return false;
+        minX = Math.Min(minX, px);
+        maxX = Math.Max(maxX, px);
+        minZ = Math.Min(minZ, pz);
+        maxZ = Math.Max(maxZ, pz);
+        return true;
     }
 
     private static void CheckHudIconContracts(Dictionary<string, CompilationUnitSyntax> roots)
@@ -555,7 +1170,8 @@ internal static class Program
             .Any(call => call.Expression is MemberAccessExpressionSyntax member &&
                 member.Name.Identifier.ValueText == "Initialize" &&
                 member.Expression.ToString() == "district.fog" &&
-                call.ArgumentList.Arguments.LastOrDefault()?.Expression.ToString() == "initiallyFogged");
+                call.ArgumentList.Arguments.Any(argument =>
+                    argument.Expression.ToString() == "initiallyFogged"));
         Require(initializesFogWithInitialState,
             "DistrictFog.Initialize must receive the saved lock-state visibility.");
 

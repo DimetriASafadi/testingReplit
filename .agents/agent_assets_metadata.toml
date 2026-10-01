@@ -5,14 +5,14 @@ generated = []
 id = "1fWh6uOeYQs-_P59ry1Dn"
 uri = "file://exports/NewGaza-Unity-Source.zip"
 type = "unspecified"
-title = "نيو غزة — مشروع Unity بالمجسمات الفعلية"
-description = "المشروع مع ملفات OBJ والخامات ونسخ GLB المصدرية، وتوزيع غير شبكي، وإصلاح التقريب. الملفات الجديدة بلا .meta؛ الاختبارات المحلية لا تعني أن Unity أو الهاتف قد اختُبرا."
+title = "نيو غزة — النسخة النهائية بالمجسمات والتوزيع الجديد"
+description = "مشروع Unity مع المجسمات والخامات وملفات GLB المصدرية. يشمل آخر تعديل للشوارع. الملفات الجديدة بلا .meta؛ المصادر مرخصة CC0 ومذكورة داخل المشروع."
 logical_id = "5dbf8b92-3bf8-4fbf-a60d-a4baffa6cc98"
-content_hash = "sha256:cda9a4ea4b8f5256a69a18fbbd4e4b60296d550cb9dd94bf25db6292b55444ce"
-size = 12702432
-mtime_ms = 1790875173037
-storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/5dbf8b92-3bf8-4fbf-a60d-a4baffa6cc98/c2363096-d6f4-4d88-87b2-d37ddb473d1e"
-storage_version_token = "1790875239886595"
+content_hash = "sha256:ef80af83ffcc2ef12e39d865300b64fddc00d9ad664544084cf462001c54b1b0"
+size = 12702901
+mtime_ms = 1790876023424
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/5dbf8b92-3bf8-4fbf-a60d-a4baffa6cc98/de13c184-d47f-4690-a55c-513e632adb07"
+storage_version_token = "1790876071056682"
 content_type = "application/octet-stream"
 
 [[outputs]]
@@ -28,3 +28,17 @@ mtime_ms = 1790875047697
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/eb231df2-3e19-4cee-99b7-586498cd71ef/ef9df07f-7ea4-4b85-9c10-4852de396f34"
 storage_version_token = "1790875238233901"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "NTUoK-Zo6v6jAlCm-ObTV"
+uri = "file://exports/models/district_layout.png"
+type = "image"
+title = "معاينة توزيع الشوارع والمباني المهدمة"
+description = "المجسمات المحسّنة موزعة باستخدام مخطط الشجاعية البرمجي الفعلي: شارع مفتوح وتفرّعان، دون قواعد عرض للمباني. معاينة Blender؛ ليست خريطة مساحية ولا لقطة من Unity."
+logical_id = "78c0383d-5307-4cd4-9996-fe6f2f9234aa"
+content_hash = "sha256:82381a677deab5b091fc87c45987b05c8f4285b20a60f4c57fd1116e5277bc7c"
+size = 653162
+mtime_ms = 1790875906333
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/78c0383d-5307-4cd4-9996-fe6f2f9234aa/d145afb4-b663-488d-a044-44d66b6371cb"
+storage_version_token = "1790876069527419"
+content_type = "image/png"

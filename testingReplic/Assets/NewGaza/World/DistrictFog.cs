@@ -20,7 +20,7 @@ namespace NewGaza
 
         internal void Initialize(Material sharedMaterial, int districtIndex, Vector3[] plotCenters,
             Quaternion[] plotRotations, Vector3[] plotSizes,
-            bool initiallyShown)
+            bool initiallyShown, bool geographicScale = false)
         {
             meshFilter = gameObject.AddComponent<MeshFilter>();
             meshRenderer = gameObject.AddComponent<MeshRenderer>();
@@ -35,7 +35,7 @@ namespace NewGaza
             var colors = new List<Color>();
             var triangles = new List<int>();
             BuildPlotPatches(districtIndex, plotCenters, plotRotations, plotSizes,
-                vertices, uvs, colors, triangles);
+                vertices, uvs, colors, triangles, geographicScale);
 
             mesh = new Mesh { name = "Localized soft dust / fog • district " + (districtIndex + 1) };
             mesh.SetVertices(vertices);
@@ -84,7 +84,7 @@ namespace NewGaza
 
         private static void BuildPlotPatches(int districtIndex, Vector3[] centers,
             Quaternion[] rotations, Vector3[] sizes, List<Vector3> vertices,
-            List<Vector2> uvs, List<Color> colors, List<int> triangles)
+            List<Vector2> uvs, List<Color> colors, List<int> triangles, bool geographicScale)
         {
             if (centers == null || rotations == null || sizes == null) return;
             int count = Mathf.Min(centers.Length, Mathf.Min(rotations.Length, sizes.Length));
@@ -92,12 +92,15 @@ namespace NewGaza
             {
                 Vector3 center = centers[i];
                 Quaternion rotation = rotations[i];
-                float width = Mathf.Clamp(sizes[i].x * 1.15f, 5.2f, 9.2f);
-                float depth = Mathf.Clamp(sizes[i].z * 1.15f, 5.2f, 10.5f);
-                float variation = ((districtIndex + i) % 3 - 1) * .3f;
-                AddCard(center + Vector3.up * 7.4f, width, depth, .31f, rotation.eulerAngles.y,
+                float width = Mathf.Clamp(sizes[i].x * 1.15f, geographicScale ? .9f : 5.2f,
+                    geographicScale ? 4.2f : 9.2f);
+                float depth = Mathf.Clamp(sizes[i].z * 1.15f, geographicScale ? .9f : 5.2f,
+                    geographicScale ? 4.2f : 10.5f);
+                float scale = geographicScale ? .10f : 1f;
+                float variation = ((districtIndex + i) % 3 - 1) * .3f * scale;
+                AddCard(center + Vector3.up * (7.4f * scale), width, depth, .31f, rotation.eulerAngles.y,
                     vertices, uvs, colors, triangles);
-                AddCard(center + rotation * new Vector3(variation - .35f, 9.2f, .25f),
+                AddCard(center + rotation * new Vector3(variation - .35f * scale, 9.2f * scale, .25f * scale),
                     width * .82f, depth * .82f, .23f, rotation.eulerAngles.y,
                     vertices, uvs, colors, triangles);
             }
