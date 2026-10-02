@@ -11,6 +11,9 @@ paths = subprocess.check_output(
 ).decode().split("\0")
 paths += ["tools/fetch_gaza_basemap.py", "tools/package_unity_source.py"]
 paths += ["tools/prepare_equipment_audio.py"]
+paths += ["tools/generate_destroyed_assets.py", "tools/render_destroyed_assets.py",
+          "tools/compose_destroyed_previews.py", "tools/package_destroyed_assets.py"]
+paths += ["pyproject.toml", "uv.lock"]
 paths += [str(path.relative_to(root)) for path in
           (root / "attached_assets/generated_audio").glob("new-gaza-*.mp3")]
 destination = root / "exports/NewGaza-Unity-Source.zip"
@@ -38,7 +41,19 @@ with zipfile.ZipFile(destination) as archive:
         "testingReplic/Assets/NewGaza/UI/CityHudRoad.cs",
         "testingReplic/Tests/Roads/RoadsTests.csproj",
         "testingReplic/Tests/RoadView/RoadViewTests.csproj",
+        "testingReplic/Assets/NewGaza/World/CityRuinProfiles.cs",
+        "testingReplic/Tests/DestroyedAssets/DestroyedAssets.csproj",
+        "testingReplic/DESTROYED-ASSETS.ar.md",
     }
+    ruin_keys = ("shujaiya", "tuffah", "sheikh_radwan", "daraj", "karama", "old_city",
+                 "nasr", "sabra", "zeitoun", "rimal", "tel_al_hawa", "sheikh_ijlin",
+                 "rashid", "mosque", "school", "clinic", "civic", "wall", "car",
+                 "crater", "debris")
+    for suffix in ruin_keys:
+        key = "ruin_" + suffix
+        required.add("testingReplic/Assets/NewGaza/Art/DestroyedFBX/" + key + ".fbx")
+        for extension in (".obj", "_albedo.png", "_manifest.json"):
+            required.add("testingReplic/Assets/NewGaza/Resources/Models/" + key + extension)
     required.update("testingReplic/Assets/NewGaza/Resources/Audio/" + key + ".wav" for key in
         ("excavator_engine", "truck_engine", "dozer_engine", "hydraulics", "tracks",
          "wind_high", "coastal_surf", "ui_click", "ui_confirm"))

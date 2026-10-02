@@ -1,0 +1,3 @@
+.pythonlibs/
+__pycache__/
+*.py[cod]

@@ -698,10 +698,21 @@ namespace NewGaza
             float modelHeight = 0f;
             if (stage == 0)
             {
-                modelHeight = modelLibrary.AddTo(batch,"ruined_building",
+                string districtId = GameCatalog.Districts[district].id;
+                CityRuinProfiles.Profile ruinProfile = CityRuinProfiles.ForDistrict(districtId);
+                string ruinKey = CityRuinProfiles.StageZeroModel(districtId, plot.definition.id);
+                modelHeight = modelLibrary.AddTo(batch,ruinKey,
                     Vector3.zero,
                     new Vector3(footprint.x * .76f,0f,footprint.z * .72f),0f,
-                    Mathf.Max(1f,Mathf.Min(footprint.x,footprint.z) * 1.2f));
+                    ruinProfile.maxHeightCityUnits);
+                string detailKey = CityRuinProfiles.StageZeroDetail(districtId, index);
+                float detailWidth = footprint.x * .14f;
+                float detailDepth = footprint.z * .14f;
+                float detailX = footprint.x * ((index % 2 == 0) ? -.34f : .34f);
+                float detailZ = footprint.z * ((index % 3 == 0) ? .34f : -.34f);
+                modelLibrary.AddTo(batch,detailKey,new Vector3(detailX,0f,detailZ),
+                    new Vector3(detailWidth,0f,detailDepth),(district * 47 + index * 23) % 360,
+                    Mathf.Min(detailWidth,detailDepth) * .8f);
                 AddImportedRubbleScatter(batch,footprint,district * 17 + index * 31);
             }
             else if (stage == 1) ClearedPlot(batch, footprint);

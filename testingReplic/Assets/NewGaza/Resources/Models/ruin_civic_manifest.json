@@ -1,0 +1,105 @@
+{
+  "formatVersion": 1,
+  "key": "ruin_civic",
+  "sourceFile": "original procedural geometry (no imported source model)",
+  "targetTriangles": 1600,
+  "actualTriangles": 471,
+  "triangleTolerance": 0.0,
+  "verifiedWithinBudget": true,
+  "vertexCount": 332,
+  "dimensionsNormalizedBlenderXYZ": [
+    11.494234085083008,
+    8.487642288208008,
+    7.003081321716309
+  ],
+  "origin": {
+    "normalizedOriginBlender": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "pivot": "bottom-center"
+  },
+  "districtId": null,
+  "category": "civic",
+  "floors": 2,
+  "damageType": "collapsed_civic_frontage",
+  "meshPath": "Resources/Models/ruin_civic.obj",
+  "texturePath": "Resources/Models/ruin_civic_albedo.png",
+  "fbxPath": "Art/DestroyedFBX/ruin_civic.fbx",
+  "triangleCount": 471,
+  "bounds": {
+    "min": [
+      -5.747117042541504,
+      -4.243821144104004,
+      0.0
+    ],
+    "max": [
+      5.747117042541504,
+      4.243821144104004,
+      7.003081321716309
+    ],
+    "width": 11.494234085083008,
+    "height": 7.003081321716309,
+    "depth": 8.487642288208008
+  },
+  "units": "meters",
+  "pivot": "bottom-center",
+  "damageOnly": true,
+  "originalAuthored": true,
+  "sourceType": "procedurally_authored_original_geometry",
+  "referenceAssets": [
+    "IMG-20261002-WA0003_1790946116113.jpg",
+    "IMG-20261002-WA0004_1790946116076.jpg"
+  ],
+  "uvCoverage": {
+    "layer": "UVMap",
+    "loopCount": 1413,
+    "finiteLoopCount": 1413,
+    "bounds": {
+      "min": [
+        0.02525000087916851,
+        0.02525000087916851
+      ],
+      "max": [
+        0.7247499823570251,
+        0.47475001215934753
+      ]
+    }
+  },
+  "objAudit": {
+    "vertices": 332,
+    "uvCoordinates": 81,
+    "normals": 335,
+    "triangles": 471
+  },
+  "fbxAudit": {
+    "triangles": 471,
+    "vertices": 332,
+    "bounds": {
+      "min": [
+        -5.747117042541504,
+        -4.243821144104004,
+        0.0
+      ],
+      "max": [
+        5.747117042541504,
+        4.243821144104004,
+        7.003081321716309
+      ],
+      "width": 11.494234085083008,
+      "height": 7.003081321716309,
+      "depth": 8.487642288208008
+    },
+    "uvChannels": 1,
+    "textures": [
+      "sharedatlastex.png"
+    ]
+  },
+  "albedo": {
+    "file": "ruin_civic_albedo.png",
+    "sourceMaterialCount": 1,
+    "sharedAtlas": "sharedatlastex.png",
+    "uvLayer": "UVMap"
+  }
+}

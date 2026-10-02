@@ -5,14 +5,14 @@ generated = []
 id = "1fWh6uOeYQs-_P59ry1Dn"
 uri = "file://exports/NewGaza-Unity-Source.zip"
 type = "unspecified"
-title = "نيو غزة — تحديث الطرق والنقل والإصلاح"
-description = "مشروع Unity المحدّث: شبكة الشوارع، نقل الآليات، إصلاح المقاطع ورصفها، وحفظ التحسينات. إضافات NewGaza دون ملفات .meta. يتضمن تعليمات التشغيل والاختبارات."
+title = "مشروع Unity بعد دمج المجسّمات المدمّرة"
+description = "المشروع الأصلي محدثًا مع ظهور الطرز الجديدة في المواقع المدمّرة فقط، ودليل الاستيراد والفحص."
 logical_id = "5dbf8b92-3bf8-4fbf-a60d-a4baffa6cc98"
-content_hash = "sha256:c87b88dd549144d8c9dca767d18507eaaa656be6e3335f5325acf498120c932e"
-size = 17851479
-mtime_ms = 1790910067979
-storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/5dbf8b92-3bf8-4fbf-a60d-a4baffa6cc98/55019604-e20c-4af2-8feb-77ddf934a072"
-storage_version_token = "1790910324039163"
+content_hash = "sha256:6d8d1107677e8348ecdfcfd636e9f6938a19d6647e47fb813add54b0067d5a60"
+size = 28862413
+mtime_ms = 1790948186412
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/5dbf8b92-3bf8-4fbf-a60d-a4baffa6cc98/4078410b-1138-4622-80eb-8e1b11d9719b"
+storage_version_token = "1790948227786461"
 content_type = "application/octet-stream"
 
 [[outputs]]
@@ -183,4 +183,60 @@ size = 4858321
 mtime_ms = 1790885064531
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/fa349a5f-80b8-40e0-9a88-c0b98cd0530d/c6459a07-e3c8-491e-8970-f1edda203f96"
 storage_version_token = "1790885147079540"
+content_type = "image/png"
+
+[[outputs]]
+id = "d-UbbCrz8XdZvkzJ0mUgT"
+uri = "file://exports/NewGaza-Destroyed-FBX.zip"
+type = "unspecified"
+title = "حزمة المجسّمات المدمّرة — 21 ملف FBX"
+description = "13 طراز أطلال للأحياء والساحل و8 عناصر مدمّرة، مع الخامات ونسخ التشغيل وصور المعاينة. دون .meta."
+logical_id = "c674854b-af9b-4570-9a71-e003fc237719"
+content_hash = "sha256:5c76d7239a34060e878d4ad6d4cbf236444b8eab24d0624dced3585fb344c72a"
+size = 14829205
+mtime_ms = 1790948052752
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/c674854b-af9b-4570-9a71-e003fc237719/e215a37e-b766-46b1-ac1d-e15f6b7489ff"
+storage_version_token = "1790948226123739"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "iLKhmrcrr--16Vq5QpSyg"
+uri = "file://exports/destroyed-assets/Regional-East-Central.png"
+type = "image"
+title = "معاينة أطلال السكن العائلي والمناطق الوسطى"
+description = "رسم من ملفات FBX الفعلية باستخدام Blender، وليس لقطة من Unity."
+logical_id = "b5e2c4de-fa0e-445a-9d7d-3948e5f868cf"
+content_hash = "sha256:e1f6163e8a8e3598d9ebe6433b3c2191d19160027252695ec6db7d18b8ccd380"
+size = 1184160
+mtime_ms = 1790948050236
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/b5e2c4de-fa0e-445a-9d7d-3948e5f868cf/4f3544b2-b594-4f5e-b929-1403fdffed8f"
+storage_version_token = "1790948229158709"
+content_type = "image/png"
+
+[[outputs]]
+id = "u8iivlBrM87BV3ZJvWjZe"
+uri = "file://exports/destroyed-assets/Regional-Urban-Coast.png"
+type = "image"
+title = "معاينة أطلال العمران والمناطق الغربية والساحل"
+description = "طرز مدمّرة أعلى للمناطق العمرانية والساحلية؛ معاينة Blender خارج اللعبة."
+logical_id = "cbe9ff32-dbae-4a7e-a63d-9e8fff8f6f7a"
+content_hash = "sha256:132fba54387b8e9b35de47c0a84e50b7377207cfe1023ba12c65d15f86017efd"
+size = 1341965
+mtime_ms = 1790948051004
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/cbe9ff32-dbae-4a7e-a63d-9e8fff8f6f7a/ac358c8f-3fe3-43de-b1d7-a7aa9f23de1d"
+storage_version_token = "1790948230535319"
+content_type = "image/png"
+
+[[outputs]]
+id = "QR5bB4k6KlHq5Sv93etpF"
+uri = "file://exports/destroyed-assets/Destroyed-Objects.png"
+type = "image"
+title = "معاينة المباني الخدمية والعناصر المدمّرة"
+description = "مسجد ومدرسة ومبنى صحي وخدمات، وجدار ومركبة محترقة وحفرة وأنقاض. معاينة Blender."
+logical_id = "d5c9f4b3-84c4-4123-b367-06b5a88ae2d5"
+content_hash = "sha256:f53384e89b3197ae8da25db0cd1eb2c85a070270a15b54a0fa1221f810ed73ec"
+size = 1333309
+mtime_ms = 1790948051928
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/d5c9f4b3-84c4-4123-b367-06b5a88ae2d5/66ff610f-f11f-4890-aac4-ba24148b8b13"
+storage_version_token = "1790948231911139"
 content_type = "image/png"

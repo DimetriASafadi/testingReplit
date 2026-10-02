@@ -1,0 +1,107 @@
+{
+  "formatVersion": 1,
+  "key": "ruin_old_city",
+  "sourceFile": "original procedural geometry (no imported source model)",
+  "targetTriangles": 2200,
+  "actualTriangles": 1746,
+  "triangleTolerance": 0.0,
+  "verifiedWithinBudget": true,
+  "vertexCount": 1174,
+  "dimensionsNormalizedBlenderXYZ": [
+    13.049213409423828,
+    10.650444030761719,
+    10.50008773803711
+  ],
+  "origin": {
+    "normalizedOriginBlender": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "pivot": "bottom-center"
+  },
+  "districtId": "old_city",
+  "category": "heritage_stone_arches",
+  "floors": 3,
+  "damageType": "stone_breach",
+  "width": 12.5,
+  "depth": 10.0,
+  "meshPath": "Resources/Models/ruin_old_city.obj",
+  "texturePath": "Resources/Models/ruin_old_city_albedo.png",
+  "fbxPath": "Art/DestroyedFBX/ruin_old_city.fbx",
+  "triangleCount": 1746,
+  "bounds": {
+    "min": [
+      -6.524606704711914,
+      -5.325222015380859,
+      0.0
+    ],
+    "max": [
+      6.524606704711914,
+      5.325222015380859,
+      10.50008773803711
+    ],
+    "width": 13.049213409423828,
+    "height": 10.50008773803711,
+    "depth": 10.650444030761719
+  },
+  "units": "meters",
+  "pivot": "bottom-center",
+  "damageOnly": true,
+  "originalAuthored": true,
+  "sourceType": "procedurally_authored_original_geometry",
+  "referenceAssets": [
+    "IMG-20261002-WA0003_1790946116113.jpg",
+    "IMG-20261002-WA0004_1790946116076.jpg"
+  ],
+  "uvCoverage": {
+    "layer": "UVMap",
+    "loopCount": 5238,
+    "finiteLoopCount": 5238,
+    "bounds": {
+      "min": [
+        0.02525000087916851,
+        0.02525000087916851
+      ],
+      "max": [
+        0.9747499823570251,
+        0.47475001215934753
+      ]
+    }
+  },
+  "objAudit": {
+    "vertices": 1174,
+    "uvCoordinates": 99,
+    "normals": 839,
+    "triangles": 1746
+  },
+  "fbxAudit": {
+    "triangles": 1746,
+    "vertices": 1174,
+    "bounds": {
+      "min": [
+        -6.524606704711914,
+        -5.325222015380859,
+        0.0
+      ],
+      "max": [
+        6.524606704711914,
+        5.325222015380859,
+        10.50008773803711
+      ],
+      "width": 13.049213409423828,
+      "height": 10.50008773803711,
+      "depth": 10.650444030761719
+    },
+    "uvChannels": 1,
+    "textures": [
+      "sharedatlastex.png"
+    ]
+  },
+  "albedo": {
+    "file": "ruin_old_city_albedo.png",
+    "sourceMaterialCount": 1,
+    "sharedAtlas": "sharedatlastex.png",
+    "uvLayer": "UVMap"
+  }
+}

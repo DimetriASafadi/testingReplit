@@ -1,0 +1,105 @@
+{
+  "formatVersion": 1,
+  "key": "ruin_school",
+  "sourceFile": "original procedural geometry (no imported source model)",
+  "targetTriangles": 1600,
+  "actualTriangles": 944,
+  "triangleTolerance": 0.0,
+  "verifiedWithinBudget": true,
+  "vertexCount": 624,
+  "dimensionsNormalizedBlenderXYZ": [
+    13.380000114440918,
+    9.901253700256348,
+    7.372464179992676
+  ],
+  "origin": {
+    "normalizedOriginBlender": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "pivot": "bottom-center"
+  },
+  "districtId": null,
+  "category": "school",
+  "floors": 2,
+  "damageType": "collapsed_classroom_wing",
+  "meshPath": "Resources/Models/ruin_school.obj",
+  "texturePath": "Resources/Models/ruin_school_albedo.png",
+  "fbxPath": "Art/DestroyedFBX/ruin_school.fbx",
+  "triangleCount": 944,
+  "bounds": {
+    "min": [
+      -6.690000057220459,
+      -4.950626850128174,
+      0.0
+    ],
+    "max": [
+      6.690000057220459,
+      4.950626850128174,
+      7.372464179992676
+    ],
+    "width": 13.380000114440918,
+    "height": 7.372464179992676,
+    "depth": 9.901253700256348
+  },
+  "units": "meters",
+  "pivot": "bottom-center",
+  "damageOnly": true,
+  "originalAuthored": true,
+  "sourceType": "procedurally_authored_original_geometry",
+  "referenceAssets": [
+    "IMG-20261002-WA0003_1790946116113.jpg",
+    "IMG-20261002-WA0004_1790946116076.jpg"
+  ],
+  "uvCoverage": {
+    "layer": "UVMap",
+    "loopCount": 2832,
+    "finiteLoopCount": 2832,
+    "bounds": {
+      "min": [
+        0.02525000087916851,
+        0.02525000087916851
+      ],
+      "max": [
+        0.7247499823570251,
+        0.47475001215934753
+      ]
+    }
+  },
+  "objAudit": {
+    "vertices": 624,
+    "uvCoordinates": 80,
+    "normals": 359,
+    "triangles": 944
+  },
+  "fbxAudit": {
+    "triangles": 944,
+    "vertices": 624,
+    "bounds": {
+      "min": [
+        -6.690000057220459,
+        -4.950626850128174,
+        0.0
+      ],
+      "max": [
+        6.690000057220459,
+        4.950626850128174,
+        7.372464179992676
+      ],
+      "width": 13.380000114440918,
+      "height": 7.372464179992676,
+      "depth": 9.901253700256348
+    },
+    "uvChannels": 1,
+    "textures": [
+      "sharedatlastex.png"
+    ]
+  },
+  "albedo": {
+    "file": "ruin_school_albedo.png",
+    "sourceMaterialCount": 1,
+    "sharedAtlas": "sharedatlastex.png",
+    "uvLayer": "UVMap"
+  }
+}

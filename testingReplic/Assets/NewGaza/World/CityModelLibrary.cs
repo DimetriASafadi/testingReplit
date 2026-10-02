@@ -43,6 +43,8 @@ namespace NewGaza
                 Load("rubble_heap");
                 Load("apartment_context");
                 Load("ruined_building_context");
+                foreach (string key in CityRuinProfiles.ModelKeys)
+                    Load(key);
             }
             catch
             {
@@ -54,6 +56,7 @@ namespace NewGaza
         /// <summary>
         /// Adds all imported mesh filters as one normalized model placement and returns its
         /// resulting geometry height. Position is the center of its footprint at ground level.
+        /// maxHeight is an absolute world-space cap, not a fraction or multiplier of the parcel.
         /// </summary>
         internal float AddTo(CityMeshBatch batch, string key, Vector3 position,
             Vector3 availableFootprint, float yaw, float maxHeight, bool footprintIsLocal = false)

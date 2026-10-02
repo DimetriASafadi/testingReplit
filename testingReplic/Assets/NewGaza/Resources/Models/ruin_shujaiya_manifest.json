@@ -1,0 +1,107 @@
+{
+  "formatVersion": 1,
+  "key": "ruin_shujaiya",
+  "sourceFile": "original procedural geometry (no imported source model)",
+  "targetTriangles": 2200,
+  "actualTriangles": 1062,
+  "triangleTolerance": 0.0,
+  "verifiedWithinBudget": true,
+  "vertexCount": 726,
+  "dimensionsNormalizedBlenderXYZ": [
+    10.656766891479492,
+    8.45902156829834,
+    7.256872653961182
+  ],
+  "origin": {
+    "normalizedOriginBlender": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "pivot": "bottom-center"
+  },
+  "districtId": "shujaiya",
+  "category": "family_courtyard",
+  "floors": 2,
+  "damageType": "partial_frame",
+  "width": 10.0,
+  "depth": 8.0,
+  "meshPath": "Resources/Models/ruin_shujaiya.obj",
+  "texturePath": "Resources/Models/ruin_shujaiya_albedo.png",
+  "fbxPath": "Art/DestroyedFBX/ruin_shujaiya.fbx",
+  "triangleCount": 1062,
+  "bounds": {
+    "min": [
+      -5.328383445739746,
+      -4.22951078414917,
+      0.0
+    ],
+    "max": [
+      5.328383445739746,
+      4.22951078414917,
+      7.256872653961182
+    ],
+    "width": 10.656766891479492,
+    "height": 7.256872653961182,
+    "depth": 8.45902156829834
+  },
+  "units": "meters",
+  "pivot": "bottom-center",
+  "damageOnly": true,
+  "originalAuthored": true,
+  "sourceType": "procedurally_authored_original_geometry",
+  "referenceAssets": [
+    "IMG-20261002-WA0003_1790946116113.jpg",
+    "IMG-20261002-WA0004_1790946116076.jpg"
+  ],
+  "uvCoverage": {
+    "layer": "UVMap",
+    "loopCount": 3186,
+    "finiteLoopCount": 3186,
+    "bounds": {
+      "min": [
+        0.02525000087916851,
+        0.02525000087916851
+      ],
+      "max": [
+        0.9747499823570251,
+        0.47475001215934753
+      ]
+    }
+  },
+  "objAudit": {
+    "vertices": 726,
+    "uvCoordinates": 94,
+    "normals": 680,
+    "triangles": 1062
+  },
+  "fbxAudit": {
+    "triangles": 1062,
+    "vertices": 726,
+    "bounds": {
+      "min": [
+        -5.328383445739746,
+        -4.22951078414917,
+        0.0
+      ],
+      "max": [
+        5.328383445739746,
+        4.22951078414917,
+        7.256872653961182
+      ],
+      "width": 10.656766891479492,
+      "height": 7.256872653961182,
+      "depth": 8.45902156829834
+    },
+    "uvChannels": 1,
+    "textures": [
+      "sharedatlastex.png"
+    ]
+  },
+  "albedo": {
+    "file": "ruin_shujaiya_albedo.png",
+    "sourceMaterialCount": 1,
+    "sharedAtlas": "sharedatlastex.png",
+    "uvLayer": "UVMap"
+  }
+}

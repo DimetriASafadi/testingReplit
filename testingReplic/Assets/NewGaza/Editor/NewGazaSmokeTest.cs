@@ -900,7 +900,7 @@ namespace NewGaza.Editor
             Require(lit != null && lit.shader != null &&
                 lit.shader.name == "Universal Render Pipeline/Lit",
                 "NewGazaLit must retain the Universal Render Pipeline/Lit shader.");
-            Require(world.ImportedModelCount == 5,
+            Require(world.ImportedModelCount == 5 + CityRuinProfiles.ModelKeys.Length,
                 "CityWorld must explicitly load all three primary models and both context LOD models without procedural fallback.");
             string[] keys =
             {
@@ -914,6 +914,8 @@ namespace NewGaza.Editor
             };
             int[] triangleBudgets = { 2500, 4000, 1400, 350, 450 };
             var albedos = new Texture2D[keys.Length];
+            var destroyedAlbedos = new Dictionary<string, Texture2D>(StringComparer.Ordinal);
+            string[] destroyedKeys = CityRuinProfiles.ModelKeys;
 
             for (int i = 0; i < keys.Length; i++)
             {
@@ -965,6 +967,7 @@ namespace NewGaza.Editor
                     " has " + triangleCount + ".");
             }
 
+            CheckDestroyedModelResources(destroyedAlbedos);
             bool foundImportedRenderer = false;
             foreach (MeshRenderer renderer in world.GetComponentsInChildren<MeshRenderer>(true))
             {
@@ -982,9 +985,22 @@ namespace NewGaza.Editor
                     if (material.name.Contains("imported " + keys[i] + " albedo",
                         StringComparison.Ordinal))
                         modelIndex = i;
-                Require(modelIndex >= 0 && albedos[modelIndex] != null &&
-                    material.GetTexture("_BaseMap") == albedos[modelIndex],
+                Texture2D expectedAlbedo = modelIndex >= 0 ? albedos[modelIndex] : null;
+                string destroyedKey = null;
+                if (modelIndex < 0)
+                    foreach (string key in destroyedKeys)
+                        if (material.name.Contains("imported " + key + " albedo",
+                            StringComparison.Ordinal))
+                        {
+                            destroyedKey = key;
+                            destroyedAlbedos.TryGetValue(key, out expectedAlbedo);
+                            break;
+                        }
+                Require(expectedAlbedo != null && material.GetTexture("_BaseMap") == expectedAlbedo,
                     "Imported model material must bind its matching Resources albedo texture.");
+                if (modelIndex < 0)
+                    Require(destroyedKey != null,
+                        "Imported model material name does not identify a baseline or destroyed runtime key.");
                 if (renderer.transform.parent != null &&
                     renderer.transform.parent.name.StartsWith("District plot batch",
                         StringComparison.Ordinal))
@@ -995,6 +1011,52 @@ namespace NewGaza.Editor
                 "CityWorld did not create a runtime renderer using an imported model material.");
             Require(albedos[3] == albedos[0] && albedos[4] == albedos[1],
                 "Context LOD models must reuse the apartment and ruined-building primary albedo PNG resources.");
+        }
+
+        private static void CheckDestroyedModelResources(Dictionary<string, Texture2D> albedos)
+        {
+            string[] keys = CityRuinProfiles.ModelKeys;
+            Require(keys.Length == 21,
+                "The destroyed model resource inventory must contain all 21 generated assets.");
+            foreach (string key in keys)
+            {
+                GameObject source = Resources.Load<GameObject>("Models/" + key);
+                Require(source != null, "Missing destroyed imported model resource Models/" + key + ".");
+                Texture2D albedo = Resources.Load<Texture2D>("Models/" + key + "_albedo");
+                Require(albedo != null, "Missing destroyed model's dedicated atlas Models/" + key + "_albedo.");
+                if (albedo != null)
+                {
+                    albedos[key] = albedo;
+                    Require(albedo.width <= 1024 && albedo.height <= 1024,
+                        "Destroyed model atlas exceeds its 1024-pixel mobile texture limit: " + key + ".");
+                }
+                if (source == null) continue;
+                MeshFilter[] filters = source.GetComponentsInChildren<MeshFilter>(true);
+                int meshCount = 0;
+                for (int i = 0; i < filters.Length; i++)
+                {
+                    Mesh mesh = filters[i].sharedMesh;
+                    if (mesh == null) continue;
+                    meshCount++;
+                    Vector3[] vertices = mesh.vertices;
+                    Vector2[] uvs = mesh.uv;
+                    Vector3[] normals = mesh.normals;
+                    Bounds bounds = mesh.bounds;
+                    bool hasUsableNormal = normals.Any(normal => normal.sqrMagnitude > .5f);
+                    Require(mesh.isReadable && vertices.Length > 0 && mesh.triangles.Length >= 3,
+                        "Destroyed imported geometry must be readable and nonempty: " + key + ".");
+                    Require(uvs.Length == vertices.Length && normals.Length == vertices.Length,
+                        "Destroyed imported geometry must retain per-vertex UVs and normals: " + key + ".");
+                    Require(hasUsableNormal,
+                        "Destroyed imported geometry must contain usable imported normals: " + key + ".");
+                    Require(bounds.size.x > 0f && bounds.size.y > 0f && bounds.size.z > 0f &&
+                        !float.IsNaN(bounds.size.x) && !float.IsInfinity(bounds.size.x) &&
+                        !float.IsNaN(bounds.size.y) && !float.IsInfinity(bounds.size.y) &&
+                        !float.IsNaN(bounds.size.z) && !float.IsInfinity(bounds.size.z),
+                        "Destroyed imported geometry must have finite nonzero three-axis bounds: " + key + ".");
+                }
+                Require(meshCount > 0, "Destroyed imported model contains no mesh geometry: " + key + ".");
+            }
         }
 
         private static void CheckSourcedCityBasemap()
