@@ -7,7 +7,7 @@ using UnityEngine.Rendering;
 namespace NewGaza
 {
     /// <summary>Transform-only, deterministic presentation of the owned salvage fleet.</summary>
-    public sealed class CityFleet : MonoBehaviour
+    public sealed partial class CityFleet : MonoBehaviour
     {
         // Vehicle geometry is authored in model-space metres; only vehicle roots
         // are scaled. Geography and route destinations remain in city coordinates.
@@ -131,7 +131,7 @@ namespace NewGaza
             Material exposedSteel, Material paintSource, Material stone)
         {
             geometry = source;
-            paint = Finish(paintSource, "worn diesel ochre enamel", new Color(.72f, .43f, .14f),
+            paint = Finish(paintSource, "weathered construction yellow enamel", new Color(.92f, .63f, .055f),
                 .15f, .28f, 17);
             steel = Finish(exposedSteel, "rubbed weathered machinery steel", new Color(.46f, .47f, .45f),
                 .75f, .25f, 43);
@@ -143,6 +143,7 @@ namespace NewGaza
                 .2f, .2f, 0);
             rubble = Finish(stone, "dusty carried concrete", new Color(.76f, .72f, .64f),
                 0f, .18f, 0);
+            InitializeFleetAppearance(construction, exposedSteel);
 
             trackBeltMesh = EquipmentGeometry.TrackBelt(geometry, "Closed linked-track carcass", 1.95f, .44f, .34f);
             tireTreadMesh = EquipmentGeometry.TireTread(geometry, "Low-poly truck tyre casing");
@@ -415,7 +416,7 @@ namespace NewGaza
         {
             excavator = VehicleRoot("Compact tracked excavator • ochre diesel");
             var undercarriage = new CityMeshBatch(geometry);
-            undercarriage.Box(paint, new Vector3(0f, .47f, 0f), new Vector3(1.06f, .18f, 1.42f));
+            undercarriage.Box(excavatorYellow, new Vector3(0f, .47f, 0f), new Vector3(1.06f, .18f, 1.42f));
             undercarriage.Box(steel, new Vector3(0f, .56f, 0f), new Vector3(.75f, .10f, .9f));
             undercarriage.Add(geometry.Cylinder, steel, new Vector3(0f, .64f, 0f),
                 new Vector3(.82f, .10f, .82f), Quaternion.identity);
@@ -426,8 +427,8 @@ namespace NewGaza
             turret = Root("Upper house • rotating counterweight and operator cab", excavator);
             turret.localPosition = new Vector3(0f, .65f, 0f);
             var upper = new CityMeshBatch(geometry);
-            upper.Box(paint, new Vector3(0f, .15f, -.04f), new Vector3(1.23f, .38f, 1.38f));
-            upper.Box(paint, new Vector3(0f, .38f, -.64f), new Vector3(1.22f, .44f, .37f));
+            upper.Box(excavatorYellow, new Vector3(0f, .15f, -.04f), new Vector3(1.23f, .38f, 1.38f));
+            upper.Box(excavatorYellow, new Vector3(0f, .38f, -.64f), new Vector3(1.22f, .44f, .37f));
             upper.Box(steel, new Vector3(0f, .40f, -.81f), new Vector3(1.11f, .13f, .12f));
             upper.Box(dark, new Vector3(0f, .60f, -.54f), new Vector3(.78f, .32f, .30f));
             // Recessed rear cooling grille, separated vertical slats and side louvers.
@@ -445,6 +446,23 @@ namespace NewGaza
             // Offset exhaust stack and perforated rain cap.
             upper.Round(dark, new Vector3(.40f, .75f, -.56f), new Vector3(.085f, .44f, .085f));
             upper.Round(steel, new Vector3(.40f, .98f, -.56f), new Vector3(.14f, .055f, .14f));
+            // Roof work lamps, access rails and a pair of wide black mirrors.
+            for (int side = -1; side <= 1; side += 2)
+            {
+                upper.Box(workLamp, new Vector3(side * .38f, 1.19f, .31f),
+                    new Vector3(.16f, .10f, .075f));
+                upper.Beam(steel, new Vector3(side * .38f, .55f, -.02f),
+                    new Vector3(side * .38f, .72f, -.02f), .025f);
+                upper.Beam(steel, new Vector3(side * .38f, .72f, -.02f),
+                    new Vector3(side * .38f, .92f, -.02f), .025f);
+                upper.Beam(steel, new Vector3(side * .38f, .92f, -.02f),
+                    new Vector3(side * .31f, .92f, -.02f), .025f);
+                upper.Beam(dark, new Vector3(side * .39f, .88f, .40f),
+                    new Vector3(side * .53f, .93f, .40f), .035f);
+                upper.Box(dark, new Vector3(side * .57f, .96f, .40f),
+                    new Vector3(.12f, .18f, .07f));
+            }
+            upper.Box(workLamp, new Vector3(0f, 1.19f, -.48f), new Vector3(.18f, .10f, .08f));
 
             // Four glazed panels in a sloped safety-cab shell, each with structural uprights.
             Vector3 frontBL = new Vector3(-.30f, .56f, .52f);
@@ -463,15 +481,15 @@ namespace NewGaza
             Pane(upper, "Cab right split side glazing", new Vector3(.04f,.56f,.52f),
                 new Vector3(.04f,.56f,-.20f), new Vector3(.04f,1.15f,-.28f),
                 new Vector3(.04f,1.15f,.31f));
-            upper.Beam(paint, new Vector3(-.37f,.57f,.53f), new Vector3(-.37f,1.22f,.29f), .055f);
-            upper.Beam(paint, new Vector3(.11f,.57f,.53f), new Vector3(.11f,1.22f,.29f), .055f);
-            upper.Beam(paint, new Vector3(-.36f,.57f,-.22f), new Vector3(-.36f,1.22f,-.30f), .05f);
-            upper.Beam(paint, new Vector3(.11f,.57f,-.22f), new Vector3(.11f,1.22f,-.30f), .05f);
-            upper.Beam(paint, frontTL, frontTR, .05f);
-            upper.Beam(paint, rearTL, rearTR, .05f);
+            upper.Beam(excavatorYellow, new Vector3(-.37f,.57f,.53f), new Vector3(-.37f,1.22f,.29f), .055f);
+            upper.Beam(excavatorYellow, new Vector3(.11f,.57f,.53f), new Vector3(.11f,1.22f,.29f), .055f);
+            upper.Beam(excavatorYellow, new Vector3(-.36f,.57f,-.22f), new Vector3(-.36f,1.22f,-.30f), .05f);
+            upper.Beam(excavatorYellow, new Vector3(.11f,.57f,-.22f), new Vector3(.11f,1.22f,-.30f), .05f);
+            upper.Beam(excavatorYellow, frontTL, frontTR, .05f);
+            upper.Beam(excavatorYellow, rearTL, rearTR, .05f);
             upper.Beam(paint, new Vector3(-.37f,.56f,.16f), new Vector3(-.37f,1.15f,.12f), .035f);
             upper.Beam(paint, new Vector3(.11f,.56f,.16f), new Vector3(.11f,1.15f,.12f), .035f);
-            upper.Box(paint, new Vector3(-.13f,1.20f,.03f), new Vector3(.57f,.11f,.77f));
+            upper.Box(excavatorYellow, new Vector3(-.13f,1.20f,.03f), new Vector3(.57f,.11f,.77f));
             upper.Box(dark, new Vector3(-.13f,.53f,.16f), new Vector3(.47f,.06f,.50f));
             upper.Build("Faceted counterweight / framed smoky cab / engine details", turret, Vector3.zero, true);
 
@@ -481,6 +499,22 @@ namespace NewGaza
                 paint, new Vector3(0f,.70f,.44f), new Vector3(.34f,1.42f,.33f), Quaternion.identity, true);
             Part("Boom side wear plate", boom, geometry.Box, steel,
                 new Vector3(.19f,.69f,.46f), new Vector3(.035f,1.18f,.20f), Quaternion.identity);
+            var boomReinforcement = new CityMeshBatch(geometry);
+            boomReinforcement.Beam(excavatorYellowDark, new Vector3(-.15f,.12f,.34f),
+                new Vector3(-.15f,1.26f,.59f), .075f);
+            boomReinforcement.Beam(excavatorYellowDark, new Vector3(.15f,.12f,.34f),
+                new Vector3(.15f,1.26f,.59f), .075f);
+            boomReinforcement.Beam(steel, new Vector3(-.16f,.35f,.40f),
+                new Vector3(.16f,.35f,.40f), .045f);
+            boomReinforcement.Beam(steel, new Vector3(-.16f,.92f,.52f),
+                new Vector3(.16f,.92f,.52f), .045f);
+            AddHose(boomReinforcement, dark, new Vector3(.20f,.18f,.49f),
+                new Vector3(.20f,.44f,.55f), new Vector3(.20f,.70f,.61f),
+                new Vector3(.16f,1.02f,.64f), new Vector3(.12f,1.31f,.58f));
+            AddHose(boomReinforcement, hydraulicLine, new Vector3(.24f,.18f,.48f),
+                new Vector3(.24f,.43f,.54f), new Vector3(.24f,.69f,.60f),
+                new Vector3(.20f,1.02f,.63f), new Vector3(.16f,1.31f,.57f));
+            boomReinforcement.Build("Boom gussets and bundled hydraulic hoses", boom, Vector3.zero);
             boomBaseAnchor = Root("Boom lift cylinder fixed eye", turret);
             boomBaseAnchor.localPosition = new Vector3(.23f,.27f,.22f);
             boomMovingAnchor = Root("Boom lift cylinder pinned eye", boom);
@@ -494,6 +528,16 @@ namespace NewGaza
                 Quaternion.identity, true);
             Part("Dipper polished wear strip", stick, geometry.Box, steel,
                 new Vector3(.145f,-.56f,.18f), new Vector3(.025f,.79f,.13f), Quaternion.identity);
+            var stickReinforcement = new CityMeshBatch(geometry);
+            stickReinforcement.Beam(excavatorYellowDark, new Vector3(-.11f,-1.15f,.10f),
+                new Vector3(-.11f,-.10f,.18f), .055f);
+            AddHose(stickReinforcement, dark, new Vector3(.14f,-1.10f,.25f),
+                new Vector3(.14f,-.82f,.26f), new Vector3(.14f,-.52f,.27f),
+                new Vector3(.13f,-.22f,.25f), new Vector3(.10f,-.05f,.19f));
+            AddHose(stickReinforcement, hydraulicLine, new Vector3(.18f,-1.10f,.23f),
+                new Vector3(.18f,-.82f,.24f), new Vector3(.18f,-.52f,.25f),
+                new Vector3(.17f,-.22f,.23f), new Vector3(.14f,-.05f,.18f));
+            stickReinforcement.Build("Dipper stiffener and paired hydraulic lines", stick, Vector3.zero);
             stickBaseAnchor = Root("Dipper ram base eye", boom);
             stickBaseAnchor.localPosition = new Vector3(.20f,.77f,.40f);
             stickMovingAnchor = Root("Dipper ram pinned eye", stick);
@@ -537,8 +581,8 @@ namespace NewGaza
         {
             bulldozer = VehicleRoot("Compact crawler dozer • hydraulically lifted blade");
             var body = new CityMeshBatch(geometry);
-            body.Box(paint, new Vector3(0f,.63f,-.02f), new Vector3(1.04f,.36f,1.33f));
-            body.Box(paint, new Vector3(0f,.83f,-.59f), new Vector3(.91f,.55f,.82f));
+            body.Box(excavatorYellow, new Vector3(0f,.63f,-.02f), new Vector3(1.04f,.36f,1.33f));
+            body.Box(excavatorYellow, new Vector3(0f,.83f,-.59f), new Vector3(.91f,.55f,.82f));
             body.Box(steel, new Vector3(0f,.72f,-1.02f), new Vector3(.82f,.10f,.12f));
             // Grille slots and stack behind the cab give the engine deck real depth.
             body.Box(dark, new Vector3(0f,.70f,-.165f), new Vector3(.75f,.17f,.018f));
@@ -565,7 +609,16 @@ namespace NewGaza
             body.Beam(paint, new Vector3(-.36f,.92f,-.35f), new Vector3(-.36f,1.49f,-.37f), .05f);
             body.Beam(paint, new Vector3(.36f,.92f,-.35f), new Vector3(.36f,1.49f,-.37f), .05f);
             body.Beam(paint, tl, tr, .05f);
-            body.Box(paint, new Vector3(0f,1.48f,-.04f), new Vector3(.84f,.11f,.88f));
+            body.Box(excavatorYellow, new Vector3(0f,1.48f,-.04f), new Vector3(.84f,.11f,.88f));
+            for (int side = -1; side <= 1; side += 2)
+            {
+                body.Box(workLamp, new Vector3(side * .29f,1.46f,.22f), new Vector3(.16f,.09f,.07f));
+                body.Beam(steel, new Vector3(side * .37f,1.02f,-.02f),
+                    new Vector3(side * .52f,1.09f,-.02f), .035f);
+                body.Box(dark, new Vector3(side * .57f,1.11f,-.02f), new Vector3(.12f,.18f,.07f));
+                body.Beam(steel, new Vector3(side * .45f,.89f,-.41f),
+                    new Vector3(side * .45f,1.31f,-.41f), .025f);
+            }
             body.Build("Crawler chassis / framed cab / vented engine deck", bulldozer, Vector3.zero, true);
             bulldozerTracks = new EquipmentTrackRig(geometry, bulldozer, trackBeltMesh,
                 rubber, steel, dark, VehicleScale, .58f, 1.95f, .44f, .34f);
@@ -578,6 +631,17 @@ namespace NewGaza
             bladeParts.Box(steel, new Vector3(0f,-.34f,.18f), new Vector3(2.04f,.105f,.20f));
             bladeParts.Box(paint, new Vector3(-.94f,.02f,-.02f), new Vector3(.13f,.57f,.27f), -9f);
             bladeParts.Box(paint, new Vector3(.94f,.02f,-.02f), new Vector3(.13f,.57f,.27f), 9f);
+            // Pressed vertical mouldboard stiffeners and replaceable ground teeth.
+            for (int rib = 0; rib < 7; rib++)
+            {
+                float x = -.76f + rib * .253f;
+                bladeParts.Beam(steel, new Vector3(x,-.23f,-.12f),
+                    new Vector3(x,.25f,.035f), .055f);
+            }
+            for (int tooth = 0; tooth < 7; tooth++)
+                bladeParts.Add(EquipmentGeometry.WedgeTooth(geometry, "Dozer replaceable cutting tooth"),
+                    steel, new Vector3(-.80f + tooth * .267f,-.38f,.30f),
+                    new Vector3(.13f,.15f,.23f), Quaternion.identity);
             for (int bolt = 0; bolt < 8; bolt++)
                 bladeParts.Add(geometry.Cylinder, steel,
                     new Vector3(-.83f + bolt * .237f,-.34f,.30f),
@@ -602,7 +666,7 @@ namespace NewGaza
             var chassis = new CityMeshBatch(geometry);
             chassis.Box(dark, new Vector3(0f,.43f,-.25f), new Vector3(.92f,.18f,3.70f));
             chassis.Box(steel, new Vector3(0f,.52f,-.18f), new Vector3(.76f,.13f,1.38f));
-            chassis.Box(paint, new Vector3(0f,.71f,.55f), new Vector3(.94f,.34f,.47f));
+            chassis.Box(truckLowerGreen, new Vector3(0f,.71f,.55f), new Vector3(.94f,.34f,.47f));
             // Framed cab panes slope back at the windscreen and remain distinct on every side.
             Pane(chassis, "Tipper sloped windscreen", new Vector3(-.44f,.79f,1.48f),
                 new Vector3(.44f,.79f,1.48f), new Vector3(.40f,1.31f,1.24f),
@@ -616,21 +680,45 @@ namespace NewGaza
             Pane(chassis, "Tipper right door glazing", new Vector3(.46f,.80f,1.46f),
                 new Vector3(.46f,.80f,.66f), new Vector3(.43f,1.30f,.68f),
                 new Vector3(.41f,1.30f,1.24f));
-            chassis.Beam(paint, new Vector3(-.49f,.77f,1.49f), new Vector3(-.44f,1.36f,1.21f), .06f);
-            chassis.Beam(paint, new Vector3(.49f,.77f,1.49f), new Vector3(.44f,1.36f,1.21f), .06f);
-            chassis.Beam(paint, new Vector3(-.48f,.77f,.63f), new Vector3(-.46f,1.36f,.64f), .05f);
-            chassis.Beam(paint, new Vector3(.48f,.77f,.63f), new Vector3(.46f,1.36f,.64f), .05f);
-            chassis.Beam(paint, new Vector3(-.45f,1.34f,1.21f), new Vector3(.45f,1.34f,1.21f), .055f);
-            chassis.Box(paint, new Vector3(0f,1.37f,.98f), new Vector3(.99f,.12f,.91f));
+            chassis.Beam(truckCabOffwhite, new Vector3(-.49f,.77f,1.49f), new Vector3(-.44f,1.36f,1.21f), .06f);
+            chassis.Beam(truckCabOffwhite, new Vector3(.49f,.77f,1.49f), new Vector3(.44f,1.36f,1.21f), .06f);
+            chassis.Beam(truckCabOffwhite, new Vector3(-.48f,.77f,.63f), new Vector3(-.46f,1.36f,.64f), .05f);
+            chassis.Beam(truckCabOffwhite, new Vector3(.48f,.77f,.63f), new Vector3(.46f,1.36f,.64f), .05f);
+            chassis.Beam(truckCabOffwhite, new Vector3(-.45f,1.34f,1.21f), new Vector3(.45f,1.34f,1.21f), .055f);
+            chassis.Box(truckCabOffwhite, new Vector3(0f,1.37f,.98f), new Vector3(.99f,.12f,.91f));
             chassis.Box(steel, new Vector3(0f,.42f,1.52f), new Vector3(1.10f,.12f,.12f));
-            chassis.Box(dark, new Vector3(0f,.66f,1.49f), new Vector3(.28f,.24f,.07f));
+            // Brand-free horizontal cooling grille, centered between paired lights.
+            chassis.Box(dark, new Vector3(0f,.67f,1.49f), new Vector3(.39f,.23f,.07f));
+            for (int slat = 0; slat < 5; slat++)
+                chassis.Box(steel, new Vector3(0f,.585f + slat * .041f,1.535f),
+                    new Vector3(.35f,.012f,.012f));
             for (int side = -1; side <= 1; side += 2)
             {
                 chassis.Beam(steel, new Vector3(side * .45f,1.20f,1.14f),
                     new Vector3(side * .68f,1.24f,1.14f), .045f);
-                chassis.Box(paint, new Vector3(side * .31f,.72f,1.48f), new Vector3(.16f,.09f,.04f));
-                chassis.Box(steel, new Vector3(side * .29f,.79f,1.49f), new Vector3(.13f,.035f,.025f));
+                chassis.Box(workLamp, new Vector3(side * .34f,.70f,1.49f), new Vector3(.16f,.13f,.045f));
+                chassis.Box(signalLamp, new Vector3(side * .34f,.59f,1.49f), new Vector3(.14f,.055f,.04f));
                 chassis.Box(dark, new Vector3(side * .475f,.66f,1.02f), new Vector3(.035f,.20f,.50f));
+                // Cab door handles and two-step access ladder stay fixed to the chassis.
+                chassis.Box(dark, new Vector3(side * .472f,.99f,.84f), new Vector3(.025f,.035f,.11f));
+                chassis.Box(steel, new Vector3(side * .51f,.49f,.77f), new Vector3(.12f,.055f,.27f));
+                chassis.Box(steel, new Vector3(side * .55f,.37f,.77f), new Vector3(.15f,.055f,.30f));
+                chassis.Beam(steel, new Vector3(side * .47f,.36f,.67f),
+                    new Vector3(side * .47f,.57f,.67f), .025f);
+                // Black mirror housings on stalks; no cab branding or badge.
+                chassis.Beam(dark, new Vector3(side * .47f,1.06f,1.15f),
+                    new Vector3(side * .64f,1.12f,1.17f), .035f);
+                chassis.Box(dark, new Vector3(side * .68f,1.14f,1.17f), new Vector3(.11f,.19f,.07f));
+            }
+            chassis.Box(steel, new Vector3(0f,.29f,.37f), new Vector3(.70f,.13f,.35f));
+            chassis.Round(dark, new Vector3(-.34f,.39f,-.30f), new Vector3(.27f,.29f,.42f));
+            chassis.Round(dark, new Vector3(.34f,.39f,-.30f), new Vector3(.27f,.29f,.42f));
+            for (int side = -1; side <= 1; side += 2)
+            {
+                chassis.Box(workLamp, new Vector3(side * .34f,1.40f,1.30f),
+                    new Vector3(.18f,.075f,.08f));
+                chassis.Beam(steel, new Vector3(side * .42f,1.30f,.72f),
+                    new Vector3(side * .42f,1.34f,1.05f), .025f);
             }
             chassis.Build("Cab frame / safety glass / mirrors / bumper", truck, Vector3.zero, true);
 
@@ -666,12 +754,12 @@ namespace NewGaza
             truckBed.localPosition = new Vector3(0f,.55f,-2.55f);
             var bed = new CityMeshBatch(geometry);
             bed.Box(dark, new Vector3(0f,.105f,1.15f), new Vector3(1.18f,.035f,2.18f));
-            bed.Box(paint, new Vector3(0f,.06f,1.15f), new Vector3(1.30f,.14f,2.34f));
-            bed.Box(paint, new Vector3(0f,.35f,.05f), new Vector3(1.28f,.57f,.12f));
-            bed.Box(paint, new Vector3(0f,.35f,2.24f), new Vector3(1.28f,.57f,.12f));
+            bed.Box(truckBedGreen, new Vector3(0f,.06f,1.15f), new Vector3(1.30f,.14f,2.34f));
+            bed.Box(truckBedGreen, new Vector3(0f,.35f,.05f), new Vector3(1.28f,.57f,.12f));
+            bed.Box(truckBedGreen, new Vector3(0f,.35f,2.24f), new Vector3(1.28f,.57f,.12f));
             for (int side = -1; side <= 1; side += 2)
             {
-                bed.Box(paint, new Vector3(side * .61f,.35f,1.15f), new Vector3(.13f,.57f,2.30f));
+                bed.Box(truckBedGreen, new Vector3(side * .61f,.35f,1.15f), new Vector3(.13f,.57f,2.30f));
                 for (int rib = 0; rib < 6; rib++)
                     bed.Box(steel, new Vector3(side * .685f,.35f,.12f + rib * .40f),
                         new Vector3(.028f,.48f,.045f));
@@ -679,6 +767,12 @@ namespace NewGaza
                     new Vector3(side * .66f,.67f,2.22f), .035f);
             }
             bed.Box(steel, new Vector3(0f,.34f,-.085f), new Vector3(.40f,.07f,.035f));
+            // Hinge barrels and locking latches are authored on the moving tailgate.
+            for (int side = -1; side <= 1; side += 2)
+            {
+                bed.Round(steel, new Vector3(side * .43f,.08f,2.30f), new Vector3(.10f,.12f,.16f));
+                bed.Box(dark, new Vector3(side * .43f,.43f,2.32f), new Vector3(.07f,.17f,.06f));
+            }
             bed.Build("Reinforced steel subframe / lined tipper box", truckBed, Vector3.zero, true);
             cargo = Root("Discrete carried rubble fragments", truckBed);
             cargoPieces = new Transform[9];
@@ -737,15 +831,13 @@ namespace NewGaza
                     EquipmentMotion.WorkRootHeightModel,.35f));
             tripRoute[1] = route[0];
             roadTripRoute = roadsConfigured
-                ? roadNetwork.FindRoute(tripRoute[0], tripRoute[1], roadSpeedMultiplier)
+                ? roadNetwork.FindEquipmentRoute(tripRoute[0], tripRoute[1], roadSpeedMultiplier)
                 : null;
             tripRouteLength = roadsConfigured
                 ? (roadTripRoute == null ? 0f : roadTripRoute.Length)
                 : Vector3.Distance(tripRoute[0], tripRoute[1]);
             if (roadsConfigured)
-                truckRouteStatus = roadTripRoute == null
-                    ? "تعذّر الوصول: لا يوجد اتصال بين الطريق والعمل والمستودع ضمن مسافة ١٠٠ متر. ستبقى الشاحنة في مكانها."
-                    : "المسار عبر الشوارع جاهز للشاحنة.";
+                truckRouteStatus = "ستسلك الشاحنة الطريق المفيد ثم تتابع مباشرةً خارج الطريق إلى الهدف.";
         }
 
         private void CaptureTransitionPose()
@@ -816,14 +908,14 @@ namespace NewGaza
                 {
                     tripRoute[0] = workDock;
                     tripRoute[1] = current;
-                    roadTripRoute = roadNetwork.FindRoute(tripRoute[0], tripRoute[1],
+                    roadTripRoute = roadNetwork.FindEquipmentRoute(tripRoute[0], tripRoute[1],
                         roadSpeedMultiplier);
                 }
                 else
                 {
                     tripRoute[0] = current;
                     tripRoute[1] = depotDock;
-                    roadTripRoute = roadNetwork.FindRoute(tripRoute[0], tripRoute[1],
+                    roadTripRoute = roadNetwork.FindEquipmentRoute(tripRoute[0], tripRoute[1],
                         roadSpeedMultiplier);
                 }
                 if (roadTripRoute == null)
@@ -831,14 +923,14 @@ namespace NewGaza
                     roadReassignTravel = false;
                     truckTripState = toWork ? TruckTripState.ParkedAtDepot :
                         TruckTripState.ParkedAtWork;
-                    truckRouteStatus = "تعذّر تغيير موقع الشاحنة عبر شبكة الشوارع؛ ستبقى في مكانها.";
+                    truckRouteStatus = "لا يوجد طريق مفيد؛ ستتحرك الشاحنة مباشرةً ببطء إلى الموقع.";
                     return;
                 }
                 roadReassignTravel = true;
                 tripRouteLength = roadTripRoute.Length;
                 tripDistance = tripClock = 0f;
                 truckTripState = toWork ? TruckTripState.Inbound : TruckTripState.Outbound;
-                truckRouteStatus = "الشاحنة تعيد التموضع عبر شبكة الشوارع.";
+                truckRouteStatus = "الشاحنة تعيد التموضع عبر الطريق ثم مباشرةً خارج الطريق عند الحاجة.";
                 return;
             }
             truckTripState = TruckTripState.ReassignFade;
@@ -876,7 +968,7 @@ namespace NewGaza
         {
             if (roadsConfigured && roadTripRoute == null)
             {
-                truckRouteStatus = "تعذّر المسار: الشاحنة متوقفة عند موقع العمل ولا تسلك طريقًا مباشرًا عبر الأحياء.";
+                truckRouteStatus = "لا يوجد طريق مفيد؛ الشاحنة تتحرك مباشرةً ببطء إلى المستودع.";
                 return;
             }
             tripDistance = 0f;
@@ -894,7 +986,7 @@ namespace NewGaza
             if (roadsConfigured && roadTripRoute == null)
             {
                 truckTripState = TruckTripState.ParkedAtDepot;
-                truckRouteStatus = "تعذّر المسار: الشاحنة متوقفة في المستودع ولا تسلك طريقًا مباشرًا عبر الأحياء.";
+                truckRouteStatus = "لا يوجد طريق مفيد؛ الشاحنة تتحرك مباشرةً ببطء إلى موقع العمل.";
                 return;
             }
             tripDistance = 0f;
@@ -972,7 +1064,8 @@ namespace NewGaza
             if (!roadsConfigured || roadTripRoute == null) return speed;
             float routeDistance = returning ? tripRouteLength - tripDistance : tripDistance;
             string roadId = roadTripRoute.RoadIdAtDistance(routeDistance);
-            if (!string.IsNullOrEmpty(roadId) && roadSpeedMultiplier != null)
+            if (string.IsNullOrEmpty(roadId)) return .08f;
+            if (roadSpeedMultiplier != null)
                 speed *= roadSpeedMultiplier(roadId);
             return speed;
         }
@@ -1018,16 +1111,16 @@ namespace NewGaza
                 SetTrackedDocked(excavatorVehicle, trackedDestinationClearing);
                 return;
             }
-            CityRoadRoute route = roadNetwork.FindRoute(start, destination, roadSpeedMultiplier);
+            CityRoadRoute route = roadNetwork.FindEquipmentRoute(start, destination, roadSpeedMultiplier);
             if (route == null)
             {
                 if (excavatorVehicle) excavatorOnRoad = false;
                 else bulldozerOnRoad = false;
                 SetTrackedDocked(excavatorVehicle, false);
                 if (excavatorVehicle)
-                    excavatorRouteStatus = "تعذّر وصول الحفارة إلى الطريق؛ ستبقى عند موقعها دون اختصار عبر المباني.";
+                    excavatorRouteStatus = "لا يوجد طريق مفيد؛ الحفارة تتابع مباشرةً ببطء خارج الطريق.";
                 else
-                    bulldozerRouteStatus = "تعذّر وصول الجرّافة إلى الطريق؛ ستبقى عند موقعها دون اختصار عبر المباني.";
+                    bulldozerRouteStatus = "لا يوجد طريق مفيد؛ الجرّافة تتابع مباشرةً ببطء خارج الطريق.";
                 return;
             }
             if (excavatorVehicle)
@@ -1057,7 +1150,8 @@ namespace NewGaza
             float distance = excavatorVehicle ? excavatorRoadDistance : bulldozerRoadDistance;
             float speed = .10f;
             string roadId = route.RoadIdAtDistance(distance);
-            if (!string.IsNullOrEmpty(roadId) && roadSpeedMultiplier != null)
+            if (string.IsNullOrEmpty(roadId)) speed = .025f;
+            else if (roadSpeedMultiplier != null)
                 speed *= roadSpeedMultiplier(roadId);
             distance = Mathf.Min(route.Length, distance + speed * dt);
             Vector3 position = route.PositionAtDistance(distance);
@@ -1377,8 +1471,10 @@ namespace NewGaza
             else
                 bucketPayload.gameObject.SetActive(false);
 
+            UpdateTruckSteering(dt);
             UpdateWheelRoll(dt);
             UpdateAudioIntensities(dt, digPose);
+            UpdateCityFleetEffects(dt);
         }
 
         private void UpdateVehicleFades(float dt)

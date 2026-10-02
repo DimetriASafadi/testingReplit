@@ -1,0 +1,249 @@
+{
+  "SchemaVersion": 1,
+  "Source": "exports/equipment/Equipment-Production-Meshes.json",
+  "CoordinateConversion": "Unity (x,y,z) -> Blender (x,-z,y), proper basis conjugation; metre scale; wrapper scale/translation neutralized.",
+  "AnimationSource": "Captured AnimationClips Frames local TRS; clips are consecutive ranges in one synchronized whole-scene FBX take, with clip range labels in the scene timeline and audit. Exporter uses active actions with NLA strips and all-actions disabled.",
+  "RootMotion": "Root scale is neutralized; each clip root translation is rebased to its first captured position, converted from city units to model metres, and offset from the prior clip endpoint to keep the staged timeline continuous. Captured root rotations/deltas are retained.",
+  "InactiveGeometry": "Only mesh-bearing nodes key local scale to zero when their captured Active flag is false; hierarchy/root activity never disables the whole machine.",
+  "TrackAnimationLimitation": "Captured track-shoe geometry is static per snapshot in this JSON and is not continuously deformed by FBX transform clips; native gameplay track motion remains procedural/canonical.",
+  "Exports": {
+    "YellowExcavator": {
+      "File": "testingReplic/Assets/NewGaza/Art/EquipmentFBX/YellowExcavator.fbx",
+      "Bytes": 10497052,
+      "HierarchyNodes": 90,
+      "MeshObjects": 61,
+      "Triangles": 3779,
+      "AnimationClips": [
+        {
+          "Name": "TruckTip",
+          "Frames": 144,
+          "SourceFramesPerSecond": 20.0,
+          "DurationSeconds": 7.15,
+          "SceneFrameStart": 1,
+          "SceneFrameEnd": 430
+        },
+        {
+          "Name": "WorkingCycle",
+          "Frames": 211,
+          "SourceFramesPerSecond": 15.0,
+          "DurationSeconds": 14.0,
+          "SceneFrameStart": 431,
+          "SceneFrameEnd": 1271
+        }
+      ],
+      "SceneFrameRate": 60,
+      "OfflineProofPose": {
+        "Clip": "WorkingCycle",
+        "ClipTimeSeconds": 4.9,
+        "SceneFrame": 725
+      },
+      "RoundTripCheck": {
+        "ReimportedDimensionsMeters": [
+          1.5,
+          2.59064,
+          2.6794
+        ],
+        "DimensionToleranceMeters": [
+          0.06,
+          0.10363,
+          0.10718
+        ],
+        "ReimportedMeshObjects": 61,
+        "ReimportedHierarchyNodes": 90,
+        "UVMappedMeshObjects": 61,
+        "MaterialAssignedMeshObjects": 61,
+        "ReimportedVaryingActions": [
+          "Dipper cylinder base eye \u2022 mesh.001|Scene",
+          "Dipper cylinder base eye.001|Scene",
+          "Dipper cylinder cylinder barrel.001|Scene",
+          "Dipper cylinder polished piston rod \u2022 mesh.001|Scene",
+          "Dipper cylinder polished piston rod.001|Scene",
+          "Dipper cylinder rod eye \u2022 mesh.001|Scene",
+          "Dipper cylinder rod eye.001|Scene",
+          "Bucket curl cylinder base eye.001|Scene",
+          "Bucket curl cylinder cylinder barrel.001|Scene",
+          "Bucket curl cylinder polished piston rod \u2022 mesh.001|Scene",
+          "Bucket curl cylinder polished piston rod.001|Scene",
+          "Bucket curl cylinder rod eye.001|Scene",
+          "Bucket load fragment 0 \u2022 mesh.001|Scene",
+          "Bucket load fragment 0.001|Scene",
+          "Bucket load fragment 1 \u2022 mesh.001|Scene",
+          "Bucket load fragment 1.001|Scene",
+          "Bucket load fragment 2 \u2022 mesh.001|Scene",
+          "Bucket load fragment 2.001|Scene",
+          "Bucket load fragment 3 \u2022 mesh.001|Scene",
+          "Bucket load fragment 3.001|Scene",
+          "Bucket curl pivot \u2022 open bowl / five teeth.001|Scene",
+          "Dipper polished wear strip \u2022 mesh.001|Scene",
+          "Dipper stick pivot.001|Scene",
+          "Boom foot \u2022 pinned to the revolving upper carriage.001|Scene",
+          "Boom lift ram base eye.001|Scene",
+          "Boom lift ram cylinder barrel.001|Scene",
+          "Boom lift ram polished piston rod \u2022 mesh.001|Scene",
+          "Boom lift ram polished piston rod.001|Scene",
+          "Boom lift ram rod eye.001|Scene",
+          "Upper house \u2022 rotating counterweight and operator cab.001|Sce"
+        ],
+        "UnifiedActionRangeEndFrame": 1272.0,
+        "ExpectedUnifiedRangeEndFrame": 1271
+      },
+      "OfflinePNGProof": "exports/equipment/Equipment-FBX-Proofs/YellowExcavator-Offline-Reference.png"
+    },
+    "GreenTipper": {
+      "File": "testingReplic/Assets/NewGaza/Art/EquipmentFBX/GreenTipper.fbx",
+      "Bytes": 7910908,
+      "HierarchyNodes": 68,
+      "MeshObjects": 45,
+      "Triangles": 6184,
+      "AnimationClips": [
+        {
+          "Name": "TruckTip",
+          "Frames": 144,
+          "SourceFramesPerSecond": 20.0,
+          "DurationSeconds": 7.15,
+          "SceneFrameStart": 1,
+          "SceneFrameEnd": 430
+        },
+        {
+          "Name": "WorkingCycle",
+          "Frames": 211,
+          "SourceFramesPerSecond": 15.0,
+          "DurationSeconds": 14.0,
+          "SceneFrameStart": 431,
+          "SceneFrameEnd": 1271
+        }
+      ],
+      "SceneFrameRate": 60,
+      "OfflineProofPose": {
+        "Clip": "WorkingCycle",
+        "ClipTimeSeconds": 4.9,
+        "SceneFrame": 725
+      },
+      "RoundTripCheck": {
+        "ReimportedDimensionsMeters": [
+          1.68025,
+          4.26325,
+          1.54671
+        ],
+        "DimensionToleranceMeters": [
+          0.06721,
+          0.17053,
+          0.06187
+        ],
+        "ReimportedMeshObjects": 45,
+        "ReimportedHierarchyNodes": 68,
+        "UVMappedMeshObjects": 45,
+        "MaterialAssignedMeshObjects": 45,
+        "ReimportedVaryingActions": [
+          "Axle 2 rolling tyre left.001|Scene",
+          "Axle 2 rolling tyre right.001|Scene",
+          "Axle 3 rolling tyre left.001|Scene",
+          "Axle 3 rolling tyre right.001|Scene",
+          "Axle 1 rolling tyre left.001|Scene",
+          "Left tipping cylinder base eye \u2022 mesh.001|Scene",
+          "Left tipping cylinder base eye.001|Scene",
+          "Left tipping cylinder cylinder barrel \u2022 mesh.001|Scene",
+          "Left tipping cylinder cylinder barrel.001|Scene",
+          "Left tipping cylinder polished piston rod \u2022 mesh.001|Scene",
+          "Left tipping cylinder polished piston rod.001|Scene",
+          "Left tipping cylinder rod eye \u2022 mesh.001|Scene",
+          "Left tipping cylinder rod eye.001|Scene",
+          "Visible irregular rubble load 1 \u2022 mesh.001|Scene",
+          "Visible irregular rubble load 1.001|Scene",
+          "Visible irregular rubble load 2 \u2022 mesh.001|Scene",
+          "Visible irregular rubble load 2.001|Scene",
+          "Visible irregular rubble load 3 \u2022 mesh.001|Scene",
+          "Visible irregular rubble load 3.001|Scene",
+          "Rear-hinged dump bed.001|Scene",
+          "Axle 1 rolling tyre right.001|Scene",
+          "Right tipping cylinder base eye \u2022 mesh.001|Scene",
+          "Right tipping cylinder base eye.001|Scene",
+          "Right tipping cylinder cylinder barrel \u2022 mesh.001|Scene",
+          "Right tipping cylinder cylinder barrel.001|Scene",
+          "Right tipping cylinder polished piston rod \u2022 mesh.001|Scene",
+          "Right tipping cylinder polished piston rod.001|Scene",
+          "Right tipping cylinder rod eye \u2022 mesh.001|Scene",
+          "Right tipping cylinder rod eye.001|Scene",
+          "Compact 4.13 m six-wheel tipper \u2022 cab and hydraulic body.001|"
+        ],
+        "UnifiedActionRangeEndFrame": 1272.0,
+        "ExpectedUnifiedRangeEndFrame": 1271
+      },
+      "OfflinePNGProof": "exports/equipment/Equipment-FBX-Proofs/GreenTipper-Offline-Reference.png"
+    },
+    "YellowBulldozer": {
+      "File": "testingReplic/Assets/NewGaza/Art/EquipmentFBX/YellowBulldozer.fbx",
+      "Bytes": 6782876,
+      "HierarchyNodes": 59,
+      "MeshObjects": 39,
+      "Triangles": 3247,
+      "AnimationClips": [
+        {
+          "Name": "TruckTip",
+          "Frames": 144,
+          "SourceFramesPerSecond": 20.0,
+          "DurationSeconds": 7.15,
+          "SceneFrameStart": 1,
+          "SceneFrameEnd": 430
+        },
+        {
+          "Name": "WorkingCycle",
+          "Frames": 211,
+          "SourceFramesPerSecond": 15.0,
+          "DurationSeconds": 14.0,
+          "SceneFrameStart": 431,
+          "SceneFrameEnd": 1271
+        }
+      ],
+      "SceneFrameRate": 60,
+      "OfflineProofPose": {
+        "Clip": "WorkingCycle",
+        "ClipTimeSeconds": 4.9,
+        "SceneFrame": 725
+      },
+      "RoundTripCheck": {
+        "ReimportedDimensionsMeters": [
+          2.05064,
+          2.59967,
+          1.60988
+        ],
+        "DimensionToleranceMeters": [
+          0.08203,
+          0.10399,
+          0.0644
+        ],
+        "ReimportedMeshObjects": 39,
+        "ReimportedHierarchyNodes": 59,
+        "UVMappedMeshObjects": 39,
+        "MaterialAssignedMeshObjects": 39,
+        "ReimportedVaryingActions": [
+          "Angled lift blade yoke.001|Scene",
+          "Left blade lift ram base eye.001|Scene",
+          "Left blade lift ram cylinder barrel.001|Scene",
+          "Left blade lift ram polished piston rod.001|Scene",
+          "Left blade lift ram rod eye \u2022 mesh.001|Scene",
+          "Left blade lift ram rod eye.001|Scene",
+          "Rotating road roller 1.002|Scene",
+          "Rotating road roller 2.002|Scene",
+          "Rotating road roller 3.002|Scene",
+          "Rotating road roller 4.002|Scene",
+          "Rotating road roller 5.002|Scene",
+          "Right blade lift ram base eye.001|Scene",
+          "Right blade lift ram cylinder barrel.001|Scene",
+          "Right blade lift ram polished piston rod.001|Scene",
+          "Right blade lift ram rod eye \u2022 mesh.001|Scene",
+          "Right blade lift ram rod eye.001|Scene",
+          "Rotating road roller 1.003|Scene",
+          "Rotating road roller 2.003|Scene",
+          "Rotating road roller 3.003|Scene",
+          "Rotating road roller 4.003|Scene",
+          "Rotating road roller 5.003|Scene",
+          "Compact crawler dozer \u2022 hydraulically lifted blade.001|Scene"
+        ],
+        "UnifiedActionRangeEndFrame": 1272.0,
+        "ExpectedUnifiedRangeEndFrame": 1271
+      },
+      "OfflinePNGProof": "exports/equipment/Equipment-FBX-Proofs/YellowBulldozer-Offline-Reference.png"
+    }
+  }
+}

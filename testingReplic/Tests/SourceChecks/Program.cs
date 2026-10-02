@@ -88,6 +88,18 @@ internal static class Program
         Require(world.Contains("RegisterRoadSegments(Roads.Definitions)") &&
             world.Contains("ConfigureRoads(Roads") && world.Contains("roadView?.Refresh"),
             "World must register authoritative segments, render saved levels and configure actual road transport.");
+        Require(world.Contains("ConfigureTravelSurface") && world.Contains("RoadIdUnder(point)") &&
+            world.Contains("GetLevel(session.State, roadId) == 2"),
+            "Fleet dust surface classification must use the actual nearby road and saved level-two paving.");
+        string network = Source("World/CityRoadNetwork.cs");
+        string fleet = Source("World/CityFleet.cs");
+        Require(network.Contains("FindRoute(Vector3 from, Vector3 to") &&
+            network.Contains("FindEquipmentRoute") && network.Contains("FindRouteWithOffRoadAccess") &&
+            network.Contains("RoadIdUnder(Vector3 position)"),
+            "Strict road routing remains separate from fleet off-road access and paving lookup APIs.");
+        Require(fleet.Contains("FindEquipmentRoute") && fleet.Contains("roadTripRoute.RoadIdAtDistance") &&
+            fleet.Contains("RoadIdAtDistance(distance)"),
+            "Trucks and tracked equipment must share road-first routing with live segment-speed provenance.");
         Require(session.Contains("Perform(e => e.ImproveRoad(id, targetLevel))") &&
             hud.Contains("Confirm(title") && hud.Contains("session.ImproveRoad(definition.id, target)"),
             "Road spending must use explicit confirmation and the save/error-aware session action path.");
@@ -1748,11 +1760,12 @@ internal static class Program
             var trackUpdate = trackRig.Members.OfType<MethodDeclarationSyntax>()
                 .FirstOrDefault(method => method.Identifier.ValueText == "Update");
             string trackUpdateSource = trackUpdate == null ? "" : Compact(trackUpdate.ToString());
+            string completeTrackSource = Compact(trackRig.ToString());
             Require(trackUpdateSource.Contains("vehicle.localPosition", StringComparison.Ordinal) &&
-                trackUpdateSource.Contains("previousRotation*Vector3.forward", StringComparison.Ordinal) &&
-                trackUpdateSource.Contains("EquipmentGeometry.UpdateTrackShoeLoop", StringComparison.Ordinal) &&
-                trackUpdateSource.Contains("Quaternion.AngleAxis", StringComparison.Ordinal) &&
-                trackUpdateSource.Contains("track.rollers[roller].localRotation", StringComparison.Ordinal),
+                trackUpdateSource.Contains("Vector3.Dot", StringComparison.Ordinal) &&
+                completeTrackSource.Contains("EquipmentGeometry.UpdateTrackShoeLoop", StringComparison.Ordinal) &&
+                completeTrackSource.Contains("Quaternion.AngleAxis", StringComparison.Ordinal) &&
+                completeTrackSource.Contains("track.rollers[roller].localRotation", StringComparison.Ordinal),
                 "Visible crawler shoes and rollers must circulate from measured vehicle displacement and stay still without travel.");
         }
 

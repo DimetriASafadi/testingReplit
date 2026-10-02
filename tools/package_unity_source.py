@@ -11,6 +11,8 @@ paths = subprocess.check_output(
 ).decode().split("\0")
 paths += ["tools/fetch_gaza_basemap.py", "tools/package_unity_source.py"]
 paths += ["tools/prepare_equipment_audio.py"]
+paths += ["tools/export_equipment_fbx.py", "tools/render_equipment_proof.py",
+          "tools/package_equipment_assets.py"]
 paths += ["tools/generate_destroyed_assets.py", "tools/render_destroyed_assets.py",
           "tools/compose_destroyed_previews.py", "tools/package_destroyed_assets.py"]
 paths += ["pyproject.toml", "uv.lock"]
@@ -44,7 +46,15 @@ with zipfile.ZipFile(destination) as archive:
         "testingReplic/Assets/NewGaza/World/CityRuinProfiles.cs",
         "testingReplic/Tests/DestroyedAssets/DestroyedAssets.csproj",
         "testingReplic/DESTROYED-ASSETS.ar.md",
+        "testingReplic/EQUIPMENT.ar.md",
+        "testingReplic/Assets/NewGaza/Resources/NewGazaDust.shader",
+        "testingReplic/Assets/NewGaza/World/EquipmentDustRig.cs",
+        "testingReplic/Assets/NewGaza/World/CityFleetAppearance.cs",
+        "testingReplic/Assets/NewGaza/World/CityFleetEffects.cs",
+        "testingReplic/Tests/Equipment/EquipmentDustChecks.cs",
     }
+    for name in ("YellowExcavator", "GreenTipper", "YellowBulldozer"):
+        required.add("testingReplic/Assets/NewGaza/Art/EquipmentFBX/" + name + ".fbx")
     ruin_keys = ("shujaiya", "tuffah", "sheikh_radwan", "daraj", "karama", "old_city",
                  "nasr", "sabra", "zeitoun", "rimal", "tel_al_hawa", "sheikh_ijlin",
                  "rashid", "mosque", "school", "clinic", "civic", "wall", "car",

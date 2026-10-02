@@ -149,11 +149,13 @@ namespace UnityEngine
         private int[] triangleData = Array.Empty<int>();
         private Vector2[] uvData = Array.Empty<Vector2>();
         private Vector3[] normalData = Array.Empty<Vector3>();
+        private Color[] colorData = Array.Empty<Color>();
         public Rendering.IndexFormat indexFormat;
         public Vector3[] vertices { get { return vertexData; } set { vertexData = value ?? Array.Empty<Vector3>(); } }
         public int[] triangles { get { return triangleData; } set { triangleData = value ?? Array.Empty<int>(); } }
         public Vector2[] uv { get { return uvData; } set { uvData = value ?? Array.Empty<Vector2>(); } }
         public Vector3[] normals { get { return normalData; } set { normalData = value ?? Array.Empty<Vector3>(); } }
+        public Color[] colors { get { return colorData; } set { colorData = value ?? Array.Empty<Color>(); } }
         public int subMeshCount { get { return triangleData.Length == 0 ? 0 : 1; } }
         public void SetVertices(List<Vector3> values) { vertexData = values.ToArray(); }
         public void SetTriangles(List<int> values, int submesh)

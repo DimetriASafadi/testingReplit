@@ -30,6 +30,8 @@ internal static class Program
             VerifyRoadRoutes(roads);
             VerifyDisconnectedDoesNotJump();
             VerifyCrossingIsNotJunction();
+            VerifyEquipmentRoadFallback();
+            VerifyRoadSurfaceClassification();
             Console.WriteLine("Road network checks passed: " + assertions + " assertions, " +
                 roads.Segments.Length + " source-derived segments.");
             return 0;
@@ -175,8 +177,9 @@ internal static class Program
                     "each route road edge carries accurate sourced way/segment provenance");
             }
             Check(calls > 0, "route cost uses live per-road speed callback");
-            Check(route.RoadIdAtDistance(Math.Min(1f, route.Length)) != null,
-                "route edge-at-distance helper works");
+            Check(route.RoadIdAtDistance(Math.Min(1f, route.Length)) ==
+                route.RoadIds[route.EdgeAtDistance(Math.Min(1f, route.Length))],
+                "route edge-at-distance helper preserves nullable leg provenance");
             Vector3 halfway = route.PositionAtDistance(route.Length * .5f);
             Check(NearestDrivable(roads, halfway) < .001f,
                 "route intermediate waypoints stay on real sourced road centerlines");
@@ -269,6 +272,75 @@ internal static class Program
         var network = new CityRoadNetwork(map);
         Check(network.FindRoute(new Vector3(-9f,0f,0f), new Vector3(0f,0f,9f)) == null,
             "coordinate crossing without shared authored vertex remains disconnected");
+    }
+
+    private static void VerifyEquipmentRoadFallback()
+    {
+        var network = new CityRoadNetwork(new CityBasemap
+        {
+            roads = new[]
+            {
+                Road(31, new CityBasemapPoint(0f,0f), new CityBasemapPoint(10f,0f)),
+                Road(32, new CityBasemapPoint(20f,0f), new CityBasemapPoint(30f,0f))
+            }
+        });
+        Vector3 from = new Vector3(1f,0f,0f), goal = new Vector3(29f,0f,0f);
+        Check(network.FindRoute(from, goal) == null,
+            "strict route retains null contract for disconnected road components");
+        CityRoadRoute partial = network.FindEquipmentRoute(from, goal);
+        Check(partial != null && partial.Points[0].Equals(from) &&
+            partial.Points[partial.Points.Length - 1].Equals(goal),
+            "fleet route preserves exact source and destination across disconnected components");
+        bool stoppedAtUsefulEnd = false, hasOffRoadFinish = false;
+        for (int i = 0; i < partial.RoadIds.Length; i++)
+        {
+            if (partial.RoadIds[i] == null)
+            {
+                hasOffRoadFinish = true;
+                continue;
+            }
+            if (partial.RoadIds[i].StartsWith("31:", StringComparison.Ordinal) &&
+                Math.Abs(partial.Points[i + 1].x - 10f) < .001f)
+                stoppedAtUsefulEnd = true;
+            Check(!partial.RoadIds[i].StartsWith("32:", StringComparison.Ordinal),
+                "unreachable disconnected component is never used as a shortcut");
+        }
+        Check(stoppedAtUsefulEnd && hasOffRoadFinish,
+            "road travel follows its connected component to the useful endpoint, then leaves the road");
+        Check(partial.RoadIdAtDistance(partial.Length - .1f) == null,
+            "off-road destination connector has null road provenance");
+
+        CityRoadRoute farStart = network.FindEquipmentRoute(new Vector3(5f,0f,25f),
+            new Vector3(9f,0f,0f));
+        Check(farStart != null && farStart.Points[0].Equals(new Vector3(5f,0f,25f)) &&
+            farStart.Points[farStart.Points.Length - 1].Equals(new Vector3(9f,0f,0f)),
+            "far off-road start can approach and usefully follow the nearest road component");
+        Check(farStart.RoadIdAtDistance(.1f) == null,
+            "far-start road access connector remains off-road");
+
+        var noRoads = new CityRoadNetwork(new CityBasemap { roads = new CityBasemapRoad[0] });
+        CityRoadRoute direct = noRoads.FindEquipmentRoute(from, goal);
+        Check(direct != null && direct.Length == Vector3.Distance(from, goal) &&
+            direct.RoadIds.Length == 1 && direct.RoadIds[0] == null,
+            "fleet falls back to a direct slow-travel leg when no roads are available");
+    }
+
+    private static void VerifyRoadSurfaceClassification()
+    {
+        var network = new CityRoadNetwork(new CityBasemap
+        {
+            roads = new[] { new CityBasemapRoad
+            {
+                id = 41, kind = "residential", width = 2f,
+                points = new[] { new CityBasemapPoint(0f,0f), new CityBasemapPoint(10f,0f) }
+            } }
+        });
+        Check(network.RoadIdUnder(new Vector3(5f,0f,.99f)) == "41:0",
+            "surface classification covers the actual road half-width");
+        Check(network.RoadIdUnder(new Vector3(5f,0f,1.19f)) == "41:0",
+            "surface classification includes only a small margin outside the road edge");
+        Check(network.RoadIdUnder(new Vector3(5f,0f,1.21f)) == null,
+            "bare ground beyond the road edge and margin is not classified paved");
     }
 
     private static CityBasemapRoad Road(long id, CityBasemapPoint a, CityBasemapPoint b)

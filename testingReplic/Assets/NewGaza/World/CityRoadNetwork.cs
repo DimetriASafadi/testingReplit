@@ -189,6 +189,26 @@ namespace NewGaza
             return selected != null;
         }
 
+        /// <summary>Returns the source road beneath a point, within the ribbon plus a small margin.</summary>
+        public string RoadIdUnder(Vector3 position)
+        {
+            CityRoadSegment nearest = null;
+            float nearestEdge = float.PositiveInfinity;
+            for (int i = 0; i < Segments.Length; i++)
+            {
+                CityRoadSegment segment = Segments[i];
+                if (!IsDrivable(segment.Kind)) continue;
+                float distance = (float)Math.Sqrt(segment.DistanceSquared(position));
+                float edgeDistance = Math.Max(0f, distance - Mathf.Max(.12f, segment.Width) * .5f);
+                if (edgeDistance <= .2f && edgeDistance < nearestEdge)
+                {
+                    nearest = segment;
+                    nearestEdge = edgeDistance;
+                }
+            }
+            return nearest == null ? null : nearest.Definition.id;
+        }
+
         /// <summary>Finds a shortest expected-time route. Null means explicitly unreachable.</summary>
         public CityRoadRoute FindRoute(Vector3 from, Vector3 to, Func<string, float> speedMultiplier = null)
         {
@@ -262,7 +282,7 @@ namespace NewGaza
             if (Vector3.Distance(from, start.point) > .0001f)
             {
                 routePoints.Add(start.point);
-                routeIds.Add(string.Empty);
+                routeIds.Add(null);
             }
             if (directSameEdge)
             {
@@ -293,10 +313,92 @@ namespace NewGaza
             if (Vector3.Distance(routePoints[routePoints.Count - 1], to) > .0001f)
             {
                 routePoints.Add(to);
-                routeIds.Add(string.Empty);
+                routeIds.Add(null);
             }
             // Remove accidental duplicates while preserving one provenance entry per leg.
             return new CityRoadRoute(routePoints, routeIds);
+        }
+
+        /// <summary>
+        /// Finds a fleet route using useful connected road travel where possible, then
+        /// completing the trip directly off-road. FindRoute retains strict endpoint access.
+        /// </summary>
+        public CityRoadRoute FindEquipmentRoute(Vector3 from, Vector3 to,
+            Func<string, float> speedMultiplier = null)
+        {
+            float directDistance = Vector3.Distance(from, to);
+            if (graphEdges.Count == 0 || directDistance <= .0001f)
+                return DirectRoute(from, to);
+
+            // A valid strict graph path always wins, even when the street geometry is
+            // longer than the chord. Off-road completion is only for inaccessible or
+            // disconnected endpoints.
+            CityRoadRoute strictRoute = FindRoute(from, to, speedMultiplier);
+            if (strictRoute != null) return strictRoute;
+
+            Projection start = NearestProjection(from);
+            if (start == null) return DirectRoute(from, to);
+
+            var componentNodes = new HashSet<GraphNode>();
+            var componentEdges = new HashSet<GraphEdge>();
+            var pending = new Queue<GraphNode>();
+            if (componentNodes.Add(start.edge.a)) pending.Enqueue(start.edge.a);
+            if (componentNodes.Add(start.edge.b)) pending.Enqueue(start.edge.b);
+            while (pending.Count > 0)
+            {
+                GraphNode node = pending.Dequeue();
+                for (int i = 0; i < node.edges.Count; i++)
+                {
+                    GraphEdge edge = node.edges[i];
+                    componentEdges.Add(edge);
+                    GraphNode next = ReferenceEquals(edge.a, node) ? edge.b : edge.a;
+                    if (componentNodes.Add(next)) pending.Enqueue(next);
+                }
+            }
+
+            Projection bestFinish = null;
+            float bestAccess = float.PositiveInfinity;
+            foreach (GraphEdge edge in componentEdges)
+            {
+                float t;
+                Vector3 point = Project(to, edge.a.point, edge.b.point, out t);
+                float finalAccess = Vector3.Distance(point, to);
+                if (finalAccess >= directDistance ||
+                    finalAccess >= Vector3.Distance(start.point, to)) continue;
+                if (finalAccess < bestAccess)
+                {
+                    bestAccess = finalAccess;
+                    bestFinish = new Projection { edge = edge, point = point, t = t, forward = t < .5f };
+                }
+            }
+
+            // The connected road component must make measurable progress toward the target;
+            // otherwise the fleet takes the slow direct off-road leg instead of detouring.
+            if (bestFinish == null)
+                return DirectRoute(from, to);
+            CityRoadRoute bestRoadRoute = FindRoute(start.point, bestFinish.point, speedMultiplier);
+            if (bestRoadRoute == null || !bestRoadRoute.IsReachable)
+                return DirectRoute(from, to);
+
+            var points = new List<Vector3> { from };
+            var ids = new List<string>();
+            AddLeg(points, ids, start.point, null);
+            for (int i = 1; i < bestRoadRoute.Points.Length; i++)
+                AddLeg(points, ids, bestRoadRoute.Points[i], bestRoadRoute.RoadIds[i - 1]);
+            AddLeg(points, ids, to, null);
+            return points.Count >= 2 ? new CityRoadRoute(points, ids) : DirectRoute(from, to);
+        }
+
+        public CityRoadRoute FindRouteWithOffRoadAccess(Vector3 from, Vector3 to,
+            Func<string, float> speedMultiplier = null)
+        {
+            return FindEquipmentRoute(from, to, speedMultiplier);
+        }
+
+        private static CityRoadRoute DirectRoute(Vector3 from, Vector3 to)
+        {
+            return new CityRoadRoute(new List<Vector3> { from, to },
+                new List<string> { null });
         }
 
         private sealed class Projection
@@ -579,7 +681,7 @@ namespace NewGaza
     public sealed class CityRoadRoute
     {
         public Vector3[] Points { get; private set; }
-        /// <summary>Road source ID for each consecutive point pair; empty string denotes access leg.</summary>
+        /// <summary>Road source ID for each consecutive point pair; null denotes an off-road leg.</summary>
         public string[] RoadIds { get; private set; }
         public float Length { get; private set; }
         public bool IsReachable { get { return Points != null && Points.Length >= 2; } }

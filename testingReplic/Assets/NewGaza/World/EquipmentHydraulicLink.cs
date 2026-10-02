@@ -12,6 +12,8 @@ namespace NewGaza
         private readonly Transform rodPin;
         private readonly float diameter;
         private readonly float barrelFraction;
+        internal float PinToPinLength { get; private set; }
+        internal float ExposedRodLength { get; private set; }
 
         internal EquipmentHydraulicLink(CityGeometry geometry, Transform parent, Material steel,
             string name, float diameter, float barrelFraction = .62f)
@@ -35,10 +37,16 @@ namespace NewGaza
             Vector3 end = parent.InverseTransformPoint(movingAnchor.position);
             Vector3 direction = end - start;
             float length = direction.magnitude;
-            if (length < .025f) return;
+            PinToPinLength = length;
+            if (length < .025f)
+            {
+                ExposedRodLength = 0f;
+                return;
+            }
             Quaternion axis = Quaternion.FromToRotation(Vector3.up, direction / length);
             float barrelLength = Mathf.Max(.04f, length * barrelFraction);
             float rodLength = Mathf.Max(.025f, length - barrelLength);
+            ExposedRodLength = rodLength;
             barrel.localPosition = start + direction.normalized * (barrelLength * .5f);
             barrel.localRotation = axis;
             barrel.localScale = new Vector3(diameter, barrelLength, diameter);
