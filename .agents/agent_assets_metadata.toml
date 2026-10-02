@@ -5,14 +5,14 @@ generated = []
 id = "1fWh6uOeYQs-_P59ry1Dn"
 uri = "file://exports/NewGaza-Unity-Source.zip"
 type = "unspecified"
-title = "مشروع Unity بعد دمج المجسّمات المدمّرة"
-description = "المشروع الأصلي محدثًا مع ظهور الطرز الجديدة في المواقع المدمّرة فقط، ودليل الاستيراد والفحص."
+title = "مشروع Unity المحدّث — المباني والعمّال"
+description = "أرشيف المصدر الكامل: الأشكال مرتبطة بتقدم المشروع، وعمّال متحركون لكل مرحلة. ليس APK أو نسخة تم اختبارها على الهاتف."
 logical_id = "5dbf8b92-3bf8-4fbf-a60d-a4baffa6cc98"
-content_hash = "sha256:6d8d1107677e8348ecdfcfd636e9f6938a19d6647e47fb813add54b0067d5a60"
-size = 28862413
-mtime_ms = 1790948186412
-storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/5dbf8b92-3bf8-4fbf-a60d-a4baffa6cc98/4078410b-1138-4622-80eb-8e1b11d9719b"
-storage_version_token = "1790948227786461"
+content_hash = "sha256:92be5ce96906380ce21f2546a40f6ef6f530d0d0a6d16bb407e7122c22feb754"
+size = 45516655
+mtime_ms = 1790954230049
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/5dbf8b92-3bf8-4fbf-a60d-a4baffa6cc98/18278e3f-3098-4a8e-993f-8ed8a8b772ad"
+storage_version_token = "1790954517956683"
 content_type = "application/octet-stream"
 
 [[outputs]]
@@ -240,3 +240,115 @@ mtime_ms = 1790948051928
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/d5c9f4b3-84c4-4123-b367-06b5a88ae2d5/66ff610f-f11f-4890-aac4-ba24148b8b13"
 storage_version_token = "1790948231911139"
 content_type = "image/png"
+
+[[outputs]]
+id = "n0fO5UjIAJZQnraPGohSq"
+uri = "file://exports/NewGaza-Equipment-FBX.zip"
+type = "unspecified"
+title = "مجسّمات الآليات — FBX دون شعارات"
+description = "الحفّار والجرافة والشاحنة، بخاماتها وتسلسلها المفصلي وعينات حركة متزامنة. دون ملفات .meta؛ حركة الجنازير الكاملة يقودها مصدر اللعبة."
+logical_id = "955129ac-3cf0-4890-8815-8fed7f44c190"
+content_hash = "sha256:56e89d8ea235c7ccc2de9c17d61523768dc996538a3340e99a70d07d1e22092f"
+size = 2361295
+mtime_ms = 1790952082224
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/955129ac-3cf0-4890-8815-8fed7f44c190/adcdfe74-8fda-4275-ba4c-34ed8ab96a6f"
+storage_version_token = "1790952439230277"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "LoKzQnIs8bXKFJWHhR6aa"
+uri = "file://exports/equipment/Equipment-FBX-Proofs/YellowExcavator-Offline-Reference.png"
+type = "image"
+title = "معاينة الحفّار دون شعارات"
+description = "معاينة Blender من المجسّم الفعلي أثناء دورة العمل، وليست لقطة من Unity."
+logical_id = "d38d742e-c9cb-4ff1-908a-56fcfd629d64"
+content_hash = "sha256:3e935c4c5ef05f9372370a3fffa30b662084295087cc17a793b61e5a13f67d2a"
+size = 1134025
+mtime_ms = 1790951888096
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/d38d742e-c9cb-4ff1-908a-56fcfd629d64/31e1a098-265f-403b-8495-f5e7c3a320e0"
+storage_version_token = "1790952443763010"
+content_type = "image/png"
+
+[[outputs]]
+id = "iIfH2oFc8KKaeS43j5Vqk"
+uri = "file://exports/equipment/Equipment-FBX-Proofs/GreenTipper-Offline-Reference.png"
+type = "image"
+title = "معاينة الشاحنة الخضراء والفاتحة"
+description = "خامات أصلية وصندوق أخضر مدعّم؛ معاينة خارجية من المجسّم الفعلي دون شارات شركات."
+logical_id = "8aa02c67-3b19-4e2d-9d5c-ca024a0dcca6"
+content_hash = "sha256:4d78d738fc6a819f75c15981c9e4f006ab1a7f18714774090cb18197ac5ddb84"
+size = 1077243
+mtime_ms = 1790951923396
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/8aa02c67-3b19-4e2d-9d5c-ca024a0dcca6/a6dcbcf6-9dd5-4e55-b0f5-dfd9255d7377"
+storage_version_token = "1790952445115654"
+content_type = "image/png"
+
+[[outputs]]
+id = "g0bn9qgbRsZUi9YbsdfNK"
+uri = "file://exports/equipment/Equipment-FBX-Proofs/YellowBulldozer-Offline-Reference.png"
+type = "image"
+title = "معاينة الجرافة الصفراء"
+description = "جنازير وشفرة منحنية وتفاصيل المقصورة دون شعارات؛ معاينة Blender وليست اختبار هاتف."
+logical_id = "2991422e-012c-4d53-a5bf-118b6996b121"
+content_hash = "sha256:8165273929ca2fb43012d77d67a4c4f182da5c0827a112bba9e446170525b94e"
+size = 1133124
+mtime_ms = 1790951954572
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/2991422e-012c-4d53-a5bf-118b6996b121/b64231ce-7b05-46dd-9607-eef1c00695c7"
+storage_version_token = "1790952446453868"
+content_type = "image/png"
+
+[[outputs]]
+id = "D3bHMoHvW_6NX-7hZEVsi"
+uri = "file://exports/NewGaza-Housing-FBX.zip"
+type = "unspecified"
+title = "مباني غزة — ٤٠ ملف FBX ومراحل البناء"
+description = "عشرة نماذج مستوحاة من المرجع، لكل منها التأسيس والهيكل والتشطيب والشكل النهائي، مع الخامات وموارد Unity والمعاينات. دون ملفات .meta."
+logical_id = "784e760e-99ad-42d9-8912-33e5d633f61e"
+content_hash = "sha256:c9b1522cae5aae62a90613f14c76fe99db425b68b20ad3e2fe98c5412926fbf1"
+size = 17593054
+mtime_ms = 1790954224889
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/784e760e-99ad-42d9-8912-33e5d633f61e/6166a7b7-7325-4583-9a6a-c105073407b3"
+storage_version_token = "1790954515487596"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "nvnqj9_tU9kCBWp3CbtCK"
+uri = "file://exports/housing-assets/Housing-Reference-Families.png"
+type = "image"
+title = "معاينة أنواع المباني العشرة"
+description = "صور ملفات FBX الفعلية بعد إعادة استيرادها في Blender، وليست لقطات من Unity."
+logical_id = "f04468c7-1238-4664-8fb3-1334e71e7e71"
+content_hash = "sha256:12e8c3ea26acf93b4c8463652f5ac28660936d29a65f13d0b650074c18cc412e"
+size = 1373748
+mtime_ms = 1790953847757
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/f04468c7-1238-4664-8fb3-1334e71e7e71/fca1f395-1c08-4189-964f-596ddbfcfc8c"
+storage_version_token = "1790954519422951"
+content_type = "image/png"
+
+[[outputs]]
+id = "KUj5atsNIEAQ32RhlQ3B-"
+uri = "file://exports/housing-assets/Housing-Construction-Stages.png"
+type = "image"
+title = "التأسيس ← البناء ← التشطيب ← المكتمل"
+description = "أشكال فعلية مختلفة لمنزل عائلي وعمارة وبرج، بخامات وأبعاد ثابتة للموقع."
+logical_id = "0eb0a906-0d34-40e3-8a2f-4b3286fc6a0d"
+content_hash = "sha256:5c046a2228837e115294c2110e5a34aa2184c97f2e109b249fdc69f1492e0992"
+size = 1483388
+mtime_ms = 1790953848781
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/0eb0a906-0d34-40e3-8a2f-4b3286fc6a0d/dbd7293a-0e31-4d45-9aae-058d0468a4fb"
+storage_version_token = "1790954520840515"
+content_type = "image/png"
+
+[[outputs]]
+id = "aba4lJ5d80uusRDZTFEs9"
+uri = "file://exports/housing-assets/Construction-Workers-Source.gif"
+type = "image"
+title = "معاينة حركة العمّال حسب مرحلة البناء"
+description = "GIF مرسوم من هندسة مصدر اللعبة أثناء تحديث العمّال الفعلي، يبيّن الأدوات والحركة في المراحل الثلاث النشطة. ليس تسجيلًا من Unity."
+logical_id = "48963d2c-34b1-411d-bfbe-cbbd8017080e"
+content_hash = "sha256:edfcc7172bf3090f9d64ca9dc17158d1d3d8f18424c2dae0b03e0475ef568175"
+size = 257343
+mtime_ms = 1790953566777
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/48963d2c-34b1-411d-bfbe-cbbd8017080e/5902d182-b400-43d8-98dc-30ceb2605ed5"
+storage_version_token = "1790954522166068"
+content_type = "image/gif"
