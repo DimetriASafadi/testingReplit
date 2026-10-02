@@ -14,3 +14,9 @@ Treat the local commit head as live state between tool calls, not a fixed sessio
 **Why:** Replit checkpoints can commit pending changes while the agent is working, so files that were just marked for deletion may already be committed by the next operation.
 
 **How to apply:** Check status before staging, freeze the head for each transfer, and verify it again before updating the remote branch. Do not recreate deleted files or rewrite history merely because an earlier staging assumption became stale.
+
+Create Git tree objects in dependency order: children before parents.
+
+**Why:** Reversing `git rev-list --objects` did not produce a topological tree order across multiple commits. GitHub rejected a parent containing a child tree that had not yet been created, although its blobs had uploaded correctly.
+
+**How to apply:** Traverse the explicit tree dependencies recursively, then create commits parent-first. Preserve every object hash and advance the branch only after all dependencies exist; resume from uploaded objects rather than resending large archive blobs.
