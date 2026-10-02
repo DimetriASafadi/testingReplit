@@ -6,3 +6,4 @@
 - [Orthographic city audio](orthographic-city-audio.md) — mix from ground focus plus zoom; camera setback and map units otherwise give misleading sound distance.
 - [Mechanical contact checks](mechanical-contact-checks.md) — valid meshes and joint bounds do not prove digging/loading contact or realistic map-scale travel.
 - [Native fixture ownership](native-fixture-ownership.md) — model hierarchy destruction; separate selection from static caches and test thin triangles at real geographic coordinates.
+- [Regional building art direction](regional-building-art-direction.md) — user wants family housing in the east, progressing to taller urban and tourist buildings toward the west.
