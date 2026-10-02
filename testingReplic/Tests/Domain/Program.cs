@@ -16,7 +16,7 @@ internal static class Program
             ProjectValidation, AgricultureAndIndustry, CommerceAndRemainders,
             DailyAndRollback, Upgrades, OverflowAndCorruption, RecyclingWaitsForStorage, TransactionAtomicity, AllDistrictProgression,
             EarnedProgressionWithoutGrants, LegacyMigrationBoundaries, LegacyTimersAndJobs,
-            ExpandedProgressionAndFinale, LegacyCorruption
+            ExpandedProgressionAndFinale, LegacyCorruption, RoadImprovements
         };
         foreach (var test in tests)
         {
@@ -46,6 +46,14 @@ internal static class Program
         bool thrown = false;
         try { action(); } catch (InvalidOperationException) { thrown = true; }
         Check(thrown, "Expected explicit corrupt-state exception");
+    }
+    private static void ThrowsRegistration(Action action)
+    {
+        bool thrown = false;
+        try { action(); }
+        catch (ArgumentException) { thrown = true; }
+        catch (InvalidOperationException) { thrown = true; }
+        Check(thrown, "Expected invalid road registration exception");
     }
     private static void Fleet(EconomyService economy)
     {
@@ -968,5 +976,98 @@ internal static class Program
         current = GameCatalog.CreateNew(Epoch);
         current.districts[0].id = "tuffah";
         Throws(() => GameStateMigration.Upgrade(current));
+    }
+
+    private static void RoadImprovements()
+    {
+        var state = GameCatalog.CreateNew(Epoch);
+        state.roadSegments = null;
+        var economy = new EconomyService(state);
+        Check(economy.State.roadSegments != null && economy.State.roadSegments.Length == 0,
+            "Missing additive road state initializes without changing old progress");
+        var definitions = new[]
+        {
+            new RoadSegmentDefinition("12345:0", "Road A", 250f),
+            new RoadSegmentDefinition("12345:1", "Road B", 1000.01f)
+        };
+        economy.RegisterRoadSegments(definitions);
+        Equal(750L, RoadEconomy.GetCost(definitions[0], 1).coins, "Fractional kilometre repair cost");
+        var upgrade = RoadEconomy.GetCost(definitions[0], 2);
+        Equal(2000L, upgrade.coins, "Fractional kilometre upgrade coins");
+        Equal(3, upgrade.concrete, "Fractional kilometre concrete rounds up");
+        Equal(1, upgrade.iron, "Fractional kilometre iron rounds up");
+        Equal(0.5f, RoadEconomy.SpeedMultiplier(0), "Road level zero speed");
+        Equal(1f, RoadEconomy.SpeedMultiplier(1), "Road level one speed");
+        Equal(2f, RoadEconomy.SpeedMultiplier(2), "Road level two speed");
+
+        economy.State.coins = 0;
+        long coins = economy.State.coins;
+        var stockBefore = Json(economy.State.stock);
+        Fail(economy.ImproveRoad("999:0", 1));
+        Fail(economy.ImproveRoad("12345:0", 2));
+        Fail(economy.ImproveRoad("12345:0", 1)); // Cannot afford.
+        Equal(coins, economy.State.coins, "Unknown, skipped, and unaffordable improvements are atomic");
+        Equal(stockBefore, Json(economy.State.stock), "Unaffordable improvement consumes no materials");
+        economy.State.coins = long.MaxValue;
+        economy.State.stock.concrete = 10;
+        economy.State.stock.iron = 10;
+        coins = economy.State.coins;
+        Ok(economy.ImproveRoad("12345:0", 1));
+        Equal(coins - 750, economy.State.coins, "Repair debited exactly once");
+        Equal(1, RoadEconomy.GetLevel(economy.State, "12345:0"), "Repair level persisted in state");
+        Fail(economy.ImproveRoad("12345:0", 1));
+        Fail(economy.ImproveRoad("12345:0", 0));
+        coins = economy.State.coins;
+        economy.State.stock.concrete = 0;
+        economy.State.stock.iron = 0;
+        Fail(economy.ImproveRoad("12345:0", 2));
+        Equal(coins, economy.State.coins, "Missing upgrade materials do not charge currency");
+        Equal(0, economy.State.stock.concrete, "Missing materials remain untouched");
+        economy.State.stock.concrete = 10;
+        economy.State.stock.iron = 10;
+        Ok(economy.ImproveRoad("12345:0", 2));
+        Equal(2, RoadEconomy.GetLevel(economy.State, "12345:0"), "Upgrade follows repair");
+        Equal(7, economy.State.stock.concrete, "Upgrade concrete debited exactly");
+        Equal(9, economy.State.stock.iron, "Upgrade iron debited exactly");
+        string serialized = Json(economy.State);
+        var reloaded = new EconomyService(System.Text.Json.JsonSerializer.Deserialize<GameState>(serialized, JsonOptions));
+        Equal(2, RoadEconomy.GetLevel(reloaded.State, "12345:0"), "Road level survives serialization");
+        Equal(serialized, Json(GameStateMigration.Upgrade(reloaded.State)), "Version two migration preserves road progress");
+
+        var legacy = LegacyFixture(3);
+        legacy.roadSegments = null;
+        var migrated = GameStateMigration.Upgrade(legacy);
+        Check(migrated.roadSegments != null && migrated.roadSegments.Length == 0,
+            "Legacy migration adds empty road state without resetting earned district progress");
+        Equal(legacy.coins, migrated.coins, "Additive road migration preserves old currency");
+        Equal(Json(legacy.stock), Json(migrated.stock), "Additive road migration preserves old materials");
+        var roads = new[]
+        {
+            new RoadSegmentDefinition("12345:0", "A", 100),
+            new RoadSegmentDefinition("12345:0", "Duplicate", 200)
+        };
+        ThrowsRegistration(() => new EconomyService(GameCatalog.CreateNew(Epoch)).RegisterRoadSegments(roads));
+        foreach (string id in new[] { "0:0", "01:0", "123:01", "123:-1", "123:0:1", " 123:0" })
+            ThrowsRegistration(() => new EconomyService(GameCatalog.CreateNew(Epoch))
+                .RegisterRoadSegments(new[] { new RoadSegmentDefinition(id, "Invalid", 100) }));
+        foreach (float length in new[] { 0f, -1f, float.NaN, float.PositiveInfinity, 1000.02f })
+            ThrowsRegistration(() => new EconomyService(GameCatalog.CreateNew(Epoch))
+                .RegisterRoadSegments(new[] { new RoadSegmentDefinition("123:0", "Invalid", length) }));
+        foreach (Action<GameState> corrupt in new Action<GameState>[]
+        {
+            s => s.roadSegments = new[] { new RoadSegmentState { id = "bad", level = 1 } },
+            s => s.roadSegments = new[] { new RoadSegmentState { id = "123:0", level = -1 } },
+            s => s.roadSegments = new[] { new RoadSegmentState { id = "123:0", level = 3 } },
+            s => s.roadSegments = new[] { new RoadSegmentState { id = "123:0", level = 1 }, new RoadSegmentState { id = "123:0", level = 2 } },
+            s => s.roadSegments = new RoadSegmentState[] { null }
+        })
+        {
+            var malformed = GameCatalog.CreateNew(Epoch);
+            corrupt(malformed);
+            Throws(() => new EconomyService(malformed));
+        }
+        var once = new EconomyService(GameCatalog.CreateNew(Epoch));
+        once.RegisterRoadSegments(new RoadSegmentDefinition[0]);
+        ThrowsRegistration(() => once.RegisterRoadSegments(new RoadSegmentDefinition[0]));
     }
 }

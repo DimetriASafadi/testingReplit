@@ -12,6 +12,7 @@
     <Compile Include="../../Assets/NewGaza/Core/GameCatalog.cs" Link="Core/GameCatalog.cs" />
     <Compile Include="../../Assets/NewGaza/Core/GameGeography.cs" Link="Core/GameGeography.cs" />
     <Compile Include="../../Assets/NewGaza/Core/EconomyService.cs" Link="Core/EconomyService.cs" />
+    <Compile Include="../../Assets/NewGaza/Core/RoadEconomy.cs" Link="Core/RoadEconomy.cs" />
     <Compile Include="../../Assets/NewGaza/Core/GameStateMigration.cs" Link="Core/GameStateMigration.cs" />
     <Compile Include="Program.cs" />
   </ItemGroup>

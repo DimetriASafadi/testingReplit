@@ -65,6 +65,36 @@ namespace NewGaza.Core
     }
 
     [Serializable]
+    public class RoadSegmentState
+    {
+        public string id;
+        public int level;
+    }
+
+    [Serializable]
+    public class RoadSegmentDefinition
+    {
+        public string id;
+        public string name;
+        public float lengthMeters;
+
+        public RoadSegmentDefinition(string id, string name, float lengthMeters)
+        {
+            this.id = id;
+            this.name = name;
+            this.lengthMeters = lengthMeters;
+        }
+    }
+
+    [Serializable]
+    public class RoadImprovementCost
+    {
+        public long coins;
+        public int concrete;
+        public int iron;
+    }
+
+    [Serializable]
     public class GameState
     {
         public int version = 2;
@@ -84,6 +114,7 @@ namespace NewGaza.Core
         public long lastSeenUtc;
         public long lastGiftUtc;
         public long cityCompletedUtc;
+        public RoadSegmentState[] roadSegments = new RoadSegmentState[0];
     }
 
     public struct ActionResult

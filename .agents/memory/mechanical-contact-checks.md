@@ -20,3 +20,9 @@ Advance contact fixtures through the production clock only after establishing th
 **Why:** Dock-gated machinery deliberately holds its dig clock when the truck is absent; assigning a nominal phase or stepping a held clock tests the waiting pose instead of the intended contact pose.
 
 **How to apply:** Assert the receiver is docked, step real update delta time, and assert clock advancement before measuring transformed tooth vertices.
+
+Exercise the configured production transport path as well as any compatibility-only fixture.
+
+**Why:** Introducing street routing initially moved the configured receiver to the excavator's center while the older unconfigured contact tests still passed. A correct path alone does not preserve a calibrated loading dock.
+
+**How to apply:** Measure actual receiving-bed contact after the configured fleet arrives through the sourced network. Keep access routing separate from the authored mechanical dock arrangement.

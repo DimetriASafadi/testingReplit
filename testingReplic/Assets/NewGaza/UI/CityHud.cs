@@ -15,7 +15,7 @@ namespace NewGaza
     /// <summary>Native, session-owned Arabic mobile interface. No scene prefab or web view is required.</summary>
     public sealed partial class CityHud : MonoBehaviour
     {
-        private enum Page { None, Map, Projects, Fleet, Investments, Resources, Gift, Settings, Finale }
+        private enum Page { None, Map, Projects, Fleet, Investments, Resources, Gift, Settings, Finale, Road }
         private sealed class Binding
         {
             public ArabicLabel label;
@@ -96,6 +96,7 @@ namespace NewGaza
             session.Changed += OnChanged;
             session.Notification += ShowToast;
             session.PlotSelected += OnPlotSelected;
+            session.RoadSelected += OnRoadSelected;
             initialized = true;
             LayoutSafeArea(true);
             RefreshHud();
@@ -552,6 +553,7 @@ namespace NewGaza
                 case Page.Gift: BuildGift(); break;
                 case Page.Settings: BuildSettings(); break;
                 case Page.Finale: BuildFinale(); break;
+                case Page.Road: BuildRoad(); break;
             }
             RefreshBindings();
             Canvas.ForceUpdateCanvases();
@@ -1045,6 +1047,9 @@ namespace NewGaza
                         // Include only deadline CROSSINGS, never the live countdown.
                         .Append(',').Append(p.finishUtc > session.Now);
             }
+            if (s.roadSegments != null)
+                foreach (var road in s.roadSegments)
+                    key.Append('|').Append(road.id).Append(':').Append(road.level);
             return key.ToString();
         }
 
@@ -1285,6 +1290,7 @@ namespace NewGaza
                 session.Changed -= OnChanged;
                 session.Notification -= ShowToast;
                 session.PlotSelected -= OnPlotSelected;
+                session.RoadSelected -= OnRoadSelected;
             }
             CityCamera.ModalOpen = false;
             if (roundedSprite != null)

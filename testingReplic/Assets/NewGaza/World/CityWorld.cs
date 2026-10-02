@@ -59,6 +59,9 @@ namespace NewGaza
         private CitySelectable factoryHit;
         private CityFleet fleet;
         internal CityFleet Fleet { get { return fleet; } }
+        public CityRoadNetwork Roads { get; private set; }
+        private CityRoadView roadView;
+        private string selectedRoadId;
         private int selectedDistrict = -1;
         private int selectedPlot = -1;
         private int factoryLevel = -1;
@@ -76,6 +79,8 @@ namespace NewGaza
             if (gameSession == null) throw new ArgumentNullException(nameof(gameSession));
             if (session != null) session.Changed -= Refresh;
             if (session != null) session.PlotSelected -= SetSelectedPlot;
+            roadView?.Dispose();
+            roadView = null;
             DisposeFogFields();
             if (cityRoot != null)
             {
@@ -89,6 +94,8 @@ namespace NewGaza
             geometry = new CityGeometry();
             modelLibrary = new CityModelLibrary();
             basemap = CityBasemap.LoadFromResources();
+            Roads = new CityRoadNetwork(basemap);
+            session.Economy.RegisterRoadSegments(Roads.Definitions);
             fogMaterial = CreateFogMaterial();
             MakePalette();
             cityRoot = new GameObject("New Gaza • geographically placed neighborhood centers").transform;
@@ -103,12 +110,17 @@ namespace NewGaza
                 asphalt, geometry.Material("local weathered asphalt", Hex(0x636663), surface: SurfaceKind.Asphalt),
                 geometry.Material("mapped roof footprints", Hex(0x858780), surface: SurfaceKind.Concrete),
                 urbanRequests);
+            roadView = new GameObject("Interactive sourced street surfaces").AddComponent<CityRoadView>();
+            roadView.transform.SetParent(cityRoot, false);
+            roadView.Initialize(Roads, geometry, cityRoot);
             BuildDistricts();
             BuildFactorySite();
             BuildSelection();
             fleet = new GameObject("Salvage fleet • articulated machines").AddComponent<CityFleet>();
             fleet.transform.SetParent(cityRoot, false);
             fleet.Initialize(geometry, yellow, glass, dark, iron, teal, rubble);
+            fleet.ConfigureRoads(Roads, id => RoadEconomy.SpeedMultiplier(
+                RoadEconomy.GetLevel(session.State, id)));
             session.Changed += Refresh;
             session.PlotSelected += SetSelectedPlot;
             selectedDistrict = -1;
@@ -578,6 +590,7 @@ namespace NewGaza
         {
             if (session == null || session.State == null || districts == null) return;
             GameState state = session.State;
+            roadView?.Refresh(state, selectedRoadId);
             for (int d = 0; d < districts.Length && d < state.districts.Length; d++)
             {
                 DistrictView view = districts[d];
@@ -633,6 +646,12 @@ namespace NewGaza
             foreach (ProjectState project in district.projects)
                 if (project != null && project.id == id) return project;
             return null;
+        }
+
+        public void SetSelectedRoad(string id)
+        {
+            selectedRoadId = id;
+            roadView?.Refresh(session.State, selectedRoadId);
         }
 
         private void MergeDistrictPlots(DistrictView district)
@@ -1531,6 +1550,7 @@ namespace NewGaza
             }
             DisposeFogFields();
             if (seaSurfaceMaterial != null) Destroy(seaSurfaceMaterial);
+            roadView?.Dispose();
             modelLibrary?.Dispose();
             modelLibrary = null;
             geometry?.Dispose();

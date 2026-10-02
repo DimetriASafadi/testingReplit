@@ -32,6 +32,12 @@ with zipfile.ZipFile(destination) as archive:
         "testingReplic/Assets/NewGaza/Runtime/CityAudio.cs",
         "testingReplic/Assets/NewGaza/World/EquipmentTrackRig.cs",
         "testingReplic/Assets/NewGaza/UI/CityHudAudio.cs",
+        "testingReplic/Assets/NewGaza/Core/RoadEconomy.cs",
+        "testingReplic/Assets/NewGaza/World/CityRoadNetwork.cs",
+        "testingReplic/Assets/NewGaza/World/CityRoadView.cs",
+        "testingReplic/Assets/NewGaza/UI/CityHudRoad.cs",
+        "testingReplic/Tests/Roads/RoadsTests.csproj",
+        "testingReplic/Tests/RoadView/RoadViewTests.csproj",
     }
     required.update("testingReplic/Assets/NewGaza/Resources/Audio/" + key + ".wav" for key in
         ("excavator_engine", "truck_engine", "dozer_engine", "hydraulics", "tracks",

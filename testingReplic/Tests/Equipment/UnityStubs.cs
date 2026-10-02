@@ -1,13 +1,25 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Numerics;
+using System.Text.Json;
 
 namespace UnityEngine
 {
     public class Object
     {
         public string name;
-        public static void Destroy(Object value) { }
+        public static void Destroy(Object value)
+        {
+            // Model hierarchy removal rather than retaining stale native road overlays.
+            // Mesh destruction remains a no-op; the geometry owner tracks its releases.
+            if (value is GameObject target)
+            {
+                target.SetActive(false);
+                target.transform.SetParent(null, false);
+            }
+        }
+        public static void DestroyImmediate(Object value) { Destroy(value); }
     }
 
     public class Component : Object
@@ -269,12 +281,35 @@ namespace UnityEngine
     public static class Resources
     {
         private static readonly Shader LitShader = new Shader { name = "Universal Render Pipeline/Lit" };
+        public static string RootDirectory;
         public static T Load<T>(string path) where T : class
         {
             if (typeof(T) == typeof(Material) && path == "NewGazaLit")
                 return new Material(LitShader) as T;
+            if (typeof(T) == typeof(TextAsset) && !string.IsNullOrEmpty(RootDirectory))
+            {
+                string file = Path.Combine(RootDirectory,
+                    path.Replace('/', Path.DirectorySeparatorChar) + ".json");
+                if (File.Exists(file)) return new TextAsset(File.ReadAllText(file)) as T;
+            }
             return null;
         }
+    }
+
+    public sealed class TextAsset : Object
+    {
+        public readonly string text;
+        public TextAsset(string value) { text = value; }
+    }
+
+    public static class JsonUtility
+    {
+        private static readonly JsonSerializerOptions Options = new JsonSerializerOptions
+        {
+            IncludeFields = true,
+            PropertyNameCaseInsensitive = true
+        };
+        public static T FromJson<T>(string json) { return JsonSerializer.Deserialize<T>(json, Options); }
     }
 
     public enum TextureFormat { RGBA32 }
@@ -305,6 +340,8 @@ namespace UnityEngine
         public float magnitude { get { return (float)Math.Sqrt(sqrMagnitude); } }
         public Vector2 normalized { get { return this / Math.Max(magnitude, 1e-20f); } }
         public static Vector2 Lerp(Vector2 a, Vector2 b, float t) { return a + (b - a) * t; }
+        public static float Dot(Vector2 a, Vector2 b) { return a.x * b.x + a.y * b.y; }
+        public static float Distance(Vector2 a, Vector2 b) { return (a - b).magnitude; }
         public static Vector2 operator +(Vector2 a, Vector2 b) { return new Vector2(a.x + b.x, a.y + b.y); }
         public static Vector2 operator -(Vector2 a, Vector2 b) { return new Vector2(a.x - b.x, a.y - b.y); }
         public static Vector2 operator *(Vector2 a, float b) { return new Vector2(a.x * b, a.y * b); }
@@ -484,7 +521,7 @@ namespace UnityEngine
         {
             return Clamp(value - Floor(value / length) * length, 0f, length);
         }
-        private static float Floor(float value) { return (float)Math.Floor(value); }
+        public static float Floor(float value) { return (float)Math.Floor(value); }
         public static float InverseLerp(float a, float b, float value)
         {
             if (a == b) return 0f;

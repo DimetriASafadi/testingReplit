@@ -50,6 +50,7 @@ internal static class Program
             CheckHudIconContracts(roots);
             CheckAudioContracts(sourceRoot, roots);
             CheckEquipmentContracts(roots);
+            CheckRoadContracts(roots);
             CheckArabicShaping();
             if (Failures.Count > 0)
             {
@@ -67,6 +68,34 @@ internal static class Program
             Console.Error.WriteLine("Source checks could not run: " + exception);
             return 1;
         }
+    }
+
+    private static void CheckRoadContracts(Dictionary<string, CompilationUnitSyntax> roots)
+    {
+        string Source(string path)
+        {
+            Require(roots.ContainsKey(path), "Missing native road integration source: " + path);
+            return roots.TryGetValue(path, out var root) ? root.ToString() : "";
+        }
+        string camera = Source("Runtime/CityCamera.cs");
+        string session = Source("Runtime/GameSession.cs");
+        string world = Source("World/CityWorld.cs");
+        string hud = Source("UI/CityHudRoad.cs");
+        string economy = Source("Core/EconomyService.cs");
+        string view = Source("World/CityRoadView.cs");
+        Require(camera.Contains("TryPick") && camera.Contains("SelectRoad"),
+            "Street taps must pick sourced street geometry and open road context without payment.");
+        Require(world.Contains("RegisterRoadSegments(Roads.Definitions)") &&
+            world.Contains("ConfigureRoads(Roads") && world.Contains("roadView?.Refresh"),
+            "World must register authoritative segments, render saved levels and configure actual road transport.");
+        Require(session.Contains("Perform(e => e.ImproveRoad(id, targetLevel))") &&
+            hud.Contains("Confirm(title") && hud.Contains("session.ImproveRoad(definition.id, target)"),
+            "Road spending must use explicit confirmation and the save/error-aware session action path.");
+        Require(economy.Contains("ImproveRoad") && economy.Contains("roadDefinitions"),
+            "Road upgrades must be validated against registered definitions in the economy.");
+        Require(view.Contains("renderedLevels") && view.Contains("BuildSelection") &&
+            view.Contains("asphalt") && view.Contains("whiteLine") && view.Contains("sidewalk"),
+            "Saved road levels need cached native surfaces, paving details and segment highlights.");
     }
 
     private static void CheckSceneBootstrap(string sourceRoot,
@@ -916,22 +945,20 @@ internal static class Program
 
         var createRoute = fleet.Members.OfType<MethodDeclarationSyntax>()
             .FirstOrDefault(method => method.Identifier.ValueText == "CreateRoute");
-        var depotApronAssignments = createRoute?.DescendantNodes()
-            .OfType<AssignmentExpressionSyntax>()
-            .Where(assignment => assignment.Left.ToString().StartsWith("route[", StringComparison.Ordinal) &&
-                assignment.Right is BinaryExpressionSyntax sum &&
-                sum.IsKind(SyntaxKind.AddExpression) &&
+        var depotApronSums = createRoute?.DescendantNodes()
+            .OfType<BinaryExpressionSyntax>()
+            .Where(sum => sum.IsKind(SyntaxKind.AddExpression) &&
                 sum.Left.ToString() == "depot" &&
                 sum.Right is InvocationExpressionSyntax offset &&
                 offset.Expression.ToString() == "VehicleOffset")
-            .ToArray() ?? Array.Empty<AssignmentExpressionSyntax>();
-        var depotApronVectors = depotApronAssignments.Select(assignment =>
+            .ToArray() ?? Array.Empty<BinaryExpressionSyntax>();
+        var depotApronVectors = depotApronSums.Select(sum =>
         {
-            var sum = (BinaryExpressionSyntax)assignment.Right;
             var offset = (InvocationExpressionSyntax)sum.Right;
             return offset.ArgumentList.Arguments.SingleOrDefault()?.Expression
                 as ObjectCreationExpressionSyntax;
-        }).ToArray();
+        }).Where(vector => vector?.ArgumentList?.Arguments.Count == 3 &&
+            vector.ArgumentList.Arguments[0].Expression.ToString() == "-1.4f").ToArray();
         bool scalesEveryCompleteApronVector = depotApronVectors.Length == 3 &&
             depotApronVectors.All(vector => vector != null &&
                 Signature(vector.Type) == "Vector3" &&
@@ -1609,9 +1636,11 @@ internal static class Program
             .FirstOrDefault(method => method.Identifier.ValueText == "UpdateTruckTrip");
         string truckTripSource = updateTruckTrip == null ? "" : Compact(updateTruckTrip.ToString());
         Require(haulingSpeed?.Initializer?.Value.ToString() == ".22f" &&
-            truckTripSource.Contains("tripDistance+=HaulingSpeed*dt", StringComparison.Ordinal) &&
+            truckTripSource.Contains("tripDistance+=TruckSpeedAtTripDistance(false)*dt", StringComparison.Ordinal) &&
+            truckTripSource.Contains("tripDistance+=TruckSpeedAtTripDistance(true)*dt", StringComparison.Ordinal) &&
+            fleetSource.Contains("roadSpeedMultiplier(roadId)", StringComparison.Ordinal) &&
             fleetSource.Contains("privateconstfloatVehicleScale=.07f", StringComparison.Ordinal),
-            "Truck hauling speed must be capped at 0.22 unscaled city units/second rather than scaled model distance.");
+            "Truck base hauling speed must remain 0.22 unscaled city units/second, multiplied only by the current road's improvement level.");
         Require(truckTripSource.Contains("TruckTripState.TurningAtDepot", StringComparison.Ordinal) &&
             truckTripSource.Contains("TruckTripState.TurningInAtWork", StringComparison.Ordinal) &&
             truckTripSource.Contains("truck.localPosition=tripRoute[1]", StringComparison.Ordinal) &&
