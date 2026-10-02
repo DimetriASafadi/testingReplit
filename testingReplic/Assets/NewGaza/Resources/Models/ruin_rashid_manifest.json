@@ -1,0 +1,107 @@
+{
+  "formatVersion": 1,
+  "key": "ruin_rashid",
+  "sourceFile": "original procedural geometry (no imported source model)",
+  "targetTriangles": 2200,
+  "actualTriangles": 2092,
+  "triangleTolerance": 0.0,
+  "verifiedWithinBudget": true,
+  "vertexCount": 1420,
+  "dimensionsNormalizedBlenderXYZ": [
+    19.492176055908203,
+    16.732845306396484,
+    28.176424026489258
+  ],
+  "origin": {
+    "normalizedOriginBlender": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "pivot": "bottom-center"
+  },
+  "districtId": "rashid",
+  "category": "coastal_hotel_wing",
+  "floors": 9,
+  "damageType": "wing_collapse",
+  "width": 18.0,
+  "depth": 15.0,
+  "meshPath": "Resources/Models/ruin_rashid.obj",
+  "texturePath": "Resources/Models/ruin_rashid_albedo.png",
+  "fbxPath": "Art/DestroyedFBX/ruin_rashid.fbx",
+  "triangleCount": 2092,
+  "bounds": {
+    "min": [
+      -9.746088027954102,
+      -8.366422653198242,
+      0.0
+    ],
+    "max": [
+      9.746088027954102,
+      8.366422653198242,
+      28.176424026489258
+    ],
+    "width": 19.492176055908203,
+    "height": 28.176424026489258,
+    "depth": 16.732845306396484
+  },
+  "units": "meters",
+  "pivot": "bottom-center",
+  "damageOnly": true,
+  "originalAuthored": true,
+  "sourceType": "procedurally_authored_original_geometry",
+  "referenceAssets": [
+    "IMG-20261002-WA0003_1790946116113.jpg",
+    "IMG-20261002-WA0004_1790946116076.jpg"
+  ],
+  "uvCoverage": {
+    "layer": "UVMap",
+    "loopCount": 6276,
+    "finiteLoopCount": 6276,
+    "bounds": {
+      "min": [
+        0.02525000087916851,
+        0.02525000087916851
+      ],
+      "max": [
+        0.9747499823570251,
+        0.47475001215934753
+      ]
+    }
+  },
+  "objAudit": {
+    "vertices": 1420,
+    "uvCoordinates": 99,
+    "normals": 1214,
+    "triangles": 2092
+  },
+  "fbxAudit": {
+    "triangles": 2092,
+    "vertices": 1420,
+    "bounds": {
+      "min": [
+        -9.746088027954102,
+        -8.366422653198242,
+        0.0
+      ],
+      "max": [
+        9.746088027954102,
+        8.366422653198242,
+        28.176424026489258
+      ],
+      "width": 19.492176055908203,
+      "height": 28.176424026489258,
+      "depth": 16.732845306396484
+    },
+    "uvChannels": 1,
+    "textures": [
+      "sharedatlastex.png"
+    ]
+  },
+  "albedo": {
+    "file": "ruin_rashid_albedo.png",
+    "sourceMaterialCount": 1,
+    "sharedAtlas": "sharedatlastex.png",
+    "uvLayer": "UVMap"
+  }
+}

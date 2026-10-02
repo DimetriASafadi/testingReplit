@@ -1,0 +1,359 @@
+[
+  {
+    "key": "ruin_shujaiya",
+    "source": "testingReplic/Assets/NewGaza/Art/DestroyedFBX/ruin_shujaiya.fbx",
+    "boundsMin": [
+      -5.328383445739746,
+      -4.22951078414917,
+      -1.8487779129827686e-07
+    ],
+    "boundsMax": [
+      5.328383445739746,
+      4.229511260986328,
+      7.256872653961182
+    ],
+    "preview": "exports/destroyed-assets/previews/ruin_shujaiya.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "ruin_tuffah",
+    "source": "testingReplic/Assets/NewGaza/Art/DestroyedFBX/ruin_tuffah.fbx",
+    "boundsMin": [
+      -5.598936557769775,
+      -4.490268230438232,
+      -1.962758631179895e-07
+    ],
+    "boundsMax": [
+      5.598936557769775,
+      4.490268707275391,
+      10.273680686950684
+    ],
+    "preview": "exports/destroyed-assets/previews/ruin_tuffah.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "ruin_sheikh_radwan",
+    "source": "testingReplic/Assets/NewGaza/Art/DestroyedFBX/ruin_sheikh_radwan.fbx",
+    "boundsMin": [
+      -5.864373683929443,
+      -4.760711669921875,
+      -2.0809731893223216e-07
+    ],
+    "boundsMax": [
+      5.864373683929443,
+      4.760712146759033,
+      10.522202491760254
+    ],
+    "preview": "exports/destroyed-assets/previews/ruin_sheikh_radwan.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "ruin_daraj",
+    "source": "testingReplic/Assets/NewGaza/Art/DestroyedFBX/ruin_daraj.fbx",
+    "boundsMin": [
+      -6.299262046813965,
+      -4.915821552276611,
+      -2.148773887711286e-07
+    ],
+    "boundsMax": [
+      6.299262046813965,
+      4.9158220291137695,
+      13.367135047912598
+    ],
+    "preview": "exports/destroyed-assets/previews/ruin_daraj.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "ruin_karama",
+    "source": "testingReplic/Assets/NewGaza/Art/DestroyedFBX/ruin_karama.fbx",
+    "boundsMin": [
+      -6.29457950592041,
+      -5.1019392013549805,
+      -2.2301284730019688e-07
+    ],
+    "boundsMax": [
+      6.29457950592041,
+      5.101939678192139,
+      13.32541275024414
+    ],
+    "preview": "exports/destroyed-assets/previews/ruin_karama.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "ruin_old_city",
+    "source": "testingReplic/Assets/NewGaza/Art/DestroyedFBX/ruin_old_city.fbx",
+    "boundsMin": [
+      -6.524606704711914,
+      -5.325222015380859,
+      -2.327728481077429e-07
+    ],
+    "boundsMax": [
+      6.524606704711914,
+      5.325222492218018,
+      10.50008773803711
+    ],
+    "preview": "exports/destroyed-assets/previews/ruin_old_city.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "ruin_nasr",
+    "source": "testingReplic/Assets/NewGaza/Art/DestroyedFBX/ruin_nasr.fbx",
+    "boundsMin": [
+      -6.798027992248535,
+      -5.509345054626465,
+      -2.408211230431334e-07
+    ],
+    "boundsMax": [
+      6.798027992248535,
+      5.509346008300781,
+      19.539695739746094
+    ],
+    "preview": "exports/destroyed-assets/previews/ruin_nasr.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "ruin_sabra",
+    "source": "testingReplic/Assets/NewGaza/Art/DestroyedFBX/ruin_sabra.fbx",
+    "boundsMin": [
+      -7.348123073577881,
+      -5.7526936531066895,
+      -2.514582320145564e-07
+    ],
+    "boundsMax": [
+      7.348123073577881,
+      5.752694129943848,
+      13.22423267364502
+    ],
+    "preview": "exports/destroyed-assets/previews/ruin_sabra.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "ruin_zeitoun",
+    "source": "testingReplic/Assets/NewGaza/Art/DestroyedFBX/ruin_zeitoun.fbx",
+    "boundsMin": [
+      -7.415514945983887,
+      -6.000197410583496,
+      -2.622769557092397e-07
+    ],
+    "boundsMax": [
+      7.415514945983887,
+      6.000197887420654,
+      16.224475860595703
+    ],
+    "preview": "exports/destroyed-assets/previews/ruin_zeitoun.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "ruin_rimal",
+    "source": "testingReplic/Assets/NewGaza/Art/DestroyedFBX/ruin_rimal.fbx",
+    "boundsMin": [
+      -7.758734703063965,
+      -6.695563316345215,
+      -2.9267235390761925e-07
+    ],
+    "boundsMax": [
+      7.758734703063965,
+      6.695564270019531,
+      22.137924194335938
+    ],
+    "preview": "exports/destroyed-assets/previews/ruin_rimal.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "ruin_tel_al_hawa",
+    "source": "testingReplic/Assets/NewGaza/Art/DestroyedFBX/ruin_tel_al_hawa.fbx",
+    "boundsMin": [
+      -8.777389526367188,
+      -6.755937576293945,
+      -2.9531142331507e-07
+    ],
+    "boundsMax": [
+      8.777389526367188,
+      6.755938529968262,
+      25.297697067260742
+    ],
+    "preview": "exports/destroyed-assets/previews/ruin_tel_al_hawa.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "ruin_sheikh_ijlin",
+    "source": "testingReplic/Assets/NewGaza/Art/DestroyedFBX/ruin_sheikh_ijlin.fbx",
+    "boundsMin": [
+      -8.773014068603516,
+      -7.867718696594238,
+      -3.4390890846225375e-07
+    ],
+    "boundsMax": [
+      8.773014068603516,
+      7.867719650268555,
+      19.046892166137695
+    ],
+    "preview": "exports/destroyed-assets/previews/ruin_sheikh_ijlin.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "ruin_rashid",
+    "source": "testingReplic/Assets/NewGaza/Art/DestroyedFBX/ruin_rashid.fbx",
+    "boundsMin": [
+      -9.746088027954102,
+      -8.366422653198242,
+      -3.657079616914416e-07
+    ],
+    "boundsMax": [
+      9.746088027954102,
+      8.366423606872559,
+      28.176424026489258
+    ],
+    "preview": "exports/destroyed-assets/previews/ruin_rashid.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "ruin_mosque",
+    "source": "testingReplic/Assets/NewGaza/Art/DestroyedFBX/ruin_mosque.fbx",
+    "boundsMin": [
+      -5.6967315673828125,
+      -4.594021797180176,
+      -2.0081107265923492e-07
+    ],
+    "boundsMax": [
+      5.6967315673828125,
+      4.594022274017334,
+      12.957189559936523
+    ],
+    "preview": "exports/destroyed-assets/previews/ruin_mosque.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "ruin_school",
+    "source": "testingReplic/Assets/NewGaza/Art/DestroyedFBX/ruin_school.fbx",
+    "boundsMin": [
+      -6.690000057220459,
+      -4.950626850128174,
+      -2.163987744552287e-07
+    ],
+    "boundsMax": [
+      6.690000057220459,
+      4.950627326965332,
+      7.372464179992676
+    ],
+    "preview": "exports/destroyed-assets/previews/ruin_school.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "ruin_clinic",
+    "source": "testingReplic/Assets/NewGaza/Art/DestroyedFBX/ruin_clinic.fbx",
+    "boundsMin": [
+      -5.199999809265137,
+      -4.199999809265137,
+      -1.8358782938321383e-07
+    ],
+    "boundsMax": [
+      5.199999809265137,
+      4.200000286102295,
+      9.611894607543945
+    ],
+    "preview": "exports/destroyed-assets/previews/ruin_clinic.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "ruin_civic",
+    "source": "testingReplic/Assets/NewGaza/Art/DestroyedFBX/ruin_civic.fbx",
+    "boundsMin": [
+      -5.747117042541504,
+      -4.243821144104004,
+      -1.855033104902759e-07
+    ],
+    "boundsMax": [
+      5.747117042541504,
+      4.243821620941162,
+      7.003081321716309
+    ],
+    "preview": "exports/destroyed-assets/previews/ruin_civic.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "ruin_wall",
+    "source": "testingReplic/Assets/NewGaza/Art/DestroyedFBX/ruin_wall.fbx",
+    "boundsMin": [
+      -4.758731842041016,
+      -1.5857508182525635,
+      -6.931536944421168e-08
+    ],
+    "boundsMax": [
+      4.758731842041016,
+      1.5857510566711426,
+      4.493061542510986
+    ],
+    "preview": "exports/destroyed-assets/previews/ruin_wall.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "ruin_car",
+    "source": "testingReplic/Assets/NewGaza/Art/DestroyedFBX/ruin_car.fbx",
+    "boundsMin": [
+      -2.5487284660339355,
+      -1.6175906658172607,
+      -7.070713081702706e-08
+    ],
+    "boundsMax": [
+      2.5487284660339355,
+      1.6175907850265503,
+      1.9801197052001953
+    ],
+    "preview": "exports/destroyed-assets/previews/ruin_car.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "ruin_crater",
+    "source": "testingReplic/Assets/NewGaza/Art/DestroyedFBX/ruin_crater.fbx",
+    "boundsMin": [
+      -3.8264646530151367,
+      -4.09318733215332,
+      -1.7891889569909836e-07
+    ],
+    "boundsMax": [
+      3.8264646530151367,
+      4.09318733215332,
+      1.114282250404358
+    ],
+    "preview": "exports/destroyed-assets/previews/ruin_crater.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "ruin_debris",
+    "source": "testingReplic/Assets/NewGaza/Art/DestroyedFBX/ruin_debris.fbx",
+    "boundsMin": [
+      -4.371876239776611,
+      -3.2303695678710938,
+      -1.4120394098426914e-07
+    ],
+    "boundsMax": [
+      4.371876239776611,
+      3.2303695678710938,
+      2.5830318927764893
+    ],
+    "preview": "exports/destroyed-assets/previews/ruin_debris.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  }
+]

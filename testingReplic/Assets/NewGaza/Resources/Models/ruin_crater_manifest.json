@@ -1,0 +1,105 @@
+{
+  "formatVersion": 1,
+  "key": "ruin_crater",
+  "sourceFile": "original procedural geometry (no imported source model)",
+  "targetTriangles": 900,
+  "actualTriangles": 477,
+  "triangleTolerance": 0.0,
+  "verifiedWithinBudget": true,
+  "vertexCount": 543,
+  "dimensionsNormalizedBlenderXYZ": [
+    7.652929306030273,
+    8.18637466430664,
+    1.1142820119857788
+  ],
+  "origin": {
+    "normalizedOriginBlender": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "pivot": "bottom-center"
+  },
+  "districtId": null,
+  "category": "crater",
+  "floors": null,
+  "damageType": "static_soil_rim_bowl",
+  "meshPath": "Resources/Models/ruin_crater.obj",
+  "texturePath": "Resources/Models/ruin_crater_albedo.png",
+  "fbxPath": "Art/DestroyedFBX/ruin_crater.fbx",
+  "triangleCount": 477,
+  "bounds": {
+    "min": [
+      -3.8264646530151367,
+      -4.09318733215332,
+      0.0
+    ],
+    "max": [
+      3.8264646530151367,
+      4.09318733215332,
+      1.1142820119857788
+    ],
+    "width": 7.652929306030273,
+    "height": 1.1142820119857788,
+    "depth": 8.18637466430664
+  },
+  "units": "meters",
+  "pivot": "bottom-center",
+  "damageOnly": true,
+  "originalAuthored": true,
+  "sourceType": "procedurally_authored_original_geometry",
+  "referenceAssets": [
+    "IMG-20261002-WA0003_1790946116113.jpg",
+    "IMG-20261002-WA0004_1790946116076.jpg"
+  ],
+  "uvCoverage": {
+    "layer": "UVMap",
+    "loopCount": 1431,
+    "finiteLoopCount": 1431,
+    "bounds": {
+      "min": [
+        0.02525000087916851,
+        0.02525000087916851
+      ],
+      "max": [
+        0.7247499823570251,
+        0.47475001215934753
+      ]
+    }
+  },
+  "objAudit": {
+    "vertices": 543,
+    "uvCoordinates": 57,
+    "normals": 477,
+    "triangles": 477
+  },
+  "fbxAudit": {
+    "triangles": 477,
+    "vertices": 543,
+    "bounds": {
+      "min": [
+        -3.8264646530151367,
+        -4.09318733215332,
+        0.0
+      ],
+      "max": [
+        3.8264646530151367,
+        4.09318733215332,
+        1.1142820119857788
+      ],
+      "width": 7.652929306030273,
+      "height": 1.1142820119857788,
+      "depth": 8.18637466430664
+    },
+    "uvChannels": 1,
+    "textures": [
+      "sharedatlastex.png"
+    ]
+  },
+  "albedo": {
+    "file": "ruin_crater_albedo.png",
+    "sourceMaterialCount": 1,
+    "sharedAtlas": "sharedatlastex.png",
+    "uvLayer": "UVMap"
+  }
+}

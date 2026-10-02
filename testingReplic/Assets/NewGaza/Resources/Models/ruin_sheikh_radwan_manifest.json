@@ -1,0 +1,107 @@
+{
+  "formatVersion": 1,
+  "key": "ruin_sheikh_radwan",
+  "sourceFile": "original procedural geometry (no imported source model)",
+  "targetTriangles": 2200,
+  "actualTriangles": 1507,
+  "triangleTolerance": 0.0,
+  "verifiedWithinBudget": true,
+  "vertexCount": 1014,
+  "dimensionsNormalizedBlenderXYZ": [
+    11.728747367858887,
+    9.52142333984375,
+    10.522202491760254
+  ],
+  "origin": {
+    "normalizedOriginBlender": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "pivot": "bottom-center"
+  },
+  "districtId": "sheikh_radwan",
+  "category": "family_block",
+  "floors": 3,
+  "damageType": "broken_front",
+  "width": 11.0,
+  "depth": 9.0,
+  "meshPath": "Resources/Models/ruin_sheikh_radwan.obj",
+  "texturePath": "Resources/Models/ruin_sheikh_radwan_albedo.png",
+  "fbxPath": "Art/DestroyedFBX/ruin_sheikh_radwan.fbx",
+  "triangleCount": 1507,
+  "bounds": {
+    "min": [
+      -5.864373683929443,
+      -4.760711669921875,
+      0.0
+    ],
+    "max": [
+      5.864373683929443,
+      4.760711669921875,
+      10.522202491760254
+    ],
+    "width": 11.728747367858887,
+    "height": 10.522202491760254,
+    "depth": 9.52142333984375
+  },
+  "units": "meters",
+  "pivot": "bottom-center",
+  "damageOnly": true,
+  "originalAuthored": true,
+  "sourceType": "procedurally_authored_original_geometry",
+  "referenceAssets": [
+    "IMG-20261002-WA0003_1790946116113.jpg",
+    "IMG-20261002-WA0004_1790946116076.jpg"
+  ],
+  "uvCoverage": {
+    "layer": "UVMap",
+    "loopCount": 4521,
+    "finiteLoopCount": 4521,
+    "bounds": {
+      "min": [
+        0.02525000087916851,
+        0.02525000087916851
+      ],
+      "max": [
+        0.9747499823570251,
+        0.47475001215934753
+      ]
+    }
+  },
+  "objAudit": {
+    "vertices": 1014,
+    "uvCoordinates": 102,
+    "normals": 845,
+    "triangles": 1507
+  },
+  "fbxAudit": {
+    "triangles": 1507,
+    "vertices": 1014,
+    "bounds": {
+      "min": [
+        -5.864373683929443,
+        -4.760711669921875,
+        0.0
+      ],
+      "max": [
+        5.864373683929443,
+        4.760711669921875,
+        10.522202491760254
+      ],
+      "width": 11.728747367858887,
+      "height": 10.522202491760254,
+      "depth": 9.52142333984375
+    },
+    "uvChannels": 1,
+    "textures": [
+      "sharedatlastex.png"
+    ]
+  },
+  "albedo": {
+    "file": "ruin_sheikh_radwan_albedo.png",
+    "sourceMaterialCount": 1,
+    "sharedAtlas": "sharedatlastex.png",
+    "uvLayer": "UVMap"
+  }
+}

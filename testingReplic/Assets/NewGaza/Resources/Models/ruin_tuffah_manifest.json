@@ -1,0 +1,107 @@
+{
+  "formatVersion": 1,
+  "key": "ruin_tuffah",
+  "sourceFile": "original procedural geometry (no imported source model)",
+  "targetTriangles": 2200,
+  "actualTriangles": 1410,
+  "triangleTolerance": 0.0,
+  "verifiedWithinBudget": true,
+  "vertexCount": 964,
+  "dimensionsNormalizedBlenderXYZ": [
+    11.19787311553955,
+    8.980536460876465,
+    10.273680686950684
+  ],
+  "origin": {
+    "normalizedOriginBlender": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "pivot": "bottom-center"
+  },
+  "districtId": "tuffah",
+  "category": "row_home",
+  "floors": 3,
+  "damageType": "corner_collapse",
+  "width": 10.5,
+  "depth": 8.5,
+  "meshPath": "Resources/Models/ruin_tuffah.obj",
+  "texturePath": "Resources/Models/ruin_tuffah_albedo.png",
+  "fbxPath": "Art/DestroyedFBX/ruin_tuffah.fbx",
+  "triangleCount": 1410,
+  "bounds": {
+    "min": [
+      -5.598936557769775,
+      -4.490268230438232,
+      0.0
+    ],
+    "max": [
+      5.598936557769775,
+      4.490268230438232,
+      10.273680686950684
+    ],
+    "width": 11.19787311553955,
+    "height": 10.273680686950684,
+    "depth": 8.980536460876465
+  },
+  "units": "meters",
+  "pivot": "bottom-center",
+  "damageOnly": true,
+  "originalAuthored": true,
+  "sourceType": "procedurally_authored_original_geometry",
+  "referenceAssets": [
+    "IMG-20261002-WA0003_1790946116113.jpg",
+    "IMG-20261002-WA0004_1790946116076.jpg"
+  ],
+  "uvCoverage": {
+    "layer": "UVMap",
+    "loopCount": 4230,
+    "finiteLoopCount": 4230,
+    "bounds": {
+      "min": [
+        0.02525000087916851,
+        0.02525000087916851
+      ],
+      "max": [
+        0.9747499823570251,
+        0.47475001215934753
+      ]
+    }
+  },
+  "objAudit": {
+    "vertices": 964,
+    "uvCoordinates": 108,
+    "normals": 890,
+    "triangles": 1410
+  },
+  "fbxAudit": {
+    "triangles": 1410,
+    "vertices": 964,
+    "bounds": {
+      "min": [
+        -5.598936557769775,
+        -4.490268230438232,
+        0.0
+      ],
+      "max": [
+        5.598936557769775,
+        4.490268230438232,
+        10.273680686950684
+      ],
+      "width": 11.19787311553955,
+      "height": 10.273680686950684,
+      "depth": 8.980536460876465
+    },
+    "uvChannels": 1,
+    "textures": [
+      "sharedatlastex.png"
+    ]
+  },
+  "albedo": {
+    "file": "ruin_tuffah_albedo.png",
+    "sourceMaterialCount": 1,
+    "sharedAtlas": "sharedatlastex.png",
+    "uvLayer": "UVMap"
+  }
+}

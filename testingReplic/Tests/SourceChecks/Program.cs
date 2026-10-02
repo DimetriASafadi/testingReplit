@@ -59,7 +59,7 @@ internal static class Program
                 return 1;
             }
             Console.WriteLine("Source checks passed: " + files.Length +
-                " NewGaza .cs files parsed as C# 9 (player + editor/optional checks), integration signatures, GUID-independent scene bootstrap, sourced Gaza basemap/urban batching, five imported city models, localized-fog/shader and geometry-UV/shadow/URP-light checks, procedural HUD icon coverage/ownership/navigation bindings, native audio wiring/assets/preferences, equipment articulation contracts, and Arabic shaping.");
+                " NewGaza .cs files parsed as C# 9 (player + editor/optional checks), integration signatures, GUID-independent scene bootstrap, sourced Gaza basemap/urban batching, five preserved imported city models plus 21 destroyed stage-zero resources, localized-fog/shader and geometry-UV/shadow/URP-light checks, procedural HUD icon coverage/ownership/navigation bindings, native audio wiring/assets/preferences, equipment articulation contracts, and Arabic shaping.");
             Console.WriteLine("Source-only check; Unity assemblies and shader were not compiled, and no Unity editor/player or GPU rendering was run.");
             return 0;
         }
@@ -219,9 +219,19 @@ internal static class Program
         string[] modelKeys =
         {
             "apartment", "ruined_building", "rubble_heap",
-            "apartment_context", "ruined_building_context"
+            "apartment_context", "ruined_building_context",
+            "ruin_shujaiya", "ruin_tuffah", "ruin_sheikh_radwan", "ruin_daraj",
+            "ruin_karama", "ruin_old_city", "ruin_nasr", "ruin_sabra",
+            "ruin_zeitoun", "ruin_rimal", "ruin_tel_al_hawa", "ruin_sheikh_ijlin",
+            "ruin_rashid", "ruin_mosque", "ruin_school", "ruin_clinic", "ruin_civic",
+            "ruin_wall", "ruin_car", "ruin_crater", "ruin_debris"
         };
         string[] primaryModelKeys = { "apartment", "ruined_building", "rubble_heap" };
+        string[] baselineModelKeys =
+        {
+            "apartment", "ruined_building", "rubble_heap",
+            "apartment_context", "ruined_building_context"
+        };
         foreach (string key in modelKeys)
         {
             Require(File.Exists(Path.Combine(modelsDirectory, key + ".obj")),
@@ -231,6 +241,15 @@ internal static class Program
         {
             Require(File.Exists(Path.Combine(modelsDirectory, key + "_albedo.png")),
                 "Missing imported model albedo Resources/Models/" + key + "_albedo.png.");
+        }
+        string[] destroyedKeys = modelKeys.Where(key => key.StartsWith("ruin_", StringComparison.Ordinal))
+            .ToArray();
+        foreach (string key in destroyedKeys)
+        {
+            Require(File.Exists(Path.Combine(modelsDirectory, key + "_albedo.png")),
+                "Missing destroyed-model atlas Resources/Models/" + key + "_albedo.png.");
+            Require(File.Exists(Path.Combine(modelsDirectory, key + "_manifest.json")),
+                "Missing destroyed-model manifest Resources/Models/" + key + "_manifest.json.");
         }
 
         string importSettingsPath = Path.Combine(sourceRoot, "Editor", "CityModelImportSettings.cs");
@@ -268,6 +287,9 @@ internal static class Program
             foreach (string key in primaryModelKeys)
                 Require(settings.Contains("ModelsPrefix+\"" + key + "_albedo.png\"", StringComparison.Ordinal),
                     "The scoped preparation menu is missing the primary albedo path for " + key + ".");
+            foreach (string key in destroyedKeys)
+                Require(settings.Contains("\"" + key + "\"", StringComparison.Ordinal),
+                    "The scoped preparation menu is missing destroyed OBJ/albedo import coverage for " + key + ".");
         }
 
         var library = Type(roots, "World/CityModelLibrary.cs", "CityModelLibrary", "NewGaza");
@@ -293,8 +315,12 @@ internal static class Program
                     .FirstOrDefault(literal => literal.IsKind(SyntaxKind.StringLiteralExpression))
                     ?.Token.ValueText ?? "")
                 .ToArray() ?? Array.Empty<string>();
-            Require(modelKeys.All(key => loadedModels.Contains(key, StringComparer.Ordinal)),
-                "CityModelLibrary must explicitly load all three native models and both context LOD models.");
+            Require(baselineModelKeys.All(key => loadedModels.Contains(key, StringComparer.Ordinal)),
+                "CityModelLibrary must explicitly load all three baseline models and both context LOD models.");
+            string constructorSource = Compact(constructor?.ToString() ?? "");
+            Require(constructorSource.Contains("CityRuinProfiles.ModelKeys", StringComparison.Ordinal) &&
+                constructorSource.Contains("Load(key)", StringComparison.Ordinal),
+                "CityModelLibrary must fail fast by loading all regional, institution, and damage-detail resources.");
 
             var loadMethod = library.Members.OfType<MethodDeclarationSyntax>()
                 .FirstOrDefault(method => method.Identifier.ValueText == "Load");
@@ -453,10 +479,16 @@ internal static class Program
             .FirstOrDefault(method => method.Identifier.ValueText == "ReplacePlot");
         string replaceSource = replacePlot == null ? "" : Compact(replacePlot.ToString());
         Require(replaceSource.Contains("if(stage==0)", StringComparison.Ordinal) &&
-            replaceSource.Contains("modelLibrary.AddTo(batch,\"ruined_building\"", StringComparison.Ordinal) &&
+            replaceSource.Contains("CityRuinProfiles.StageZeroModel(districtId,plot.definition.id)",
+                StringComparison.Ordinal) &&
+            replaceSource.Contains("CityRuinProfiles.ForDistrict(districtId)", StringComparison.Ordinal) &&
+            replaceSource.Contains("CityRuinProfiles.StageZeroDetail(districtId,index)",
+                StringComparison.Ordinal) &&
+            replaceSource.Contains("ruinProfile.maxHeightCityUnits", StringComparison.Ordinal) &&
+            !replaceSource.Contains("Mathf.Min(footprint.x,footprint.z)*", StringComparison.Ordinal) &&
             replaceSource.Contains("plot.definition.kind==ProjectKind.Housing", StringComparison.Ordinal) &&
             replaceSource.Contains("modelLibrary.AddTo(batch,\"apartment\"", StringComparison.Ordinal),
-            "Damaged structures and completed housing must use their actual imported city models.");
+            "Stage-zero plots must use stable district-specific damaged resources, while completed housing keeps its original imported model.");
         Require(!replaceSource.Contains("Ruin(batch", StringComparison.Ordinal),
             "The stage-zero imported building must not require the old procedural ruin mesh.");
 
@@ -493,7 +525,13 @@ internal static class Program
             Require(smoke.Contains("Resources.Load<GameObject>(\"Models/\"+key)", StringComparison.Ordinal) &&
                 smoke.Contains("Resources.Load<Texture2D>(\"Models/\"+albedoKeys[i]+\"_albedo\")",
                     StringComparison.Ordinal) &&
-                smoke.Contains("world.ImportedModelCount==5", StringComparison.Ordinal) &&
+                smoke.Contains("world.ImportedModelCount==5+CityRuinProfiles.ModelKeys.Length",
+                    StringComparison.Ordinal) &&
+                smoke.Contains("CityRuinProfiles.ModelKeys", StringComparison.Ordinal) &&
+                smoke.Contains("CheckDestroyedModelResources(destroyedAlbedos)", StringComparison.Ordinal) &&
+                smoke.Contains("albedos[key]=albedo", StringComparison.Ordinal) &&
+                smoke.Contains("uvs.Length==vertices.Length&&normals.Length==vertices.Length",
+                    StringComparison.Ordinal) &&
                 smoke.Contains("albedos[3]==albedos[0]&&albedos[4]==albedos[1]",
                     StringComparison.Ordinal) &&
                 smoke.Contains("lit.shader.name==\"UniversalRenderPipeline/Lit\"",
@@ -501,7 +539,7 @@ internal static class Program
                 smoke.Contains("mesh.isReadable", StringComparison.Ordinal) &&
                 smoke.Contains("uvs.Length==vertices.Length", StringComparison.Ordinal) &&
                 smoke.Contains("normals.Length==vertices.Length", StringComparison.Ordinal),
-                "Unity smoke test must inspect all five imported model resources, aliased context albedos, readable UVs and imported normals.");
+                "Unity smoke test must retain all five baseline model checks and inspect all 21 destroyed model/atlas resources, geometry, aliased context albedos and imported normals.");
             Require(smoke.Contains("Resources.Load<TextAsset>(\"GazaBasemap\")", StringComparison.Ordinal) &&
                 smoke.Contains("JsonUtility.FromJson<CityBasemap>(source.text)", StringComparison.Ordinal) &&
                 smoke.Contains("float.IsNaN(point.x)", StringComparison.Ordinal) &&

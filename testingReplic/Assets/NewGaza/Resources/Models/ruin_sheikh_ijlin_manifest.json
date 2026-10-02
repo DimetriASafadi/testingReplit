@@ -1,0 +1,107 @@
+{
+  "formatVersion": 1,
+  "key": "ruin_sheikh_ijlin",
+  "sourceFile": "original procedural geometry (no imported source model)",
+  "targetTriangles": 2200,
+  "actualTriangles": 1841,
+  "triangleTolerance": 0.0,
+  "verifiedWithinBudget": true,
+  "vertexCount": 1250,
+  "dimensionsNormalizedBlenderXYZ": [
+    17.54602813720703,
+    15.735437393188477,
+    19.046892166137695
+  ],
+  "origin": {
+    "normalizedOriginBlender": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "pivot": "bottom-center"
+  },
+  "districtId": "sheikh_ijlin",
+  "category": "coastal_terraces",
+  "floors": 6,
+  "damageType": "terrace_shear",
+  "width": 17.0,
+  "depth": 14.0,
+  "meshPath": "Resources/Models/ruin_sheikh_ijlin.obj",
+  "texturePath": "Resources/Models/ruin_sheikh_ijlin_albedo.png",
+  "fbxPath": "Art/DestroyedFBX/ruin_sheikh_ijlin.fbx",
+  "triangleCount": 1841,
+  "bounds": {
+    "min": [
+      -8.773014068603516,
+      -7.867718696594238,
+      0.0
+    ],
+    "max": [
+      8.773014068603516,
+      7.867718696594238,
+      19.046892166137695
+    ],
+    "width": 17.54602813720703,
+    "height": 19.046892166137695,
+    "depth": 15.735437393188477
+  },
+  "units": "meters",
+  "pivot": "bottom-center",
+  "damageOnly": true,
+  "originalAuthored": true,
+  "sourceType": "procedurally_authored_original_geometry",
+  "referenceAssets": [
+    "IMG-20261002-WA0003_1790946116113.jpg",
+    "IMG-20261002-WA0004_1790946116076.jpg"
+  ],
+  "uvCoverage": {
+    "layer": "UVMap",
+    "loopCount": 5523,
+    "finiteLoopCount": 5523,
+    "bounds": {
+      "min": [
+        0.02525000087916851,
+        0.02525000087916851
+      ],
+      "max": [
+        0.9747499823570251,
+        0.47475001215934753
+      ]
+    }
+  },
+  "objAudit": {
+    "vertices": 1250,
+    "uvCoordinates": 108,
+    "normals": 1121,
+    "triangles": 1841
+  },
+  "fbxAudit": {
+    "triangles": 1841,
+    "vertices": 1250,
+    "bounds": {
+      "min": [
+        -8.773014068603516,
+        -7.867718696594238,
+        0.0
+      ],
+      "max": [
+        8.773014068603516,
+        7.867718696594238,
+        19.046892166137695
+      ],
+      "width": 17.54602813720703,
+      "height": 19.046892166137695,
+      "depth": 15.735437393188477
+    },
+    "uvChannels": 1,
+    "textures": [
+      "sharedatlastex.png"
+    ]
+  },
+  "albedo": {
+    "file": "ruin_sheikh_ijlin_albedo.png",
+    "sourceMaterialCount": 1,
+    "sharedAtlas": "sharedatlastex.png",
+    "uvLayer": "UVMap"
+  }
+}

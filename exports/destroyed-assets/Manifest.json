@@ -1,0 +1,1853 @@
+{
+  "formatVersion": 1,
+  "assetSet": "original_destroyed_only_newgaza",
+  "assetCount": 21,
+  "units": "meters",
+  "pivot": "bottom-center",
+  "upAxis": {
+    "FBX": "Unity Y-up",
+    "OBJ": "Unity Y-up"
+  },
+  "destructionOnly": true,
+  "originalAuthored": true,
+  "referenceAssets": [
+    "IMG-20261002-WA0003_1790946116113.jpg",
+    "IMG-20261002-WA0004_1790946116076.jpg"
+  ],
+  "atlas": "testingReplic/Assets/NewGaza/Art/DestroyedFBX/sharedatlastex.png",
+  "generationCommand": "blender --background --factory-startup --python tools/generate_destroyed_assets.py",
+  "assets": [
+    {
+      "districtId": "shujaiya",
+      "category": "family_courtyard",
+      "floors": 2,
+      "damageType": "partial_frame",
+      "width": 10.0,
+      "depth": 8.0,
+      "key": "ruin_shujaiya",
+      "meshPath": "Resources/Models/ruin_shujaiya.obj",
+      "texturePath": "Resources/Models/ruin_shujaiya_albedo.png",
+      "fbxPath": "Art/DestroyedFBX/ruin_shujaiya.fbx",
+      "triangleCount": 1062,
+      "vertexCount": 726,
+      "bounds": {
+        "min": [
+          -5.328383445739746,
+          -4.22951078414917,
+          0.0
+        ],
+        "max": [
+          5.328383445739746,
+          4.22951078414917,
+          7.256872653961182
+        ],
+        "width": 10.656766891479492,
+        "height": 7.256872653961182,
+        "depth": 8.45902156829834
+      },
+      "units": "meters",
+      "pivot": "bottom-center",
+      "damageOnly": true,
+      "originalAuthored": true,
+      "sourceType": "procedurally_authored_original_geometry",
+      "referenceAssets": [
+        "IMG-20261002-WA0003_1790946116113.jpg",
+        "IMG-20261002-WA0004_1790946116076.jpg"
+      ],
+      "uvCoverage": {
+        "layer": "UVMap",
+        "loopCount": 3186,
+        "finiteLoopCount": 3186,
+        "bounds": {
+          "min": [
+            0.02525000087916851,
+            0.02525000087916851
+          ],
+          "max": [
+            0.9747499823570251,
+            0.47475001215934753
+          ]
+        }
+      },
+      "objAudit": {
+        "vertices": 726,
+        "uvCoordinates": 94,
+        "normals": 680,
+        "triangles": 1062
+      },
+      "fbxAudit": {
+        "triangles": 1062,
+        "vertices": 726,
+        "bounds": {
+          "min": [
+            -5.328383445739746,
+            -4.22951078414917,
+            0.0
+          ],
+          "max": [
+            5.328383445739746,
+            4.22951078414917,
+            7.256872653961182
+          ],
+          "width": 10.656766891479492,
+          "height": 7.256872653961182,
+          "depth": 8.45902156829834
+        },
+        "uvChannels": 1,
+        "textures": [
+          "sharedatlastex.png"
+        ]
+      },
+      "albedo": {
+        "file": "ruin_shujaiya_albedo.png",
+        "sourceMaterialCount": 1,
+        "sharedAtlas": "sharedatlastex.png",
+        "uvLayer": "UVMap"
+      }
+    },
+    {
+      "districtId": "tuffah",
+      "category": "row_home",
+      "floors": 3,
+      "damageType": "corner_collapse",
+      "width": 10.5,
+      "depth": 8.5,
+      "key": "ruin_tuffah",
+      "meshPath": "Resources/Models/ruin_tuffah.obj",
+      "texturePath": "Resources/Models/ruin_tuffah_albedo.png",
+      "fbxPath": "Art/DestroyedFBX/ruin_tuffah.fbx",
+      "triangleCount": 1410,
+      "vertexCount": 964,
+      "bounds": {
+        "min": [
+          -5.598936557769775,
+          -4.490268230438232,
+          0.0
+        ],
+        "max": [
+          5.598936557769775,
+          4.490268230438232,
+          10.273680686950684
+        ],
+        "width": 11.19787311553955,
+        "height": 10.273680686950684,
+        "depth": 8.980536460876465
+      },
+      "units": "meters",
+      "pivot": "bottom-center",
+      "damageOnly": true,
+      "originalAuthored": true,
+      "sourceType": "procedurally_authored_original_geometry",
+      "referenceAssets": [
+        "IMG-20261002-WA0003_1790946116113.jpg",
+        "IMG-20261002-WA0004_1790946116076.jpg"
+      ],
+      "uvCoverage": {
+        "layer": "UVMap",
+        "loopCount": 4230,
+        "finiteLoopCount": 4230,
+        "bounds": {
+          "min": [
+            0.02525000087916851,
+            0.02525000087916851
+          ],
+          "max": [
+            0.9747499823570251,
+            0.47475001215934753
+          ]
+        }
+      },
+      "objAudit": {
+        "vertices": 964,
+        "uvCoordinates": 108,
+        "normals": 890,
+        "triangles": 1410
+      },
+      "fbxAudit": {
+        "triangles": 1410,
+        "vertices": 964,
+        "bounds": {
+          "min": [
+            -5.598936557769775,
+            -4.490268230438232,
+            0.0
+          ],
+          "max": [
+            5.598936557769775,
+            4.490268230438232,
+            10.273680686950684
+          ],
+          "width": 11.19787311553955,
+          "height": 10.273680686950684,
+          "depth": 8.980536460876465
+        },
+        "uvChannels": 1,
+        "textures": [
+          "sharedatlastex.png"
+        ]
+      },
+      "albedo": {
+        "file": "ruin_tuffah_albedo.png",
+        "sourceMaterialCount": 1,
+        "sharedAtlas": "sharedatlastex.png",
+        "uvLayer": "UVMap"
+      }
+    },
+    {
+      "districtId": "sheikh_radwan",
+      "category": "family_block",
+      "floors": 3,
+      "damageType": "broken_front",
+      "width": 11.0,
+      "depth": 9.0,
+      "key": "ruin_sheikh_radwan",
+      "meshPath": "Resources/Models/ruin_sheikh_radwan.obj",
+      "texturePath": "Resources/Models/ruin_sheikh_radwan_albedo.png",
+      "fbxPath": "Art/DestroyedFBX/ruin_sheikh_radwan.fbx",
+      "triangleCount": 1507,
+      "vertexCount": 1014,
+      "bounds": {
+        "min": [
+          -5.864373683929443,
+          -4.760711669921875,
+          0.0
+        ],
+        "max": [
+          5.864373683929443,
+          4.760711669921875,
+          10.522202491760254
+        ],
+        "width": 11.728747367858887,
+        "height": 10.522202491760254,
+        "depth": 9.52142333984375
+      },
+      "units": "meters",
+      "pivot": "bottom-center",
+      "damageOnly": true,
+      "originalAuthored": true,
+      "sourceType": "procedurally_authored_original_geometry",
+      "referenceAssets": [
+        "IMG-20261002-WA0003_1790946116113.jpg",
+        "IMG-20261002-WA0004_1790946116076.jpg"
+      ],
+      "uvCoverage": {
+        "layer": "UVMap",
+        "loopCount": 4521,
+        "finiteLoopCount": 4521,
+        "bounds": {
+          "min": [
+            0.02525000087916851,
+            0.02525000087916851
+          ],
+          "max": [
+            0.9747499823570251,
+            0.47475001215934753
+          ]
+        }
+      },
+      "objAudit": {
+        "vertices": 1014,
+        "uvCoordinates": 102,
+        "normals": 845,
+        "triangles": 1507
+      },
+      "fbxAudit": {
+        "triangles": 1507,
+        "vertices": 1014,
+        "bounds": {
+          "min": [
+            -5.864373683929443,
+            -4.760711669921875,
+            0.0
+          ],
+          "max": [
+            5.864373683929443,
+            4.760711669921875,
+            10.522202491760254
+          ],
+          "width": 11.728747367858887,
+          "height": 10.522202491760254,
+          "depth": 9.52142333984375
+        },
+        "uvChannels": 1,
+        "textures": [
+          "sharedatlastex.png"
+        ]
+      },
+      "albedo": {
+        "file": "ruin_sheikh_radwan_albedo.png",
+        "sourceMaterialCount": 1,
+        "sharedAtlas": "sharedatlastex.png",
+        "uvLayer": "UVMap"
+      }
+    },
+    {
+      "districtId": "daraj",
+      "category": "mixed_shopfront",
+      "floors": 4,
+      "damageType": "shopfront_breach",
+      "width": 11.5,
+      "depth": 9.3,
+      "key": "ruin_daraj",
+      "meshPath": "Resources/Models/ruin_daraj.obj",
+      "texturePath": "Resources/Models/ruin_daraj_albedo.png",
+      "fbxPath": "Art/DestroyedFBX/ruin_daraj.fbx",
+      "triangleCount": 1806,
+      "vertexCount": 1210,
+      "bounds": {
+        "min": [
+          -6.299262046813965,
+          -4.915821552276611,
+          0.0
+        ],
+        "max": [
+          6.299262046813965,
+          4.915821552276611,
+          13.367135047912598
+        ],
+        "width": 12.59852409362793,
+        "height": 13.367135047912598,
+        "depth": 9.831643104553223
+      },
+      "units": "meters",
+      "pivot": "bottom-center",
+      "damageOnly": true,
+      "originalAuthored": true,
+      "sourceType": "procedurally_authored_original_geometry",
+      "referenceAssets": [
+        "IMG-20261002-WA0003_1790946116113.jpg",
+        "IMG-20261002-WA0004_1790946116076.jpg"
+      ],
+      "uvCoverage": {
+        "layer": "UVMap",
+        "loopCount": 5418,
+        "finiteLoopCount": 5418,
+        "bounds": {
+          "min": [
+            0.02525000087916851,
+            0.02525000087916851
+          ],
+          "max": [
+            0.9747499823570251,
+            0.47475001215934753
+          ]
+        }
+      },
+      "objAudit": {
+        "vertices": 1210,
+        "uvCoordinates": 100,
+        "normals": 1006,
+        "triangles": 1806
+      },
+      "fbxAudit": {
+        "triangles": 1806,
+        "vertices": 1210,
+        "bounds": {
+          "min": [
+            -6.299262046813965,
+            -4.915821552276611,
+            0.0
+          ],
+          "max": [
+            6.299262046813965,
+            4.915821552276611,
+            13.367135047912598
+          ],
+          "width": 12.59852409362793,
+          "height": 13.367135047912598,
+          "depth": 9.831643104553223
+        },
+        "uvChannels": 1,
+        "textures": [
+          "sharedatlastex.png"
+        ]
+      },
+      "albedo": {
+        "file": "ruin_daraj_albedo.png",
+        "sourceMaterialCount": 1,
+        "sharedAtlas": "sharedatlastex.png",
+        "uvLayer": "UVMap"
+      }
+    },
+    {
+      "districtId": "karama",
+      "category": "apartments",
+      "floors": 4,
+      "damageType": "slab_collapse",
+      "width": 12.0,
+      "depth": 9.7,
+      "key": "ruin_karama",
+      "meshPath": "Resources/Models/ruin_karama.obj",
+      "texturePath": "Resources/Models/ruin_karama_albedo.png",
+      "fbxPath": "Art/DestroyedFBX/ruin_karama.fbx",
+      "triangleCount": 2040,
+      "vertexCount": 1368,
+      "bounds": {
+        "min": [
+          -6.29457950592041,
+          -5.1019392013549805,
+          0.0
+        ],
+        "max": [
+          6.29457950592041,
+          5.1019392013549805,
+          13.32541275024414
+        ],
+        "width": 12.58915901184082,
+        "height": 13.32541275024414,
+        "depth": 10.203878402709961
+      },
+      "units": "meters",
+      "pivot": "bottom-center",
+      "damageOnly": true,
+      "originalAuthored": true,
+      "sourceType": "procedurally_authored_original_geometry",
+      "referenceAssets": [
+        "IMG-20261002-WA0003_1790946116113.jpg",
+        "IMG-20261002-WA0004_1790946116076.jpg"
+      ],
+      "uvCoverage": {
+        "layer": "UVMap",
+        "loopCount": 6120,
+        "finiteLoopCount": 6120,
+        "bounds": {
+          "min": [
+            0.02525000087916851,
+            0.02525000087916851
+          ],
+          "max": [
+            0.9747499823570251,
+            0.47475001215934753
+          ]
+        }
+      },
+      "objAudit": {
+        "vertices": 1368,
+        "uvCoordinates": 108,
+        "normals": 1134,
+        "triangles": 2040
+      },
+      "fbxAudit": {
+        "triangles": 2040,
+        "vertices": 1368,
+        "bounds": {
+          "min": [
+            -6.29457950592041,
+            -5.1019392013549805,
+            0.0
+          ],
+          "max": [
+            6.29457950592041,
+            5.1019392013549805,
+            13.32541275024414
+          ],
+          "width": 12.58915901184082,
+          "height": 13.32541275024414,
+          "depth": 10.203878402709961
+        },
+        "uvChannels": 1,
+        "textures": [
+          "sharedatlastex.png"
+        ]
+      },
+      "albedo": {
+        "file": "ruin_karama_albedo.png",
+        "sourceMaterialCount": 1,
+        "sharedAtlas": "sharedatlastex.png",
+        "uvLayer": "UVMap"
+      }
+    },
+    {
+      "districtId": "old_city",
+      "category": "heritage_stone_arches",
+      "floors": 3,
+      "damageType": "stone_breach",
+      "width": 12.5,
+      "depth": 10.0,
+      "key": "ruin_old_city",
+      "meshPath": "Resources/Models/ruin_old_city.obj",
+      "texturePath": "Resources/Models/ruin_old_city_albedo.png",
+      "fbxPath": "Art/DestroyedFBX/ruin_old_city.fbx",
+      "triangleCount": 1746,
+      "vertexCount": 1174,
+      "bounds": {
+        "min": [
+          -6.524606704711914,
+          -5.325222015380859,
+          0.0
+        ],
+        "max": [
+          6.524606704711914,
+          5.325222015380859,
+          10.50008773803711
+        ],
+        "width": 13.049213409423828,
+        "height": 10.50008773803711,
+        "depth": 10.650444030761719
+      },
+      "units": "meters",
+      "pivot": "bottom-center",
+      "damageOnly": true,
+      "originalAuthored": true,
+      "sourceType": "procedurally_authored_original_geometry",
+      "referenceAssets": [
+        "IMG-20261002-WA0003_1790946116113.jpg",
+        "IMG-20261002-WA0004_1790946116076.jpg"
+      ],
+      "uvCoverage": {
+        "layer": "UVMap",
+        "loopCount": 5238,
+        "finiteLoopCount": 5238,
+        "bounds": {
+          "min": [
+            0.02525000087916851,
+            0.02525000087916851
+          ],
+          "max": [
+            0.9747499823570251,
+            0.47475001215934753
+          ]
+        }
+      },
+      "objAudit": {
+        "vertices": 1174,
+        "uvCoordinates": 99,
+        "normals": 839,
+        "triangles": 1746
+      },
+      "fbxAudit": {
+        "triangles": 1746,
+        "vertices": 1174,
+        "bounds": {
+          "min": [
+            -6.524606704711914,
+            -5.325222015380859,
+            0.0
+          ],
+          "max": [
+            6.524606704711914,
+            5.325222015380859,
+            10.50008773803711
+          ],
+          "width": 13.049213409423828,
+          "height": 10.50008773803711,
+          "depth": 10.650444030761719
+        },
+        "uvChannels": 1,
+        "textures": [
+          "sharedatlastex.png"
+        ]
+      },
+      "albedo": {
+        "file": "ruin_old_city_albedo.png",
+        "sourceMaterialCount": 1,
+        "sharedAtlas": "sharedatlastex.png",
+        "uvLayer": "UVMap"
+      }
+    },
+    {
+      "districtId": "nasr",
+      "category": "urban_frame",
+      "floors": 6,
+      "damageType": "frame_shear",
+      "width": 13.0,
+      "depth": 10.5,
+      "key": "ruin_nasr",
+      "meshPath": "Resources/Models/ruin_nasr.obj",
+      "texturePath": "Resources/Models/ruin_nasr_albedo.png",
+      "fbxPath": "Art/DestroyedFBX/ruin_nasr.fbx",
+      "triangleCount": 1650,
+      "vertexCount": 1120,
+      "bounds": {
+        "min": [
+          -6.798027992248535,
+          -5.509345054626465,
+          0.0
+        ],
+        "max": [
+          6.798027992248535,
+          5.509345054626465,
+          19.539695739746094
+        ],
+        "width": 13.59605598449707,
+        "height": 19.539695739746094,
+        "depth": 11.01869010925293
+      },
+      "units": "meters",
+      "pivot": "bottom-center",
+      "damageOnly": true,
+      "originalAuthored": true,
+      "sourceType": "procedurally_authored_original_geometry",
+      "referenceAssets": [
+        "IMG-20261002-WA0003_1790946116113.jpg",
+        "IMG-20261002-WA0004_1790946116076.jpg"
+      ],
+      "uvCoverage": {
+        "layer": "UVMap",
+        "loopCount": 4950,
+        "finiteLoopCount": 4950,
+        "bounds": {
+          "min": [
+            0.02525000087916851,
+            0.02525000087916851
+          ],
+          "max": [
+            0.9747499823570251,
+            0.47475001215934753
+          ]
+        }
+      },
+      "objAudit": {
+        "vertices": 1120,
+        "uvCoordinates": 104,
+        "normals": 999,
+        "triangles": 1650
+      },
+      "fbxAudit": {
+        "triangles": 1650,
+        "vertices": 1120,
+        "bounds": {
+          "min": [
+            -6.798027992248535,
+            -5.509345054626465,
+            0.0
+          ],
+          "max": [
+            6.798027992248535,
+            5.509345054626465,
+            19.539695739746094
+          ],
+          "width": 13.59605598449707,
+          "height": 19.539695739746094,
+          "depth": 11.01869010925293
+        },
+        "uvChannels": 1,
+        "textures": [
+          "sharedatlastex.png"
+        ]
+      },
+      "albedo": {
+        "file": "ruin_nasr_albedo.png",
+        "sourceMaterialCount": 1,
+        "sharedAtlas": "sharedatlastex.png",
+        "uvLayer": "UVMap"
+      }
+    },
+    {
+      "districtId": "sabra",
+      "category": "attached_row",
+      "floors": 4,
+      "damageType": "party_wall_failure",
+      "width": 13.5,
+      "depth": 11.0,
+      "key": "ruin_sabra",
+      "meshPath": "Resources/Models/ruin_sabra.obj",
+      "texturePath": "Resources/Models/ruin_sabra_albedo.png",
+      "fbxPath": "Art/DestroyedFBX/ruin_sabra.fbx",
+      "triangleCount": 1787,
+      "vertexCount": 1198,
+      "bounds": {
+        "min": [
+          -7.348123073577881,
+          -5.7526936531066895,
+          0.0
+        ],
+        "max": [
+          7.348123073577881,
+          5.7526936531066895,
+          13.22423267364502
+        ],
+        "width": 14.696246147155762,
+        "height": 13.22423267364502,
+        "depth": 11.505387306213379
+      },
+      "units": "meters",
+      "pivot": "bottom-center",
+      "damageOnly": true,
+      "originalAuthored": true,
+      "sourceType": "procedurally_authored_original_geometry",
+      "referenceAssets": [
+        "IMG-20261002-WA0003_1790946116113.jpg",
+        "IMG-20261002-WA0004_1790946116076.jpg"
+      ],
+      "uvCoverage": {
+        "layer": "UVMap",
+        "loopCount": 5361,
+        "finiteLoopCount": 5361,
+        "bounds": {
+          "min": [
+            0.02525000087916851,
+            0.02525000087916851
+          ],
+          "max": [
+            0.9747499823570251,
+            0.47475001215934753
+          ]
+        }
+      },
+      "objAudit": {
+        "vertices": 1198,
+        "uvCoordinates": 97,
+        "normals": 1009,
+        "triangles": 1787
+      },
+      "fbxAudit": {
+        "triangles": 1787,
+        "vertices": 1198,
+        "bounds": {
+          "min": [
+            -7.348123073577881,
+            -5.7526936531066895,
+            0.0
+          ],
+          "max": [
+            7.348123073577881,
+            5.7526936531066895,
+            13.22423267364502
+          ],
+          "width": 14.696246147155762,
+          "height": 13.22423267364502,
+          "depth": 11.505387306213379
+        },
+        "uvChannels": 1,
+        "textures": [
+          "sharedatlastex.png"
+        ]
+      },
+      "albedo": {
+        "file": "ruin_sabra_albedo.png",
+        "sourceMaterialCount": 1,
+        "sharedAtlas": "sharedatlastex.png",
+        "uvLayer": "UVMap"
+      }
+    },
+    {
+      "districtId": "zeitoun",
+      "category": "family_block",
+      "floors": 5,
+      "damageType": "roof_and_corner_loss",
+      "width": 14.0,
+      "depth": 11.5,
+      "key": "ruin_zeitoun",
+      "meshPath": "Resources/Models/ruin_zeitoun.obj",
+      "texturePath": "Resources/Models/ruin_zeitoun_albedo.png",
+      "fbxPath": "Art/DestroyedFBX/ruin_zeitoun.fbx",
+      "triangleCount": 2162,
+      "vertexCount": 1458,
+      "bounds": {
+        "min": [
+          -7.415514945983887,
+          -6.000197410583496,
+          0.0
+        ],
+        "max": [
+          7.415514945983887,
+          6.000197410583496,
+          16.224475860595703
+        ],
+        "width": 14.831029891967773,
+        "height": 16.224475860595703,
+        "depth": 12.000394821166992
+      },
+      "units": "meters",
+      "pivot": "bottom-center",
+      "damageOnly": true,
+      "originalAuthored": true,
+      "sourceType": "procedurally_authored_original_geometry",
+      "referenceAssets": [
+        "IMG-20261002-WA0003_1790946116113.jpg",
+        "IMG-20261002-WA0004_1790946116076.jpg"
+      ],
+      "uvCoverage": {
+        "layer": "UVMap",
+        "loopCount": 6486,
+        "finiteLoopCount": 6486,
+        "bounds": {
+          "min": [
+            0.02525000087916851,
+            0.02525000087916851
+          ],
+          "max": [
+            0.9747499823570251,
+            0.47475001215934753
+          ]
+        }
+      },
+      "objAudit": {
+        "vertices": 1458,
+        "uvCoordinates": 108,
+        "normals": 1260,
+        "triangles": 2162
+      },
+      "fbxAudit": {
+        "triangles": 2162,
+        "vertices": 1458,
+        "bounds": {
+          "min": [
+            -7.415514945983887,
+            -6.000197410583496,
+            0.0
+          ],
+          "max": [
+            7.415514945983887,
+            6.000197410583496,
+            16.224475860595703
+          ],
+          "width": 14.831029891967773,
+          "height": 16.224475860595703,
+          "depth": 12.000394821166992
+        },
+        "uvChannels": 1,
+        "textures": [
+          "sharedatlastex.png"
+        ]
+      },
+      "albedo": {
+        "file": "ruin_zeitoun_albedo.png",
+        "sourceMaterialCount": 1,
+        "sharedAtlas": "sharedatlastex.png",
+        "uvLayer": "UVMap"
+      }
+    },
+    {
+      "districtId": "rimal",
+      "category": "balcony_tower",
+      "floors": 7,
+      "damageType": "balcony_collapse",
+      "width": 15.0,
+      "depth": 12.0,
+      "key": "ruin_rimal",
+      "meshPath": "Resources/Models/ruin_rimal.obj",
+      "texturePath": "Resources/Models/ruin_rimal_albedo.png",
+      "fbxPath": "Art/DestroyedFBX/ruin_rimal.fbx",
+      "triangleCount": 1851,
+      "vertexCount": 1254,
+      "bounds": {
+        "min": [
+          -7.758734703063965,
+          -6.695563316345215,
+          0.0
+        ],
+        "max": [
+          7.758734703063965,
+          6.695563316345215,
+          22.137924194335938
+        ],
+        "width": 15.51746940612793,
+        "height": 22.137924194335938,
+        "depth": 13.39112663269043
+      },
+      "units": "meters",
+      "pivot": "bottom-center",
+      "damageOnly": true,
+      "originalAuthored": true,
+      "sourceType": "procedurally_authored_original_geometry",
+      "referenceAssets": [
+        "IMG-20261002-WA0003_1790946116113.jpg",
+        "IMG-20261002-WA0004_1790946116076.jpg"
+      ],
+      "uvCoverage": {
+        "layer": "UVMap",
+        "loopCount": 5553,
+        "finiteLoopCount": 5553,
+        "bounds": {
+          "min": [
+            0.02525000087916851,
+            0.02525000087916851
+          ],
+          "max": [
+            0.9747499823570251,
+            0.47475001215934753
+          ]
+        }
+      },
+      "objAudit": {
+        "vertices": 1254,
+        "uvCoordinates": 108,
+        "normals": 1097,
+        "triangles": 1851
+      },
+      "fbxAudit": {
+        "triangles": 1851,
+        "vertices": 1254,
+        "bounds": {
+          "min": [
+            -7.758734703063965,
+            -6.695563316345215,
+            0.0
+          ],
+          "max": [
+            7.758734703063965,
+            6.695563316345215,
+            22.137924194335938
+          ],
+          "width": 15.51746940612793,
+          "height": 22.137924194335938,
+          "depth": 13.39112663269043
+        },
+        "uvChannels": 1,
+        "textures": [
+          "sharedatlastex.png"
+        ]
+      },
+      "albedo": {
+        "file": "ruin_rimal_albedo.png",
+        "sourceMaterialCount": 1,
+        "sharedAtlas": "sharedatlastex.png",
+        "uvLayer": "UVMap"
+      }
+    },
+    {
+      "districtId": "tel_al_hawa",
+      "category": "modern_tower",
+      "floors": 8,
+      "damageType": "curtainwall_failure",
+      "width": 16.0,
+      "depth": 13.0,
+      "key": "ruin_tel_al_hawa",
+      "meshPath": "Resources/Models/ruin_tel_al_hawa.obj",
+      "texturePath": "Resources/Models/ruin_tel_al_hawa_albedo.png",
+      "fbxPath": "Art/DestroyedFBX/ruin_tel_al_hawa.fbx",
+      "triangleCount": 1674,
+      "vertexCount": 1136,
+      "bounds": {
+        "min": [
+          -8.777389526367188,
+          -6.755937576293945,
+          0.0
+        ],
+        "max": [
+          8.777389526367188,
+          6.755937576293945,
+          25.297697067260742
+        ],
+        "width": 17.554779052734375,
+        "height": 25.297697067260742,
+        "depth": 13.51187515258789
+      },
+      "units": "meters",
+      "pivot": "bottom-center",
+      "damageOnly": true,
+      "originalAuthored": true,
+      "sourceType": "procedurally_authored_original_geometry",
+      "referenceAssets": [
+        "IMG-20261002-WA0003_1790946116113.jpg",
+        "IMG-20261002-WA0004_1790946116076.jpg"
+      ],
+      "uvCoverage": {
+        "layer": "UVMap",
+        "loopCount": 5022,
+        "finiteLoopCount": 5022,
+        "bounds": {
+          "min": [
+            0.02525000087916851,
+            0.02525000087916851
+          ],
+          "max": [
+            0.9747499823570251,
+            0.47475001215934753
+          ]
+        }
+      },
+      "objAudit": {
+        "vertices": 1136,
+        "uvCoordinates": 99,
+        "normals": 956,
+        "triangles": 1674
+      },
+      "fbxAudit": {
+        "triangles": 1674,
+        "vertices": 1136,
+        "bounds": {
+          "min": [
+            -8.777389526367188,
+            -6.755937576293945,
+            0.0
+          ],
+          "max": [
+            8.777389526367188,
+            6.755937576293945,
+            25.297697067260742
+          ],
+          "width": 17.554779052734375,
+          "height": 25.297697067260742,
+          "depth": 13.51187515258789
+        },
+        "uvChannels": 1,
+        "textures": [
+          "sharedatlastex.png"
+        ]
+      },
+      "albedo": {
+        "file": "ruin_tel_al_hawa_albedo.png",
+        "sourceMaterialCount": 1,
+        "sharedAtlas": "sharedatlastex.png",
+        "uvLayer": "UVMap"
+      }
+    },
+    {
+      "districtId": "sheikh_ijlin",
+      "category": "coastal_terraces",
+      "floors": 6,
+      "damageType": "terrace_shear",
+      "width": 17.0,
+      "depth": 14.0,
+      "key": "ruin_sheikh_ijlin",
+      "meshPath": "Resources/Models/ruin_sheikh_ijlin.obj",
+      "texturePath": "Resources/Models/ruin_sheikh_ijlin_albedo.png",
+      "fbxPath": "Art/DestroyedFBX/ruin_sheikh_ijlin.fbx",
+      "triangleCount": 1841,
+      "vertexCount": 1250,
+      "bounds": {
+        "min": [
+          -8.773014068603516,
+          -7.867718696594238,
+          0.0
+        ],
+        "max": [
+          8.773014068603516,
+          7.867718696594238,
+          19.046892166137695
+        ],
+        "width": 17.54602813720703,
+        "height": 19.046892166137695,
+        "depth": 15.735437393188477
+      },
+      "units": "meters",
+      "pivot": "bottom-center",
+      "damageOnly": true,
+      "originalAuthored": true,
+      "sourceType": "procedurally_authored_original_geometry",
+      "referenceAssets": [
+        "IMG-20261002-WA0003_1790946116113.jpg",
+        "IMG-20261002-WA0004_1790946116076.jpg"
+      ],
+      "uvCoverage": {
+        "layer": "UVMap",
+        "loopCount": 5523,
+        "finiteLoopCount": 5523,
+        "bounds": {
+          "min": [
+            0.02525000087916851,
+            0.02525000087916851
+          ],
+          "max": [
+            0.9747499823570251,
+            0.47475001215934753
+          ]
+        }
+      },
+      "objAudit": {
+        "vertices": 1250,
+        "uvCoordinates": 108,
+        "normals": 1121,
+        "triangles": 1841
+      },
+      "fbxAudit": {
+        "triangles": 1841,
+        "vertices": 1250,
+        "bounds": {
+          "min": [
+            -8.773014068603516,
+            -7.867718696594238,
+            0.0
+          ],
+          "max": [
+            8.773014068603516,
+            7.867718696594238,
+            19.046892166137695
+          ],
+          "width": 17.54602813720703,
+          "height": 19.046892166137695,
+          "depth": 15.735437393188477
+        },
+        "uvChannels": 1,
+        "textures": [
+          "sharedatlastex.png"
+        ]
+      },
+      "albedo": {
+        "file": "ruin_sheikh_ijlin_albedo.png",
+        "sourceMaterialCount": 1,
+        "sharedAtlas": "sharedatlastex.png",
+        "uvLayer": "UVMap"
+      }
+    },
+    {
+      "districtId": "rashid",
+      "category": "coastal_hotel_wing",
+      "floors": 9,
+      "damageType": "wing_collapse",
+      "width": 18.0,
+      "depth": 15.0,
+      "key": "ruin_rashid",
+      "meshPath": "Resources/Models/ruin_rashid.obj",
+      "texturePath": "Resources/Models/ruin_rashid_albedo.png",
+      "fbxPath": "Art/DestroyedFBX/ruin_rashid.fbx",
+      "triangleCount": 2092,
+      "vertexCount": 1420,
+      "bounds": {
+        "min": [
+          -9.746088027954102,
+          -8.366422653198242,
+          0.0
+        ],
+        "max": [
+          9.746088027954102,
+          8.366422653198242,
+          28.176424026489258
+        ],
+        "width": 19.492176055908203,
+        "height": 28.176424026489258,
+        "depth": 16.732845306396484
+      },
+      "units": "meters",
+      "pivot": "bottom-center",
+      "damageOnly": true,
+      "originalAuthored": true,
+      "sourceType": "procedurally_authored_original_geometry",
+      "referenceAssets": [
+        "IMG-20261002-WA0003_1790946116113.jpg",
+        "IMG-20261002-WA0004_1790946116076.jpg"
+      ],
+      "uvCoverage": {
+        "layer": "UVMap",
+        "loopCount": 6276,
+        "finiteLoopCount": 6276,
+        "bounds": {
+          "min": [
+            0.02525000087916851,
+            0.02525000087916851
+          ],
+          "max": [
+            0.9747499823570251,
+            0.47475001215934753
+          ]
+        }
+      },
+      "objAudit": {
+        "vertices": 1420,
+        "uvCoordinates": 99,
+        "normals": 1214,
+        "triangles": 2092
+      },
+      "fbxAudit": {
+        "triangles": 2092,
+        "vertices": 1420,
+        "bounds": {
+          "min": [
+            -9.746088027954102,
+            -8.366422653198242,
+            0.0
+          ],
+          "max": [
+            9.746088027954102,
+            8.366422653198242,
+            28.176424026489258
+          ],
+          "width": 19.492176055908203,
+          "height": 28.176424026489258,
+          "depth": 16.732845306396484
+        },
+        "uvChannels": 1,
+        "textures": [
+          "sharedatlastex.png"
+        ]
+      },
+      "albedo": {
+        "file": "ruin_rashid_albedo.png",
+        "sourceMaterialCount": 1,
+        "sharedAtlas": "sharedatlastex.png",
+        "uvLayer": "UVMap"
+      }
+    },
+    {
+      "districtId": null,
+      "category": "mosque",
+      "floors": null,
+      "damageType": "fractured_dome_minaret",
+      "key": "ruin_mosque",
+      "meshPath": "Resources/Models/ruin_mosque.obj",
+      "texturePath": "Resources/Models/ruin_mosque_albedo.png",
+      "fbxPath": "Art/DestroyedFBX/ruin_mosque.fbx",
+      "triangleCount": 808,
+      "vertexCount": 620,
+      "bounds": {
+        "min": [
+          -5.6967315673828125,
+          -4.594021797180176,
+          0.0
+        ],
+        "max": [
+          5.6967315673828125,
+          4.594021797180176,
+          12.957189559936523
+        ],
+        "width": 11.393463134765625,
+        "height": 12.957189559936523,
+        "depth": 9.188043594360352
+      },
+      "units": "meters",
+      "pivot": "bottom-center",
+      "damageOnly": true,
+      "originalAuthored": true,
+      "sourceType": "procedurally_authored_original_geometry",
+      "referenceAssets": [
+        "IMG-20261002-WA0003_1790946116113.jpg",
+        "IMG-20261002-WA0004_1790946116076.jpg"
+      ],
+      "uvCoverage": {
+        "layer": "UVMap",
+        "loopCount": 2424,
+        "finiteLoopCount": 2424,
+        "bounds": {
+          "min": [
+            0.02525000087916851,
+            0.02525000087916851
+          ],
+          "max": [
+            0.9747499823570251,
+            0.47475001215934753
+          ]
+        }
+      },
+      "objAudit": {
+        "vertices": 620,
+        "uvCoordinates": 108,
+        "normals": 441,
+        "triangles": 808
+      },
+      "fbxAudit": {
+        "triangles": 808,
+        "vertices": 620,
+        "bounds": {
+          "min": [
+            -5.6967315673828125,
+            -4.594021797180176,
+            0.0
+          ],
+          "max": [
+            5.6967315673828125,
+            4.594021797180176,
+            12.957189559936523
+          ],
+          "width": 11.393463134765625,
+          "height": 12.957189559936523,
+          "depth": 9.188043594360352
+        },
+        "uvChannels": 1,
+        "textures": [
+          "sharedatlastex.png"
+        ]
+      },
+      "albedo": {
+        "file": "ruin_mosque_albedo.png",
+        "sourceMaterialCount": 1,
+        "sharedAtlas": "sharedatlastex.png",
+        "uvLayer": "UVMap"
+      }
+    },
+    {
+      "districtId": null,
+      "category": "school",
+      "floors": 2,
+      "damageType": "collapsed_classroom_wing",
+      "key": "ruin_school",
+      "meshPath": "Resources/Models/ruin_school.obj",
+      "texturePath": "Resources/Models/ruin_school_albedo.png",
+      "fbxPath": "Art/DestroyedFBX/ruin_school.fbx",
+      "triangleCount": 944,
+      "vertexCount": 624,
+      "bounds": {
+        "min": [
+          -6.690000057220459,
+          -4.950626850128174,
+          0.0
+        ],
+        "max": [
+          6.690000057220459,
+          4.950626850128174,
+          7.372464179992676
+        ],
+        "width": 13.380000114440918,
+        "height": 7.372464179992676,
+        "depth": 9.901253700256348
+      },
+      "units": "meters",
+      "pivot": "bottom-center",
+      "damageOnly": true,
+      "originalAuthored": true,
+      "sourceType": "procedurally_authored_original_geometry",
+      "referenceAssets": [
+        "IMG-20261002-WA0003_1790946116113.jpg",
+        "IMG-20261002-WA0004_1790946116076.jpg"
+      ],
+      "uvCoverage": {
+        "layer": "UVMap",
+        "loopCount": 2832,
+        "finiteLoopCount": 2832,
+        "bounds": {
+          "min": [
+            0.02525000087916851,
+            0.02525000087916851
+          ],
+          "max": [
+            0.7247499823570251,
+            0.47475001215934753
+          ]
+        }
+      },
+      "objAudit": {
+        "vertices": 624,
+        "uvCoordinates": 80,
+        "normals": 359,
+        "triangles": 944
+      },
+      "fbxAudit": {
+        "triangles": 944,
+        "vertices": 624,
+        "bounds": {
+          "min": [
+            -6.690000057220459,
+            -4.950626850128174,
+            0.0
+          ],
+          "max": [
+            6.690000057220459,
+            4.950626850128174,
+            7.372464179992676
+          ],
+          "width": 13.380000114440918,
+          "height": 7.372464179992676,
+          "depth": 9.901253700256348
+        },
+        "uvChannels": 1,
+        "textures": [
+          "sharedatlastex.png"
+        ]
+      },
+      "albedo": {
+        "file": "ruin_school_albedo.png",
+        "sourceMaterialCount": 1,
+        "sharedAtlas": "sharedatlastex.png",
+        "uvLayer": "UVMap"
+      }
+    },
+    {
+      "districtId": null,
+      "category": "clinic",
+      "floors": 3,
+      "damageType": "destroyed_health_building",
+      "key": "ruin_clinic",
+      "meshPath": "Resources/Models/ruin_clinic.obj",
+      "texturePath": "Resources/Models/ruin_clinic_albedo.png",
+      "fbxPath": "Art/DestroyedFBX/ruin_clinic.fbx",
+      "triangleCount": 669,
+      "vertexCount": 452,
+      "bounds": {
+        "min": [
+          -5.199999809265137,
+          -4.199999809265137,
+          0.0
+        ],
+        "max": [
+          5.199999809265137,
+          4.199999809265137,
+          9.611894607543945
+        ],
+        "width": 10.399999618530273,
+        "height": 9.611894607543945,
+        "depth": 8.399999618530273
+      },
+      "units": "meters",
+      "pivot": "bottom-center",
+      "damageOnly": true,
+      "originalAuthored": true,
+      "sourceType": "procedurally_authored_original_geometry",
+      "referenceAssets": [
+        "IMG-20261002-WA0003_1790946116113.jpg",
+        "IMG-20261002-WA0004_1790946116076.jpg"
+      ],
+      "uvCoverage": {
+        "layer": "UVMap",
+        "loopCount": 2007,
+        "finiteLoopCount": 2007,
+        "bounds": {
+          "min": [
+            0.02525000087916851,
+            0.02525000087916851
+          ],
+          "max": [
+            0.7247499823570251,
+            0.47475001215934753
+          ]
+        }
+      },
+      "objAudit": {
+        "vertices": 452,
+        "uvCoordinates": 80,
+        "normals": 309,
+        "triangles": 669
+      },
+      "fbxAudit": {
+        "triangles": 669,
+        "vertices": 452,
+        "bounds": {
+          "min": [
+            -5.199999809265137,
+            -4.199999809265137,
+            0.0
+          ],
+          "max": [
+            5.199999809265137,
+            4.199999809265137,
+            9.611894607543945
+          ],
+          "width": 10.399999618530273,
+          "height": 9.611894607543945,
+          "depth": 8.399999618530273
+        },
+        "uvChannels": 1,
+        "textures": [
+          "sharedatlastex.png"
+        ]
+      },
+      "albedo": {
+        "file": "ruin_clinic_albedo.png",
+        "sourceMaterialCount": 1,
+        "sharedAtlas": "sharedatlastex.png",
+        "uvLayer": "UVMap"
+      }
+    },
+    {
+      "districtId": null,
+      "category": "civic",
+      "floors": 2,
+      "damageType": "collapsed_civic_frontage",
+      "key": "ruin_civic",
+      "meshPath": "Resources/Models/ruin_civic.obj",
+      "texturePath": "Resources/Models/ruin_civic_albedo.png",
+      "fbxPath": "Art/DestroyedFBX/ruin_civic.fbx",
+      "triangleCount": 471,
+      "vertexCount": 332,
+      "bounds": {
+        "min": [
+          -5.747117042541504,
+          -4.243821144104004,
+          0.0
+        ],
+        "max": [
+          5.747117042541504,
+          4.243821144104004,
+          7.003081321716309
+        ],
+        "width": 11.494234085083008,
+        "height": 7.003081321716309,
+        "depth": 8.487642288208008
+      },
+      "units": "meters",
+      "pivot": "bottom-center",
+      "damageOnly": true,
+      "originalAuthored": true,
+      "sourceType": "procedurally_authored_original_geometry",
+      "referenceAssets": [
+        "IMG-20261002-WA0003_1790946116113.jpg",
+        "IMG-20261002-WA0004_1790946116076.jpg"
+      ],
+      "uvCoverage": {
+        "layer": "UVMap",
+        "loopCount": 1413,
+        "finiteLoopCount": 1413,
+        "bounds": {
+          "min": [
+            0.02525000087916851,
+            0.02525000087916851
+          ],
+          "max": [
+            0.7247499823570251,
+            0.47475001215934753
+          ]
+        }
+      },
+      "objAudit": {
+        "vertices": 332,
+        "uvCoordinates": 81,
+        "normals": 335,
+        "triangles": 471
+      },
+      "fbxAudit": {
+        "triangles": 471,
+        "vertices": 332,
+        "bounds": {
+          "min": [
+            -5.747117042541504,
+            -4.243821144104004,
+            0.0
+          ],
+          "max": [
+            5.747117042541504,
+            4.243821144104004,
+            7.003081321716309
+          ],
+          "width": 11.494234085083008,
+          "height": 7.003081321716309,
+          "depth": 8.487642288208008
+        },
+        "uvChannels": 1,
+        "textures": [
+          "sharedatlastex.png"
+        ]
+      },
+      "albedo": {
+        "file": "ruin_civic_albedo.png",
+        "sourceMaterialCount": 1,
+        "sharedAtlas": "sharedatlastex.png",
+        "uvLayer": "UVMap"
+      }
+    },
+    {
+      "districtId": null,
+      "category": "wall",
+      "floors": null,
+      "damageType": "ragged_breached_masonry",
+      "key": "ruin_wall",
+      "meshPath": "Resources/Models/ruin_wall.obj",
+      "texturePath": "Resources/Models/ruin_wall_albedo.png",
+      "fbxPath": "Art/DestroyedFBX/ruin_wall.fbx",
+      "triangleCount": 541,
+      "vertexCount": 388,
+      "bounds": {
+        "min": [
+          -4.758731842041016,
+          -1.5857508182525635,
+          0.0
+        ],
+        "max": [
+          4.758731842041016,
+          1.5857508182525635,
+          4.493061542510986
+        ],
+        "width": 9.517463684082031,
+        "height": 4.493061542510986,
+        "depth": 3.171501636505127
+      },
+      "units": "meters",
+      "pivot": "bottom-center",
+      "damageOnly": true,
+      "originalAuthored": true,
+      "sourceType": "procedurally_authored_original_geometry",
+      "referenceAssets": [
+        "IMG-20261002-WA0003_1790946116113.jpg",
+        "IMG-20261002-WA0004_1790946116076.jpg"
+      ],
+      "uvCoverage": {
+        "layer": "UVMap",
+        "loopCount": 1623,
+        "finiteLoopCount": 1623,
+        "bounds": {
+          "min": [
+            0.02525000087916851,
+            0.02525000087916851
+          ],
+          "max": [
+            0.9747499823570251,
+            0.47475001215934753
+          ]
+        }
+      },
+      "objAudit": {
+        "vertices": 388,
+        "uvCoordinates": 73,
+        "normals": 422,
+        "triangles": 541
+      },
+      "fbxAudit": {
+        "triangles": 541,
+        "vertices": 388,
+        "bounds": {
+          "min": [
+            -4.758731842041016,
+            -1.5857508182525635,
+            0.0
+          ],
+          "max": [
+            4.758731842041016,
+            1.5857508182525635,
+            4.493061542510986
+          ],
+          "width": 9.517463684082031,
+          "height": 4.493061542510986,
+          "depth": 3.171501636505127
+        },
+        "uvChannels": 1,
+        "textures": [
+          "sharedatlastex.png"
+        ]
+      },
+      "albedo": {
+        "file": "ruin_wall_albedo.png",
+        "sourceMaterialCount": 1,
+        "sharedAtlas": "sharedatlastex.png",
+        "uvLayer": "UVMap"
+      }
+    },
+    {
+      "districtId": null,
+      "category": "car",
+      "floors": null,
+      "damageType": "burnt_vehicle_wreck",
+      "key": "ruin_car",
+      "meshPath": "Resources/Models/ruin_car.obj",
+      "texturePath": "Resources/Models/ruin_car_albedo.png",
+      "fbxPath": "Art/DestroyedFBX/ruin_car.fbx",
+      "triangleCount": 593,
+      "vertexCount": 390,
+      "bounds": {
+        "min": [
+          -2.5487284660339355,
+          -1.6175906658172607,
+          0.0
+        ],
+        "max": [
+          2.5487284660339355,
+          1.6175906658172607,
+          1.9801195859909058
+        ],
+        "width": 5.097456932067871,
+        "height": 1.9801195859909058,
+        "depth": 3.2351813316345215
+      },
+      "units": "meters",
+      "pivot": "bottom-center",
+      "damageOnly": true,
+      "originalAuthored": true,
+      "sourceType": "procedurally_authored_original_geometry",
+      "referenceAssets": [
+        "IMG-20261002-WA0003_1790946116113.jpg",
+        "IMG-20261002-WA0004_1790946116076.jpg"
+      ],
+      "uvCoverage": {
+        "layer": "UVMap",
+        "loopCount": 1779,
+        "finiteLoopCount": 1779,
+        "bounds": {
+          "min": [
+            0.02525000087916851,
+            0.02525000087916851
+          ],
+          "max": [
+            0.9747499823570251,
+            0.47475001215934753
+          ]
+        }
+      },
+      "objAudit": {
+        "vertices": 390,
+        "uvCoordinates": 50,
+        "normals": 370,
+        "triangles": 593
+      },
+      "fbxAudit": {
+        "triangles": 593,
+        "vertices": 390,
+        "bounds": {
+          "min": [
+            -2.5487284660339355,
+            -1.6175906658172607,
+            0.0
+          ],
+          "max": [
+            2.5487284660339355,
+            1.6175906658172607,
+            1.9801195859909058
+          ],
+          "width": 5.097456932067871,
+          "height": 1.9801195859909058,
+          "depth": 3.2351813316345215
+        },
+        "uvChannels": 1,
+        "textures": [
+          "sharedatlastex.png"
+        ]
+      },
+      "albedo": {
+        "file": "ruin_car_albedo.png",
+        "sourceMaterialCount": 1,
+        "sharedAtlas": "sharedatlastex.png",
+        "uvLayer": "UVMap"
+      }
+    },
+    {
+      "districtId": null,
+      "category": "crater",
+      "floors": null,
+      "damageType": "static_soil_rim_bowl",
+      "key": "ruin_crater",
+      "meshPath": "Resources/Models/ruin_crater.obj",
+      "texturePath": "Resources/Models/ruin_crater_albedo.png",
+      "fbxPath": "Art/DestroyedFBX/ruin_crater.fbx",
+      "triangleCount": 477,
+      "vertexCount": 543,
+      "bounds": {
+        "min": [
+          -3.8264646530151367,
+          -4.09318733215332,
+          0.0
+        ],
+        "max": [
+          3.8264646530151367,
+          4.09318733215332,
+          1.1142820119857788
+        ],
+        "width": 7.652929306030273,
+        "height": 1.1142820119857788,
+        "depth": 8.18637466430664
+      },
+      "units": "meters",
+      "pivot": "bottom-center",
+      "damageOnly": true,
+      "originalAuthored": true,
+      "sourceType": "procedurally_authored_original_geometry",
+      "referenceAssets": [
+        "IMG-20261002-WA0003_1790946116113.jpg",
+        "IMG-20261002-WA0004_1790946116076.jpg"
+      ],
+      "uvCoverage": {
+        "layer": "UVMap",
+        "loopCount": 1431,
+        "finiteLoopCount": 1431,
+        "bounds": {
+          "min": [
+            0.02525000087916851,
+            0.02525000087916851
+          ],
+          "max": [
+            0.7247499823570251,
+            0.47475001215934753
+          ]
+        }
+      },
+      "objAudit": {
+        "vertices": 543,
+        "uvCoordinates": 57,
+        "normals": 477,
+        "triangles": 477
+      },
+      "fbxAudit": {
+        "triangles": 477,
+        "vertices": 543,
+        "bounds": {
+          "min": [
+            -3.8264646530151367,
+            -4.09318733215332,
+            0.0
+          ],
+          "max": [
+            3.8264646530151367,
+            4.09318733215332,
+            1.1142820119857788
+          ],
+          "width": 7.652929306030273,
+          "height": 1.1142820119857788,
+          "depth": 8.18637466430664
+        },
+        "uvChannels": 1,
+        "textures": [
+          "sharedatlastex.png"
+        ]
+      },
+      "albedo": {
+        "file": "ruin_crater_albedo.png",
+        "sourceMaterialCount": 1,
+        "sharedAtlas": "sharedatlastex.png",
+        "uvLayer": "UVMap"
+      }
+    },
+    {
+      "districtId": null,
+      "category": "debris",
+      "floors": null,
+      "damageType": "mixed_concrete_brick_metal_pile",
+      "key": "ruin_debris",
+      "meshPath": "Resources/Models/ruin_debris.obj",
+      "texturePath": "Resources/Models/ruin_debris_albedo.png",
+      "fbxPath": "Art/DestroyedFBX/ruin_debris.fbx",
+      "triangleCount": 694,
+      "vertexCount": 508,
+      "bounds": {
+        "min": [
+          -4.371876239776611,
+          -3.2303695678710938,
+          0.0
+        ],
+        "max": [
+          4.371876239776611,
+          3.2303695678710938,
+          2.58303165435791
+        ],
+        "width": 8.743752479553223,
+        "height": 2.58303165435791,
+        "depth": 6.4607391357421875
+      },
+      "units": "meters",
+      "pivot": "bottom-center",
+      "damageOnly": true,
+      "originalAuthored": true,
+      "sourceType": "procedurally_authored_original_geometry",
+      "referenceAssets": [
+        "IMG-20261002-WA0003_1790946116113.jpg",
+        "IMG-20261002-WA0004_1790946116076.jpg"
+      ],
+      "uvCoverage": {
+        "layer": "UVMap",
+        "loopCount": 2082,
+        "finiteLoopCount": 2082,
+        "bounds": {
+          "min": [
+            0.02525000087916851,
+            0.02525000087916851
+          ],
+          "max": [
+            0.9747499823570251,
+            0.47475001215934753
+          ]
+        }
+      },
+      "objAudit": {
+        "vertices": 508,
+        "uvCoordinates": 82,
+        "normals": 612,
+        "triangles": 694
+      },
+      "fbxAudit": {
+        "triangles": 694,
+        "vertices": 508,
+        "bounds": {
+          "min": [
+            -4.371876239776611,
+            -3.2303695678710938,
+            0.0
+          ],
+          "max": [
+            4.371876239776611,
+            3.2303695678710938,
+            2.58303165435791
+          ],
+          "width": 8.743752479553223,
+          "height": 2.58303165435791,
+          "depth": 6.4607391357421875
+        },
+        "uvChannels": 1,
+        "textures": [
+          "sharedatlastex.png"
+        ]
+      },
+      "albedo": {
+        "file": "ruin_debris_albedo.png",
+        "sourceMaterialCount": 1,
+        "sharedAtlas": "sharedatlastex.png",
+        "uvLayer": "UVMap"
+      }
+    }
+  ]
+}

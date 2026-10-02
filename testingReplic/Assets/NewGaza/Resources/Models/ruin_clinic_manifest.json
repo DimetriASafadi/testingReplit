@@ -1,0 +1,105 @@
+{
+  "formatVersion": 1,
+  "key": "ruin_clinic",
+  "sourceFile": "original procedural geometry (no imported source model)",
+  "targetTriangles": 1600,
+  "actualTriangles": 669,
+  "triangleTolerance": 0.0,
+  "verifiedWithinBudget": true,
+  "vertexCount": 452,
+  "dimensionsNormalizedBlenderXYZ": [
+    10.399999618530273,
+    8.399999618530273,
+    9.611894607543945
+  ],
+  "origin": {
+    "normalizedOriginBlender": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "pivot": "bottom-center"
+  },
+  "districtId": null,
+  "category": "clinic",
+  "floors": 3,
+  "damageType": "destroyed_health_building",
+  "meshPath": "Resources/Models/ruin_clinic.obj",
+  "texturePath": "Resources/Models/ruin_clinic_albedo.png",
+  "fbxPath": "Art/DestroyedFBX/ruin_clinic.fbx",
+  "triangleCount": 669,
+  "bounds": {
+    "min": [
+      -5.199999809265137,
+      -4.199999809265137,
+      0.0
+    ],
+    "max": [
+      5.199999809265137,
+      4.199999809265137,
+      9.611894607543945
+    ],
+    "width": 10.399999618530273,
+    "height": 9.611894607543945,
+    "depth": 8.399999618530273
+  },
+  "units": "meters",
+  "pivot": "bottom-center",
+  "damageOnly": true,
+  "originalAuthored": true,
+  "sourceType": "procedurally_authored_original_geometry",
+  "referenceAssets": [
+    "IMG-20261002-WA0003_1790946116113.jpg",
+    "IMG-20261002-WA0004_1790946116076.jpg"
+  ],
+  "uvCoverage": {
+    "layer": "UVMap",
+    "loopCount": 2007,
+    "finiteLoopCount": 2007,
+    "bounds": {
+      "min": [
+        0.02525000087916851,
+        0.02525000087916851
+      ],
+      "max": [
+        0.7247499823570251,
+        0.47475001215934753
+      ]
+    }
+  },
+  "objAudit": {
+    "vertices": 452,
+    "uvCoordinates": 80,
+    "normals": 309,
+    "triangles": 669
+  },
+  "fbxAudit": {
+    "triangles": 669,
+    "vertices": 452,
+    "bounds": {
+      "min": [
+        -5.199999809265137,
+        -4.199999809265137,
+        0.0
+      ],
+      "max": [
+        5.199999809265137,
+        4.199999809265137,
+        9.611894607543945
+      ],
+      "width": 10.399999618530273,
+      "height": 9.611894607543945,
+      "depth": 8.399999618530273
+    },
+    "uvChannels": 1,
+    "textures": [
+      "sharedatlastex.png"
+    ]
+  },
+  "albedo": {
+    "file": "ruin_clinic_albedo.png",
+    "sourceMaterialCount": 1,
+    "sharedAtlas": "sharedatlastex.png",
+    "uvLayer": "UVMap"
+  }
+}

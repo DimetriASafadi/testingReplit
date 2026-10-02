@@ -1,0 +1,105 @@
+{
+  "formatVersion": 1,
+  "key": "ruin_wall",
+  "sourceFile": "original procedural geometry (no imported source model)",
+  "targetTriangles": 900,
+  "actualTriangles": 541,
+  "triangleTolerance": 0.0,
+  "verifiedWithinBudget": true,
+  "vertexCount": 388,
+  "dimensionsNormalizedBlenderXYZ": [
+    9.517463684082031,
+    3.171501636505127,
+    4.493061542510986
+  ],
+  "origin": {
+    "normalizedOriginBlender": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "pivot": "bottom-center"
+  },
+  "districtId": null,
+  "category": "wall",
+  "floors": null,
+  "damageType": "ragged_breached_masonry",
+  "meshPath": "Resources/Models/ruin_wall.obj",
+  "texturePath": "Resources/Models/ruin_wall_albedo.png",
+  "fbxPath": "Art/DestroyedFBX/ruin_wall.fbx",
+  "triangleCount": 541,
+  "bounds": {
+    "min": [
+      -4.758731842041016,
+      -1.5857508182525635,
+      0.0
+    ],
+    "max": [
+      4.758731842041016,
+      1.5857508182525635,
+      4.493061542510986
+    ],
+    "width": 9.517463684082031,
+    "height": 4.493061542510986,
+    "depth": 3.171501636505127
+  },
+  "units": "meters",
+  "pivot": "bottom-center",
+  "damageOnly": true,
+  "originalAuthored": true,
+  "sourceType": "procedurally_authored_original_geometry",
+  "referenceAssets": [
+    "IMG-20261002-WA0003_1790946116113.jpg",
+    "IMG-20261002-WA0004_1790946116076.jpg"
+  ],
+  "uvCoverage": {
+    "layer": "UVMap",
+    "loopCount": 1623,
+    "finiteLoopCount": 1623,
+    "bounds": {
+      "min": [
+        0.02525000087916851,
+        0.02525000087916851
+      ],
+      "max": [
+        0.9747499823570251,
+        0.47475001215934753
+      ]
+    }
+  },
+  "objAudit": {
+    "vertices": 388,
+    "uvCoordinates": 73,
+    "normals": 422,
+    "triangles": 541
+  },
+  "fbxAudit": {
+    "triangles": 541,
+    "vertices": 388,
+    "bounds": {
+      "min": [
+        -4.758731842041016,
+        -1.5857508182525635,
+        0.0
+      ],
+      "max": [
+        4.758731842041016,
+        1.5857508182525635,
+        4.493061542510986
+      ],
+      "width": 9.517463684082031,
+      "height": 4.493061542510986,
+      "depth": 3.171501636505127
+    },
+    "uvChannels": 1,
+    "textures": [
+      "sharedatlastex.png"
+    ]
+  },
+  "albedo": {
+    "file": "ruin_wall_albedo.png",
+    "sourceMaterialCount": 1,
+    "sharedAtlas": "sharedatlastex.png",
+    "uvLayer": "UVMap"
+  }
+}
