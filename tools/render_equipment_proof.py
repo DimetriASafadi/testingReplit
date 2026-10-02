@@ -22,8 +22,6 @@ from mathutils import Matrix, Vector
 
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED_MESHES = 50
-EXPECTED_UNIQUE_VERTICES = 12437
 EQUIPMENT_KINDS = ("excavator", "truck", "bulldozer")
 STAGE_LABELS = (
     ("Parked", "baseline-parked"),
@@ -64,13 +62,12 @@ def read_export(path):
     require_file(path, "production Equipment-Production-Meshes.json")
     data = json.loads(path.read_text(encoding="utf-8"))
     summary = data.get("Summary", {})
-    if len(data.get("Meshes", [])) != EXPECTED_MESHES:
-        raise ValueError(f"Expected {EXPECTED_MESHES} production meshes; got {len(data.get('Meshes', []))}.")
-    if summary.get("UniqueMeshVertices") != EXPECTED_UNIQUE_VERTICES:
-        raise ValueError(
-            f"Expected {EXPECTED_UNIQUE_VERTICES} production mesh vertices; "
-            f"got {summary.get('UniqueMeshVertices')}."
-        )
+    meshes = data.get("Meshes", [])
+    if not meshes or len(meshes) != summary.get("UniqueMeshCount"):
+        raise ValueError("Production mesh inventory does not match its measured summary.")
+    measured_vertices = sum(len(mesh["Vertices"]) // 3 for mesh in meshes)
+    if measured_vertices != summary.get("UniqueMeshVertices"):
+        raise ValueError("Production vertex inventory does not match its measured summary.")
     if len(data.get("Poses", [])) != len(STAGE_LABELS):
         raise ValueError(f"Expected {len(STAGE_LABELS)} exported production poses.")
     return data

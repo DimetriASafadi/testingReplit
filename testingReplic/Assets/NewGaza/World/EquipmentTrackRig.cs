@@ -13,6 +13,8 @@ namespace NewGaza
             internal Transform[] rollers;
             internal float[] rollerRadii;
             internal float[] rollerAngles;
+            internal float trackCenterX;
+            internal float traveledModelDistance;
         }
 
         private readonly Transform vehicle;
@@ -23,9 +25,12 @@ namespace NewGaza
         private readonly TrackSide[] sides = new TrackSide[2];
         private Vector3 previousPosition;
         private Quaternion previousRotation;
-        private float traveledModelDistance;
         private bool hasSample;
         internal float LowestShoeVertexYModel { get; private set; }
+        internal float LeftTrackDistanceModel { get { return sides[0].traveledModelDistance; } }
+        internal float RightTrackDistanceModel { get { return sides[1].traveledModelDistance; } }
+        internal float LeftRollerAngleDegrees { get { return sides[0].rollerAngles[0]; } }
+        internal float RightRollerAngleDegrees { get { return sides[1].rollerAngles[0]; } }
 
         internal EquipmentTrackRig(CityGeometry geometry, Transform vehicle, Mesh beltMesh,
             Material rubber, Material steel, Material dark, float vehicleScale,
@@ -89,7 +94,8 @@ namespace NewGaza
                     shoeVertices = shoeVertices,
                     rollers = rollers,
                     rollerRadii = rollerRadii,
-                    rollerAngles = rollerAngles
+                    rollerAngles = rollerAngles,
+                    trackCenterX = side * lateralOffset
                 };
             }
         }
@@ -107,19 +113,29 @@ namespace NewGaza
             }
 
             Vector3 displacement = position - previousPosition;
-            float travel = Vector3.Dot(displacement, previousRotation * Vector3.forward) /
-                Mathf.Max(.001f, vehicleScale);
-            if (Mathf.Abs(travel) > .00001f)
+            Quaternion averageHeading = Quaternion.Slerp(previousRotation, rotation, .5f);
+            float centerTravel = Vector3.Dot(displacement,
+                averageHeading * Vector3.forward) / Mathf.Max(.001f, vehicleScale);
+            Vector3 previousForward = previousRotation * Vector3.forward;
+            Vector3 currentForward = rotation * Vector3.forward;
+            float yawRadians = Mathf.Atan2(
+                Vector3.Dot(Vector3.Cross(previousForward, currentForward), Vector3.up),
+                Vector3.Dot(previousForward, currentForward));
+            if (Mathf.Abs(centerTravel) > .00001f || Mathf.Abs(yawRadians) > .00001f)
             {
-                traveledModelDistance += travel;
                 for (int side = 0; side < sides.Length; side++)
                 {
                     TrackSide track = sides[side];
+                    float signedSideTravel = centerTravel +
+                        yawRadians * track.trackCenterX;
+                    if (Mathf.Abs(signedSideTravel) <= .00001f) continue;
+                    track.traveledModelDistance += signedSideTravel;
                     EquipmentGeometry.UpdateTrackShoeLoop(track.shoeMesh, track.shoeVertices,
-                        length, height, width, traveledModelDistance);
+                        length, height, width, track.traveledModelDistance);
                     for (int roller = 0; roller < track.rollers.Length; roller++)
                     {
-                        track.rollerAngles[roller] += travel / track.rollerRadii[roller] * Mathf.Rad2Deg;
+                        track.rollerAngles[roller] += signedSideTravel /
+                            track.rollerRadii[roller] * Mathf.Rad2Deg;
                         track.rollers[roller].localRotation =
                             Quaternion.AngleAxis(track.rollerAngles[roller], Vector3.right);
                     }

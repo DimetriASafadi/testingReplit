@@ -296,11 +296,11 @@ namespace NewGaza
 
         internal static Mesh CurvedBlade(CityGeometry owner, string name)
         {
-            const int across = 16;
-            const int rows = 5;
+            const int across = 20;
+            const int rows = 6;
             const float halfWidth = 1.02f;
             const float halfHeight = .34f;
-            const float thickness = .055f;
+            const float thickness = .075f;
             var vertices = new Vector3[(across + 1) * (rows + 1) * 2];
             var triangles = new List<int>();
             for (int face = 0; face < 2; face++)
@@ -311,8 +311,8 @@ namespace NewGaza
                         float v = j / (float)rows;
                         float x = Mathf.Lerp(-halfWidth, halfWidth, u);
                         float y = Mathf.Lerp(-halfHeight, halfHeight, v);
-                        float sweep = .14f * (1f - x * x / (halfWidth * halfWidth));
-                        float curl = .14f * v * v;
+                        float sweep = .22f * (1f - x * x / (halfWidth * halfWidth));
+                        float curl = .20f * v * v;
                         float z = sweep - curl + (face == 0 ? 0f : -thickness);
                         int at = face * (across + 1) * (rows + 1) + i * (rows + 1) + j;
                         vertices[at] = new Vector3(x, y, z);

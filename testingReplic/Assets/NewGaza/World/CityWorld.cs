@@ -121,6 +121,11 @@ namespace NewGaza
             fleet.Initialize(geometry, yellow, glass, dark, iron, teal, rubble);
             fleet.ConfigureRoads(Roads, id => RoadEconomy.SpeedMultiplier(
                 RoadEconomy.GetLevel(session.State, id)));
+            fleet.ConfigureTravelSurface(point =>
+            {
+                string roadId = Roads.RoadIdUnder(point);
+                return roadId != null && RoadEconomy.GetLevel(session.State, roadId) == 2;
+            });
             session.Changed += Refresh;
             session.PlotSelected += SetSelectedPlot;
             selectedDistrict = -1;

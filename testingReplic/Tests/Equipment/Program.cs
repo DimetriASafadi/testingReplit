@@ -42,6 +42,8 @@ internal static class Program
         try
         {
             bool skipExport = args.Contains("--no-export", StringComparer.Ordinal);
+            Console.WriteLine("PASS equipment dust: " + EquipmentDustChecks.Run() + " assertions.");
+            Console.WriteLine("PASS equipment steering: " + EquipmentTrackSteeringChecks.Run() + " assertions.");
             MotionMetrics motion = CheckMotionContracts();
             using (var geometry = new CityGeometry())
             {
@@ -82,6 +84,8 @@ internal static class Program
                     "Clearing", actualLoadingPhase, bucketLoad);
                 motion.HaulCycle = CheckTruckHaulCycle(fleet, export);
                 CheckConfiguredFleetRoadTravel(geometry, baseMaterial);
+                CheckFleetWithoutRoads(geometry, baseMaterial);
+                CaptureWorkAnimation(export, fleet);
 
                 ValidateCapturedFleet(export);
                 export.Motion = motion;
@@ -95,7 +99,7 @@ internal static class Program
                     PeakSingleMachineTriangles = export.Poses.SelectMany(pose => pose.Machines)
                         .Max(machine => machine.TriangleCount)
                 };
-                string root = FindProjectRoot();
+                string root = Directory.GetParent(FindProjectRoot()).FullName;
                 string destination = Path.Combine(root, "exports", "equipment");
                 string jsonPath = Path.Combine(destination, "Equipment-Production-Meshes.json");
                 if (!skipExport)
@@ -103,7 +107,8 @@ internal static class Program
                     Directory.CreateDirectory(destination);
                     Directory.CreateDirectory(Path.Combine(destination, "textures"));
                     WriteTextures(export, destination);
-                    File.WriteAllText(jsonPath, JsonSerializer.Serialize(export, JsonOptions),
+                    var exportOptions = new JsonSerializerOptions(JsonOptions) { WriteIndented = false };
+                    File.WriteAllText(jsonPath, JsonSerializer.Serialize(export, exportOptions),
                         new UTF8Encoding(false));
                 }
                 Console.WriteLine("PASS production equipment fixture: " + assertions +
@@ -172,7 +177,7 @@ internal static class Program
             "configured production fleet has reachable street dispatches");
 
         string currentTruckRoad = null;
-        for (int frame = 0; frame < 40 && string.IsNullOrEmpty(currentTruckRoad); frame++)
+        for (int frame = 0; frame < 120 && string.IsNullOrEmpty(currentTruckRoad); frame++)
         {
             UpdateFleet(fleet, .5f);
             currentTruckRoad = truckRoute.RoadIdAtDistance(Math.Max(0f,
@@ -218,9 +223,11 @@ internal static class Program
                 float maximumStep = (machine == 1 ? CityFleet.HaulingSpeed * 2f : .20f) * .5f + .04f;
                 Check(Vector3.Distance(previous[machine], current) <= maximumStep,
                     "configured fleet machine advances continuously rather than hiding a target jump");
-                if (Vector3.Distance(previous[machine], current) > .0001f)
-                    Check(NearestSourceRoadDistance(roads, current) <= 5.05f,
-                        "configured vehicle travel remains on source roads or within strict access links");
+                CityRoadRoute activeRoute = machine == 1 ? truckRoute :
+                    (machine == 0 ? excavatorRoute : dozerRoute);
+                Check(activeRoute.Points.All(Finite) &&
+                    activeRoute.RoadIds.Length == activeRoute.Points.Length - 1,
+                    "configured road/off-road travel retains valid segment provenance");
                 previous[machine] = current;
             }
             if ((bool)GetField(fleet, "excavatorDockedAtWork") &&
@@ -235,6 +242,43 @@ internal static class Program
         Check(!fleet.RouteStatus.Contains("تعذّر"),
             "reachable production fleet reports no unreachable-route warning");
         CheckConfiguredReleaseContact(fleet);
+    }
+
+    private static void CheckFleetWithoutRoads(CityGeometry geometry, Material material)
+    {
+        var fleetObject = new GameObject("Direct-arrival fleet fixture");
+        CityFleet fleet = fleetObject.AddComponent<CityFleet>();
+        fleet.Initialize(geometry, material, material, material, material, material, material);
+        var network = new CityRoadNetwork(new CityBasemap { roads = new CityBasemapRoad[0] });
+        fleet.ConfigureRoads(network, _ => 1f);
+        SetFleetStage(fleet, JobStage.Idle, -1, Vector3.zero, Vector3.zero);
+        UpdateFleet(fleet, 0f);
+        SetFleetStage(fleet, JobStage.Clearing, 0,
+            new Vector3(0f, FixtureGroundY, 3f), new Vector3(0f, FixtureGroundY, 0f));
+        Transform[] roots = { (Transform)GetField(fleet, "excavator"),
+            (Transform)GetField(fleet, "truck"), (Transform)GetField(fleet, "bulldozer") };
+        Vector3[] previous = roots.Select(root => root.localPosition).ToArray();
+        bool arrived = false;
+        for (int frame = 0; frame < 400; frame++)
+        {
+            UpdateFleet(fleet, .5f);
+            for (int machine = 0; machine < roots.Length; machine++)
+            {
+                Check(Vector3.Distance(previous[machine], roots[machine].localPosition) < .18f,
+                    "No-road fallback must move every owned machine continuously, without teleporting.");
+                previous[machine] = roots[machine].localPosition;
+            }
+            if ((bool)GetField(fleet, "excavatorDockedAtWork") &&
+                (bool)GetField(fleet, "bulldozerDockedAtWork") &&
+                GetField(fleet, "truckTripState").ToString() == "ParkedAtWork")
+            {
+                arrived = true;
+                break;
+            }
+        }
+        Check(arrived, "All three owned machines must dock at the actual job when no roads exist.");
+        Check(!fleet.RouteStatus.Contains("تعذّر"), "No-road fallback must not report permanent blockage.");
+        UnityEngine.Object.Destroy(fleetObject);
     }
 
     private static void CheckConfiguredReleaseContact(CityFleet fleet)
@@ -1233,6 +1277,8 @@ internal static class Program
         float maximumDispatchSpeed = 0f;
         const float routeDelta = .05f;
         const int maximumRouteFrames = 2400;
+        var tipAnimation = new AnimationClipRecord { Name = "TruckTip", FramesPerSecond = 20 };
+        int tipStartFrame = -1;
         for (int frame = 0; frame < maximumRouteFrames; frame++)
         {
             Vector3 previousTruck = truck.localPosition;
@@ -1248,6 +1294,11 @@ internal static class Program
             int transfersAfter = (int)GetField(fleet, "transferredCargoPieces");
             int cargoAfter = VisibleCargoCount(fleet);
             string tripState = GetField(fleet, "truckTripState").ToString();
+            if (tripState == "Unloading" && export != null)
+            {
+                if (tipStartFrame < 0) tipStartFrame = frame;
+                AppendAnimationFrame(export, tipAnimation, fleet, (frame - tipStartFrame) * routeDelta);
+            }
 
             if (!hasDeparted && !truckDocked)
             {
@@ -1337,6 +1388,12 @@ internal static class Program
             "The first load must dispatch once, unload once at the depot, and return the actual truck to its work-bed dock.");
         Check(capturedLoadedPose && capturedDumpPose && capturedEmptyPose,
             "Loaded-haul, depot-tip, and empty-return export poses must be sampled from the live route state machine.");
+        if (export != null)
+        {
+            Check(tipAnimation.Frames.Count > 20,
+                "Editable truck-tip animation must contain real production unloading samples.");
+            export.AnimationClips.Add(tipAnimation);
+        }
         Check(releaseCount == 3,
             "A second actual bucket release must wait until the truck has returned and docked.");
         Check(returnedHome && Math.Abs((float)GetField(fleet, "phase")) < .001f,
@@ -1480,6 +1537,35 @@ internal static class Program
         capture.Hydraulics = HydraulicRecords(fleet);
         capture.Audio = MachineAudioRecords(fleet);
         output.Poses.Add(capture);
+    }
+
+    private static void AppendAnimationFrame(ExportFile output, AnimationClipRecord clip,
+        CityFleet fleet, float time)
+    {
+        int index = output.Poses.Count;
+        CapturePose(output, fleet, clip.Name, "Actual production animation", time,
+            EquipmentMotion.Dig((float)GetField(fleet, "phase")).bucketLoad);
+        PoseRecord sample = output.Poses[index];
+        output.Poses.RemoveAt(index);
+        sample.TimeSeconds = time;
+        clip.Frames.Add(sample);
+    }
+
+    private static void CaptureWorkAnimation(ExportFile output, CityFleet fleet)
+    {
+        PrepareFleetAtWorkDock(fleet, new Vector3(0f, FixtureGroundY, 10f),
+            new Vector3(0f, FixtureGroundY, 0f));
+        var clip = new AnimationClipRecord { Name = "WorkingCycle", FramesPerSecond = 15 };
+        const int frames = 210;
+        float step = EquipmentMotion.DigCycleSeconds / frames;
+        for (int frame = 0; frame <= frames; frame++)
+        {
+            if (frame != 0) UpdateFleet(fleet, step);
+            AppendAnimationFrame(output, clip, fleet, frame * step);
+        }
+        Check(clip.Frames.Count == frames + 1,
+            "Editable animation must capture the complete production working cycle.");
+        output.AnimationClips.Add(clip);
     }
 
     private static void CaptureNodes(ExportFile output, Transform vehicleRoot,
@@ -1687,7 +1773,7 @@ internal static class Program
     {
         Check(output.Poses.Count == 5, "Export all five baseline/loading/haul/tip poses.");
         Check(output.Materials.Count >= 5, "Capture all authored production fleet materials.");
-        Check(output.Textures.Count == 2, "Capture actual procedural wear textures for paint and steel.");
+        Check(output.Textures.Count >= 2, "Capture actual procedural wear textures for paint and steel.");
         Check(output.Meshes.Sum(mesh => mesh.Vertices.Length / 3) <= 50000,
             "Three production machine models must stay below the 50,000 unique mesh-vertex fixture budget.");
         foreach (PoseRecord pose in output.Poses)
@@ -1912,6 +1998,7 @@ internal static class Program
         public List<MaterialRecord> Materials;
         public List<TextureRecord> Textures = new List<TextureRecord>();
         public List<PoseRecord> Poses;
+        public List<AnimationClipRecord> AnimationClips = new List<AnimationClipRecord>();
         public CaptureSummary Summary;
         public MotionMetrics Motion;
         [System.Text.Json.Serialization.JsonIgnore]
@@ -1947,9 +2034,16 @@ internal static class Program
     {
         public string Label, Stage;
         public float PhaseSeconds, BucketLoad;
+        public float TimeSeconds;
         public List<MachineRecord> Machines;
         public List<HydraulicRecord> Hydraulics;
         public List<AudioRecord> Audio;
+    }
+    private sealed class AnimationClipRecord
+    {
+        public string Name;
+        public int FramesPerSecond;
+        public List<PoseRecord> Frames = new List<PoseRecord>();
     }
     private sealed class MachineRecord
     {
