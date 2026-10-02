@@ -61,6 +61,32 @@ namespace NewGaza
         private int routeCount;
         private Vector3[] tripRoute = new Vector3[2];
         private float tripRouteLength;
+        private CityRoadRoute roadTripRoute;
+        private CityRoadNetwork roadNetwork;
+        private Func<string, float> roadSpeedMultiplier;
+        private bool roadsConfigured;
+        private string truckRouteStatus = "لم يُهيّأ مسار الشارع بعد.";
+        private string excavatorRouteStatus, bulldozerRouteStatus;
+        public string RouteStatus
+        {
+            get
+            {
+                string status = truckRouteStatus;
+                if (!string.IsNullOrEmpty(excavatorRouteStatus))
+                    status = excavatorRouteStatus + " " + status;
+                if (!string.IsNullOrEmpty(bulldozerRouteStatus))
+                    status = bulldozerRouteStatus + " " + status;
+                return status;
+            }
+        }
+        private CityRoadRoute excavatorRoadRoute, bulldozerRoadRoute;
+        private float excavatorRoadDistance, bulldozerRoadDistance;
+        private Vector3 excavatorRoadTarget, bulldozerRoadTarget;
+        private bool excavatorOnRoad, bulldozerOnRoad;
+        private bool excavatorDockedAtWork, bulldozerDockedAtWork;
+        private bool trackedDestinationClearing;
+        private bool trackedDestinationInitialized;
+        private Vector3 lastExcavatorRoadTarget, lastBulldozerRoadTarget;
         private float tripDistance;
         private float tripClock;
         private Quaternion tripTurnStart, tripTurnTarget;
@@ -69,6 +95,7 @@ namespace NewGaza
         private float excavatorHoldPhase;
         private bool pendingRouteRebuild;
         private bool truckReassignToWork;
+        private bool roadReassignTravel;
         private int transferredCargoPieces;
         private float dozerWorkRootOffsetModel;
         private float depotExcavatorRootOffsetModel;
@@ -78,6 +105,7 @@ namespace NewGaza
         private float wheelRoll;
         private bool truckTravelAdvancedThisFrame;
         internal float LastMeasuredTruckWorldSpeed { get; private set; }
+        public float ActualWorldSpeed { get { return LastMeasuredTruckWorldSpeed; } }
         internal float LastMeasuredTruckSpeedMetersPerSecond =>
             LastMeasuredTruckWorldSpeed * 20f;
         private Vector3 previousTruckPosition;
@@ -132,6 +160,19 @@ namespace NewGaza
             previousExcavatorJoints = new Quaternion[4];
             excavatorJoints = new[] { turret, boom, stick, bucket };
             SnapshotMotion();
+        }
+
+        /// <summary>Configures the production sourced street graph exactly once.</summary>
+        public void ConfigureRoads(CityRoadNetwork roads, Func<string, float> speedMultiplier)
+        {
+            if (roads == null) throw new ArgumentNullException(nameof(roads));
+            if (roadsConfigured)
+                throw new InvalidOperationException("CityFleet road routing may only be configured once.");
+            roadNetwork = roads;
+            roadSpeedMultiplier = speedMultiplier;
+            roadsConfigured = true;
+            truckRouteStatus = "جارٍ حساب مسارات الشوارع.";
+            trackedDestinationInitialized = false;
         }
 
         private void ConfigureGroundedVehicleOffsets()
@@ -266,6 +307,15 @@ namespace NewGaza
             districtIndex = state.jobDistrict;
             jobCenter = nextJobCenter;
             depot = nextDepot;
+            if (roadsConfigured && !trackedDestinationInitialized)
+            {
+                SetPose(excavator, depot + VehicleOffset(
+                    new Vector3(0f, depotExcavatorRootOffsetModel, 0f)), Vector3.zero);
+                SetPose(bulldozer, depot + VehicleOffset(
+                    new Vector3(0f, depotDozerRootOffsetModel, 0f)), Vector3.zero);
+                trackedDestinationInitialized = true;
+                trackedDestinationClearing = false;
+            }
             excavatorOwned = state.excavators > 0;
             truckOwned = state.trucks > 0;
             bulldozerOwned = state.bulldozers > 0;
@@ -659,7 +709,9 @@ namespace NewGaza
         {
             if (importedJob)
             {
-                route[0] = depot + VehicleOffset(new Vector3(-1.4f,depotTruckRootOffsetModel,-4.5f));
+                route[0] = roadsConfigured
+                    ? depot + VehicleOffset(new Vector3(0f,depotTruckRootOffsetModel,0f))
+                    : depot + VehicleOffset(new Vector3(-1.4f,depotTruckRootOffsetModel,-4.5f));
                 route[1] = depot + VehicleOffset(new Vector3(-1.4f,depotTruckRootOffsetModel,4.5f));
                 route[2] = route[0];
                 routeCount = 3;
@@ -668,7 +720,9 @@ namespace NewGaza
             {
                 // Direct illustrative dispatch between sourced work and depot coordinates.
                 // No implied street alignment or invented rectilinear road network.
-                route[0] = depot + VehicleOffset(new Vector3(-1.4f,depotTruckRootOffsetModel,-4.5f));
+                route[0] = roadsConfigured
+                    ? depot + VehicleOffset(new Vector3(0f,depotTruckRootOffsetModel,0f))
+                    : depot + VehicleOffset(new Vector3(-1.4f,depotTruckRootOffsetModel,-4.5f));
                 route[1] = new Vector3(jobCenter.x,jobCenter.y +
                     VehicleOffset(new Vector3(0f,EquipmentMotion.TruckWorkRootHeightModel,0f)).y,
                     jobCenter.z);
@@ -682,7 +736,16 @@ namespace NewGaza
                 EquipmentMotion.TruckWorkRootHeightModel -
                     EquipmentMotion.WorkRootHeightModel,.35f));
             tripRoute[1] = route[0];
-            tripRouteLength = Vector3.Distance(tripRoute[0], tripRoute[1]);
+            roadTripRoute = roadsConfigured
+                ? roadNetwork.FindRoute(tripRoute[0], tripRoute[1], roadSpeedMultiplier)
+                : null;
+            tripRouteLength = roadsConfigured
+                ? (roadTripRoute == null ? 0f : roadTripRoute.Length)
+                : Vector3.Distance(tripRoute[0], tripRoute[1]);
+            if (roadsConfigured)
+                truckRouteStatus = roadTripRoute == null
+                    ? "تعذّر الوصول: لا يوجد اتصال بين الطريق والعمل والمستودع ضمن مسافة ١٠٠ متر. ستبقى الشاحنة في مكانها."
+                    : "المسار عبر الشوارع جاهز للشاحنة.";
         }
 
         private void CaptureTransitionPose()
@@ -700,6 +763,7 @@ namespace NewGaza
             for (int i = 0; i < transitionParts.Length; i++)
             {
                 bool vehicleRoot = i == 0 || i == 5;
+                if (vehicleRoot && roadsConfigured) continue;
                 if (vehicleRoot &&
                     Vector3.Distance(transitionPositions[i], transitionParts[i].localPosition) > .3f)
                 {
@@ -738,6 +802,45 @@ namespace NewGaza
         private void BeginTruckReassignment(bool toWork)
         {
             truckReassignToWork = toWork;
+            if (roadsConfigured)
+            {
+                Vector3 work = importedJob
+                    ? depot + VehicleOffset(new Vector3(.3f,EquipmentMotion.WorkRootHeightModel,5.6f))
+                    : jobCenter + VehicleOffset(new Vector3(0f,EquipmentMotion.WorkRootHeightModel,0f));
+                Vector3 workDock = work + VehicleOffset(new Vector3(-2.5f,
+                    EquipmentMotion.TruckWorkRootHeightModel -
+                        EquipmentMotion.WorkRootHeightModel,.35f));
+                Vector3 depotDock = depot + VehicleOffset(new Vector3(0f,depotTruckRootOffsetModel,0f));
+                Vector3 current = truck.localPosition;
+                if (toWork)
+                {
+                    tripRoute[0] = workDock;
+                    tripRoute[1] = current;
+                    roadTripRoute = roadNetwork.FindRoute(tripRoute[0], tripRoute[1],
+                        roadSpeedMultiplier);
+                }
+                else
+                {
+                    tripRoute[0] = current;
+                    tripRoute[1] = depotDock;
+                    roadTripRoute = roadNetwork.FindRoute(tripRoute[0], tripRoute[1],
+                        roadSpeedMultiplier);
+                }
+                if (roadTripRoute == null)
+                {
+                    roadReassignTravel = false;
+                    truckTripState = toWork ? TruckTripState.ParkedAtDepot :
+                        TruckTripState.ParkedAtWork;
+                    truckRouteStatus = "تعذّر تغيير موقع الشاحنة عبر شبكة الشوارع؛ ستبقى في مكانها.";
+                    return;
+                }
+                roadReassignTravel = true;
+                tripRouteLength = roadTripRoute.Length;
+                tripDistance = tripClock = 0f;
+                truckTripState = toWork ? TruckTripState.Inbound : TruckTripState.Outbound;
+                truckRouteStatus = "الشاحنة تعيد التموضع عبر شبكة الشوارع.";
+                return;
+            }
             truckTripState = TruckTripState.ReassignFade;
             tripClock = 0f;
             if (truck != null) truck.gameObject.SetActive(false);
@@ -771,23 +874,37 @@ namespace NewGaza
 
         private void BeginOutbound()
         {
+            if (roadsConfigured && roadTripRoute == null)
+            {
+                truckRouteStatus = "تعذّر المسار: الشاحنة متوقفة عند موقع العمل ولا تسلك طريقًا مباشرًا عبر الأحياء.";
+                return;
+            }
             tripDistance = 0f;
             tripClock = 0f;
             truckTripState = TruckTripState.Outbound;
             truck.localPosition = tripRoute[0];
-            truck.localRotation = Quaternion.LookRotation(
-                tripRoute[1] - tripRoute[0], Vector3.up);
+            Vector3 direction = roadsConfigured && roadTripRoute != null
+                ? roadTripRoute.DirectionAtDistance(0f) : tripRoute[1] - tripRoute[0];
+            truck.localRotation = Quaternion.LookRotation(direction, Vector3.up);
             truckBed.localRotation = Quaternion.identity;
         }
 
         private void BeginInbound()
         {
+            if (roadsConfigured && roadTripRoute == null)
+            {
+                truckTripState = TruckTripState.ParkedAtDepot;
+                truckRouteStatus = "تعذّر المسار: الشاحنة متوقفة في المستودع ولا تسلك طريقًا مباشرًا عبر الأحياء.";
+                return;
+            }
             tripDistance = 0f;
             tripClock = 0f;
             truckTripState = TruckTripState.Inbound;
             truck.localPosition = tripRoute[1];
-            truck.localRotation = Quaternion.LookRotation(
-                tripRoute[0] - tripRoute[1], Vector3.up);
+            Vector3 direction = roadsConfigured && roadTripRoute != null
+                ? roadTripRoute.DirectionAtDistance(tripRouteLength) * -1f
+                : tripRoute[0] - tripRoute[1];
+            truck.localRotation = Quaternion.LookRotation(direction, Vector3.up);
             truckBed.localRotation = Quaternion.identity;
         }
 
@@ -795,9 +912,15 @@ namespace NewGaza
         {
             tripClock = 0f;
             tripTurnStart = truck.localRotation;
-            Vector3 direction = atDepot
-                ? tripRoute[0] - tripRoute[1]
-                : Vector3.forward;
+            Vector3 direction;
+            if (roadsConfigured && roadTripRoute != null)
+            {
+                direction = atDepot
+                    ? roadTripRoute.DirectionAtDistance(tripRouteLength) * -1f
+                    : roadTripRoute.DirectionAtDistance(0f);
+            }
+            else
+                direction = atDepot ? tripRoute[0] - tripRoute[1] : Vector3.forward;
             tripTurnTarget = atDepot
                 ? Quaternion.LookRotation(direction, Vector3.up)
                 : Quaternion.identity;
@@ -810,25 +933,152 @@ namespace NewGaza
         {
             tripClock = 0f;
             tripTurnStart = truck.localRotation;
-            tripTurnTarget = Quaternion.LookRotation(
-                tripRoute[1] - tripRoute[0], Vector3.up);
+            Vector3 direction = roadsConfigured && roadTripRoute != null
+                ? roadTripRoute.DirectionAtDistance(0f)
+                : tripRoute[1] - tripRoute[0];
+            tripTurnTarget = Quaternion.LookRotation(direction, Vector3.up);
             truckTripState = TruckTripState.TurningOutFromWork;
         }
 
         private void PlaceTruckOnTripRoute(bool returning)
         {
             float distance = Mathf.Clamp(tripDistance, 0f, tripRouteLength);
-            Vector3 position = returning
-                ? Vector3.Lerp(tripRoute[1], tripRoute[0], distance /
-                    Mathf.Max(.001f, tripRouteLength))
-                : Vector3.Lerp(tripRoute[0], tripRoute[1], distance /
-                    Mathf.Max(.001f, tripRouteLength));
-            Vector3 direction = returning
-                ? tripRoute[0] - tripRoute[1]
-                : tripRoute[1] - tripRoute[0];
+            Vector3 position, direction;
+            if (roadsConfigured && roadTripRoute != null)
+            {
+                float routeDistance = returning ? tripRouteLength - distance : distance;
+                position = roadTripRoute.PositionAtDistance(routeDistance);
+                direction = roadTripRoute.DirectionAtDistance(routeDistance);
+                if (returning) direction = direction * -1f;
+                position.y = returning ? tripRoute[1].y : tripRoute[0].y;
+            }
+            else
+            {
+                position = returning
+                    ? Vector3.Lerp(tripRoute[1], tripRoute[0], distance /
+                        Mathf.Max(.001f, tripRouteLength))
+                    : Vector3.Lerp(tripRoute[0], tripRoute[1], distance /
+                        Mathf.Max(.001f, tripRouteLength));
+                direction = returning ? tripRoute[0] - tripRoute[1] : tripRoute[1] - tripRoute[0];
+            }
             truck.localPosition = position;
             if (direction.sqrMagnitude > .001f)
                 truck.localRotation = Quaternion.LookRotation(direction, Vector3.up);
+        }
+
+        private float TruckSpeedAtTripDistance(bool returning)
+        {
+            float speed = HaulingSpeed;
+            if (!roadsConfigured || roadTripRoute == null) return speed;
+            float routeDistance = returning ? tripRouteLength - tripDistance : tripDistance;
+            string roadId = roadTripRoute.RoadIdAtDistance(routeDistance);
+            if (!string.IsNullOrEmpty(roadId) && roadSpeedMultiplier != null)
+                speed *= roadSpeedMultiplier(roadId);
+            return speed;
+        }
+
+        private void UpdateTrackedRoadTravel(float dt, bool clearing)
+        {
+            if (!roadsConfigured) return;
+            Vector3 work = importedJob
+                ? depot + VehicleOffset(new Vector3(.3f,EquipmentMotion.WorkRootHeightModel,5.6f))
+                : jobCenter + VehicleOffset(new Vector3(0f,EquipmentMotion.WorkRootHeightModel,0f));
+            Vector3 excavatorTarget = clearing ? work :
+                depot + VehicleOffset(new Vector3(0f,depotExcavatorRootOffsetModel,0f));
+            Vector3 dozerTarget = clearing
+                ? work + VehicleOffset(new Vector3(1.55f,dozerWorkRootOffsetModel,-.48f))
+                : depot + VehicleOffset(new Vector3(0f,depotDozerRootOffsetModel,0f));
+            bool destinationChanged = !trackedDestinationInitialized ||
+                trackedDestinationClearing != clearing ||
+                Vector3.Distance(lastExcavatorRoadTarget, excavatorTarget) > .01f ||
+                Vector3.Distance(lastBulldozerRoadTarget, dozerTarget) > .01f;
+            if (destinationChanged)
+            {
+                trackedDestinationInitialized = true;
+                trackedDestinationClearing = clearing;
+                lastExcavatorRoadTarget = excavatorTarget;
+                lastBulldozerRoadTarget = dozerTarget;
+                if (excavatorOwned)
+                    BeginTrackedRoadTrip(excavator, excavatorTarget, true);
+                if (bulldozerOwned)
+                    BeginTrackedRoadTrip(bulldozer, dozerTarget, false);
+            }
+            if (excavatorOnRoad) AdvanceTrackedRoadTrip(excavator, true, dt);
+            if (bulldozerOnRoad) AdvanceTrackedRoadTrip(bulldozer, false, dt);
+            if (!excavatorOwned) excavatorDockedAtWork = false;
+            if (!bulldozerOwned) bulldozerDockedAtWork = false;
+        }
+
+        private void BeginTrackedRoadTrip(Transform vehicle, Vector3 destination, bool excavatorVehicle)
+        {
+            Vector3 start = vehicle.localPosition;
+            if (Vector3.Distance(start, destination) <= .03f)
+            {
+                vehicle.localPosition = destination;
+                SetTrackedDocked(excavatorVehicle, trackedDestinationClearing);
+                return;
+            }
+            CityRoadRoute route = roadNetwork.FindRoute(start, destination, roadSpeedMultiplier);
+            if (route == null)
+            {
+                if (excavatorVehicle) excavatorOnRoad = false;
+                else bulldozerOnRoad = false;
+                SetTrackedDocked(excavatorVehicle, false);
+                if (excavatorVehicle)
+                    excavatorRouteStatus = "تعذّر وصول الحفارة إلى الطريق؛ ستبقى عند موقعها دون اختصار عبر المباني.";
+                else
+                    bulldozerRouteStatus = "تعذّر وصول الجرّافة إلى الطريق؛ ستبقى عند موقعها دون اختصار عبر المباني.";
+                return;
+            }
+            if (excavatorVehicle)
+            {
+                excavatorRouteStatus = null;
+                excavatorRoadRoute = route;
+                excavatorRoadDistance = 0f;
+                excavatorRoadTarget = destination;
+                excavatorOnRoad = true;
+                excavatorDockedAtWork = false;
+            }
+            else
+            {
+                bulldozerRouteStatus = null;
+                bulldozerRoadRoute = route;
+                bulldozerRoadDistance = 0f;
+                bulldozerRoadTarget = destination;
+                bulldozerOnRoad = true;
+                bulldozerDockedAtWork = false;
+            }
+        }
+
+        private void AdvanceTrackedRoadTrip(Transform vehicle, bool excavatorVehicle, float dt)
+        {
+            CityRoadRoute route = excavatorVehicle ? excavatorRoadRoute : bulldozerRoadRoute;
+            if (route == null) return;
+            float distance = excavatorVehicle ? excavatorRoadDistance : bulldozerRoadDistance;
+            float speed = .10f;
+            string roadId = route.RoadIdAtDistance(distance);
+            if (!string.IsNullOrEmpty(roadId) && roadSpeedMultiplier != null)
+                speed *= roadSpeedMultiplier(roadId);
+            distance = Mathf.Min(route.Length, distance + speed * dt);
+            Vector3 position = route.PositionAtDistance(distance);
+            position.y = (excavatorVehicle ? excavatorRoadTarget : bulldozerRoadTarget).y;
+            vehicle.localPosition = position;
+            Vector3 direction = route.DirectionAtDistance(distance);
+            if (direction.sqrMagnitude > .001f)
+                vehicle.localRotation = Quaternion.LookRotation(direction, Vector3.up);
+            if (excavatorVehicle) excavatorRoadDistance = distance;
+            else bulldozerRoadDistance = distance;
+            if (distance + .0001f < route.Length) return;
+            vehicle.localPosition = excavatorVehicle ? excavatorRoadTarget : bulldozerRoadTarget;
+            if (excavatorVehicle) excavatorOnRoad = false;
+            else bulldozerOnRoad = false;
+            SetTrackedDocked(excavatorVehicle, trackedDestinationClearing);
+        }
+
+        private void SetTrackedDocked(bool excavatorVehicle, bool atWork)
+        {
+            if (excavatorVehicle) excavatorDockedAtWork = atWork;
+            else bulldozerDockedAtWork = atWork;
         }
 
         private void UpdateTruckTrip(float dt, bool clearing)
@@ -859,11 +1109,16 @@ namespace NewGaza
                 case TruckTripState.Outbound:
                     truckTravelAdvancedThisFrame = dt > 0f &&
                         tripDistance < tripRouteLength;
-                    tripDistance += HaulingSpeed * dt;
+                    tripDistance += TruckSpeedAtTripDistance(false) * dt;
                     if (tripDistance >= tripRouteLength)
                     {
                         tripDistance = tripRouteLength;
                         PlaceTruckOnTripRoute(false);
+                        if (roadReassignTravel)
+                        {
+                            roadReassignTravel = false;
+                            CreateRoute();
+                        }
                         BeginTruckTurn(true);
                     }
                     else PlaceTruckOnTripRoute(false);
@@ -880,6 +1135,13 @@ namespace NewGaza
                         {
                             truckTripState = TruckTripState.Unloading;
                             tripClock = 0f;
+                        }
+                        else if (roadReassignTravel)
+                        {
+                            roadReassignTravel = false;
+                            CreateRoute();
+                            if (clearing) BeginInbound();
+                            else truckTripState = TruckTripState.ParkedAtDepot;
                         }
                         else if (pendingRouteRebuild)
                             BeginTruckReassignment(stage == JobStage.Clearing);
@@ -898,7 +1160,14 @@ namespace NewGaza
                     {
                         transferredCargoPieces = 0;
                         truckBed.localRotation = Quaternion.identity;
-                        if (pendingRouteRebuild)
+                        if (roadReassignTravel)
+                        {
+                            roadReassignTravel = false;
+                            CreateRoute();
+                            if (clearing) BeginInbound();
+                            else truckTripState = TruckTripState.ParkedAtDepot;
+                        }
+                        else if (pendingRouteRebuild)
                             BeginTruckReassignment(stage == JobStage.Clearing);
                         else if (clearing)
                             BeginInbound();
@@ -909,11 +1178,16 @@ namespace NewGaza
                 case TruckTripState.Inbound:
                     truckTravelAdvancedThisFrame = dt > 0f &&
                         tripDistance < tripRouteLength;
-                    tripDistance += HaulingSpeed * dt;
+                    tripDistance += TruckSpeedAtTripDistance(true) * dt;
                     if (tripDistance >= tripRouteLength)
                     {
                         tripDistance = tripRouteLength;
                         PlaceTruckOnTripRoute(true);
+                        if (roadReassignTravel)
+                        {
+                            roadReassignTravel = false;
+                            CreateRoute();
+                        }
                         BeginTruckTurn(false);
                     }
                     else PlaceTruckOnTripRoute(true);
@@ -926,7 +1200,19 @@ namespace NewGaza
                             Mathf.Clamp01(tripClock / .75f)));
                     if (tripClock >= .75f)
                     {
-                        if (pendingRouteRebuild)
+                        if (roadReassignTravel)
+                        {
+                            roadReassignTravel = false;
+                            CreateRoute();
+                            if (clearing)
+                            {
+                                truckTripState = TruckTripState.ParkedAtWork;
+                                excavatorWaitingForTruck = false;
+                                excavatorHoldPhase = 0f;
+                            }
+                            else BeginWorkDeparture();
+                        }
+                        else if (pendingRouteRebuild)
                             BeginTruckReassignment(stage == JobStage.Clearing);
                         else if (clearing)
                         {
@@ -953,6 +1239,11 @@ namespace NewGaza
             transitionClock += dt;
             float transition = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(transitionClock / 1.15f));
             bool clearing = stage == JobStage.Clearing;
+            UpdateTrackedRoadTravel(dt, clearing);
+            bool trackedCrewAtWork = !roadsConfigured ||
+                ((!excavatorOwned || excavatorDockedAtWork) &&
+                 (!bulldozerOwned || bulldozerDockedAtWork) &&
+                 (excavatorOwned || bulldozerOwned));
             if (clearing && truckOwned)
             {
                 if (excavatorWaitingForTruck)
@@ -965,7 +1256,7 @@ namespace NewGaza
                     }
                     else phase = excavatorHoldPhase;
                 }
-                else if (truckTripState == TruckTripState.ParkedAtWork)
+                else if (truckTripState == TruckTripState.ParkedAtWork && trackedCrewAtWork)
                     phase += dt;
                 else
                     phase = 0f;
@@ -973,7 +1264,8 @@ namespace NewGaza
             else if (clearing && !truckOwned)
             {
                 if (excavatorWaitingForTruck) phase = excavatorHoldPhase;
-                else phase += dt;
+                else if (trackedCrewAtWork) phase += dt;
+                else phase = 0f;
             }
             else phase += dt;
             Vector3 work = importedJob
@@ -985,18 +1277,22 @@ namespace NewGaza
             {
                 if (clearing)
                 {
-                    SetPose(excavator, work, Vector3.zero);
-                    excavator.localRotation = Quaternion.identity;
-                    turret.localRotation = Quaternion.Euler(0f, digPose.turretYaw, 0f);
-                    boom.localRotation = Quaternion.Euler(digPose.boomAngle, 0f, 0f);
-                    stick.localRotation = Quaternion.Euler(digPose.stickAngle, 0f, 0f);
-                    bucket.localRotation = Quaternion.Euler(digPose.bucketAngle, 0f, 0f);
+                    if (!roadsConfigured || excavatorDockedAtWork)
+                    {
+                        SetPose(excavator, work, Vector3.zero);
+                        excavator.localRotation = Quaternion.identity;
+                        turret.localRotation = Quaternion.Euler(0f, digPose.turretYaw, 0f);
+                        boom.localRotation = Quaternion.Euler(digPose.boomAngle, 0f, 0f);
+                        stick.localRotation = Quaternion.Euler(digPose.stickAngle, 0f, 0f);
+                        bucket.localRotation = Quaternion.Euler(digPose.bucketAngle, 0f, 0f);
+                    }
                 }
                 else
                 {
-                    SetPose(excavator, depot,
-                        new Vector3(0f,depotExcavatorRootOffsetModel,5.8f));
-                    excavator.localRotation = Quaternion.Euler(0f,180f,0f);
+                    if (!roadsConfigured)
+                        SetPose(excavator, depot,
+                            new Vector3(0f,depotExcavatorRootOffsetModel,5.8f));
+                    if (!excavatorOnRoad) excavator.localRotation = Quaternion.Euler(0f,180f,0f);
                     turret.localRotation = Quaternion.identity;
                     boom.localRotation = Quaternion.Euler(15f,0f,0f);
                     stick.localRotation = Quaternion.Euler(-62f,0f,0f);
@@ -1008,17 +1304,21 @@ namespace NewGaza
             {
                 if (clearing)
                 {
-                    float push = Mathf.Sin(Mathf.Repeat(phase, 11f) / 11f * Mathf.PI * 2f) * .22f;
-                    SetPose(bulldozer, work,
-                        new Vector3(1.55f,dozerWorkRootOffsetModel,-.48f + push));
-                    bulldozer.localRotation = Quaternion.identity;
-                    blade.localRotation = Quaternion.Euler(EquipmentMotion.PushBlade(phase), 0f, 0f);
+                    if (!roadsConfigured || bulldozerDockedAtWork)
+                    {
+                        float push = Mathf.Sin(Mathf.Repeat(phase, 11f) / 11f * Mathf.PI * 2f) * .22f;
+                        SetPose(bulldozer, work,
+                            new Vector3(1.55f,dozerWorkRootOffsetModel,-.48f + push));
+                        bulldozer.localRotation = Quaternion.identity;
+                        blade.localRotation = Quaternion.Euler(EquipmentMotion.PushBlade(phase), 0f, 0f);
+                    }
                 }
                 else
                 {
-                    SetPose(bulldozer, depot,
-                        new Vector3(0f,depotDozerRootOffsetModel,-5.1f));
-                    bulldozer.localRotation = Quaternion.Euler(0f,180f,0f);
+                    if (!roadsConfigured)
+                        SetPose(bulldozer, depot,
+                            new Vector3(0f,depotDozerRootOffsetModel,-5.1f));
+                    if (!bulldozerOnRoad) bulldozer.localRotation = Quaternion.Euler(0f,180f,0f);
                     blade.localRotation = Quaternion.Euler(-7f,0f,0f);
                 }
             }

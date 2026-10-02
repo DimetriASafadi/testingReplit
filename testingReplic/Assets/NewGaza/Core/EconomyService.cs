@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace NewGaza.Core
 {
@@ -6,6 +7,8 @@ namespace NewGaza.Core
     {
         private const long DaySeconds = 86400;
         private const int MaximumFleet = 1000;
+        private Dictionary<string, RoadSegmentDefinition> roadDefinitions;
+        private bool roadDefinitionsRegistered;
         public GameState State { get; private set; }
         public bool CityComplete
         {
@@ -22,6 +25,67 @@ namespace NewGaza.Core
             if (state == null) throw new ArgumentNullException(nameof(state), "بيانات الحفظ مفقودة");
             State = state;
             ValidateState();
+        }
+
+        public void RegisterRoadSegments(RoadSegmentDefinition[] defs)
+        {
+            if (roadDefinitionsRegistered)
+                throw new InvalidOperationException("Road definitions have already been registered.");
+            if (defs == null) throw new ArgumentNullException(nameof(defs));
+
+            var registered = new Dictionary<string, RoadSegmentDefinition>(StringComparer.Ordinal);
+            foreach (var definition in defs)
+            {
+                RoadEconomy.ValidateDefinition(definition);
+                if (registered.ContainsKey(definition.id))
+                    throw new ArgumentException("Road definition IDs must be unique.", nameof(defs));
+                registered.Add(definition.id, new RoadSegmentDefinition(
+                    definition.id, definition.name, definition.lengthMeters));
+            }
+            roadDefinitions = registered;
+            roadDefinitionsRegistered = true;
+        }
+
+        public ActionResult ImproveRoad(string id, int targetLevel)
+        {
+            ValidateState();
+            if (!roadDefinitionsRegistered)
+                return ActionResult.Fail("لم يتم تحميل بيانات الطرق");
+            if (string.IsNullOrEmpty(id) || !roadDefinitions.TryGetValue(id, out var definition))
+                return ActionResult.Fail("مقطع الطريق غير معروف");
+            int currentLevel = RoadEconomy.GetLevel(State, id);
+            if (targetLevel != currentLevel + 1 || targetLevel > 2)
+                return ActionResult.Fail("يجب ترقية الطريق إلى المستوى التالي فقط");
+
+            var cost = RoadEconomy.GetCost(definition, targetLevel);
+            if (!CanPay(cost.coins, cost.concrete, cost.iron))
+                return ActionResult.Fail("الرصيد أو الخرسانة أو الحديد لا يكفي لتحسين الطريق");
+
+            RoadSegmentState segment = null;
+            foreach (var candidate in State.roadSegments)
+                if (string.Equals(candidate.id, id, StringComparison.Ordinal))
+                {
+                    segment = candidate;
+                    break;
+                }
+            RoadSegmentState[] expanded = null;
+            if (segment == null)
+            {
+                expanded = new RoadSegmentState[State.roadSegments.Length + 1];
+                Array.Copy(State.roadSegments, expanded, State.roadSegments.Length);
+                segment = new RoadSegmentState { id = id };
+                expanded[expanded.Length - 1] = segment;
+            }
+
+            State.coins -= cost.coins;
+            State.stock.concrete -= cost.concrete;
+            State.stock.iron -= cost.iron;
+            if (expanded != null)
+            {
+                State.roadSegments = expanded;
+            }
+            segment.level = targetLevel;
+            return ActionResult.Ok("تم تحسين الطريق");
         }
 
         // A persisted high-water timestamp makes repeated ticks and clock rollback harmless.
@@ -442,6 +506,12 @@ namespace NewGaza.Core
                 || State.districts == null || State.districts.Length != catalog.Length
                 || State.selectedDistrict < 0 || State.selectedDistrict >= catalog.Length)
                 throw new InvalidOperationException(error);
+            if (State.roadSegments == null) State.roadSegments = new RoadSegmentState[0];
+            var roadIds = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var road in State.roadSegments)
+                if (road == null || !RoadEconomy.IsCanonicalId(road.id) || road.level < 0 || road.level > 2
+                    || !roadIds.Add(road.id))
+                    throw new InvalidOperationException(error);
             bool claimedPrefix = true;
             for (int d = 0; d < State.districts.Length; d++)
             {

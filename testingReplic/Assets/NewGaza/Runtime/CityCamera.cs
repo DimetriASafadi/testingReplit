@@ -209,9 +209,24 @@ namespace NewGaza
 
         private void Tap(Vector2 position, bool inspect)
         {
-            if (!Physics.Raycast(view.ScreenPointToRay(position), out var hit, 1600)) return;
-            var selected = hit.collider.GetComponentInParent<CitySelectable>();
-            if (selected == null) return;
+            var ray = view.ScreenPointToRay(position);
+            CitySelectable selected = null;
+            if (Physics.Raycast(ray, out var hit, 1600))
+                selected = hit.collider.GetComponentInParent<CitySelectable>();
+            if (selected == null)
+            {
+                // Roads are selected analytically on their real polylines, without
+                // thousands of per-edge mobile physics colliders.
+                var roadPlane = new Plane(Vector3.up, new Vector3(0f, -.084f, 0f));
+                if (roadPlane.Raycast(ray, out float distance) &&
+                    world.Roads != null &&
+                    world.Roads.TryPick(ray.GetPoint(distance), .10f, out var road))
+                {
+                    previousSelection = null;
+                    session.SelectRoad(road.Definition.id);
+                }
+                return;
+            }
             if (!session.State.districts[selected.districtIndex].unlocked)
             {
                 session.Notify("أكمل الحي السابق بنسبة 100% واستلم مكافأته أولاً.");

@@ -43,6 +43,13 @@ namespace NewGaza.Core
             upgraded.cityCompletedUtc = saved.cityCompletedUtc;
             upgraded.jobStage = saved.jobStage;
             upgraded.jobFinishUtc = saved.jobFinishUtc;
+            upgraded.roadSegments = new RoadSegmentState[saved.roadSegments.Length];
+            for (int i = 0; i < saved.roadSegments.Length; i++)
+                upgraded.roadSegments[i] = new RoadSegmentState
+                {
+                    id = saved.roadSegments[i].id,
+                    level = saved.roadSegments[i].level
+                };
             for (int oldIndex = 0; oldIndex < LegacyIds.Length; oldIndex++)
             {
                 int index = Array.FindIndex(GameCatalog.Districts, district => district.id == LegacyIds[oldIndex]);

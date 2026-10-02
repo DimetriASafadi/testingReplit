@@ -81,6 +81,7 @@ internal static class Program
                 CapturePose(export, fleet, "clearing-bucket-load-0.8",
                     "Clearing", actualLoadingPhase, bucketLoad);
                 motion.HaulCycle = CheckTruckHaulCycle(fleet, export);
+                CheckConfiguredFleetRoadTravel(geometry, baseMaterial);
 
                 ValidateCapturedFleet(export);
                 export.Motion = motion;
@@ -122,6 +123,175 @@ internal static class Program
             Console.Error.WriteLine("Production equipment fixture FAILED: " + exception);
             return 1;
         }
+    }
+
+    private static void CheckConfiguredFleetRoadTravel(CityGeometry geometry, Material material)
+    {
+        Resources.RootDirectory = AppContext.BaseDirectory;
+        CityBasemap basemap = CityBasemap.LoadFromResources();
+        var roads = new CityRoadNetwork(basemap);
+        string fixturePath = Path.Combine(AppContext.BaseDirectory,
+            "Gaza-City-Production-Placement.json");
+        using JsonDocument fixture = JsonDocument.Parse(File.ReadAllText(fixturePath));
+        JsonElement depotJson = fixture.RootElement.GetProperty("depotPosition");
+        Vector3 depot = new Vector3(depotJson.GetProperty("x").GetSingle(), FixtureGroundY,
+            depotJson.GetProperty("z").GetSingle());
+        GeoPoint jobPoint = GameGeography.DistrictPoint(0);
+        Vector3 job = new Vector3(jobPoint.x, FixtureGroundY, jobPoint.z);
+
+        var state = new GameState
+        {
+            excavators = 1, trucks = 1, bulldozers = 1,
+            jobStage = JobStage.Idle, jobDistrict = -1,
+            districts = new[] { new DistrictState() }
+        };
+        var objectRoot = new GameObject("Configured production road fleet");
+        CityFleet fleet = objectRoot.AddComponent<CityFleet>();
+        fleet.Initialize(geometry, material, material, material, material, material, material);
+        var levels = new Dictionary<string, int>(StringComparer.Ordinal);
+        fleet.ConfigureRoads(roads, id =>
+        {
+            int level;
+            return RoadEconomy.SpeedMultiplier(levels.TryGetValue(id, out level) ? level : 2);
+        });
+        fleet.Refresh(state, job, depot);
+        UpdateFleet(fleet, 0f);
+
+        state.jobStage = JobStage.Clearing;
+        state.jobDistrict = 0;
+        fleet.Refresh(state, job, depot);
+        UpdateFleet(fleet, 0f);
+        CityRoadRoute truckRoute = (CityRoadRoute)GetField(fleet, "roadTripRoute");
+        CityRoadRoute excavatorRoute = (CityRoadRoute)GetField(fleet, "excavatorRoadRoute");
+        CityRoadRoute dozerRoute = (CityRoadRoute)GetField(fleet, "bulldozerRoadRoute");
+        Check(truckRoute != null && excavatorRoute != null && dozerRoute != null,
+            "configured fleet plans truck, excavator, and dozer on the real street graph");
+        Check(HasSourceRoadLeg(truckRoute) && HasSourceRoadLeg(excavatorRoute) &&
+            HasSourceRoadLeg(dozerRoute), "all three dispatch routes carry real road-segment provenance");
+        Check(!fleet.RouteStatus.Contains("تعذّر"),
+            "configured production fleet has reachable street dispatches");
+
+        string currentTruckRoad = null;
+        for (int frame = 0; frame < 40 && string.IsNullOrEmpty(currentTruckRoad); frame++)
+        {
+            UpdateFleet(fleet, .5f);
+            currentTruckRoad = truckRoute.RoadIdAtDistance(Math.Max(0f,
+                truckRoute.Length - (float)GetField(fleet, "tripDistance")));
+        }
+        if (!string.IsNullOrEmpty(currentTruckRoad))
+        {
+            levels[currentTruckRoad] = 0;
+            Vector3 before = ((Transform)GetField(fleet, "truck")).localPosition;
+            UpdateFleet(fleet, .05f);
+            float damagedSpeed = fleet.ActualWorldSpeed;
+            Check(Math.Abs(damagedSpeed - CityFleet.HaulingSpeed * .5f) < .02f,
+                "truck measures damaged-road speed from its current edge only");
+            levels[currentTruckRoad] = 2;
+            before = ((Transform)GetField(fleet, "truck")).localPosition;
+            UpdateFleet(fleet, .05f);
+            float pavedSpeed = fleet.ActualWorldSpeed;
+            Check(Math.Abs(pavedSpeed - CityFleet.HaulingSpeed * 2f) < .03f,
+                "live current-edge upgrade changes physical speed without route teleport");
+            Check(Vector3.Distance(before,
+                ((Transform)GetField(fleet, "truck")).localPosition) < .03f,
+                "live road speed update advances continuously without a position jump");
+        }
+        else
+        {
+            Check(false, "truck reaches a source-road edge after its short depot access leg");
+        }
+
+        Transform[] roots =
+        {
+            (Transform)GetField(fleet, "excavator"),
+            (Transform)GetField(fleet, "truck"),
+            (Transform)GetField(fleet, "bulldozer")
+        };
+        Vector3[] previous = { roots[0].localPosition, roots[1].localPosition, roots[2].localPosition };
+        bool arrived = false;
+        for (int frame = 0; frame < 2200; frame++)
+        {
+            UpdateFleet(fleet, .5f);
+            for (int machine = 0; machine < roots.Length; machine++)
+            {
+                Vector3 current = roots[machine].localPosition;
+                float maximumStep = (machine == 1 ? CityFleet.HaulingSpeed * 2f : .20f) * .5f + .04f;
+                Check(Vector3.Distance(previous[machine], current) <= maximumStep,
+                    "configured fleet machine advances continuously rather than hiding a target jump");
+                if (Vector3.Distance(previous[machine], current) > .0001f)
+                    Check(NearestSourceRoadDistance(roads, current) <= 5.05f,
+                        "configured vehicle travel remains on source roads or within strict access links");
+                previous[machine] = current;
+            }
+            if ((bool)GetField(fleet, "excavatorDockedAtWork") &&
+                (bool)GetField(fleet, "bulldozerDockedAtWork") &&
+                GetField(fleet, "truckTripState").ToString() == "ParkedAtWork")
+            {
+                arrived = true;
+                break;
+            }
+        }
+        Check(arrived, "crew and truck physically dock at the real sourced work-site route");
+        Check(!fleet.RouteStatus.Contains("تعذّر"),
+            "reachable production fleet reports no unreachable-route warning");
+        CheckConfiguredReleaseContact(fleet);
+    }
+
+    private static void CheckConfiguredReleaseContact(CityFleet fleet)
+    {
+        float releasePhase = EquipmentMotion.DigCycleSeconds * .721f;
+        int frames = 0;
+        while ((int)GetField(fleet, "transferredCargoPieces") == 0 && frames++ < 1600)
+        {
+            float phase = (float)GetField(fleet, "phase");
+            if (phase >= releasePhase) break;
+            UpdateFleet(fleet, Math.Min(.01f, releasePhase - phase));
+        }
+        Check((int)GetField(fleet, "transferredCargoPieces") > 0,
+            "configured crew waits for actual truck dock before loading a release payload");
+        List<VertexReference> tips = FindActualBucketToothTipVertices((Transform)GetField(fleet, "bucket"));
+        Transform bed = (Transform)GetField(fleet, "truckBed");
+        List<Vector3> points = ActualTipPointsInBed(tips, bed);
+        BedInterior interior = MeasureActualTruckBedInterior(bed);
+        bool clear = points.Count == tips.Count;
+        foreach (Vector3 point in points)
+            clear &= point.x > interior.InnerXMin + .02f && point.x < interior.InnerXMax - .02f &&
+                point.z > interior.InnerZMin + .02f && point.z < interior.InnerZMax - .02f &&
+                point.y > interior.FloorTop + .02f && point.y > interior.WallTop + .02f;
+        Check(clear,
+            "configured production truck stays at the authored release dock with every bucket tooth clear of its actual bed");
+    }
+
+    private static bool HasSourceRoadLeg(CityRoadRoute route)
+    {
+        if (route == null) return false;
+        foreach (string roadId in route.RoadIds)
+            if (!string.IsNullOrEmpty(roadId)) return true;
+        return false;
+    }
+
+    private static float NearestSourceRoadDistance(CityRoadNetwork roads, Vector3 point)
+    {
+        float best = float.MaxValue;
+        foreach (CityRoadSegment segment in roads.Segments)
+        {
+            string kind = segment.Kind.ToLowerInvariant();
+            if (kind == "footway" || kind == "path" || kind == "steps" ||
+                kind == "pedestrian" || kind == "bridleway" || kind == "cycleway" ||
+                kind == "corridor" || kind == "platform") continue;
+            for (int i = 1; i < segment.Points.Length; i++)
+            {
+                Vector3 a = segment.Points[i - 1], b = segment.Points[i];
+                Vector3 edge = b - a;
+                float denominator = edge.x * edge.x + edge.z * edge.z;
+                float t = denominator < .000001f ? 0f :
+                    Mathf.Clamp01(((point.x - a.x) * edge.x + (point.z - a.z) * edge.z) /
+                        denominator);
+                Vector3 nearest = a + edge * t;
+                best = Mathf.Min(best, Vector3.Distance(point, nearest));
+            }
+        }
+        return best;
     }
 
     private static ExportFile NewExport()

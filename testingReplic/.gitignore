@@ -88,6 +88,8 @@ Assets/GeneratedLocalRepo/
 !/Tests/Basemap/BasemapTests.csproj
 !/Tests/Audio/AudioMixTests.csproj
 !/Tests/Equipment/EquipmentTests.csproj
+!/Tests/Roads/RoadsTests.csproj
+!/Tests/RoadView/RoadViewTests.csproj
 /Tests/SourceChecks/obj/
 /Tests/SourceChecks/bin/
 /Tests/**/bin/

@@ -290,13 +290,6 @@ namespace NewGaza
                 }
             }
 
-            for (int i = 0; i < map.roads.Length; i++)
-            {
-                CityBasemapRoad road = map.roads[i];
-                AddRoad(road, road.width >= .55f || IsMajorRoad(road.kind) ? majorRoad : localRoad,
-                    chunks, geometry, result);
-            }
-
             var renderable = new List<CityBasemapBuilding>(map.buildings.Length);
             for (int i = 0; i < map.buildings.Length; i++)
             {

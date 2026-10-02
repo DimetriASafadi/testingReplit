@@ -19,6 +19,8 @@ namespace NewGaza
         public event Action Changed;
         public event Action<string> Notification;
         public event Action<int> PlotSelected;
+        public event Action<string> RoadSelected;
+        public string SelectedRoadId { get; private set; }
         private float nextTick;
         private float nextSave;
         private string startupError;
@@ -150,6 +152,7 @@ namespace NewGaza
             if (!Ready) return;
             var result = Economy.SelectDistrict(index);
             if (!result.success) { Audio?.PlayFailure(); Notify(result.message); return; }
+            ClearRoadSelection();
             world.FocusDistrict(index);
             cityCamera.Focus(world.DistrictPosition(index));
             Save();
@@ -160,8 +163,33 @@ namespace NewGaza
         public void SelectPlot(int index)
         {
             if (!Ready) return;
+            ClearRoadSelection();
             world.SetSelectedPlot(index);
             PlotSelected?.Invoke(index);
+        }
+
+        public void SelectRoad(string id)
+        {
+            if (!Ready || world.Roads == null || world.Roads.FindSegment(id) == null) return;
+            world.SetSelectedPlot(-1);
+            PlotSelected?.Invoke(-1);
+            SelectedRoadId = id;
+            world.SetSelectedRoad(id);
+            RoadSelected?.Invoke(id);
+        }
+
+        public void ImproveRoad(string id, int targetLevel)
+        {
+            if (string.IsNullOrEmpty(id)) return;
+            Perform(e => e.ImproveRoad(id, targetLevel));
+        }
+
+        public void ClearRoadSelection()
+        {
+            if (SelectedRoadId == null) return;
+            SelectedRoadId = null;
+            world?.SetSelectedRoad(null);
+            RoadSelected?.Invoke(null);
         }
 
         public void SetPlayerName(string value)
