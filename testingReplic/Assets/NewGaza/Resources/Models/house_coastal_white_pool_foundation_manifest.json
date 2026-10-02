@@ -1,0 +1,69 @@
+{
+  "key": "house_coastal_white_pool_foundation",
+  "archetypeKey": "house_coastal_white_pool",
+  "archetype": "Coastal white villa",
+  "stage": "foundation",
+  "stageDescription": "Ground footings, connected grade beams, and low foundation walls.",
+  "modelPath": "Resources/Models/house_coastal_white_pool_foundation.obj",
+  "albedoPath": "Resources/Models/house_coastal_white_pool_foundation_albedo.png",
+  "scaleConvention": "1 Blender unit = 1 metre; native OBJ is Y-up",
+  "floorCount": 3,
+  "dimensionsMeters": {
+    "width": 13.0,
+    "depth": 11.0,
+    "actualStageHeight": 1.875,
+    "logicalFinalHeight": 7.659999847412109,
+    "logicalHeightCap": 7.659999847412109
+  },
+  "metersPerCityUnit": 20.0,
+  "nativeScaleConvention": "uniform widthFit; keep completed logical height cap in every stage",
+  "triangleCount": 360,
+  "vertexCount": 240,
+  "boundsMeters": {
+    "min": [
+      -6.5,
+      -5.5,
+      0.0
+    ],
+    "max": [
+      6.5,
+      5.5,
+      1.875
+    ],
+    "width": 13.0,
+    "height": 1.875,
+    "depth": 11.0
+  },
+  "uvBounds": {
+    "min": [
+      0.030079999938607216,
+      0.05008000135421753
+    ],
+    "max": [
+      0.7199199795722961,
+      0.9499199986457825
+    ]
+  },
+  "atlas": "HousingSharedAtlas.png",
+  "objAudit": {
+    "vertices": 240,
+    "uvs": 16,
+    "normals": 6,
+    "triangles": 360,
+    "boundsYUpMeters": {
+      "min": [
+        -6.5,
+        0.0,
+        -5.5
+      ],
+      "max": [
+        6.5,
+        1.875,
+        5.5
+      ],
+      "width": 13.0,
+      "height": 1.875,
+      "depth": 11.0
+    }
+  }
+}

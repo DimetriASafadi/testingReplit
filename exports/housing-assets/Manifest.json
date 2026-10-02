@@ -1,0 +1,2364 @@
+{
+  "schemaVersion": 1,
+  "units": "metres",
+  "coordinateSystems": {
+    "fbx": "static mesh, -Z forward / Y up",
+    "runtimeOBJ": "Y up; 1 Blender unit = 1 metre"
+  },
+  "sharedAtlas": "Art/HousingFBX/HousingSharedAtlas.png",
+  "runtimeModels": "Assets/NewGaza/Resources/Models",
+  "nativeScaleConvention": "uniform widthFit; logical height cap equals completed archetype height",
+  "footprintInvariant": "All four stage meshes share the exact parcel width/depth bounds per archetype.",
+  "archetypes": [
+    {
+      "key": "house_small_redtile",
+      "name": "Small red-tile house",
+      "floorCount": 1,
+      "dimensionsMeters": {
+        "width": 8.5,
+        "depth": 7.0,
+        "finalHeight": 4.485000133514404,
+        "logicalHeightCap": 4.485000133514404
+      },
+      "metersPerCityUnit": 20.0,
+      "description": "Compact one-storey home with a pitched terracotta roof.",
+      "stages": {
+        "foundation": {
+          "description": "Ground footings, connected grade beams, and low foundation walls.",
+          "triangles": 360,
+          "vertices": 240,
+          "boundsMeters": {
+            "min": [
+              -4.25,
+              -3.5,
+              0.0
+            ],
+            "max": [
+              4.25,
+              3.5,
+              1.875
+            ],
+            "width": 8.5,
+            "height": 1.875,
+            "depth": 7.0
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.7199199795722961,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/house_small_redtile_foundation.fbx",
+          "obj": "Resources/Models/house_small_redtile_foundation.obj",
+          "albedo": "Resources/Models/house_small_redtile_foundation_albedo.png",
+          "manifest": "Resources/Models/house_small_redtile_foundation_manifest.json",
+          "objAudit": {
+            "vertices": 240,
+            "uvs": 16,
+            "normals": 6,
+            "triangles": 360,
+            "boundsYUpMeters": {
+              "min": [
+                -4.25,
+                0.0,
+                -3.5
+              ],
+              "max": [
+                4.25,
+                1.875,
+                3.5
+              ],
+              "width": 8.5,
+              "height": 1.875,
+              "depth": 7.0
+            }
+          }
+        },
+        "frame": {
+          "description": "Clean reinforced-concrete columns and floor slabs; no damaged or broken members.",
+          "triangles": 132,
+          "vertices": 88,
+          "boundsMeters": {
+            "min": [
+              -4.25,
+              -3.5,
+              0.0
+            ],
+            "max": [
+              4.25,
+              3.5,
+              3.180000066757202
+            ],
+            "width": 8.5,
+            "height": 3.180000066757202,
+            "depth": 7.0
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.46992000937461853,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/house_small_redtile_frame.fbx",
+          "obj": "Resources/Models/house_small_redtile_frame.obj",
+          "albedo": "Resources/Models/house_small_redtile_frame_albedo.png",
+          "manifest": "Resources/Models/house_small_redtile_frame_manifest.json",
+          "objAudit": {
+            "vertices": 88,
+            "uvs": 8,
+            "normals": 6,
+            "triangles": 132,
+            "boundsYUpMeters": {
+              "min": [
+                -4.25,
+                0.0,
+                -3.5
+              ],
+              "max": [
+                4.25,
+                3.180000066757202,
+                3.5
+              ],
+              "width": 8.5,
+              "height": 3.180000066757202,
+              "depth": 7.0
+            }
+          }
+        },
+        "finishing": {
+          "description": "Partially completed masonry infill, selective plaster, scaffold, and incomplete roof/windows.",
+          "triangles": 808,
+          "vertices": 540,
+          "boundsMeters": {
+            "min": [
+              -4.25,
+              -3.5,
+              0.0
+            ],
+            "max": [
+              4.25,
+              3.5,
+              4.485000133514404
+            ],
+            "width": 8.5,
+            "height": 4.485000133514404,
+            "depth": 7.0
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.9699199795722961,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/house_small_redtile_finishing.fbx",
+          "obj": "Resources/Models/house_small_redtile_finishing.obj",
+          "albedo": "Resources/Models/house_small_redtile_finishing_albedo.png",
+          "manifest": "Resources/Models/house_small_redtile_finishing_manifest.json",
+          "objAudit": {
+            "vertices": 540,
+            "uvs": 29,
+            "normals": 28,
+            "triangles": 808,
+            "boundsYUpMeters": {
+              "min": [
+                -4.25,
+                0.0,
+                -3.5
+              ],
+              "max": [
+                4.25,
+                4.485000133514404,
+                3.5
+              ],
+              "width": 8.5,
+              "height": 4.485000133514404,
+              "depth": 7.0
+            }
+          }
+        },
+        "final": {
+          "description": "Completed detailed architecture, installed openings, roof services, and compact landscaping.",
+          "triangles": 1072,
+          "vertices": 716,
+          "boundsMeters": {
+            "min": [
+              -4.25,
+              -3.5,
+              0.0
+            ],
+            "max": [
+              4.25,
+              3.5,
+              4.485000133514404
+            ],
+            "width": 8.5,
+            "height": 4.485000133514404,
+            "depth": 7.0
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.9699199795722961,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/house_small_redtile_final.fbx",
+          "obj": "Resources/Models/house_small_redtile_final.obj",
+          "albedo": "Resources/Models/house_small_redtile_final_albedo.png",
+          "manifest": "Resources/Models/house_small_redtile_final_manifest.json",
+          "objAudit": {
+            "vertices": 716,
+            "uvs": 29,
+            "normals": 28,
+            "triangles": 1072,
+            "boundsYUpMeters": {
+              "min": [
+                -4.25,
+                0.0,
+                -3.5
+              ],
+              "max": [
+                4.25,
+                4.485000133514404,
+                3.5
+              ],
+              "width": 8.5,
+              "height": 4.485000133514404,
+              "depth": 7.0
+            }
+          }
+        }
+      }
+    },
+    {
+      "key": "house_cream_family",
+      "name": "Cream family house",
+      "floorCount": 3,
+      "dimensionsMeters": {
+        "width": 10.5,
+        "depth": 8.5,
+        "finalHeight": 10.350000381469727,
+        "logicalHeightCap": 10.350000381469727
+      },
+      "metersPerCityUnit": 20.0,
+      "description": "Three-storey warm plaster family house with roof service box.",
+      "stages": {
+        "foundation": {
+          "description": "Ground footings, connected grade beams, and low foundation walls.",
+          "triangles": 360,
+          "vertices": 240,
+          "boundsMeters": {
+            "min": [
+              -5.25,
+              -4.25,
+              0.0
+            ],
+            "max": [
+              5.25,
+              4.25,
+              1.875
+            ],
+            "width": 10.5,
+            "height": 1.875,
+            "depth": 8.5
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.7199199795722961,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/house_cream_family_foundation.fbx",
+          "obj": "Resources/Models/house_cream_family_foundation.obj",
+          "albedo": "Resources/Models/house_cream_family_foundation_albedo.png",
+          "manifest": "Resources/Models/house_cream_family_foundation_manifest.json",
+          "objAudit": {
+            "vertices": 240,
+            "uvs": 16,
+            "normals": 6,
+            "triangles": 360,
+            "boundsYUpMeters": {
+              "min": [
+                -5.25,
+                0.0,
+                -4.25
+              ],
+              "max": [
+                5.25,
+                1.875,
+                4.25
+              ],
+              "width": 10.5,
+              "height": 1.875,
+              "depth": 8.5
+            }
+          }
+        },
+        "frame": {
+          "description": "Clean reinforced-concrete columns and floor slabs; no damaged or broken members.",
+          "triangles": 156,
+          "vertices": 104,
+          "boundsMeters": {
+            "min": [
+              -5.25,
+              -4.25,
+              0.0
+            ],
+            "max": [
+              5.25,
+              4.25,
+              8.579999923706055
+            ],
+            "width": 10.5,
+            "height": 8.579999923706055,
+            "depth": 8.5
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.46992000937461853,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/house_cream_family_frame.fbx",
+          "obj": "Resources/Models/house_cream_family_frame.obj",
+          "albedo": "Resources/Models/house_cream_family_frame_albedo.png",
+          "manifest": "Resources/Models/house_cream_family_frame_manifest.json",
+          "objAudit": {
+            "vertices": 104,
+            "uvs": 8,
+            "normals": 6,
+            "triangles": 156,
+            "boundsYUpMeters": {
+              "min": [
+                -5.25,
+                0.0,
+                -4.25
+              ],
+              "max": [
+                5.25,
+                8.579999923706055,
+                4.25
+              ],
+              "width": 10.5,
+              "height": 8.579999923706055,
+              "depth": 8.5
+            }
+          }
+        },
+        "finishing": {
+          "description": "Partially completed masonry infill, selective plaster, scaffold, and incomplete roof/windows.",
+          "triangles": 1956,
+          "vertices": 1304,
+          "boundsMeters": {
+            "min": [
+              -5.25,
+              -4.25,
+              0.0
+            ],
+            "max": [
+              5.25,
+              4.25,
+              9.369999885559082
+            ],
+            "width": 10.5,
+            "height": 9.369999885559082,
+            "depth": 8.5
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.9699199795722961,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/house_cream_family_finishing.fbx",
+          "obj": "Resources/Models/house_cream_family_finishing.obj",
+          "albedo": "Resources/Models/house_cream_family_finishing_albedo.png",
+          "manifest": "Resources/Models/house_cream_family_finishing_manifest.json",
+          "objAudit": {
+            "vertices": 1304,
+            "uvs": 24,
+            "normals": 6,
+            "triangles": 1956,
+            "boundsYUpMeters": {
+              "min": [
+                -5.25,
+                0.0,
+                -4.25
+              ],
+              "max": [
+                5.25,
+                9.369999885559082,
+                4.25
+              ],
+              "width": 10.5,
+              "height": 9.369999885559082,
+              "depth": 8.5
+            }
+          }
+        },
+        "final": {
+          "description": "Completed detailed architecture, installed openings, roof services, and compact landscaping.",
+          "triangles": 2760,
+          "vertices": 1840,
+          "boundsMeters": {
+            "min": [
+              -5.25,
+              -4.25,
+              0.0
+            ],
+            "max": [
+              5.25,
+              4.25,
+              10.350000381469727
+            ],
+            "width": 10.5,
+            "height": 10.350000381469727,
+            "depth": 8.5
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.9699199795722961,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/house_cream_family_final.fbx",
+          "obj": "Resources/Models/house_cream_family_final.obj",
+          "albedo": "Resources/Models/house_cream_family_final_albedo.png",
+          "manifest": "Resources/Models/house_cream_family_final_manifest.json",
+          "objAudit": {
+            "vertices": 1840,
+            "uvs": 24,
+            "normals": 6,
+            "triangles": 2760,
+            "boundsYUpMeters": {
+              "min": [
+                -5.25,
+                0.0,
+                -4.25
+              ],
+              "max": [
+                5.25,
+                10.350000381469727,
+                4.25
+              ],
+              "width": 10.5,
+              "height": 10.350000381469727,
+              "depth": 8.5
+            }
+          }
+        }
+      }
+    },
+    {
+      "key": "house_modern_villa",
+      "name": "Modern villa",
+      "floorCount": 3,
+      "dimensionsMeters": {
+        "width": 12.0,
+        "depth": 10.0,
+        "finalHeight": 7.800000190734863,
+        "logicalHeightCap": 7.800000190734863
+      },
+      "metersPerCityUnit": 20.0,
+      "description": "Three-storey modern villa with offset volumes and recessed glazing.",
+      "stages": {
+        "foundation": {
+          "description": "Ground footings, connected grade beams, and low foundation walls.",
+          "triangles": 360,
+          "vertices": 240,
+          "boundsMeters": {
+            "min": [
+              -6.0,
+              -5.0,
+              0.0
+            ],
+            "max": [
+              6.0,
+              5.0,
+              1.875
+            ],
+            "width": 12.0,
+            "height": 1.875,
+            "depth": 10.0
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.7199199795722961,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/house_modern_villa_foundation.fbx",
+          "obj": "Resources/Models/house_modern_villa_foundation.obj",
+          "albedo": "Resources/Models/house_modern_villa_foundation_albedo.png",
+          "manifest": "Resources/Models/house_modern_villa_foundation_manifest.json",
+          "objAudit": {
+            "vertices": 240,
+            "uvs": 16,
+            "normals": 6,
+            "triangles": 360,
+            "boundsYUpMeters": {
+              "min": [
+                -6.0,
+                0.0,
+                -5.0
+              ],
+              "max": [
+                6.0,
+                1.875,
+                5.0
+              ],
+              "width": 12.0,
+              "height": 1.875,
+              "depth": 10.0
+            }
+          }
+        },
+        "frame": {
+          "description": "Clean reinforced-concrete columns and floor slabs; no damaged or broken members.",
+          "triangles": 180,
+          "vertices": 120,
+          "boundsMeters": {
+            "min": [
+              -6.0,
+              -5.0,
+              0.0
+            ],
+            "max": [
+              6.0,
+              5.0,
+              8.880000114440918
+            ],
+            "width": 12.0,
+            "height": 8.880000114440918,
+            "depth": 10.0
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.46992000937461853,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/house_modern_villa_frame.fbx",
+          "obj": "Resources/Models/house_modern_villa_frame.obj",
+          "albedo": "Resources/Models/house_modern_villa_frame_albedo.png",
+          "manifest": "Resources/Models/house_modern_villa_frame_manifest.json",
+          "objAudit": {
+            "vertices": 120,
+            "uvs": 8,
+            "normals": 6,
+            "triangles": 180,
+            "boundsYUpMeters": {
+              "min": [
+                -6.0,
+                0.0,
+                -5.0
+              ],
+              "max": [
+                6.0,
+                8.880000114440918,
+                5.0
+              ],
+              "width": 12.0,
+              "height": 8.880000114440918,
+              "depth": 10.0
+            }
+          }
+        },
+        "finishing": {
+          "description": "Partially completed masonry infill, selective plaster, scaffold, and incomplete roof/windows.",
+          "triangles": 2724,
+          "vertices": 1816,
+          "boundsMeters": {
+            "min": [
+              -6.0,
+              -5.0,
+              0.0
+            ],
+            "max": [
+              6.0,
+              5.0,
+              9.670000076293945
+            ],
+            "width": 12.0,
+            "height": 9.670000076293945,
+            "depth": 10.0
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.9699199795722961,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/house_modern_villa_finishing.fbx",
+          "obj": "Resources/Models/house_modern_villa_finishing.obj",
+          "albedo": "Resources/Models/house_modern_villa_finishing_albedo.png",
+          "manifest": "Resources/Models/house_modern_villa_finishing_manifest.json",
+          "objAudit": {
+            "vertices": 1816,
+            "uvs": 24,
+            "normals": 6,
+            "triangles": 2724,
+            "boundsYUpMeters": {
+              "min": [
+                -6.0,
+                0.0,
+                -5.0
+              ],
+              "max": [
+                6.0,
+                9.670000076293945,
+                5.0
+              ],
+              "width": 12.0,
+              "height": 9.670000076293945,
+              "depth": 10.0
+            }
+          }
+        },
+        "final": {
+          "description": "Completed detailed architecture, installed openings, roof services, and compact landscaping.",
+          "triangles": 3060,
+          "vertices": 2040,
+          "boundsMeters": {
+            "min": [
+              -6.0,
+              -5.0,
+              0.0
+            ],
+            "max": [
+              6.0,
+              5.0,
+              7.800000190734863
+            ],
+            "width": 12.0,
+            "height": 7.800000190734863,
+            "depth": 10.0
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.9699199795722961,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/house_modern_villa_final.fbx",
+          "obj": "Resources/Models/house_modern_villa_final.obj",
+          "albedo": "Resources/Models/house_modern_villa_final_albedo.png",
+          "manifest": "Resources/Models/house_modern_villa_final_manifest.json",
+          "objAudit": {
+            "vertices": 2040,
+            "uvs": 24,
+            "normals": 6,
+            "triangles": 3060,
+            "boundsYUpMeters": {
+              "min": [
+                -6.0,
+                0.0,
+                -5.0
+              ],
+              "max": [
+                6.0,
+                7.800000190734863,
+                5.0
+              ],
+              "width": 12.0,
+              "height": 7.800000190734863,
+              "depth": 10.0
+            }
+          }
+        }
+      }
+    },
+    {
+      "key": "apartment_4floor_balcony",
+      "name": "Four-floor balcony apartment",
+      "floorCount": 4,
+      "dimensionsMeters": {
+        "width": 10.0,
+        "depth": 8.5,
+        "finalHeight": 12.979999542236328,
+        "logicalHeightCap": 12.979999542236328
+      },
+      "metersPerCityUnit": 20.0,
+      "description": "Four-storey apartment with repeating open balconies.",
+      "stages": {
+        "foundation": {
+          "description": "Ground footings, connected grade beams, and low foundation walls.",
+          "triangles": 360,
+          "vertices": 240,
+          "boundsMeters": {
+            "min": [
+              -5.0,
+              -4.25,
+              0.0
+            ],
+            "max": [
+              5.0,
+              4.25,
+              1.875
+            ],
+            "width": 10.0,
+            "height": 1.875,
+            "depth": 8.5
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.7199199795722961,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/apartment_4floor_balcony_foundation.fbx",
+          "obj": "Resources/Models/apartment_4floor_balcony_foundation.obj",
+          "albedo": "Resources/Models/apartment_4floor_balcony_foundation_albedo.png",
+          "manifest": "Resources/Models/apartment_4floor_balcony_foundation_manifest.json",
+          "objAudit": {
+            "vertices": 240,
+            "uvs": 16,
+            "normals": 6,
+            "triangles": 360,
+            "boundsYUpMeters": {
+              "min": [
+                -5.0,
+                0.0,
+                -4.25
+              ],
+              "max": [
+                5.0,
+                1.875,
+                4.25
+              ],
+              "width": 10.0,
+              "height": 1.875,
+              "depth": 8.5
+            }
+          }
+        },
+        "frame": {
+          "description": "Clean reinforced-concrete columns and floor slabs; no damaged or broken members.",
+          "triangles": 168,
+          "vertices": 112,
+          "boundsMeters": {
+            "min": [
+              -5.0,
+              -4.25,
+              0.0
+            ],
+            "max": [
+              5.0,
+              4.25,
+              11.210000038146973
+            ],
+            "width": 10.0,
+            "height": 11.210000038146973,
+            "depth": 8.5
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.46992000937461853,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/apartment_4floor_balcony_frame.fbx",
+          "obj": "Resources/Models/apartment_4floor_balcony_frame.obj",
+          "albedo": "Resources/Models/apartment_4floor_balcony_frame_albedo.png",
+          "manifest": "Resources/Models/apartment_4floor_balcony_frame_manifest.json",
+          "objAudit": {
+            "vertices": 112,
+            "uvs": 8,
+            "normals": 6,
+            "triangles": 168,
+            "boundsYUpMeters": {
+              "min": [
+                -5.0,
+                0.0,
+                -4.25
+              ],
+              "max": [
+                5.0,
+                11.210000038146973,
+                4.25
+              ],
+              "width": 10.0,
+              "height": 11.210000038146973,
+              "depth": 8.5
+            }
+          }
+        },
+        "finishing": {
+          "description": "Partially completed masonry infill, selective plaster, scaffold, and incomplete roof/windows.",
+          "triangles": 2688,
+          "vertices": 1792,
+          "boundsMeters": {
+            "min": [
+              -5.0,
+              -4.25,
+              0.0
+            ],
+            "max": [
+              5.0,
+              4.25,
+              12.0
+            ],
+            "width": 10.0,
+            "height": 12.0,
+            "depth": 8.5
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.9699199795722961,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/apartment_4floor_balcony_finishing.fbx",
+          "obj": "Resources/Models/apartment_4floor_balcony_finishing.obj",
+          "albedo": "Resources/Models/apartment_4floor_balcony_finishing_albedo.png",
+          "manifest": "Resources/Models/apartment_4floor_balcony_finishing_manifest.json",
+          "objAudit": {
+            "vertices": 1792,
+            "uvs": 24,
+            "normals": 6,
+            "triangles": 2688,
+            "boundsYUpMeters": {
+              "min": [
+                -5.0,
+                0.0,
+                -4.25
+              ],
+              "max": [
+                5.0,
+                12.0,
+                4.25
+              ],
+              "width": 10.0,
+              "height": 12.0,
+              "depth": 8.5
+            }
+          }
+        },
+        "final": {
+          "description": "Completed detailed architecture, installed openings, roof services, and compact landscaping.",
+          "triangles": 3660,
+          "vertices": 2440,
+          "boundsMeters": {
+            "min": [
+              -5.0,
+              -4.25,
+              0.0
+            ],
+            "max": [
+              5.0,
+              4.25,
+              12.979999542236328
+            ],
+            "width": 10.0,
+            "height": 12.979999542236328,
+            "depth": 8.5
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.9699199795722961,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/apartment_4floor_balcony_final.fbx",
+          "obj": "Resources/Models/apartment_4floor_balcony_final.obj",
+          "albedo": "Resources/Models/apartment_4floor_balcony_final_albedo.png",
+          "manifest": "Resources/Models/apartment_4floor_balcony_final_manifest.json",
+          "objAudit": {
+            "vertices": 2440,
+            "uvs": 24,
+            "normals": 6,
+            "triangles": 3660,
+            "boundsYUpMeters": {
+              "min": [
+                -5.0,
+                0.0,
+                -4.25
+              ],
+              "max": [
+                5.0,
+                12.979999542236328,
+                4.25
+              ],
+              "width": 10.0,
+              "height": 12.979999542236328,
+              "depth": 8.5
+            }
+          }
+        }
+      }
+    },
+    {
+      "key": "apartment_6floor_balcony",
+      "name": "Six-floor balcony apartment",
+      "floorCount": 6,
+      "dimensionsMeters": {
+        "width": 11.0,
+        "depth": 9.0,
+        "finalHeight": 18.18000030517578,
+        "logicalHeightCap": 18.18000030517578
+      },
+      "metersPerCityUnit": 20.0,
+      "description": "Six-storey apartment with a strong balcony rhythm.",
+      "stages": {
+        "foundation": {
+          "description": "Ground footings, connected grade beams, and low foundation walls.",
+          "triangles": 360,
+          "vertices": 240,
+          "boundsMeters": {
+            "min": [
+              -5.5,
+              -4.5,
+              0.0
+            ],
+            "max": [
+              5.5,
+              4.5,
+              1.875
+            ],
+            "width": 11.0,
+            "height": 1.875,
+            "depth": 9.0
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.7199199795722961,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/apartment_6floor_balcony_foundation.fbx",
+          "obj": "Resources/Models/apartment_6floor_balcony_foundation.obj",
+          "albedo": "Resources/Models/apartment_6floor_balcony_foundation_albedo.png",
+          "manifest": "Resources/Models/apartment_6floor_balcony_foundation_manifest.json",
+          "objAudit": {
+            "vertices": 240,
+            "uvs": 16,
+            "normals": 6,
+            "triangles": 360,
+            "boundsYUpMeters": {
+              "min": [
+                -5.5,
+                0.0,
+                -4.5
+              ],
+              "max": [
+                5.5,
+                1.875,
+                4.5
+              ],
+              "width": 11.0,
+              "height": 1.875,
+              "depth": 9.0
+            }
+          }
+        },
+        "frame": {
+          "description": "Clean reinforced-concrete columns and floor slabs; no damaged or broken members.",
+          "triangles": 216,
+          "vertices": 144,
+          "boundsMeters": {
+            "min": [
+              -5.5,
+              -4.5,
+              0.0
+            ],
+            "max": [
+              5.5,
+              4.5,
+              16.40999984741211
+            ],
+            "width": 11.0,
+            "height": 16.40999984741211,
+            "depth": 9.0
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.46992000937461853,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/apartment_6floor_balcony_frame.fbx",
+          "obj": "Resources/Models/apartment_6floor_balcony_frame.obj",
+          "albedo": "Resources/Models/apartment_6floor_balcony_frame_albedo.png",
+          "manifest": "Resources/Models/apartment_6floor_balcony_frame_manifest.json",
+          "objAudit": {
+            "vertices": 144,
+            "uvs": 8,
+            "normals": 6,
+            "triangles": 216,
+            "boundsYUpMeters": {
+              "min": [
+                -5.5,
+                0.0,
+                -4.5
+              ],
+              "max": [
+                5.5,
+                16.40999984741211,
+                4.5
+              ],
+              "width": 11.0,
+              "height": 16.40999984741211,
+              "depth": 9.0
+            }
+          }
+        },
+        "finishing": {
+          "description": "Partially completed masonry infill, selective plaster, scaffold, and incomplete roof/windows.",
+          "triangles": 5160,
+          "vertices": 3440,
+          "boundsMeters": {
+            "min": [
+              -5.5,
+              -4.5,
+              0.0
+            ],
+            "max": [
+              5.5,
+              4.5,
+              17.200000762939453
+            ],
+            "width": 11.0,
+            "height": 17.200000762939453,
+            "depth": 9.0
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.9699199795722961,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/apartment_6floor_balcony_finishing.fbx",
+          "obj": "Resources/Models/apartment_6floor_balcony_finishing.obj",
+          "albedo": "Resources/Models/apartment_6floor_balcony_finishing_albedo.png",
+          "manifest": "Resources/Models/apartment_6floor_balcony_finishing_manifest.json",
+          "objAudit": {
+            "vertices": 3440,
+            "uvs": 24,
+            "normals": 6,
+            "triangles": 5160,
+            "boundsYUpMeters": {
+              "min": [
+                -5.5,
+                0.0,
+                -4.5
+              ],
+              "max": [
+                5.5,
+                17.200000762939453,
+                4.5
+              ],
+              "width": 11.0,
+              "height": 17.200000762939453,
+              "depth": 9.0
+            }
+          }
+        },
+        "final": {
+          "description": "Completed detailed architecture, installed openings, roof services, and compact landscaping.",
+          "triangles": 6900,
+          "vertices": 4600,
+          "boundsMeters": {
+            "min": [
+              -5.5,
+              -4.5,
+              0.0
+            ],
+            "max": [
+              5.5,
+              4.5,
+              18.18000030517578
+            ],
+            "width": 11.0,
+            "height": 18.18000030517578,
+            "depth": 9.0
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.9699199795722961,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/apartment_6floor_balcony_final.fbx",
+          "obj": "Resources/Models/apartment_6floor_balcony_final.obj",
+          "albedo": "Resources/Models/apartment_6floor_balcony_final_albedo.png",
+          "manifest": "Resources/Models/apartment_6floor_balcony_final_manifest.json",
+          "objAudit": {
+            "vertices": 4600,
+            "uvs": 24,
+            "normals": 6,
+            "triangles": 6900,
+            "boundsYUpMeters": {
+              "min": [
+                -5.5,
+                0.0,
+                -4.5
+              ],
+              "max": [
+                5.5,
+                18.18000030517578,
+                4.5
+              ],
+              "width": 11.0,
+              "height": 18.18000030517578,
+              "depth": 9.0
+            }
+          }
+        }
+      }
+    },
+    {
+      "key": "house_compound",
+      "name": "Courtyard compound",
+      "floorCount": 3,
+      "dimensionsMeters": {
+        "width": 15.0,
+        "depth": 13.0,
+        "finalHeight": 10.050000190734863,
+        "logicalHeightCap": 10.050000190734863
+      },
+      "metersPerCityUnit": 20.0,
+      "description": "Two house wings linked around an enclosed planted courtyard.",
+      "stages": {
+        "foundation": {
+          "description": "Ground footings, connected grade beams, and low foundation walls.",
+          "triangles": 360,
+          "vertices": 240,
+          "boundsMeters": {
+            "min": [
+              -7.5,
+              -6.5,
+              0.0
+            ],
+            "max": [
+              7.5,
+              6.5,
+              1.875
+            ],
+            "width": 15.0,
+            "height": 1.875,
+            "depth": 13.0
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.7199199795722961,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/house_compound_foundation.fbx",
+          "obj": "Resources/Models/house_compound_foundation.obj",
+          "albedo": "Resources/Models/house_compound_foundation_albedo.png",
+          "manifest": "Resources/Models/house_compound_foundation_manifest.json",
+          "objAudit": {
+            "vertices": 240,
+            "uvs": 16,
+            "normals": 6,
+            "triangles": 360,
+            "boundsYUpMeters": {
+              "min": [
+                -7.5,
+                0.0,
+                -6.5
+              ],
+              "max": [
+                7.5,
+                1.875,
+                6.5
+              ],
+              "width": 15.0,
+              "height": 1.875,
+              "depth": 13.0
+            }
+          }
+        },
+        "frame": {
+          "description": "Clean reinforced-concrete columns and floor slabs; no damaged or broken members.",
+          "triangles": 288,
+          "vertices": 192,
+          "boundsMeters": {
+            "min": [
+              -7.5,
+              -6.5,
+              0.0
+            ],
+            "max": [
+              7.5,
+              6.5,
+              8.279999732971191
+            ],
+            "width": 15.0,
+            "height": 8.279999732971191,
+            "depth": 13.0
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.46992000937461853,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/house_compound_frame.fbx",
+          "obj": "Resources/Models/house_compound_frame.obj",
+          "albedo": "Resources/Models/house_compound_frame_albedo.png",
+          "manifest": "Resources/Models/house_compound_frame_manifest.json",
+          "objAudit": {
+            "vertices": 192,
+            "uvs": 8,
+            "normals": 6,
+            "triangles": 288,
+            "boundsYUpMeters": {
+              "min": [
+                -7.5,
+                0.0,
+                -6.5
+              ],
+              "max": [
+                7.5,
+                8.279999732971191,
+                6.5
+              ],
+              "width": 15.0,
+              "height": 8.279999732971191,
+              "depth": 13.0
+            }
+          }
+        },
+        "finishing": {
+          "description": "Partially completed masonry infill, selective plaster, scaffold, and incomplete roof/windows.",
+          "triangles": 3492,
+          "vertices": 2328,
+          "boundsMeters": {
+            "min": [
+              -7.5,
+              -6.5,
+              0.0
+            ],
+            "max": [
+              7.5,
+              6.5,
+              9.069999694824219
+            ],
+            "width": 15.0,
+            "height": 9.069999694824219,
+            "depth": 13.0
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.9699199795722961,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/house_compound_finishing.fbx",
+          "obj": "Resources/Models/house_compound_finishing.obj",
+          "albedo": "Resources/Models/house_compound_finishing_albedo.png",
+          "manifest": "Resources/Models/house_compound_finishing_manifest.json",
+          "objAudit": {
+            "vertices": 2328,
+            "uvs": 24,
+            "normals": 6,
+            "triangles": 3492,
+            "boundsYUpMeters": {
+              "min": [
+                -7.5,
+                0.0,
+                -6.5
+              ],
+              "max": [
+                7.5,
+                9.069999694824219,
+                6.5
+              ],
+              "width": 15.0,
+              "height": 9.069999694824219,
+              "depth": 13.0
+            }
+          }
+        },
+        "final": {
+          "description": "Completed detailed architecture, installed openings, roof services, and compact landscaping.",
+          "triangles": 4596,
+          "vertices": 3064,
+          "boundsMeters": {
+            "min": [
+              -7.5,
+              -6.5,
+              0.0
+            ],
+            "max": [
+              7.5,
+              6.5,
+              10.050000190734863
+            ],
+            "width": 15.0,
+            "height": 10.050000190734863,
+            "depth": 13.0
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.9699199795722961,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/house_compound_final.fbx",
+          "obj": "Resources/Models/house_compound_final.obj",
+          "albedo": "Resources/Models/house_compound_final_albedo.png",
+          "manifest": "Resources/Models/house_compound_final_manifest.json",
+          "objAudit": {
+            "vertices": 3064,
+            "uvs": 24,
+            "normals": 6,
+            "triangles": 4596,
+            "boundsYUpMeters": {
+              "min": [
+                -7.5,
+                0.0,
+                -6.5
+              ],
+              "max": [
+                7.5,
+                10.050000190734863,
+                6.5
+              ],
+              "width": 15.0,
+              "height": 10.050000190734863,
+              "depth": 13.0
+            }
+          }
+        }
+      }
+    },
+    {
+      "key": "apartment_blueglass_midrise",
+      "name": "Blue-glass midrise",
+      "floorCount": 6,
+      "dimensionsMeters": {
+        "width": 12.0,
+        "depth": 9.0,
+        "finalHeight": 19.020000457763672,
+        "logicalHeightCap": 19.020000457763672
+      },
+      "metersPerCityUnit": 20.0,
+      "description": "Six-storey contemporary midrise with a vertical blue glazed core.",
+      "stages": {
+        "foundation": {
+          "description": "Ground footings, connected grade beams, and low foundation walls.",
+          "triangles": 360,
+          "vertices": 240,
+          "boundsMeters": {
+            "min": [
+              -6.0,
+              -4.5,
+              0.0
+            ],
+            "max": [
+              6.0,
+              4.5,
+              1.875
+            ],
+            "width": 12.0,
+            "height": 1.875,
+            "depth": 9.0
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.7199199795722961,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/apartment_blueglass_midrise_foundation.fbx",
+          "obj": "Resources/Models/apartment_blueglass_midrise_foundation.obj",
+          "albedo": "Resources/Models/apartment_blueglass_midrise_foundation_albedo.png",
+          "manifest": "Resources/Models/apartment_blueglass_midrise_foundation_manifest.json",
+          "objAudit": {
+            "vertices": 240,
+            "uvs": 16,
+            "normals": 6,
+            "triangles": 360,
+            "boundsYUpMeters": {
+              "min": [
+                -6.0,
+                0.0,
+                -4.5
+              ],
+              "max": [
+                6.0,
+                1.875,
+                4.5
+              ],
+              "width": 12.0,
+              "height": 1.875,
+              "depth": 9.0
+            }
+          }
+        },
+        "frame": {
+          "description": "Clean reinforced-concrete columns and floor slabs; no damaged or broken members.",
+          "triangles": 216,
+          "vertices": 144,
+          "boundsMeters": {
+            "min": [
+              -6.0,
+              -4.5,
+              0.0
+            ],
+            "max": [
+              6.0,
+              4.5,
+              16.829999923706055
+            ],
+            "width": 12.0,
+            "height": 16.829999923706055,
+            "depth": 9.0
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.46992000937461853,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/apartment_blueglass_midrise_frame.fbx",
+          "obj": "Resources/Models/apartment_blueglass_midrise_frame.obj",
+          "albedo": "Resources/Models/apartment_blueglass_midrise_frame_albedo.png",
+          "manifest": "Resources/Models/apartment_blueglass_midrise_frame_manifest.json",
+          "objAudit": {
+            "vertices": 144,
+            "uvs": 8,
+            "normals": 6,
+            "triangles": 216,
+            "boundsYUpMeters": {
+              "min": [
+                -6.0,
+                0.0,
+                -4.5
+              ],
+              "max": [
+                6.0,
+                16.829999923706055,
+                4.5
+              ],
+              "width": 12.0,
+              "height": 16.829999923706055,
+              "depth": 9.0
+            }
+          }
+        },
+        "finishing": {
+          "description": "Partially completed masonry infill, selective plaster, scaffold, and incomplete roof/windows.",
+          "triangles": 5256,
+          "vertices": 3504,
+          "boundsMeters": {
+            "min": [
+              -6.0,
+              -4.5,
+              0.0
+            ],
+            "max": [
+              6.0,
+              4.5,
+              17.6200008392334
+            ],
+            "width": 12.0,
+            "height": 17.6200008392334,
+            "depth": 9.0
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.9699199795722961,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/apartment_blueglass_midrise_finishing.fbx",
+          "obj": "Resources/Models/apartment_blueglass_midrise_finishing.obj",
+          "albedo": "Resources/Models/apartment_blueglass_midrise_finishing_albedo.png",
+          "manifest": "Resources/Models/apartment_blueglass_midrise_finishing_manifest.json",
+          "objAudit": {
+            "vertices": 3504,
+            "uvs": 24,
+            "normals": 6,
+            "triangles": 5256,
+            "boundsYUpMeters": {
+              "min": [
+                -6.0,
+                0.0,
+                -4.5
+              ],
+              "max": [
+                6.0,
+                17.6200008392334,
+                4.5
+              ],
+              "width": 12.0,
+              "height": 17.6200008392334,
+              "depth": 9.0
+            }
+          }
+        },
+        "final": {
+          "description": "Completed detailed architecture, installed openings, roof services, and compact landscaping.",
+          "triangles": 6360,
+          "vertices": 4240,
+          "boundsMeters": {
+            "min": [
+              -6.0,
+              -4.5,
+              0.0
+            ],
+            "max": [
+              6.0,
+              4.5,
+              19.020000457763672
+            ],
+            "width": 12.0,
+            "height": 19.020000457763672,
+            "depth": 9.0
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.9699199795722961,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/apartment_blueglass_midrise_final.fbx",
+          "obj": "Resources/Models/apartment_blueglass_midrise_final.obj",
+          "albedo": "Resources/Models/apartment_blueglass_midrise_final_albedo.png",
+          "manifest": "Resources/Models/apartment_blueglass_midrise_final_manifest.json",
+          "objAudit": {
+            "vertices": 4240,
+            "uvs": 24,
+            "normals": 6,
+            "triangles": 6360,
+            "boundsYUpMeters": {
+              "min": [
+                -6.0,
+                0.0,
+                -4.5
+              ],
+              "max": [
+                6.0,
+                19.020000457763672,
+                4.5
+              ],
+              "width": 12.0,
+              "height": 19.020000457763672,
+              "depth": 9.0
+            }
+          }
+        }
+      }
+    },
+    {
+      "key": "house_traditional_stonearches",
+      "name": "Traditional stone-arch house",
+      "floorCount": 3,
+      "dimensionsMeters": {
+        "width": 11.5,
+        "depth": 9.5,
+        "finalHeight": 10.350000381469727,
+        "logicalHeightCap": 10.350000381469727
+      },
+      "metersPerCityUnit": 20.0,
+      "description": "Three-storey buff limestone house with deep arched openings.",
+      "stages": {
+        "foundation": {
+          "description": "Ground footings, connected grade beams, and low foundation walls.",
+          "triangles": 360,
+          "vertices": 240,
+          "boundsMeters": {
+            "min": [
+              -5.75,
+              -4.75,
+              0.0
+            ],
+            "max": [
+              5.75,
+              4.75,
+              1.875
+            ],
+            "width": 11.5,
+            "height": 1.875,
+            "depth": 9.5
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.7199199795722961,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/house_traditional_stonearches_foundation.fbx",
+          "obj": "Resources/Models/house_traditional_stonearches_foundation.obj",
+          "albedo": "Resources/Models/house_traditional_stonearches_foundation_albedo.png",
+          "manifest": "Resources/Models/house_traditional_stonearches_foundation_manifest.json",
+          "objAudit": {
+            "vertices": 240,
+            "uvs": 16,
+            "normals": 6,
+            "triangles": 360,
+            "boundsYUpMeters": {
+              "min": [
+                -5.75,
+                0.0,
+                -4.75
+              ],
+              "max": [
+                5.75,
+                1.875,
+                4.75
+              ],
+              "width": 11.5,
+              "height": 1.875,
+              "depth": 9.5
+            }
+          }
+        },
+        "frame": {
+          "description": "Clean reinforced-concrete columns and floor slabs; no damaged or broken members.",
+          "triangles": 180,
+          "vertices": 120,
+          "boundsMeters": {
+            "min": [
+              -5.75,
+              -4.75,
+              0.0
+            ],
+            "max": [
+              5.75,
+              4.75,
+              8.579999923706055
+            ],
+            "width": 11.5,
+            "height": 8.579999923706055,
+            "depth": 9.5
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.46992000937461853,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/house_traditional_stonearches_frame.fbx",
+          "obj": "Resources/Models/house_traditional_stonearches_frame.obj",
+          "albedo": "Resources/Models/house_traditional_stonearches_frame_albedo.png",
+          "manifest": "Resources/Models/house_traditional_stonearches_frame_manifest.json",
+          "objAudit": {
+            "vertices": 120,
+            "uvs": 8,
+            "normals": 6,
+            "triangles": 180,
+            "boundsYUpMeters": {
+              "min": [
+                -5.75,
+                0.0,
+                -4.75
+              ],
+              "max": [
+                5.75,
+                8.579999923706055,
+                4.75
+              ],
+              "width": 11.5,
+              "height": 8.579999923706055,
+              "depth": 9.5
+            }
+          }
+        },
+        "finishing": {
+          "description": "Partially completed masonry infill, selective plaster, scaffold, and incomplete roof/windows.",
+          "triangles": 2788,
+          "vertices": 1800,
+          "boundsMeters": {
+            "min": [
+              -5.75,
+              -4.75,
+              0.0
+            ],
+            "max": [
+              5.75,
+              4.75,
+              9.369999885559082
+            ],
+            "width": 11.5,
+            "height": 9.369999885559082,
+            "depth": 9.5
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.9699199795722961,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/house_traditional_stonearches_finishing.fbx",
+          "obj": "Resources/Models/house_traditional_stonearches_finishing.obj",
+          "albedo": "Resources/Models/house_traditional_stonearches_finishing_albedo.png",
+          "manifest": "Resources/Models/house_traditional_stonearches_finishing_manifest.json",
+          "objAudit": {
+            "vertices": 1800,
+            "uvs": 39,
+            "normals": 36,
+            "triangles": 2788,
+            "boundsYUpMeters": {
+              "min": [
+                -5.75,
+                0.0,
+                -4.75
+              ],
+              "max": [
+                5.75,
+                9.369999885559082,
+                4.75
+              ],
+              "width": 11.5,
+              "height": 9.369999885559082,
+              "depth": 9.5
+            }
+          }
+        },
+        "final": {
+          "description": "Completed detailed architecture, installed openings, roof services, and compact landscaping.",
+          "triangles": 3684,
+          "vertices": 2368,
+          "boundsMeters": {
+            "min": [
+              -5.75,
+              -4.75,
+              0.0
+            ],
+            "max": [
+              5.75,
+              4.75,
+              10.350000381469727
+            ],
+            "width": 11.5,
+            "height": 10.350000381469727,
+            "depth": 9.5
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.9699199795722961,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/house_traditional_stonearches_final.fbx",
+          "obj": "Resources/Models/house_traditional_stonearches_final.obj",
+          "albedo": "Resources/Models/house_traditional_stonearches_final_albedo.png",
+          "manifest": "Resources/Models/house_traditional_stonearches_final_manifest.json",
+          "objAudit": {
+            "vertices": 2368,
+            "uvs": 54,
+            "normals": 36,
+            "triangles": 3684,
+            "boundsYUpMeters": {
+              "min": [
+                -5.75,
+                0.0,
+                -4.75
+              ],
+              "max": [
+                5.75,
+                10.350000381469727,
+                4.75
+              ],
+              "width": 11.5,
+              "height": 10.350000381469727,
+              "depth": 9.5
+            }
+          }
+        }
+      }
+    },
+    {
+      "key": "apartment_12floor_tower",
+      "name": "Twelve-floor slim tower",
+      "floorCount": 12,
+      "dimensionsMeters": {
+        "width": 10.0,
+        "depth": 8.0,
+        "finalHeight": 33.540000915527344,
+        "logicalHeightCap": 33.540000915527344
+      },
+      "metersPerCityUnit": 20.0,
+      "description": "Slim twelve-storey residential tower with continuous balconies.",
+      "stages": {
+        "foundation": {
+          "description": "Ground footings, connected grade beams, and low foundation walls.",
+          "triangles": 360,
+          "vertices": 240,
+          "boundsMeters": {
+            "min": [
+              -5.0,
+              -4.0,
+              0.0
+            ],
+            "max": [
+              5.0,
+              4.0,
+              1.875
+            ],
+            "width": 10.0,
+            "height": 1.875,
+            "depth": 8.0
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.7199199795722961,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/apartment_12floor_tower_foundation.fbx",
+          "obj": "Resources/Models/apartment_12floor_tower_foundation.obj",
+          "albedo": "Resources/Models/apartment_12floor_tower_foundation_albedo.png",
+          "manifest": "Resources/Models/apartment_12floor_tower_foundation_manifest.json",
+          "objAudit": {
+            "vertices": 240,
+            "uvs": 16,
+            "normals": 6,
+            "triangles": 360,
+            "boundsYUpMeters": {
+              "min": [
+                -5.0,
+                0.0,
+                -4.0
+              ],
+              "max": [
+                5.0,
+                1.875,
+                4.0
+              ],
+              "width": 10.0,
+              "height": 1.875,
+              "depth": 8.0
+            }
+          }
+        },
+        "frame": {
+          "description": "Clean reinforced-concrete columns and floor slabs; no damaged or broken members.",
+          "triangles": 264,
+          "vertices": 176,
+          "boundsMeters": {
+            "min": [
+              -5.0,
+              -4.0,
+              0.0
+            ],
+            "max": [
+              5.0,
+              4.0,
+              31.770000457763672
+            ],
+            "width": 10.0,
+            "height": 31.770000457763672,
+            "depth": 8.0
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.46992000937461853,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/apartment_12floor_tower_frame.fbx",
+          "obj": "Resources/Models/apartment_12floor_tower_frame.obj",
+          "albedo": "Resources/Models/apartment_12floor_tower_frame_albedo.png",
+          "manifest": "Resources/Models/apartment_12floor_tower_frame_manifest.json",
+          "objAudit": {
+            "vertices": 176,
+            "uvs": 8,
+            "normals": 6,
+            "triangles": 264,
+            "boundsYUpMeters": {
+              "min": [
+                -5.0,
+                0.0,
+                -4.0
+              ],
+              "max": [
+                5.0,
+                31.770000457763672,
+                4.0
+              ],
+              "width": 10.0,
+              "height": 31.770000457763672,
+              "depth": 8.0
+            }
+          }
+        },
+        "finishing": {
+          "description": "Partially completed masonry infill, selective plaster, scaffold, and incomplete roof/windows.",
+          "triangles": 4224,
+          "vertices": 2816,
+          "boundsMeters": {
+            "min": [
+              -5.0,
+              -4.0,
+              0.0
+            ],
+            "max": [
+              5.0,
+              4.0,
+              32.560001373291016
+            ],
+            "width": 10.0,
+            "height": 32.560001373291016,
+            "depth": 8.0
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.9699199795722961,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/apartment_12floor_tower_finishing.fbx",
+          "obj": "Resources/Models/apartment_12floor_tower_finishing.obj",
+          "albedo": "Resources/Models/apartment_12floor_tower_finishing_albedo.png",
+          "manifest": "Resources/Models/apartment_12floor_tower_finishing_manifest.json",
+          "objAudit": {
+            "vertices": 2816,
+            "uvs": 24,
+            "normals": 6,
+            "triangles": 4224,
+            "boundsYUpMeters": {
+              "min": [
+                -5.0,
+                0.0,
+                -4.0
+              ],
+              "max": [
+                5.0,
+                32.560001373291016,
+                4.0
+              ],
+              "width": 10.0,
+              "height": 32.560001373291016,
+              "depth": 8.0
+            }
+          }
+        },
+        "final": {
+          "description": "Completed detailed architecture, installed openings, roof services, and compact landscaping.",
+          "triangles": 6540,
+          "vertices": 4360,
+          "boundsMeters": {
+            "min": [
+              -5.0,
+              -4.0,
+              0.0
+            ],
+            "max": [
+              5.0,
+              4.0,
+              33.540000915527344
+            ],
+            "width": 10.0,
+            "height": 33.540000915527344,
+            "depth": 8.0
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.9699199795722961,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/apartment_12floor_tower_final.fbx",
+          "obj": "Resources/Models/apartment_12floor_tower_final.obj",
+          "albedo": "Resources/Models/apartment_12floor_tower_final_albedo.png",
+          "manifest": "Resources/Models/apartment_12floor_tower_final_manifest.json",
+          "objAudit": {
+            "vertices": 4360,
+            "uvs": 24,
+            "normals": 6,
+            "triangles": 6540,
+            "boundsYUpMeters": {
+              "min": [
+                -5.0,
+                0.0,
+                -4.0
+              ],
+              "max": [
+                5.0,
+                33.540000915527344,
+                4.0
+              ],
+              "width": 10.0,
+              "height": 33.540000915527344,
+              "depth": 8.0
+            }
+          }
+        }
+      }
+    },
+    {
+      "key": "house_coastal_white_pool",
+      "name": "Coastal white villa",
+      "floorCount": 3,
+      "dimensionsMeters": {
+        "width": 13.0,
+        "depth": 11.0,
+        "finalHeight": 7.659999847412109,
+        "logicalHeightCap": 7.659999847412109
+      },
+      "metersPerCityUnit": 20.0,
+      "description": "Stepped white coastal villa with roof terraces and an inset pool.",
+      "stages": {
+        "foundation": {
+          "description": "Ground footings, connected grade beams, and low foundation walls.",
+          "triangles": 360,
+          "vertices": 240,
+          "boundsMeters": {
+            "min": [
+              -6.5,
+              -5.5,
+              0.0
+            ],
+            "max": [
+              6.5,
+              5.5,
+              1.875
+            ],
+            "width": 13.0,
+            "height": 1.875,
+            "depth": 11.0
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.7199199795722961,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/house_coastal_white_pool_foundation.fbx",
+          "obj": "Resources/Models/house_coastal_white_pool_foundation.obj",
+          "albedo": "Resources/Models/house_coastal_white_pool_foundation_albedo.png",
+          "manifest": "Resources/Models/house_coastal_white_pool_foundation_manifest.json",
+          "objAudit": {
+            "vertices": 240,
+            "uvs": 16,
+            "normals": 6,
+            "triangles": 360,
+            "boundsYUpMeters": {
+              "min": [
+                -6.5,
+                0.0,
+                -5.5
+              ],
+              "max": [
+                6.5,
+                1.875,
+                5.5
+              ],
+              "width": 13.0,
+              "height": 1.875,
+              "depth": 11.0
+            }
+          }
+        },
+        "frame": {
+          "description": "Clean reinforced-concrete columns and floor slabs; no damaged or broken members.",
+          "triangles": 216,
+          "vertices": 144,
+          "boundsMeters": {
+            "min": [
+              -6.5,
+              -5.5,
+              0.0
+            ],
+            "max": [
+              6.5,
+              5.5,
+              8.670000076293945
+            ],
+            "width": 13.0,
+            "height": 8.670000076293945,
+            "depth": 11.0
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.46992000937461853,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/house_coastal_white_pool_frame.fbx",
+          "obj": "Resources/Models/house_coastal_white_pool_frame.obj",
+          "albedo": "Resources/Models/house_coastal_white_pool_frame_albedo.png",
+          "manifest": "Resources/Models/house_coastal_white_pool_frame_manifest.json",
+          "objAudit": {
+            "vertices": 144,
+            "uvs": 8,
+            "normals": 6,
+            "triangles": 216,
+            "boundsYUpMeters": {
+              "min": [
+                -6.5,
+                0.0,
+                -5.5
+              ],
+              "max": [
+                6.5,
+                8.670000076293945,
+                5.5
+              ],
+              "width": 13.0,
+              "height": 8.670000076293945,
+              "depth": 11.0
+            }
+          }
+        },
+        "finishing": {
+          "description": "Partially completed masonry infill, selective plaster, scaffold, and incomplete roof/windows.",
+          "triangles": 2724,
+          "vertices": 1816,
+          "boundsMeters": {
+            "min": [
+              -6.5,
+              -5.5,
+              0.0
+            ],
+            "max": [
+              6.5,
+              5.5,
+              9.460000038146973
+            ],
+            "width": 13.0,
+            "height": 9.460000038146973,
+            "depth": 11.0
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.9699199795722961,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/house_coastal_white_pool_finishing.fbx",
+          "obj": "Resources/Models/house_coastal_white_pool_finishing.obj",
+          "albedo": "Resources/Models/house_coastal_white_pool_finishing_albedo.png",
+          "manifest": "Resources/Models/house_coastal_white_pool_finishing_manifest.json",
+          "objAudit": {
+            "vertices": 1816,
+            "uvs": 24,
+            "normals": 6,
+            "triangles": 2724,
+            "boundsYUpMeters": {
+              "min": [
+                -6.5,
+                0.0,
+                -5.5
+              ],
+              "max": [
+                6.5,
+                9.460000038146973,
+                5.5
+              ],
+              "width": 13.0,
+              "height": 9.460000038146973,
+              "depth": 11.0
+            }
+          }
+        },
+        "final": {
+          "description": "Completed detailed architecture, installed openings, roof services, and compact landscaping.",
+          "triangles": 3096,
+          "vertices": 2064,
+          "boundsMeters": {
+            "min": [
+              -6.5,
+              -5.5,
+              0.0
+            ],
+            "max": [
+              6.5,
+              5.5,
+              7.659999847412109
+            ],
+            "width": 13.0,
+            "height": 7.659999847412109,
+            "depth": 11.0
+          },
+          "uvBounds": {
+            "min": [
+              0.030079999938607216,
+              0.05008000135421753
+            ],
+            "max": [
+              0.9699199795722961,
+              0.9499199986457825
+            ]
+          },
+          "fbx": "Art/HousingFBX/house_coastal_white_pool_final.fbx",
+          "obj": "Resources/Models/house_coastal_white_pool_final.obj",
+          "albedo": "Resources/Models/house_coastal_white_pool_final_albedo.png",
+          "manifest": "Resources/Models/house_coastal_white_pool_final_manifest.json",
+          "objAudit": {
+            "vertices": 2064,
+            "uvs": 24,
+            "normals": 6,
+            "triangles": 3096,
+            "boundsYUpMeters": {
+              "min": [
+                -6.5,
+                0.0,
+                -5.5
+              ],
+              "max": [
+                6.5,
+                7.659999847412109,
+                5.5
+              ],
+              "width": 13.0,
+              "height": 7.659999847412109,
+              "depth": 11.0
+            }
+          }
+        }
+      }
+    }
+  ]
+}

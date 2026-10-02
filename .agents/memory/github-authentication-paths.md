@@ -20,3 +20,9 @@ Create Git tree objects in dependency order: children before parents.
 **Why:** Reversing `git rev-list --objects` did not produce a topological tree order across multiple commits. GitHub rejected a parent containing a child tree that had not yet been created, although its blobs had uploaded correctly.
 
 **How to apply:** Traverse the explicit tree dependencies recursively, then create commits parent-first. Preserve every object hash and advance the branch only after all dependencies exist; resume from uploaded objects rather than resending large archive blobs.
+
+Large binary archives can exceed GitHub's blob API request-body limit before reaching the repository's regular file-size limit.
+
+**Why:** A roughly 45 MB source ZIP was rejected with HTTP 422 “input was too large” while earlier smaller source archives uploaded successfully. Base64 further enlarges the request body.
+
+**How to apply:** Keep the complete user-downloadable archive intact. Mirror large archives as verified binary parts and supply a SHA-256-checked joiner. Never truncate assets, reduce art quality or claim the branch advanced after the provider rejected a blob. If replacing a rejected unpublished commit, leave the already-published branch/history intact.

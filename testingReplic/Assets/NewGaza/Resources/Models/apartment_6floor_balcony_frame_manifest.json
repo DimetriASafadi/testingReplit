@@ -1,0 +1,69 @@
+{
+  "key": "apartment_6floor_balcony_frame",
+  "archetypeKey": "apartment_6floor_balcony",
+  "archetype": "Six-floor balcony apartment",
+  "stage": "frame",
+  "stageDescription": "Clean reinforced-concrete columns and floor slabs; no damaged or broken members.",
+  "modelPath": "Resources/Models/apartment_6floor_balcony_frame.obj",
+  "albedoPath": "Resources/Models/apartment_6floor_balcony_frame_albedo.png",
+  "scaleConvention": "1 Blender unit = 1 metre; native OBJ is Y-up",
+  "floorCount": 6,
+  "dimensionsMeters": {
+    "width": 11.0,
+    "depth": 9.0,
+    "actualStageHeight": 16.40999984741211,
+    "logicalFinalHeight": 18.18000030517578,
+    "logicalHeightCap": 18.18000030517578
+  },
+  "metersPerCityUnit": 20.0,
+  "nativeScaleConvention": "uniform widthFit; keep completed logical height cap in every stage",
+  "triangleCount": 216,
+  "vertexCount": 144,
+  "boundsMeters": {
+    "min": [
+      -5.5,
+      -4.5,
+      0.0
+    ],
+    "max": [
+      5.5,
+      4.5,
+      16.40999984741211
+    ],
+    "width": 11.0,
+    "height": 16.40999984741211,
+    "depth": 9.0
+  },
+  "uvBounds": {
+    "min": [
+      0.030079999938607216,
+      0.05008000135421753
+    ],
+    "max": [
+      0.46992000937461853,
+      0.9499199986457825
+    ]
+  },
+  "atlas": "HousingSharedAtlas.png",
+  "objAudit": {
+    "vertices": 144,
+    "uvs": 8,
+    "normals": 6,
+    "triangles": 216,
+    "boundsYUpMeters": {
+      "min": [
+        -5.5,
+        0.0,
+        -4.5
+      ],
+      "max": [
+        5.5,
+        16.40999984741211,
+        4.5
+      ],
+      "width": 11.0,
+      "height": 16.40999984741211,
+      "depth": 9.0
+    }
+  }
+}

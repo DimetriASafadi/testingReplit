@@ -73,6 +73,11 @@ namespace NewGaza.Editor
             foreach (string path in ModelPaths) success &= PrepareModel(path);
             foreach (string path in TexturePaths) success &= PrepareTexture(path);
             foreach (string path in DestroyedTexturePaths) success &= PrepareTexture(path);
+            foreach (string key in CityHousingProfiles.ModelKeys)
+            {
+                success &= PrepareModel(ModelsPrefix + key + ".obj");
+                success &= PrepareTexture(ModelsPrefix + key + "_albedo.png");
+            }
 
             if (success)
                 Debug.Log("New Gaza imported model assets are prepared. Original apartment, ruined_building, rubble_heap, and context resources remain intact; destroyed stage-zero profiles and details use their own Resources/Models OBJ and albedo pairs.");

@@ -1,0 +1,328 @@
+[
+  {
+    "key": "house_small_redtile_final",
+    "source": "testingReplic/Assets/NewGaza/Art/HousingFBX/house_small_redtile_final.fbx",
+    "boundsMin": [
+      -4.25,
+      -3.5,
+      -1.5298985545086907e-07
+    ],
+    "boundsMax": [
+      4.25,
+      3.500000238418579,
+      4.485000133514404
+    ],
+    "preview": "exports/housing-assets/previews/house_small_redtile_final.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false,
+    "sourceSha256": "aab0c3ee9ddf895786c22c29706bae40ecb2b889f60f2f57dc7df17beeb75565"
+  },
+  {
+    "key": "house_cream_family_final",
+    "source": "testingReplic/Assets/NewGaza/Art/HousingFBX/house_cream_family_final.fbx",
+    "boundsMin": [
+      -5.25,
+      -4.25,
+      -1.8577340199499304e-07
+    ],
+    "boundsMax": [
+      5.25,
+      4.250000476837158,
+      10.350000381469727
+    ],
+    "preview": "exports/housing-assets/previews/house_cream_family_final.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "house_modern_villa_final",
+    "source": "testingReplic/Assets/NewGaza/Art/HousingFBX/house_modern_villa_final.fbx",
+    "boundsMin": [
+      -6.0,
+      -5.0,
+      -2.18556948539117e-07
+    ],
+    "boundsMax": [
+      6.0,
+      5.000000476837158,
+      7.800000190734863
+    ],
+    "preview": "exports/housing-assets/previews/house_modern_villa_final.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "apartment_4floor_balcony_final",
+    "source": "testingReplic/Assets/NewGaza/Art/HousingFBX/apartment_4floor_balcony_final.fbx",
+    "boundsMin": [
+      -5.0,
+      -4.25,
+      -1.8577340199499304e-07
+    ],
+    "boundsMax": [
+      5.0,
+      4.250000476837158,
+      12.979999542236328
+    ],
+    "preview": "exports/housing-assets/previews/apartment_4floor_balcony_final.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "apartment_6floor_balcony_final",
+    "source": "testingReplic/Assets/NewGaza/Art/HousingFBX/apartment_6floor_balcony_final.fbx",
+    "boundsMin": [
+      -5.5,
+      -4.5,
+      -1.9670125084303436e-07
+    ],
+    "boundsMax": [
+      5.5,
+      4.500000953674316,
+      18.18000030517578
+    ],
+    "preview": "exports/housing-assets/previews/apartment_6floor_balcony_final.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "house_compound_final",
+    "source": "testingReplic/Assets/NewGaza/Art/HousingFBX/house_compound_final.fbx",
+    "boundsMin": [
+      -7.5,
+      -6.5,
+      -2.841240132056555e-07
+    ],
+    "boundsMax": [
+      7.5,
+      6.500000476837158,
+      10.050000190734863
+    ],
+    "preview": "exports/housing-assets/previews/house_compound_final.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "apartment_blueglass_midrise_final",
+    "source": "testingReplic/Assets/NewGaza/Art/HousingFBX/apartment_blueglass_midrise_final.fbx",
+    "boundsMin": [
+      -6.0,
+      -4.5,
+      -1.9670125084303436e-07
+    ],
+    "boundsMax": [
+      6.0,
+      4.500000953674316,
+      19.020000457763672
+    ],
+    "preview": "exports/housing-assets/previews/apartment_blueglass_midrise_final.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false,
+    "sourceSha256": "284ddeef168c381cae4f7fdaacb6e55dd7a1a5b71425dde90add3593e6107e00"
+  },
+  {
+    "key": "house_traditional_stonearches_final",
+    "source": "testingReplic/Assets/NewGaza/Art/HousingFBX/house_traditional_stonearches_final.fbx",
+    "boundsMin": [
+      -5.75,
+      -4.75,
+      -2.0762909969107568e-07
+    ],
+    "boundsMax": [
+      5.75,
+      4.750000476837158,
+      10.350000381469727
+    ],
+    "preview": "exports/housing-assets/previews/house_traditional_stonearches_final.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false,
+    "sourceSha256": "563fa3f1acdc37ff17c8abe4bc0e3396a3fb1317089518cfc1ecc466d6aef5fa"
+  },
+  {
+    "key": "apartment_12floor_tower_final",
+    "source": "testingReplic/Assets/NewGaza/Art/HousingFBX/apartment_12floor_tower_final.fbx",
+    "boundsMin": [
+      -5.0,
+      -4.0,
+      -1.7484555314695172e-07
+    ],
+    "boundsMax": [
+      5.0,
+      4.000001430511475,
+      33.540000915527344
+    ],
+    "preview": "exports/housing-assets/previews/apartment_12floor_tower_final.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "house_coastal_white_pool_final",
+    "source": "testingReplic/Assets/NewGaza/Art/HousingFBX/house_coastal_white_pool_final.fbx",
+    "boundsMin": [
+      -6.5,
+      -5.5,
+      -2.4041264623519965e-07
+    ],
+    "boundsMax": [
+      6.5,
+      5.500000476837158,
+      7.660000324249268
+    ],
+    "preview": "exports/housing-assets/previews/house_coastal_white_pool_final.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "house_cream_family_foundation",
+    "source": "testingReplic/Assets/NewGaza/Art/HousingFBX/house_cream_family_foundation.fbx",
+    "boundsMin": [
+      -5.25,
+      -4.25,
+      -1.8577340199499304e-07
+    ],
+    "boundsMax": [
+      5.25,
+      4.25,
+      1.875000238418579
+    ],
+    "preview": "exports/housing-assets/previews/house_cream_family_foundation.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "house_cream_family_frame",
+    "source": "testingReplic/Assets/NewGaza/Art/HousingFBX/house_cream_family_frame.fbx",
+    "boundsMin": [
+      -5.25,
+      -4.25,
+      -1.8577340199499304e-07
+    ],
+    "boundsMax": [
+      5.25,
+      4.250000476837158,
+      8.579999923706055
+    ],
+    "preview": "exports/housing-assets/previews/house_cream_family_frame.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "house_cream_family_finishing",
+    "source": "testingReplic/Assets/NewGaza/Art/HousingFBX/house_cream_family_finishing.fbx",
+    "boundsMin": [
+      -5.25,
+      -4.25,
+      -1.8577340199499304e-07
+    ],
+    "boundsMax": [
+      5.25,
+      4.250000476837158,
+      9.369999885559082
+    ],
+    "preview": "exports/housing-assets/previews/house_cream_family_finishing.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "apartment_4floor_balcony_foundation",
+    "source": "testingReplic/Assets/NewGaza/Art/HousingFBX/apartment_4floor_balcony_foundation.fbx",
+    "boundsMin": [
+      -5.0,
+      -4.25,
+      -1.8577340199499304e-07
+    ],
+    "boundsMax": [
+      5.0,
+      4.25,
+      1.875000238418579
+    ],
+    "preview": "exports/housing-assets/previews/apartment_4floor_balcony_foundation.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "apartment_4floor_balcony_frame",
+    "source": "testingReplic/Assets/NewGaza/Art/HousingFBX/apartment_4floor_balcony_frame.fbx",
+    "boundsMin": [
+      -5.0,
+      -4.25,
+      -1.8577340199499304e-07
+    ],
+    "boundsMax": [
+      5.0,
+      4.250000476837158,
+      11.210000038146973
+    ],
+    "preview": "exports/housing-assets/previews/apartment_4floor_balcony_frame.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "apartment_4floor_balcony_finishing",
+    "source": "testingReplic/Assets/NewGaza/Art/HousingFBX/apartment_4floor_balcony_finishing.fbx",
+    "boundsMin": [
+      -5.0,
+      -4.25,
+      -1.8577340199499304e-07
+    ],
+    "boundsMax": [
+      5.0,
+      4.250000476837158,
+      12.0
+    ],
+    "preview": "exports/housing-assets/previews/apartment_4floor_balcony_finishing.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "apartment_12floor_tower_foundation",
+    "source": "testingReplic/Assets/NewGaza/Art/HousingFBX/apartment_12floor_tower_foundation.fbx",
+    "boundsMin": [
+      -5.0,
+      -4.0,
+      -1.7484555314695172e-07
+    ],
+    "boundsMax": [
+      5.0,
+      4.0,
+      1.8750001192092896
+    ],
+    "preview": "exports/housing-assets/previews/apartment_12floor_tower_foundation.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "apartment_12floor_tower_frame",
+    "source": "testingReplic/Assets/NewGaza/Art/HousingFBX/apartment_12floor_tower_frame.fbx",
+    "boundsMin": [
+      -5.0,
+      -4.0,
+      -1.7484555314695172e-07
+    ],
+    "boundsMax": [
+      5.0,
+      4.000001430511475,
+      31.770000457763672
+    ],
+    "preview": "exports/housing-assets/previews/apartment_12floor_tower_frame.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  },
+  {
+    "key": "apartment_12floor_tower_finishing",
+    "source": "testingReplic/Assets/NewGaza/Art/HousingFBX/apartment_12floor_tower_finishing.fbx",
+    "boundsMin": [
+      -5.0,
+      -4.0,
+      -1.7484555314695172e-07
+    ],
+    "boundsMax": [
+      5.0,
+      4.000001430511475,
+      32.560001373291016
+    ],
+    "preview": "exports/housing-assets/previews/apartment_12floor_tower_finishing.png",
+    "renderer": "Blender Cycles CPU",
+    "isUnityScreenshot": false
+  }
+]

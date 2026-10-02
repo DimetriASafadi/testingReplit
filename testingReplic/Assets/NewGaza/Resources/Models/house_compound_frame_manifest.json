@@ -1,0 +1,69 @@
+{
+  "key": "house_compound_frame",
+  "archetypeKey": "house_compound",
+  "archetype": "Courtyard compound",
+  "stage": "frame",
+  "stageDescription": "Clean reinforced-concrete columns and floor slabs; no damaged or broken members.",
+  "modelPath": "Resources/Models/house_compound_frame.obj",
+  "albedoPath": "Resources/Models/house_compound_frame_albedo.png",
+  "scaleConvention": "1 Blender unit = 1 metre; native OBJ is Y-up",
+  "floorCount": 3,
+  "dimensionsMeters": {
+    "width": 15.0,
+    "depth": 13.0,
+    "actualStageHeight": 8.279999732971191,
+    "logicalFinalHeight": 10.050000190734863,
+    "logicalHeightCap": 10.050000190734863
+  },
+  "metersPerCityUnit": 20.0,
+  "nativeScaleConvention": "uniform widthFit; keep completed logical height cap in every stage",
+  "triangleCount": 288,
+  "vertexCount": 192,
+  "boundsMeters": {
+    "min": [
+      -7.5,
+      -6.5,
+      0.0
+    ],
+    "max": [
+      7.5,
+      6.5,
+      8.279999732971191
+    ],
+    "width": 15.0,
+    "height": 8.279999732971191,
+    "depth": 13.0
+  },
+  "uvBounds": {
+    "min": [
+      0.030079999938607216,
+      0.05008000135421753
+    ],
+    "max": [
+      0.46992000937461853,
+      0.9499199986457825
+    ]
+  },
+  "atlas": "HousingSharedAtlas.png",
+  "objAudit": {
+    "vertices": 192,
+    "uvs": 8,
+    "normals": 6,
+    "triangles": 288,
+    "boundsYUpMeters": {
+      "min": [
+        -7.5,
+        0.0,
+        -6.5
+      ],
+      "max": [
+        7.5,
+        8.279999732971191,
+        6.5
+      ],
+      "width": 15.0,
+      "height": 8.279999732971191,
+      "depth": 13.0
+    }
+  }
+}

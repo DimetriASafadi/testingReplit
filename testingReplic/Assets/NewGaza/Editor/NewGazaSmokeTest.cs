@@ -900,8 +900,9 @@ namespace NewGaza.Editor
             Require(lit != null && lit.shader != null &&
                 lit.shader.name == "Universal Render Pipeline/Lit",
                 "NewGazaLit must retain the Universal Render Pipeline/Lit shader.");
-            Require(world.ImportedModelCount == 5 + CityRuinProfiles.ModelKeys.Length,
-                "CityWorld must explicitly load all three primary models and both context LOD models without procedural fallback.");
+            Require(world.ImportedModelCount == 5 + CityHousingProfiles.ModelKeys.Length +
+                CityRuinProfiles.ModelKeys.Length,
+                "CityWorld must load all primary, context, housing-phase, and destroyed OBJ models without procedural fallback.");
             string[] keys =
             {
                 "apartment", "ruined_building", "rubble_heap",
@@ -916,6 +917,24 @@ namespace NewGaza.Editor
             var albedos = new Texture2D[keys.Length];
             var destroyedAlbedos = new Dictionary<string, Texture2D>(StringComparer.Ordinal);
             string[] destroyedKeys = CityRuinProfiles.ModelKeys;
+
+            foreach (string key in CityHousingProfiles.ModelKeys)
+            {
+                GameObject source = Resources.Load<GameObject>("Models/" + key);
+                Require(source != null, "Missing housing-phase OBJ resource Models/" + key + ".");
+                if (source != null)
+                    foreach (MeshFilter filter in source.GetComponentsInChildren<MeshFilter>(true))
+                        if (filter.sharedMesh != null)
+                            Require(filter.sharedMesh.isReadable,
+                                "Housing-phase imported OBJ mesh must be readable: " + key + ".");
+            }
+            Texture2D sharedHousingAlbedo =
+                Resources.Load<Texture2D>("Models/house_small_redtile_final_albedo");
+            Require(sharedHousingAlbedo != null,
+                "Missing canonical shared housing-atlas resource Models/house_small_redtile_final_albedo.");
+            if (sharedHousingAlbedo != null)
+                Require(sharedHousingAlbedo.width <= 512 && sharedHousingAlbedo.height <= 512,
+                    "The canonical shared housing atlas must remain within its 512-pixel mobile bound.");
 
             for (int i = 0; i < keys.Length; i++)
             {

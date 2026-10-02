@@ -1,0 +1,69 @@
+{
+  "key": "house_small_redtile_frame",
+  "archetypeKey": "house_small_redtile",
+  "archetype": "Small red-tile house",
+  "stage": "frame",
+  "stageDescription": "Clean reinforced-concrete columns and floor slabs; no damaged or broken members.",
+  "modelPath": "Resources/Models/house_small_redtile_frame.obj",
+  "albedoPath": "Resources/Models/house_small_redtile_frame_albedo.png",
+  "scaleConvention": "1 Blender unit = 1 metre; native OBJ is Y-up",
+  "floorCount": 1,
+  "dimensionsMeters": {
+    "width": 8.5,
+    "depth": 7.0,
+    "actualStageHeight": 3.180000066757202,
+    "logicalFinalHeight": 4.485000133514404,
+    "logicalHeightCap": 4.485000133514404
+  },
+  "metersPerCityUnit": 20.0,
+  "nativeScaleConvention": "uniform widthFit; keep completed logical height cap in every stage",
+  "triangleCount": 132,
+  "vertexCount": 88,
+  "boundsMeters": {
+    "min": [
+      -4.25,
+      -3.5,
+      0.0
+    ],
+    "max": [
+      4.25,
+      3.5,
+      3.180000066757202
+    ],
+    "width": 8.5,
+    "height": 3.180000066757202,
+    "depth": 7.0
+  },
+  "uvBounds": {
+    "min": [
+      0.030079999938607216,
+      0.05008000135421753
+    ],
+    "max": [
+      0.46992000937461853,
+      0.9499199986457825
+    ]
+  },
+  "atlas": "HousingSharedAtlas.png",
+  "objAudit": {
+    "vertices": 88,
+    "uvs": 8,
+    "normals": 6,
+    "triangles": 132,
+    "boundsYUpMeters": {
+      "min": [
+        -4.25,
+        0.0,
+        -3.5
+      ],
+      "max": [
+        4.25,
+        3.180000066757202,
+        3.5
+      ],
+      "width": 8.5,
+      "height": 3.180000066757202,
+      "depth": 7.0
+    }
+  }
+}

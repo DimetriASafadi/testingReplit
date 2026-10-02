@@ -29,6 +29,8 @@ namespace NewGaza
         private readonly Dictionary<string, ImportedModel> models =
             new Dictionary<string, ImportedModel>();
         private readonly List<Material> ownedMaterials = new List<Material>();
+        private static readonly HashSet<string> housingStageKeys =
+            new HashSet<string>(CityHousingProfiles.ModelKeys, StringComparer.Ordinal);
 
         internal int ImportedModelCount { get { return models.Count; } }
 
@@ -43,6 +45,8 @@ namespace NewGaza
                 Load("rubble_heap");
                 Load("apartment_context");
                 Load("ruined_building_context");
+                foreach (string key in CityHousingProfiles.ModelKeys)
+                    Load(key);
                 foreach (string key in CityRuinProfiles.ModelKeys)
                     Load(key);
             }
@@ -100,8 +104,10 @@ namespace NewGaza
             if (source == null)
                 throw new InvalidOperationException("Missing imported New Gaza model resource: Resources/" +
                     resourcePath + ". Add the converted OBJ and its Unity-imported model asset.");
-            string textureResourcePath = key == "apartment_context" ? "Models/apartment" :
-                key == "ruined_building_context" ? "Models/ruined_building" : resourcePath;
+            string textureResourcePath = housingStageKeys.Contains(key)
+                ? "Models/house_small_redtile_final"
+                : key == "apartment_context" ? "Models/apartment" :
+                    key == "ruined_building_context" ? "Models/ruined_building" : resourcePath;
             Texture2D albedo = Resources.Load<Texture2D>(textureResourcePath + "_albedo");
             if (albedo == null)
                 throw new InvalidOperationException("Missing imported New Gaza albedo resource: Resources/" +

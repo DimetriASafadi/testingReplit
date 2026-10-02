@@ -18,3 +18,11 @@ An exposed concrete frame alone is not enough. Preserve obvious structural failu
 **Why:** The first FBX proof renders had clean floor plates and sparse debris, making the models look like buildings under construction rather than the collapsed buildings in the references.
 
 **How to apply:** Inspect renders of the actual exported FBX, not only the authoring scene or triangle counts. Allocate the polygon budget so collapsed slabs and ground rubble survive simplification; reduce repetitive clean-frame detail first.
+
+## Reference housing and active construction
+
+The user supplied the housing-reference poster and requested four distinct forms for a building: foundation, construction, finishing, and final. Workers or visible worker animation must accompany active construction and reflect its current step.
+
+**Why:** The user wants the city to visibly develop during building work, not jump from one generic construction frame to a complete building.
+
+**How to apply:** Use warm Gaza-inspired stone/plaster, balconies, rooftop details, and the reference's varied residential silhouettes. Bind the forms and worker activity to actual project progress; preserve neighborhood identity and existing saved progress.

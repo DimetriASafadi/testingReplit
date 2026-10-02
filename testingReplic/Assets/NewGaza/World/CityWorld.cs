@@ -19,6 +19,8 @@ namespace NewGaza
             internal Transform anchor;
             internal GameObject visual;
             internal int stage = -1;
+            internal CityConstructionPhase phase = CityConstructionPhase.Inactive;
+            internal CityConstructionCrew crew;
             internal Vector3 size;
             internal ProjectDefinition definition;
         }
@@ -79,6 +81,7 @@ namespace NewGaza
             if (gameSession == null) throw new ArgumentNullException(nameof(gameSession));
             if (session != null) session.Changed -= Refresh;
             if (session != null) session.PlotSelected -= SetSelectedPlot;
+            DisposeConstructionCrews();
             roadView?.Dispose();
             roadView = null;
             DisposeFogFields();
@@ -619,13 +622,32 @@ namespace NewGaza
                 bool plotChanged = false;
                 for (int p = 0; p < view.plots.Length; p++)
                 {
-                    ProjectState project = FindProject(district, view.plots[p].definition.id);
+                    PlotView plot = view.plots[p];
+                    ProjectState project = FindProject(district, plot.definition.id);
                     int stage = project != null && project.completed ? 3 :
                         project != null && project.startedUtc > 0 ? 2 : remaining == 0 ? 1 : 0;
+                    CityConstructionPhase phase = CityConstructionVisuals.ResolvePhase(project, session.Now);
                     constructing |= stage == 2;
-                    if (stage == view.plots[p].stage) continue;
-                    ReplacePlot(view.plots[p], d, p, stage);
-                    plotChanged = true;
+                    if (stage != plot.stage || (stage == 2 && phase != plot.phase))
+                    {
+                        ReplacePlot(plot, d, p, stage, phase);
+                        plotChanged = true;
+                    }
+                    plot.phase = phase;
+                    if (stage == 2)
+                    {
+                        if (plot.crew == null)
+                        {
+                            Vector3 crewFootprint = new Vector3(plot.size.x * .82f, 0f, plot.size.z * .8f);
+                            plot.crew = new CityConstructionCrew(plot.anchor, crewFootprint, geometry,
+                                cream, yellow, teal, yellow, iron);
+                        }
+                        bool visible = CityConstructionVisuals.ShouldShowCrew(project, session.Now,
+                            district.unlocked, view.fogged);
+                        plot.crew.SetPhase(phase, visible);
+                    }
+                    else if (plot.crew != null)
+                        plot.crew.SetPhase(CityConstructionPhase.Inactive, false);
                 }
                 if (plotChanged) MergeDistrictPlots(view);
                 view.crane.SetActive(constructing);
@@ -685,20 +707,23 @@ namespace NewGaza
                 district.root,Vector3.zero,true);
         }
 
-        private void ReplacePlot(PlotView plot, int district, int index, int stage)
+        private void ReplacePlot(PlotView plot, int district, int index, int stage,
+            CityConstructionPhase phase)
         {
             ReleaseVisual(plot.visual);
             plot.stage = stage;
             var batch = new CityMeshBatch(geometry);
             Vector3 footprint = new Vector3(plot.size.x * .82f,.12f,plot.size.z * .8f);
             bool geographicParcel = district < GameCatalog.FinalDistrictIndex;
+            bool housing = plot.definition.kind == ProjectKind.Housing;
             bool importedArchitecture = stage == 0 ||
-                (stage == 3 && plot.definition.kind == ProjectKind.Housing);
+                (housing && stage >= 1);
             float visualScale = geographicParcel && !importedArchitecture ? .2f : 1f;
             footprint /= visualScale;
             // Ruins and housing sit on the shared terrain, not on rectangular display pads.
             // Keep ground works only where a cleared/construction/infrastructure site needs them.
-            if (stage == 1 || stage == 2 || (stage == 3 && plot.definition.kind != ProjectKind.Housing))
+            if ((stage == 1 && !housing) || (stage == 2 && !housing) ||
+                (stage == 3 && !housing))
                 batch.Box(stage == 3 ? sidewalk : sand, new Vector3(0f,.04f,0f), footprint);
             float modelHeight = 0f;
             if (stage == 0)
@@ -720,11 +745,15 @@ namespace NewGaza
                     Mathf.Min(detailWidth,detailDepth) * .8f);
                 AddImportedRubbleScatter(batch,footprint,district * 17 + index * 31);
             }
+            else if (stage == 1 && housing)
+                modelHeight = AddHousingModel(batch, district, footprint,
+                    CityConstructionPhase.Foundation);
             else if (stage == 1) ClearedPlot(batch, footprint);
+            else if (stage == 2 && housing)
+                modelHeight = AddHousingModel(batch, district, footprint, phase);
             else if (stage == 2) Construction(batch, district, footprint);
-            else if (plot.definition.kind == ProjectKind.Housing)
-                modelHeight = modelLibrary.AddTo(batch,"apartment",Vector3.zero,
-                    new Vector3(footprint.x * .76f,0f,footprint.z * .76f),0f,8f);
+            else if (housing)
+                modelHeight = AddHousingModel(batch, district, footprint, CityConstructionPhase.Complete);
             else FinishedProject(batch, plot.definition, district, index, footprint);
             plot.visual = batch.Build(stage == 0 ? "Damaged structure" : stage == 1 ? "Cleared foundation" :
                 stage == 2 ? "Under construction / scaffold" : "Completed • " + plot.definition.name,
@@ -732,9 +761,9 @@ namespace NewGaza
             plot.visual.transform.localScale = Vector3.one * visualScale;
             // The selectable volume follows the architecture, so tapping an upper-storey
             // roof hits its own plot rather than the ground behind it in an angled view.
-            float hitHeight = stage == 1 ? .65f : stage == 2 ? 4.5f :
-                modelHeight > 0f ? modelHeight : 2.2f;
-            if (stage == 3 && plot.definition.kind != ProjectKind.Housing)
+            float hitHeight = modelHeight > 0f ? modelHeight :
+                stage == 1 ? .65f : stage == 2 ? 4.5f : 2.2f;
+            if (stage == 3 && !housing)
             {
                 switch (plot.definition.kind)
                 {
@@ -755,6 +784,45 @@ namespace NewGaza
             BoxCollider hit = plot.anchor.GetComponent<BoxCollider>();
             hit.center = new Vector3(0f,hitHeight * .5f,0f);
             hit.size = new Vector3(plot.size.x * .85f,hitHeight,plot.size.z * .83f);
+        }
+
+        private float AddHousingModel(CityMeshBatch batch, int district, Vector3 footprint,
+            CityConstructionPhase phase)
+        {
+            string districtId = GameCatalog.Districts[district].id;
+            CityHousingProfiles.Profile profile = CityHousingProfiles.ForDistrict(districtId);
+            string key = CityHousingProfiles.ModelKey(districtId, phase);
+            // Each phase has a native OBJ with the same authored parcel envelope. Stage-specific
+            // measured height caps preserve one shared 1/20 scale; the final cap is the profile's
+            // logical completed height in meters / 20 rather than a parcel-size multiplier.
+            return modelLibrary.AddTo(batch, key, Vector3.zero,
+                new Vector3(footprint.x * .76f, 0f, footprint.z * .76f),
+                0f, profile.HeightCapFor(phase));
+        }
+
+        private void Update()
+        {
+            if (districts == null) return;
+            float deltaTime = Time.deltaTime;
+            foreach (DistrictView district in districts)
+                if (district.plots != null)
+                    foreach (PlotView plot in district.plots)
+                        if (plot.crew != null) plot.crew.Update(deltaTime);
+        }
+
+        private void DisposeConstructionCrews()
+        {
+            if (districts == null) return;
+            foreach (DistrictView district in districts)
+            {
+                if (district.plots == null) continue;
+                foreach (PlotView plot in district.plots)
+                {
+                    if (plot.crew == null) continue;
+                    plot.crew.Dispose();
+                    plot.crew = null;
+                }
+            }
         }
 
         private void ReleaseVisual(GameObject visual)
@@ -1565,6 +1633,7 @@ namespace NewGaza
                 session.PlotSelected -= SetSelectedPlot;
             }
             DisposeFogFields();
+            DisposeConstructionCrews();
             if (seaSurfaceMaterial != null) Destroy(seaSurfaceMaterial);
             roadView?.Dispose();
             modelLibrary?.Dispose();

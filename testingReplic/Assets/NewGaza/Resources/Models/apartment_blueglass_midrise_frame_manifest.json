@@ -1,0 +1,69 @@
+{
+  "key": "apartment_blueglass_midrise_frame",
+  "archetypeKey": "apartment_blueglass_midrise",
+  "archetype": "Blue-glass midrise",
+  "stage": "frame",
+  "stageDescription": "Clean reinforced-concrete columns and floor slabs; no damaged or broken members.",
+  "modelPath": "Resources/Models/apartment_blueglass_midrise_frame.obj",
+  "albedoPath": "Resources/Models/apartment_blueglass_midrise_frame_albedo.png",
+  "scaleConvention": "1 Blender unit = 1 metre; native OBJ is Y-up",
+  "floorCount": 6,
+  "dimensionsMeters": {
+    "width": 12.0,
+    "depth": 9.0,
+    "actualStageHeight": 16.829999923706055,
+    "logicalFinalHeight": 19.020000457763672,
+    "logicalHeightCap": 19.020000457763672
+  },
+  "metersPerCityUnit": 20.0,
+  "nativeScaleConvention": "uniform widthFit; keep completed logical height cap in every stage",
+  "triangleCount": 216,
+  "vertexCount": 144,
+  "boundsMeters": {
+    "min": [
+      -6.0,
+      -4.5,
+      0.0
+    ],
+    "max": [
+      6.0,
+      4.5,
+      16.829999923706055
+    ],
+    "width": 12.0,
+    "height": 16.829999923706055,
+    "depth": 9.0
+  },
+  "uvBounds": {
+    "min": [
+      0.030079999938607216,
+      0.05008000135421753
+    ],
+    "max": [
+      0.46992000937461853,
+      0.9499199986457825
+    ]
+  },
+  "atlas": "HousingSharedAtlas.png",
+  "objAudit": {
+    "vertices": 144,
+    "uvs": 8,
+    "normals": 6,
+    "triangles": 216,
+    "boundsYUpMeters": {
+      "min": [
+        -6.0,
+        0.0,
+        -4.5
+      ],
+      "max": [
+        6.0,
+        16.829999923706055,
+        4.5
+      ],
+      "width": 12.0,
+      "height": 16.829999923706055,
+      "depth": 9.0
+    }
+  }
+}
