@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO.Compression;
 using System.IO;
+using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -228,7 +229,7 @@ internal static class Program
         Dictionary<string, CompilationUnitSyntax> roots)
     {
         string modelsDirectory = Path.Combine(sourceRoot, "Resources", "Models");
-        string[] modelKeys =
+        string[] baselineAssetKeys =
         {
             "apartment", "ruined_building", "rubble_heap",
             "apartment_context", "ruined_building_context",
@@ -238,6 +239,17 @@ internal static class Program
             "ruin_rashid", "ruin_mosque", "ruin_school", "ruin_clinic", "ruin_civic",
             "ruin_wall", "ruin_car", "ruin_crater", "ruin_debris"
         };
+        string[] housingMasters =
+        {
+            "house_small_redtile", "house_cream_family", "house_modern_villa",
+            "apartment_4floor_balcony", "apartment_6floor_balcony", "house_compound",
+            "apartment_blueglass_midrise", "house_traditional_stonearches",
+            "apartment_12floor_tower", "house_coastal_white_pool"
+        };
+        string[] housingSuffixes = { "_foundation", "_frame", "_finishing", "_final" };
+        string[] housingModelKeys = housingMasters
+            .SelectMany(master => housingSuffixes.Select(suffix => master + suffix)).ToArray();
+        string[] modelKeys = baselineAssetKeys.Concat(housingModelKeys).ToArray();
         string[] primaryModelKeys = { "apartment", "ruined_building", "rubble_heap" };
         string[] baselineModelKeys =
         {
@@ -254,6 +266,16 @@ internal static class Program
             Require(File.Exists(Path.Combine(modelsDirectory, key + "_albedo.png")),
                 "Missing imported model albedo Resources/Models/" + key + "_albedo.png.");
         }
+        foreach (string key in housingModelKeys)
+        {
+            Require(File.Exists(Path.Combine(modelsDirectory, key + ".obj")),
+                "Missing housing-phase OBJ source Resources/Models/" + key + ".obj.");
+            Require(File.Exists(Path.Combine(modelsDirectory, key + "_albedo.png")),
+                "Missing housing-phase albedo Resources/Models/" + key + "_albedo.png.");
+            Require(File.Exists(Path.Combine(modelsDirectory, key + "_manifest.json")),
+                "Missing housing-phase dimension manifest Resources/Models/" + key + "_manifest.json.");
+        }
+        CheckHousingStageManifests(sourceRoot, housingMasters, housingSuffixes, roots);
         string[] destroyedKeys = modelKeys.Where(key => key.StartsWith("ruin_", StringComparison.Ordinal))
             .ToArray();
         foreach (string key in destroyedKeys)
@@ -293,7 +315,7 @@ internal static class Program
                 settings.Contains("importer.SaveAndReimport()", StringComparison.Ordinal) &&
                 !settings.Contains("SetPlatformTextureSettings", StringComparison.Ordinal),
                 "The preparation menu must reimport only changed known assets and preserve platform defaults.");
-            foreach (string key in modelKeys)
+            foreach (string key in baselineAssetKeys)
                 Require(settings.Contains("ModelsPrefix+\"" + key + ".obj\"", StringComparison.Ordinal),
                     "The scoped preparation menu is missing the fixed OBJ path for " + key + ".");
             foreach (string key in primaryModelKeys)
@@ -302,11 +324,17 @@ internal static class Program
             foreach (string key in destroyedKeys)
                 Require(settings.Contains("\"" + key + "\"", StringComparison.Ordinal),
                     "The scoped preparation menu is missing destroyed OBJ/albedo import coverage for " + key + ".");
+            Require(settings.Contains("CityHousingProfiles.ModelKeys", StringComparison.Ordinal) &&
+                settings.Contains("PrepareModel(ModelsPrefix+key+\".obj\")", StringComparison.Ordinal) &&
+                settings.Contains("PrepareTexture(ModelsPrefix+key+\"_albedo.png\")",
+                    StringComparison.Ordinal),
+                "The preparation menu must apply readable OBJ and albedo settings to all registered housing phase assets.");
         }
 
         var library = Type(roots, "World/CityModelLibrary.cs", "CityModelLibrary", "NewGaza");
         if (library != null)
         {
+            string source = Compact(library.ToString());
             var addTo = library.Members.OfType<MethodDeclarationSyntax>()
                 .FirstOrDefault(method => method.Identifier.ValueText == "AddTo");
             ParameterSyntax? footprintParameter = addTo?.ParameterList.Parameters.LastOrDefault();
@@ -327,12 +355,15 @@ internal static class Program
                     .FirstOrDefault(literal => literal.IsKind(SyntaxKind.StringLiteralExpression))
                     ?.Token.ValueText ?? "")
                 .ToArray() ?? Array.Empty<string>();
-            Require(baselineModelKeys.All(key => loadedModels.Contains(key, StringComparer.Ordinal)),
+            Require(new[] { "apartment", "ruined_building", "rubble_heap",
+                    "apartment_context", "ruined_building_context" }
+                    .All(key => loadedModels.Contains(key, StringComparer.Ordinal)),
                 "CityModelLibrary must explicitly load all three baseline models and both context LOD models.");
             string constructorSource = Compact(constructor?.ToString() ?? "");
             Require(constructorSource.Contains("CityRuinProfiles.ModelKeys", StringComparison.Ordinal) &&
+                constructorSource.Contains("CityHousingProfiles.ModelKeys", StringComparison.Ordinal) &&
                 constructorSource.Contains("Load(key)", StringComparison.Ordinal),
-                "CityModelLibrary must fail fast by loading all regional, institution, and damage-detail resources.");
+                "CityModelLibrary must fail fast by loading all housing-phase, regional and damage-detail resources.");
 
             var loadMethod = library.Members.OfType<MethodDeclarationSyntax>()
                 .FirstOrDefault(method => method.Identifier.ValueText == "Load");
@@ -361,10 +392,16 @@ internal static class Program
                     .Where(literal => literal.IsKind(SyntaxKind.StringLiteralExpression))
                     .Select(literal => literal.Token.ValueText)
                     .Contains("Models/ruined_building", StringComparer.Ordinal);
-            Require(loadsModelResources && loadsAliasedTexture && reusesPrimaryAlbedoAliases,
-                "Imported OBJ resources must load through Resources aliases, with context LODs reusing the two primary PNG albedos.");
+            bool reusesCanonicalHousingAtlas = loadMethod?.DescendantNodes()
+                .OfType<LiteralExpressionSyntax>()
+                .Where(literal => literal.IsKind(SyntaxKind.StringLiteralExpression))
+                .Select(literal => literal.Token.ValueText)
+                .Contains("Models/house_small_redtile_final", StringComparer.Ordinal) == true &&
+                source.Contains("housingStageKeys.Contains(key)", StringComparison.Ordinal);
+            Require(loadsModelResources && loadsAliasedTexture && reusesPrimaryAlbedoAliases &&
+                reusesCanonicalHousingAtlas,
+                "Imported OBJ resources must preserve context aliases and explicitly share one canonical housing atlas for all registered phase keys.");
 
-            string source = Compact(library.ToString());
             Require(source.Contains("Resources.Load<Material>(\"NewGazaLit\")", StringComparison.Ordinal) &&
                 source.Contains("newMaterial(template)", StringComparison.Ordinal) &&
                 source.Contains("material.SetTexture(\"_BaseMap\",albedo)", StringComparison.Ordinal),
@@ -499,8 +536,9 @@ internal static class Program
             replaceSource.Contains("ruinProfile.maxHeightCityUnits", StringComparison.Ordinal) &&
             !replaceSource.Contains("Mathf.Min(footprint.x,footprint.z)*", StringComparison.Ordinal) &&
             replaceSource.Contains("plot.definition.kind==ProjectKind.Housing", StringComparison.Ordinal) &&
-            replaceSource.Contains("modelLibrary.AddTo(batch,\"apartment\"", StringComparison.Ordinal),
-            "Stage-zero plots must use stable district-specific damaged resources, while completed housing keeps its original imported model.");
+            replaceSource.Contains("AddHousingModel(batch,district,footprint", StringComparison.Ordinal) &&
+            replaceSource.Contains("CityConstructionPhase.Complete", StringComparison.Ordinal),
+            "Stage-zero plots must remain stable district-specific damaged resources, while housing uses district profiles and phase OBJ models.");
         Require(!replaceSource.Contains("Ruin(batch", StringComparison.Ordinal),
             "The stage-zero imported building must not require the old procedural ruin mesh.");
 
@@ -537,7 +575,8 @@ internal static class Program
             Require(smoke.Contains("Resources.Load<GameObject>(\"Models/\"+key)", StringComparison.Ordinal) &&
                 smoke.Contains("Resources.Load<Texture2D>(\"Models/\"+albedoKeys[i]+\"_albedo\")",
                     StringComparison.Ordinal) &&
-                smoke.Contains("world.ImportedModelCount==5+CityRuinProfiles.ModelKeys.Length",
+                smoke.Contains("Models/house_small_redtile_final_albedo", StringComparison.Ordinal) &&
+                smoke.Contains("world.ImportedModelCount==5+CityHousingProfiles.ModelKeys.Length+CityRuinProfiles.ModelKeys.Length",
                     StringComparison.Ordinal) &&
                 smoke.Contains("CityRuinProfiles.ModelKeys", StringComparison.Ordinal) &&
                 smoke.Contains("CheckDestroyedModelResources(destroyedAlbedos)", StringComparison.Ordinal) &&
@@ -2014,6 +2053,297 @@ internal static class Program
         string scene = File.ReadAllText(scenePath);
         Require(scene.Contains("m_Fog: 0", StringComparison.Ordinal),
             "The entry scene must keep serialized global RenderSettings fog disabled.");
+    }
+
+    private static void CheckHousingStageManifests(string sourceRoot, string[] masters,
+        string[] suffixes, Dictionary<string, CompilationUnitSyntax> roots)
+    {
+        string repositoryRoot = Path.GetFullPath(Path.Combine(sourceRoot, "../../.."));
+        string assetRoot = Path.Combine(repositoryRoot, "testingReplic", "Assets", "NewGaza");
+        string resources = Path.Combine(assetRoot, "Resources", "Models");
+        Dictionary<string, HousingProfileAudit> profiles = ReadHousingProfileAudits(roots);
+        string manifestPath = Path.Combine(repositoryRoot, "exports", "housing-assets", "Manifest.json");
+        Require(File.Exists(manifestPath), "Missing 10-archetype, 40-stage housing FBX manifest.");
+        if (!File.Exists(manifestPath)) return;
+
+        using (JsonDocument document = JsonDocument.Parse(File.ReadAllText(manifestPath)))
+        {
+            JsonElement root = document.RootElement;
+            Require(root.TryGetProperty("footprintInvariant", out JsonElement invariant) &&
+                invariant.GetString()?.Contains("share the exact parcel width/depth bounds",
+                    StringComparison.Ordinal) == true,
+                "Housing generator manifest must guarantee one unchanged footprint across all four reference stages.");
+            Require(root.TryGetProperty("archetypes", out JsonElement archetypes) &&
+                archetypes.ValueKind == JsonValueKind.Array &&
+                archetypes.GetArrayLength() == masters.Length,
+                "Housing export manifest must contain exactly the ten authored master types.");
+            if (!root.TryGetProperty("archetypes", out archetypes) ||
+                archetypes.ValueKind != JsonValueKind.Array) return;
+
+            var found = new HashSet<string>(StringComparer.Ordinal);
+            string canonicalAtlasPath = Path.Combine(resources,
+                "house_small_redtile_final_albedo.png");
+            string canonicalAtlasHash = File.Exists(canonicalAtlasPath)
+                ? Sha256File(canonicalAtlasPath) : "";
+            Require(!string.IsNullOrEmpty(canonicalAtlasHash),
+                "Missing canonical shared housing atlas used by runtime model materials.");
+            string[] stageNames = { "foundation", "frame", "finishing", "final" };
+            foreach (JsonElement archetype in archetypes.EnumerateArray())
+            {
+                if (!archetype.TryGetProperty("key", out JsonElement keyElement) ||
+                    keyElement.ValueKind != JsonValueKind.String)
+                {
+                    Require(false, "Housing manifest contains an archetype with no stable master key.");
+                    continue;
+                }
+                string master = keyElement.GetString() ?? "";
+                Require(masters.Contains(master, StringComparer.Ordinal),
+                    "Housing manifest contains an unexpected master key: " + master + ".");
+                Require(found.Add(master), "Housing manifest repeats master key " + master + ".");
+                if (!archetype.TryGetProperty("dimensionsMeters", out JsonElement finalDimensions) ||
+                    !archetype.TryGetProperty("stages", out JsonElement stages))
+                {
+                    Require(false, "Housing manifest is missing dimensions or stage records for " + master + ".");
+                    continue;
+                }
+
+                double expectedWidth = JsonNumber(finalDimensions, "width");
+                double expectedDepth = JsonNumber(finalDimensions, "depth");
+                double expectedHeightCap = JsonNumber(finalDimensions, "logicalHeightCap");
+                double[] expectedStageHeights = new double[4];
+                Require(expectedWidth > 0d && expectedDepth > 0d && expectedHeightCap > 0d,
+                    "Housing manifest has non-positive logical dimensions for " + master + ".");
+
+                for (int stageIndex = 0; stageIndex < stageNames.Length; stageIndex++)
+                {
+                    string stage = stageNames[stageIndex];
+                    string stageKey = master + "_" + stage;
+                    string objPath = Path.Combine(resources, stageKey + ".obj");
+                    string albedoPath = Path.Combine(resources, stageKey + "_albedo.png");
+                    string stageManifestPath = Path.Combine(resources, stageKey + "_manifest.json");
+                    Require(File.Exists(objPath), "Missing native stage OBJ " + stageKey + ".");
+                    Require(File.Exists(albedoPath), "Missing native stage albedo " + stageKey + ".");
+                    Require(File.Exists(stageManifestPath), "Missing native stage dimensions manifest " + stageKey + ".");
+                    if (!File.Exists(objPath) || !File.Exists(stageManifestPath)) continue;
+                    if (!stages.TryGetProperty(stage, out JsonElement stageRecord) ||
+                        !stageRecord.TryGetProperty("boundsMeters", out JsonElement fbxBounds))
+                    {
+                        Require(false, "Housing export manifest has no measured " + stage + " bounds for " + master + ".");
+                        continue;
+                    }
+
+                    Require(Near(JsonNumber(fbxBounds, "width"), expectedWidth) &&
+                        Near(JsonNumber(fbxBounds, "depth"), expectedDepth),
+                        "Reference FBX stages must keep the common width/depth envelope: " + stageKey + ".");
+                    if (File.Exists(albedoPath))
+                        Require(Sha256File(albedoPath) == canonicalAtlasHash,
+                            "Housing stage albedo must be byte-identical to the shared canonical atlas: " + stageKey + ".");
+                    expectedStageHeights[stageIndex] = stage == "final" ? expectedHeightCap :
+                        JsonNumber(fbxBounds, "height");
+                    string fbxRelative = "Art/HousingFBX/" + stageKey + ".fbx";
+                    Require(File.Exists(Path.Combine(assetRoot, fbxRelative)),
+                        "Missing reference housing FBX " + stageKey + ".");
+                    using (JsonDocument phaseDocument = JsonDocument.Parse(File.ReadAllText(stageManifestPath)))
+                    {
+                        JsonElement phaseRoot = phaseDocument.RootElement;
+                        Require(phaseRoot.TryGetProperty("key", out JsonElement phaseKey) &&
+                            phaseKey.GetString() == stageKey,
+                            "Native OBJ manifest key mismatch for " + stageKey + ".");
+                        Require(phaseRoot.TryGetProperty("dimensionsMeters", out JsonElement dimensions) &&
+                            Near(JsonNumber(dimensions, "width"), expectedWidth) &&
+                            Near(JsonNumber(dimensions, "depth"), expectedDepth) &&
+                            Near(JsonNumber(dimensions, "logicalHeightCap"), expectedHeightCap),
+                            "Native OBJ phase manifest must retain the common footprint and completed logical height cap: " +
+                            stageKey + ".");
+                        Require(Near(JsonNumber(dimensions, "actualStageHeight"),
+                                expectedStageHeights[stageIndex]),
+                            "Native OBJ actual stage height must match the stage FBX manifest: " + stageKey + ".");
+                        Require(phaseRoot.TryGetProperty("metersPerCityUnit", out JsonElement units) &&
+                            units.TryGetDouble(out double metersPerCityUnit) && Near(metersPerCityUnit, 20d),
+                            "Native OBJ stage must declare the 20-metre city unit convention: " + stageKey + ".");
+                        Require(phaseRoot.TryGetProperty("triangleCount", out JsonElement triangles) &&
+                            triangles.TryGetInt32(out int triangleCount) &&
+                            triangleCount > 0 && triangleCount <= 12000,
+                            "Native OBJ stage must have a nonempty, budgeted mesh: " + stageKey + ".");
+                    }
+                    ObjAudit audit = AuditHousingObj(objPath);
+                    Require(audit.triangles > 0 && audit.degenerateTriangles == 0,
+                        "Native housing OBJ must contain valid, non-degenerate faces: " + stageKey + ".");
+                    Require(Near(audit.width, expectedWidth) && Near(audit.depth, expectedDepth),
+                        "Measured native OBJ width/depth must match the common authored footprint: " + stageKey + ".");
+                }
+
+                foreach (KeyValuePair<string, HousingProfileAudit> profile in profiles)
+                {
+                    if (profile.Value.master != master) continue;
+                    Require(profile.Value.stageHeights.Length == expectedStageHeights.Length &&
+                        profile.Value.stageHeights.Zip(expectedStageHeights,
+                            (actual, expected) => Near(actual, expected)).All(equal => equal),
+                        "Stable district housing profile must use manifest-measured phase heights: " +
+                        profile.Key + ".");
+                }
+            }
+            Require(found.Count == masters.Length,
+                "Housing FBX manifest must include all ten stable archetype masters.");
+            Require(profiles.Count == 12 && profiles.Values.Select(profile => profile.master)
+                    .Distinct(StringComparer.Ordinal).Count() == masters.Length,
+                "Housing profiles must cover all twelve stable inland IDs and use all ten master types.");
+        }
+    }
+
+    private sealed class HousingProfileAudit
+    {
+        internal string master = "";
+        internal double[] stageHeights = Array.Empty<double>();
+    }
+
+    private static Dictionary<string, HousingProfileAudit> ReadHousingProfileAudits(
+        Dictionary<string, CompilationUnitSyntax> roots)
+    {
+        var result = new Dictionary<string, HousingProfileAudit>(StringComparer.Ordinal);
+        var type = Type(roots, "World/CityHousingProfiles.cs", "CityHousingProfiles", "NewGaza");
+        var field = type?.Members.OfType<FieldDeclarationSyntax>()
+            .FirstOrDefault(candidate => candidate.Declaration.Variables
+                .Any(variable => variable.Identifier.ValueText == "profiles"));
+        var initializer = field?.Declaration.Variables
+            .FirstOrDefault(variable => variable.Identifier.ValueText == "profiles")
+            ?.Initializer?.Value as InitializerExpressionSyntax;
+        if (initializer == null)
+        {
+            Require(false, "CityHousingProfiles must expose its stable district profile table.");
+            return result;
+        }
+
+        foreach (ObjectCreationExpressionSyntax profile in initializer.Expressions
+                     .OfType<ObjectCreationExpressionSyntax>())
+        {
+            SeparatedSyntaxList<ArgumentSyntax> args = profile.ArgumentList!.Arguments;
+            if (args.Count != 7 || args[0].Expression is not LiteralExpressionSyntax districtLiteral ||
+                args[1].Expression is not LiteralExpressionSyntax masterLiteral)
+            {
+                Require(false, "Housing profile entries must name a stable district, master and four measured stage heights.");
+                continue;
+            }
+            string district = districtLiteral.Token.ValueText;
+            var audit = new HousingProfileAudit
+            {
+                master = masterLiteral.Token.ValueText,
+                stageHeights = new double[4]
+            };
+            bool valid = true;
+            for (int i = 0; i < audit.stageHeights.Length; i++)
+            {
+                string text = args[i + 3].Expression.ToString().TrimEnd('f', 'F');
+                if (!double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture,
+                        out audit.stageHeights[i]))
+                    valid = false;
+            }
+            if (!valid)
+                Require(false, "Housing profiles require literal phase dimensions in meters.");
+            else if (!result.TryAdd(district, audit))
+                Require(false, "Duplicate stable housing profile ID: " + district + ".");
+        }
+        return result;
+    }
+
+    private static double JsonNumber(JsonElement element, string property)
+    {
+        return element.TryGetProperty(property, out JsonElement value) &&
+            value.TryGetDouble(out double number) ? number : double.NaN;
+    }
+
+    private static bool Near(double a, double b)
+    {
+        return !double.IsNaN(a) && !double.IsNaN(b) && Math.Abs(a - b) <= .02d;
+    }
+
+    private static string Sha256File(string path)
+    {
+        using (SHA256 sha = SHA256.Create())
+            return BitConverter.ToString(sha.ComputeHash(File.ReadAllBytes(path)))
+                .Replace("-", "").ToLowerInvariant();
+    }
+
+    private sealed class ObjAudit
+    {
+        internal double width;
+        internal double depth;
+        internal int triangles;
+        internal int degenerateTriangles;
+    }
+
+    private static ObjAudit AuditHousingObj(string path)
+    {
+        var vertices = new List<(double x, double y, double z)>();
+        var audit = new ObjAudit
+        {
+            width = 0d,
+            depth = 0d
+        };
+        double minX = double.PositiveInfinity, maxX = double.NegativeInfinity;
+        double minZ = double.PositiveInfinity, maxZ = double.NegativeInfinity;
+        foreach (string line in File.ReadLines(path))
+        {
+            if (line.StartsWith("v ", StringComparison.Ordinal))
+            {
+                string[] fields = line.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+                if (fields.Length < 4 ||
+                    !double.TryParse(fields[1], NumberStyles.Float, CultureInfo.InvariantCulture, out double x) ||
+                    !double.TryParse(fields[2], NumberStyles.Float, CultureInfo.InvariantCulture, out double y) ||
+                    !double.TryParse(fields[3], NumberStyles.Float, CultureInfo.InvariantCulture, out double z) ||
+                    double.IsNaN(x) || double.IsInfinity(x) ||
+                    double.IsNaN(y) || double.IsInfinity(y) ||
+                    double.IsNaN(z) || double.IsInfinity(z))
+                {
+                    audit.degenerateTriangles++;
+                    continue;
+                }
+                vertices.Add((x, y, z));
+                minX = Math.Min(minX, x);
+                maxX = Math.Max(maxX, x);
+                minZ = Math.Min(minZ, z);
+                maxZ = Math.Max(maxZ, z);
+            }
+            else if (line.StartsWith("f ", StringComparison.Ordinal))
+            {
+                string[] fields = line.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+                if (fields.Length < 4) { audit.degenerateTriangles++; continue; }
+                int[] indices = new int[fields.Length - 1];
+                bool valid = true;
+                for (int i = 1; i < fields.Length; i++)
+                {
+                    string vertexIndex = fields[i].Split('/')[0];
+                    if (!int.TryParse(vertexIndex, NumberStyles.Integer, CultureInfo.InvariantCulture,
+                            out int parsed))
+                    {
+                        valid = false;
+                        break;
+                    }
+                    indices[i - 1] = parsed > 0 ? parsed - 1 : vertices.Count + parsed;
+                    if (indices[i - 1] < 0 || indices[i - 1] >= vertices.Count)
+                        valid = false;
+                }
+                if (!valid) { audit.degenerateTriangles++; continue; }
+                for (int i = 1; i < indices.Length - 1; i++)
+                {
+                    audit.triangles++;
+                    var a = vertices[indices[0]];
+                    var b = vertices[indices[i]];
+                    var c = vertices[indices[i + 1]];
+                    double abx = b.x - a.x, aby = b.y - a.y, abz = b.z - a.z;
+                    double acx = c.x - a.x, acy = c.y - a.y, acz = c.z - a.z;
+                    double nx = aby * acz - abz * acy;
+                    double ny = abz * acx - abx * acz;
+                    double nz = abx * acy - aby * acx;
+                    if (nx * nx + ny * ny + nz * nz < 1e-16)
+                        audit.degenerateTriangles++;
+                }
+            }
+        }
+        audit.width = maxX - minX;
+        audit.depth = maxZ - minZ;
+        if (vertices.Count == 0) audit.degenerateTriangles++;
+        return audit;
     }
 
     private static string Compact(string source) =>

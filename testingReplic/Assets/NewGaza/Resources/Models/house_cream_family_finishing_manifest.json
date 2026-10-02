@@ -1,0 +1,69 @@
+{
+  "key": "house_cream_family_finishing",
+  "archetypeKey": "house_cream_family",
+  "archetype": "Cream family house",
+  "stage": "finishing",
+  "stageDescription": "Partially completed masonry infill, selective plaster, scaffold, and incomplete roof/windows.",
+  "modelPath": "Resources/Models/house_cream_family_finishing.obj",
+  "albedoPath": "Resources/Models/house_cream_family_finishing_albedo.png",
+  "scaleConvention": "1 Blender unit = 1 metre; native OBJ is Y-up",
+  "floorCount": 3,
+  "dimensionsMeters": {
+    "width": 10.5,
+    "depth": 8.5,
+    "actualStageHeight": 9.369999885559082,
+    "logicalFinalHeight": 10.350000381469727,
+    "logicalHeightCap": 10.350000381469727
+  },
+  "metersPerCityUnit": 20.0,
+  "nativeScaleConvention": "uniform widthFit; keep completed logical height cap in every stage",
+  "triangleCount": 1956,
+  "vertexCount": 1304,
+  "boundsMeters": {
+    "min": [
+      -5.25,
+      -4.25,
+      0.0
+    ],
+    "max": [
+      5.25,
+      4.25,
+      9.369999885559082
+    ],
+    "width": 10.5,
+    "height": 9.369999885559082,
+    "depth": 8.5
+  },
+  "uvBounds": {
+    "min": [
+      0.030079999938607216,
+      0.05008000135421753
+    ],
+    "max": [
+      0.9699199795722961,
+      0.9499199986457825
+    ]
+  },
+  "atlas": "HousingSharedAtlas.png",
+  "objAudit": {
+    "vertices": 1304,
+    "uvs": 24,
+    "normals": 6,
+    "triangles": 1956,
+    "boundsYUpMeters": {
+      "min": [
+        -5.25,
+        0.0,
+        -4.25
+      ],
+      "max": [
+        5.25,
+        9.369999885559082,
+        4.25
+      ],
+      "width": 10.5,
+      "height": 9.369999885559082,
+      "depth": 8.5
+    }
+  }
+}

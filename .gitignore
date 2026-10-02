@@ -1,3 +1,7 @@
 .pythonlibs/
 __pycache__/
 *.py[cod]
+
+# The complete downloadable source ZIP exceeds the GitHub API request limit.
+# Its verified binary parts are tracked; tools/join_unity_source.py restores it.
+/exports/NewGaza-Unity-Source.zip
