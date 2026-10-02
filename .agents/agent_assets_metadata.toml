@@ -5,14 +5,14 @@ generated = []
 id = "1fWh6uOeYQs-_P59ry1Dn"
 uri = "file://exports/NewGaza-Unity-Source.zip"
 type = "unspecified"
-title = "نيو غزة — مشروع Unity المحدث بالمعدات والصوت"
-description = "المصدر الكامل مع المعدات المتحركة و9 مؤثرات صوتية وإعدادات الصوت. تم فحص الأرشيف؛ دون ملفات NewGaza .meta. لم يُشغّل Unity أو الهاتف في هذه البيئة."
+title = "نيو غزة — تحديث الطرق والنقل والإصلاح"
+description = "مشروع Unity المحدّث: شبكة الشوارع، نقل الآليات، إصلاح المقاطع ورصفها، وحفظ التحسينات. إضافات NewGaza دون ملفات .meta. يتضمن تعليمات التشغيل والاختبارات."
 logical_id = "5dbf8b92-3bf8-4fbf-a60d-a4baffa6cc98"
-content_hash = "sha256:4020f4e8308763d9b1bd8900ec2a697b11509bfb9f63cfe87fb2fffa4ba93d22"
-size = 17815101
-mtime_ms = 1790884778810
-storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/5dbf8b92-3bf8-4fbf-a60d-a4baffa6cc98/ea6514a8-f926-48dd-9562-9bc84209ea72"
-storage_version_token = "1790884926608222"
+content_hash = "sha256:c87b88dd549144d8c9dca767d18507eaaa656be6e3335f5325acf498120c932e"
+size = 17851479
+mtime_ms = 1790910067979
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/5dbf8b92-3bf8-4fbf-a60d-a4baffa6cc98/55019604-e20c-4af2-8feb-77ddf934a072"
+storage_version_token = "1790910324039163"
 content_type = "application/octet-stream"
 
 [[outputs]]
