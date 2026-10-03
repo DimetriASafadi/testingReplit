@@ -5,6 +5,23 @@ import hashlib
 import json
 import subprocess
 import zipfile
+import argparse
+import sys
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--unity", help="Require successful real Unity compilation before packaging")
+parser.add_argument("--compile-timeout", type=float, default=1800)
+args = parser.parse_args()
+if args.compile_timeout <= 0:
+    parser.error("--compile-timeout must be positive")
+if args.unity:
+    gate = pathlib.Path(__file__).resolve().with_name("unity_compile.py")
+    if subprocess.run([sys.executable, str(gate), "--unity", args.unity,
+                       "--timeout", str(args.compile_timeout)], check=False).returncode != 0:
+        raise SystemExit("Packaging refused: actual Unity compilation did not pass. Existing exports unchanged.")
+else:
+    print("WARNING: packaging UNVERIFIED source; no Unity compilation requested. "
+          "Use --unity /path/to/Unity to require the compilation gate.")
 
 root = pathlib.Path(__file__).resolve().parents[1]
 paths = subprocess.check_output(
@@ -13,6 +30,8 @@ paths = subprocess.check_output(
 ).decode().split("\0")
 paths += ["tools/fetch_gaza_basemap.py", "tools/package_unity_source.py"]
 paths += ["tools/join_unity_source.py"]
+paths += ["tools/unity_compile.py", "tools/verify_unity_compile_cases.py",
+          "tools/tests/test_unity_compile.py"]
 paths += ["tools/prepare_equipment_audio.py"]
 paths += ["tools/export_equipment_fbx.py", "tools/render_equipment_proof.py",
           "tools/package_equipment_assets.py"]
@@ -27,9 +46,17 @@ paths += [str(path.relative_to(root)) for path in
           (root / "attached_assets/generated_audio").glob("new-gaza-*.mp3")]
 destination = root / "exports/NewGaza-Unity-Source.zip"
 destination.parent.mkdir(parents=True, exist_ok=True)
+original_meta = set(subprocess.check_output(
+    ["git", "ls-files", "-z", "--cached", "--", "*.meta"], cwd=root,
+).decode().split("\0"))
 with zipfile.ZipFile(destination, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
     for name in sorted(set(filter(None, paths))):
         path = root / name
+        if name.endswith(".meta") and name not in original_meta:
+            continue  # Preserve imported metadata; never ship locally generated new metadata.
+        if any(part in {"Library", "Temp", "Logs", "UserSettings", "bin", "obj", "cache"}
+               for part in pathlib.PurePosixPath(name).parts):
+            continue
         if path.is_file():
             archive.write(path, name)
 with zipfile.ZipFile(destination) as archive:
@@ -38,6 +65,10 @@ with zipfile.ZipFile(destination) as archive:
         raise RuntimeError("Archive CRC failed: " + error)
     names = set(archive.namelist())
     required = {
+        "testingReplic/Assets/NewGaza/Editor/NewGazaCompilationGate.cs",
+        "testingReplic/UNITY-COMPILATION.md",
+        "tools/unity_compile.py",
+        "tools/verify_unity_compile_cases.py",
         "testingReplic/Assets/NewGaza/Resources/GazaBasemap.json",
         "testingReplic/MapData/GazaBasemap-source.json.gz",
         "testingReplic/Assets/NewGaza/Resources/NewGazaSea.shader",
