@@ -876,9 +876,12 @@ namespace NewGaza.Editor
 
         private static bool IsFinite(Vector3 value)
         {
-            return !float.IsNaN(value.x) && !float.IsInfinity(value.x) &&
-                !float.IsNaN(value.y) && !float.IsInfinity(value.y) &&
-                !float.IsNaN(value.z) && !float.IsInfinity(value.z);
+            return IsFinite(value.x) && IsFinite(value.y) && IsFinite(value.z);
+        }
+
+        private static bool IsFinite(float value)
+        {
+            return !float.IsNaN(value) && !float.IsInfinity(value);
         }
 
         [Serializable]

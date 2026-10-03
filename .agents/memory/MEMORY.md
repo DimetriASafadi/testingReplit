@@ -9,3 +9,4 @@
 - [Equipment reference and routing](equipment-reference-and-routing.md) — unbranded yellow machines and green/white tipper; useful roads first, then direct off-road arrival rather than holding.
 - [Native fixture ownership](native-fixture-ownership.md) — model hierarchy destruction; separate selection from static caches and test thin triangles at real geographic coordinates.
 - [Regional building art direction](regional-building-art-direction.md) — user wants family housing in the east, progressing to taller urban and tourist buildings toward the west.
+- [Unity editor verification](unity-editor-verification.md) — single-assembly fixtures miss editor access errors; compile editor contracts separately and check obsolete Unity APIs.

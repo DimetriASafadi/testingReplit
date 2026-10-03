@@ -15,11 +15,11 @@ namespace NewGaza.Editor
 
             var importer = (AudioImporter)assetImporter;
             importer.forceToMono = true;
-            importer.preloadAudioData = true;
             importer.loadInBackground = false;
 
             var settings = new AudioImporterSampleSettings
             {
+                preloadAudioData = true,
                 loadType = AudioClipLoadType.DecompressOnLoad,
                 sampleRateSetting = AudioSampleRateSetting.OverrideSampleRate,
                 sampleRateOverride = 24000,
