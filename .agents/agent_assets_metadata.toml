@@ -548,3 +548,17 @@ mtime_ms = 1791043638669
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/c58f6919-4f35-4ab6-b439-978d4ea1e662/f87a80b1-01ab-45ee-b5c5-09ce24801649"
 storage_version_token = "1791043689683627"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "x9mOvyKvcOG6nNa4lZ066"
+uri = "file://exports/economy/NewGaza-Economy-Equipment-Update.zip"
+type = "unspecified"
+title = "تحديث اقتصاد الركام والبداية وترقيات المعدات"
+description = "حزمة Unity تراكمية تشمل التحديثات السابقة: عائد الركام ثلث سعر وحدته، مصنع بموقع يختاره اللاعب، وثلاث ترقيات مستقلة لكل آلة بنصف سعر شرائها الأصلي. دون ملفات .meta جديدة. دليل ECONOMY-ONBOARDING.ar.md داخل الحزمة."
+logical_id = "0ad047bd-80a2-41d6-a1b2-260f5fd14d29"
+content_hash = "sha256:8ce4a2d5391ad1e55f3cb314c9f5ce9c440708ffee2ef86988254fbf594cd8f9"
+size = 2216193
+mtime_ms = 1791048961992
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/0ad047bd-80a2-41d6-a1b2-260f5fd14d29/ea4a1bb2-0ca9-4f51-a174-3f4dcaed8892"
+storage_version_token = "1791049008508422"
+content_type = "application/octet-stream"
