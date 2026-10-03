@@ -11,6 +11,18 @@ description: User-requested east-to-west differences in New Gaza buildings and u
 
 **How to apply:** Use the user's references when designing buildings and destruction. Keep eastern areas residential/family-oriented and progressively introduce taller, more urban and tourist-oriented buildings toward the west.
 
+## Preserve the approved map while changing gameplay
+
+«الان اعجبتني الخريطة واعجبني التوزيع وإلخ التفاصيل الموجودة اريد بعض التعديلات في لوجيك اللعبة».
+
+«هذه المباني استطيع بنائها على اي منطقة نظيفة من الركام ... واستطيع اختيار هذه المباني من المتجر الخاص باللعبة».
+
+«كل منطقة تتطلب نوع معين للمباني لسد حاجاتها من الشرق تطلب اسكان للزراعة او الصناعة وكلما ذهبت غربا تطلب المناطق رفاهية ومحال تجارية ومباني سكنية اكبر وعمرانية اكثر».
+
+**Why:** The user approved the existing map and distribution, but wants location-based rubble clearance, freely selected buildings with different footprints, multiple equipment factories/depots and regional needs rather than only predetermined projects. They will supply building model files later; editable sample art is appropriate until then.
+
+**How to apply:** Preserve approved geography and distribution while changing gameplay. Regional needs must reflect east-to-west land-use differences, not just building appearance. Dispatch equipment from its depot along useful roads. Distinguish the camera-focused district name from the selected work district, and use translucent region shading without obscuring the city.
+
 ## Destruction must read differently from unfinished construction
 
 An exposed concrete frame alone is not enough. Preserve obvious structural failure in the exported silhouette: fractured and tilted slabs, breached irregular walls, broken columns and substantial mixed rubble. Regional character must remain recognizable through that damage.

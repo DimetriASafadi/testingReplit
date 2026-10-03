@@ -422,3 +422,45 @@ mtime_ms = 1791035454593
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/4082326f-ad4a-404d-a594-a269ee34895a/9a8dac06-0734-40ea-8aa0-48b2e46cb61b"
 storage_version_token = "1791035506160203"
 content_type = "image/png"
+
+[[outputs]]
+id = "7ZCH9xUSgrywYS1XUj4eb"
+uri = "file://exports/Uploaded-Equipment-All-Variants.zip"
+type = "unspecified"
+title = "جميع الآليات — الأجزاء المتحركة والخامات"
+description = "الحزمة الكاملة: ١٢ ملف FBX مستقلًا، وملف Blender قابل للتحرير، وخامات ومعاينات ودليل عربي. جميع أجزاء المصدر محفوظة، والنسخ الناقصة موضحة. بلا ملفات .meta جديدة؛ لم تُختبر داخل Unity."
+logical_id = "255ee990-a3d2-4a5a-9745-172f62baf096"
+content_hash = "sha256:85962be6cc720331b843e48d83f780b83985e83aae3414be9abadf88e50df5ea"
+size = 41392411
+mtime_ms = 1791037358320
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/255ee990-a3d2-4a5a-9745-172f62baf096/d0cac90f-07f8-4a12-aa33-80a93e8c79b7"
+storage_version_token = "1791037382246614"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "updD83WIk98ZlBc5az1LM"
+uri = "file://exports/uploaded-equipment/Motion_Preview.gif"
+type = "image"
+title = "معاينة حركة الآليات"
+description = "معاينة فعلية من Blender لرفع الذراع والدلو وشفرة البلدوزر وصندوق القلاب، ثم حركة الجنزير والعجلات. ليست محاكاة تفريغ حمولة أو لقطة من Unity."
+logical_id = "fed7f602-ce4e-4748-804f-dda5e7e465c4"
+content_hash = "sha256:52da10c97f9827646383cb98ed9a0409111ed2a45776f3813729533f89011d00"
+size = 694234
+mtime_ms = 1791037116949
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/fed7f602-ce4e-4748-804f-dda5e7e465c4/33a4a599-7704-43bd-98ad-06c0bef66a47"
+storage_version_token = "1791037383611557"
+content_type = "image/gif"
+
+[[outputs]]
+id = "Ar6fwjZ_PByyj9gNSER6b"
+uri = "file://exports/uploaded-equipment/All_Variants_Parked.png"
+type = "image"
+title = "جميع النسخ بعد الفصل والتلوين"
+description = "الآليات الرئيسية والنماذج والأجزاء الأصغر، بخامات الطلاء والمعدن والمطاط والزجاج الداكن. معاينة من ملف Blender المُسلّم؛ بعض التشوهات الأصلية ما زالت موجودة."
+logical_id = "93caba84-cc0c-46d9-9476-79ff019a64df"
+content_hash = "sha256:34f53a3b67660fd382bb497368b5314272054045f4367e95c554390b4c1574c8"
+size = 2065500
+mtime_ms = 1791036802920
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/93caba84-cc0c-46d9-9476-79ff019a64df/372d620a-f0b4-437d-a578-11ebf48a627c"
+storage_version_token = "1791037431581720"
+content_type = "image/png"
