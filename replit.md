@@ -9,6 +9,7 @@
 - Unity editor is not installed in this workspace. Never equate source/domain checks with a Unity compilation, play-mode run, device performance test, or store-ready build.
 - Domain checks: `dotnet run --project testingReplic/Tests/Domain/DomainTests.csproj --configuration Release`.
 - Free construction/site clearance guide: `testingReplic/FREE-BUILD.ar.md`; checks: `dotnet run --project testingReplic/Tests/Development/DevelopmentTests.csproj --configuration Release`.
+- Typography guide: `testingReplic/TYPOGRAPHY.ar.md`; Cairo headings, uploaded Tajawal body/buttons and Roboto Latin/numbers are bundled Unicode faces. Generate with `uv run python tools/build_ui_fonts.py`.
 - Source checks: `dotnet run --project testingReplic/Tests/SourceChecks/SourceChecks.csproj --configuration Release`.
 - Preserve the imported project's original `.meta` files. NewGaza is delivered without `.meta` files; Unity generates them locally and Git ignores them. Do not introduce serialized references to per-machine NewGaza GUIDs; the entry scene attaches its session by type at runtime. A locally renamed Unity file in a user's stack trace may not exist in this workspace; distinguish copies instead of assuming an asset-cache problem.
 - No paid ad simulation, no fabricated reward callbacks. Real rewarded ads, native sharing/video capture, cloud saves, and store signing are not configured.

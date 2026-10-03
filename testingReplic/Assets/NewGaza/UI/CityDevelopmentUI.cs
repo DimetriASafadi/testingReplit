@@ -26,7 +26,7 @@ namespace NewGaza
         internal void Initialize(CityDevelopment controller, GameSession game)
         {
             development = controller; session = game;
-            font = Resources.Load<Font>("NewGazaArabic");
+            font = CityTypography.FontFor(CityTextRole.Body);
             if (font == null) throw new InvalidOperationException("Arabic UI font is missing");
             var canvas = gameObject.AddComponent<Canvas>(); canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 25; gameObject.AddComponent<GraphicRaycaster>();
@@ -126,7 +126,7 @@ namespace NewGaza
                         if (target.HasValue) development.PreviewAt(target.Value);
                     });
                 row.gameObject.AddComponent<LayoutElement>().preferredHeight = 106;
-                var text = row.GetComponentInChildren<ArabicLabel>(); text.fontSize = 14;
+                var text = row.GetComponentInChildren<ArabicLabel>(); CityTypography.Apply(text, CityTextRole.Small);
                 text.alignment = TextAnchor.MiddleRight;
                 text.rectTransform.offsetMin = new Vector2(12, 4); text.rectTransform.offsetMax = new Vector2(-12, -4);
             }
@@ -222,7 +222,7 @@ namespace NewGaza
         private ArabicLabel Label(Transform parent, string text, int size)
         {
             var rect = Rect("Arabic text", parent);
-            var label = rect.gameObject.AddComponent<ArabicLabel>(); label.font = font; label.fontSize = size;
+            var label = rect.gameObject.AddComponent<ArabicLabel>(); CityTypography.Apply(label, CityTypography.RoleForSize(size));
             label.color = new Color(.97f, .94f, .85f); label.alignment = TextAnchor.UpperRight;
             label.raycastTarget = false; label.horizontalOverflow = HorizontalWrapMode.Wrap;
             label.verticalOverflow = VerticalWrapMode.Truncate; label.SetText(text); return label;
@@ -234,6 +234,7 @@ namespace NewGaza
             var button = rect.gameObject.AddComponent<Button>(); button.targetGraphic = image;
             button.onClick.AddListener(callback);
             var label = Label(rect, text, 15); Stretch(label.rectTransform); label.alignment = TextAnchor.MiddleCenter;
+            CityTypography.Apply(label, CityTextRole.Button);
             return button;
         }
 

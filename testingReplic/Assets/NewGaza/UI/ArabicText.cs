@@ -78,10 +78,26 @@ namespace NewGaza
 
         private static string ShapeLine(string line)
         {
+            bool hasRtl = false;
+            foreach (char character in line) if (Direction(character) == 0) { hasRtl = true; break; }
+            if (!hasRtl)
+            {
+                // English-only lines stay LTR, including leading UI symbols.
+                var clean = new StringBuilder();
+                foreach (char character in line) if (!IsBidiControl(character)) clean.Append(character);
+                return clean.ToString();
+            }
             var glyphs = new List<Glyph>();
             for (int i = 0; i < line.Length; i++)
             {
                 char original = line[i];
+                if (char.IsHighSurrogate(original) && i + 1 < line.Length && char.IsLowSurrogate(line[i + 1]))
+                {
+                    // Treat a supplementary Unicode scalar as one bidi unit.
+                    glyphs.Add(new Glyph { text = line.Substring(i, 2), direction = -1 });
+                    i++;
+                    continue;
+                }
                 // Do not accept user-supplied directional overrides or leave joiners visible.
                 if (IsBidiControl(original) || original == '\u200C' || original == '\u200D') continue;
                 if (IsMark(original) && glyphs.Count > 0)
@@ -227,6 +243,8 @@ namespace NewGaza
             Check(errors, Shape("ب\u200Cب") == "\uFE8F\uFE8F", "non-joiner");
             Check(errors, !Shape("اسم\u202E").Contains("\u202E"), "untrusted bidi overrides");
             Check(errors, Shape("أ 123 · Unity 6") == "Unity 6 · 123 \uFE83", "separate numeric and Latin runs");
+            Check(errors, Shape("★ New Gaza — Unity 6") == "★ New Gaza — Unity 6", "English-only LTR");
+            Check(errors, Shape("غزة \U0001F3E2").Contains("\U0001F3E2"), "Unicode surrogate remains intact");
             return errors.ToArray();
         }
         private static void Check(List<string> errors, bool valid, string label) { if (!valid) errors.Add(label); }

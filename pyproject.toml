@@ -5,6 +5,8 @@ description = "Offline asset authoring and preview tools for the native New Gaza
 requires-python = ">=3.13"
 dependencies = [
     "arabic-reshaper>=3.0.1",
+    "fonttools>=4.66.1",
     "pillow>=12.3.0",
     "python-bidi>=0.6.11",
+    "uharfbuzz>=0.56.2",
 ]

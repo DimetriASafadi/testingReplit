@@ -15,12 +15,16 @@ namespace NewGaza.UI
                 throw new InvalidOperationException("Arabic shaping checks failed: " + string.Join(", ", failures));
             Font font = Resources.Load<Font>("NewGazaArabic");
             if (font == null) throw new InvalidOperationException("Missing Resources/NewGazaArabic.ttf");
-            string glyphs = ArabicText.Shape("غزة الجديدة الشجاعية الزيتون إعادة إعمار 50,000 Unity 6 · % / × + = ( )");
-            font.RequestCharactersInTexture(glyphs, 28, FontStyle.Normal);
-            foreach (char glyph in glyphs)
-                if (!char.IsWhiteSpace(glyph) && !font.HasCharacter(glyph))
-                    throw new InvalidOperationException("Arabic font missing glyph U+" + ((int)glyph).ToString("X4"));
-            Debug.Log("New Gaza: 13 Arabic joining/bidi checks and font glyph checks passed.");
+            string glyphs = ArabicText.Shape("غزة الجديدة الشجاعية الزيتون إعادة إعمار 50,000 Unity 6 · % / × + = ( ) → ⚠ ★ ٠١٢٣٤٥٦٧٨٩");
+            foreach (CityTextRole role in Enum.GetValues(typeof(CityTextRole)))
+            {
+                font = CityTypography.FontFor(role);
+                font.RequestCharactersInTexture(glyphs, 28, FontStyle.Normal);
+                foreach (char glyph in glyphs)
+                    if (!char.IsWhiteSpace(glyph) && !font.HasCharacter(glyph))
+                        throw new InvalidOperationException(role + " missing glyph U+" + ((int)glyph).ToString("X4"));
+            }
+            Debug.Log("New Gaza: Arabic joining/bidi checks and all typography-role glyph checks passed.");
         }
     }
 }

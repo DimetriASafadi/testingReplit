@@ -84,7 +84,7 @@ namespace NewGaza
             session = gameSession;
             world = cityWorld;
             cityCamera = camera;
-            arabicFont = Resources.Load<Font>("NewGazaArabic");
+            arabicFont = CityTypography.FontFor(CityTextRole.Body);
             if (arabicFont == null)
                 throw new InvalidOperationException("الخط العربي مفقود: Resources/NewGazaArabic.ttf");
             hudIcons?.Dispose();
@@ -870,7 +870,7 @@ namespace NewGaza
             nameInput.shouldHideMobileInput = false;
             var editable = Rect("Native editable logical text", field).gameObject.AddComponent<Text>();
             editable.font = arabicFont;
-            editable.fontSize = 24;
+            CityTypography.Apply(editable, CityTextRole.Body);
             editable.color = Navy;
             editable.alignment = TextAnchor.MiddleRight;
             editable.supportRichText = false;
@@ -1149,8 +1149,7 @@ namespace NewGaza
         {
             var rect = Rect("Arabic label", parent);
             var label = rect.gameObject.AddComponent<ArabicLabel>();
-            label.font = arabicFont;
-            label.fontSize = size;
+            CityTypography.Apply(label, CityTypography.RoleForSize(size));
             label.color = color;
             label.alignment = TextAnchor.MiddleRight;
             label.supportRichText = false;
@@ -1181,7 +1180,7 @@ namespace NewGaza
             button.colors = colors;
             var label = Label(rect, text, 20, Cream);
             label.alignment = TextAnchor.MiddleCenter;
-            label.fontSize = labelSize;
+            CityTypography.Apply(label, CityTextRole.Button);
             if (icon == CityHudIcons.Icon.None)
             {
                 Stretch(label.rectTransform, 7, 2, 7, 2);
@@ -1202,7 +1201,7 @@ namespace NewGaza
                 labelRect.anchorMax = new Vector2(1, 0.67f);
                 labelRect.offsetMin = new Vector2(2, 2);
                 labelRect.offsetMax = new Vector2(-2, 0);
-                label.fontSize = labelSize;
+                CityTypography.Apply(label, CityTextRole.Button);
             }
             label.raycastTarget = false;
             if (action != null) button.onClick.AddListener(() =>

@@ -57,11 +57,12 @@ namespace NewGaza
                         if (definition.kind == ProjectKind.Investment) investments += definition.cost;
                     }
             var label = labelObject.GetComponent<Text>();
-            label.font = Resources.Load<Font>("NewGazaArabic");
-            label.fontSize = 25; label.color = Color.white;
+            NewGaza.UI.CityTypography.Apply(label, NewGaza.UI.CityTextRole.Heading);
+            label.color = Color.white;
             label.alignment = TextAnchor.MiddleCenter;
             label.resizeTextForBestFit = true;
-            label.resizeTextMinSize = 16; label.resizeTextMaxSize = 25;
+            label.resizeTextMinSize = NewGaza.UI.CityTypography.SmallSize;
+            label.resizeTextMaxSize = NewGaza.UI.CityTypography.HeadingSize;
             string date = DateTimeOffset.FromUnixTimeSeconds(session.State.cityCompletedUtc).ToString("yyyy-MM-dd");
             label.text = ArabicText.Shape("نيو غزة — مدينة تُبنى من جديد\n" +
                 session.State.playerName + " | الإنجاز 100% | الأحياء " +
