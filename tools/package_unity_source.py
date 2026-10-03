@@ -11,14 +11,26 @@ import sys
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--unity", help="Require successful real Unity compilation before packaging")
 parser.add_argument("--compile-timeout", type=float, default=1800)
+parser.add_argument("--player-target", action="append", choices=("Android", "iOS"),
+                    help="Opt-in build gate before packaging; repeat for both approved targets")
 args = parser.parse_args()
 if args.compile_timeout <= 0:
     parser.error("--compile-timeout must be positive")
+if args.player_target and not args.unity:
+    parser.error("--player-target requires --unity; no unverified player build packaging")
 if args.unity:
     gate = pathlib.Path(__file__).resolve().with_name("unity_compile.py")
     if subprocess.run([sys.executable, str(gate), "--unity", args.unity,
                        "--timeout", str(args.compile_timeout)], check=False).returncode != 0:
         raise SystemExit("Packaging refused: actual Unity compilation did not pass. Existing exports unchanged.")
+    for target in dict.fromkeys(args.player_target or []):
+        if subprocess.run([sys.executable, str(gate), "--unity", args.unity,
+                           "--target", target, "--timeout", str(args.compile_timeout)],
+                          check=False).returncode != 0:
+            raise SystemExit(f"Packaging refused: {target} player build did not pass. Existing exports unchanged.")
+    if not args.player_target:
+        print("Editor compilation passed; Android/iOS player builds NOT checked. "
+              "Opt in with --player-target Android or --player-target iOS.")
 else:
     print("WARNING: packaging UNVERIFIED source; no Unity compilation requested. "
           "Use --unity /path/to/Unity to require the compilation gate.")
@@ -31,7 +43,8 @@ paths = subprocess.check_output(
 paths += ["tools/fetch_gaza_basemap.py", "tools/package_unity_source.py"]
 paths += ["tools/join_unity_source.py"]
 paths += ["tools/unity_compile.py", "tools/verify_unity_compile_cases.py",
-          "tools/tests/test_unity_compile.py"]
+          "tools/verify_unity_player_cases.py", "tools/tests/test_unity_compile.py",
+          "tools/tests/test_unity_player.py"]
 paths += ["tools/prepare_equipment_audio.py"]
 paths += ["tools/export_equipment_fbx.py", "tools/render_equipment_proof.py",
           "tools/package_equipment_assets.py"]
@@ -69,6 +82,8 @@ with zipfile.ZipFile(destination) as archive:
         "testingReplic/UNITY-COMPILATION.md",
         "tools/unity_compile.py",
         "tools/verify_unity_compile_cases.py",
+        "tools/verify_unity_player_cases.py",
+        "testingReplic/Assets/NewGaza/Editor/NewGazaPlayerBuildGate.cs",
         "testingReplic/Assets/NewGaza/Resources/GazaBasemap.json",
         "testingReplic/MapData/GazaBasemap-source.json.gz",
         "testingReplic/Assets/NewGaza/Resources/NewGazaSea.shader",
