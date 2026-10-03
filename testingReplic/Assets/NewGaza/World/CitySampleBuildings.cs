@@ -11,6 +11,7 @@ namespace NewGaza
         {
             internal GameObject root, visual;
             internal CityConstructionCrew crew;
+            internal CityFactoryMotion factoryMotion;
             internal int phase = -1;
             internal bool generated;
         }
@@ -64,6 +65,12 @@ namespace NewGaza
                     hit.size = new Vector3(definition.widthMeters / 20f,
                         phase == 1 ? .04f : Mathf.Max(.12f, definition.floors * .15f), definition.depthMeters / 20f);
                 }
+                if (building.completed && view.factoryMotion == null &&
+                    (definition.category == BuildingCategory.Recycling || definition.category == BuildingCategory.Economic))
+                    view.factoryMotion = CityFactoryMotion.Create(view.visual.transform, geometry, state,
+                        new Vector3(definition.widthMeters / 20f * .32f, .015f, 0),
+                        definition.depthMeters / 20f * .18f, building.id,
+                        definition.category == BuildingCategory.Economic);
                 if (!building.completed)
                 {
                     if (view.crew == null)

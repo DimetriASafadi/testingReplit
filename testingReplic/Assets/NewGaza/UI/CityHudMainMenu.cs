@@ -157,6 +157,7 @@ namespace NewGaza
             mainMenuHero = Surface("Reconstruction call to action", mainMenuCenter,
                 new Color(242f / 255f, 140f / 255f, 40f / 255f, 1f));
             var heroButton = mainMenuHero.gameObject.AddComponent<Button>();
+            mainMenuHero.gameObject.AddComponent<CityButtonMotion>();
             heroButton.targetGraphic = mainMenuHero.GetComponent<Image>();
             heroButton.navigation = new Navigation { mode = Navigation.Mode.None };
             var colors = heroButton.colors;
@@ -401,7 +402,7 @@ namespace NewGaza
             float progress = Mathf.Clamp01(summary.Progress);
             mainMenuDistrictName.SetText(summary.DistrictName);
             mainMenuDistrictProgress.SetText(Percent(progress) + " إنجاز");
-            mainMenuProgressFill.fillAmount = progress;
+            CityProgressMotion.Set(mainMenuProgressFill, progress, d);
             int remainingSites = Mathf.Max(0, summary.TotalSites - summary.ClearedSites);
             mainMenuDistrictRubric.SetText("المواقع المُزالة: " + summary.ClearedSites + " / " + summary.TotalSites +
                 "\nالمباني المكتملة: " + summary.CompletedBuildings + " · أعمال البناء: " + summary.BuildingWorks);

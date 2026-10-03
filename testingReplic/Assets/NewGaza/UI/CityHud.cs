@@ -24,6 +24,7 @@ namespace NewGaza
             public Func<bool> enabled;
             public Image fill;
             public Func<float> progress;
+            public int progressContext;
         }
 
         private static readonly Color Navy = new Color32(7, 27, 54, 255);
@@ -59,6 +60,7 @@ namespace NewGaza
         private ArabicLabel modalTitle, modalSubtitle, toastLabel;
         private InputField nameInput;
         private readonly List<Binding> modalBindings = new List<Binding>();
+        private readonly Dictionary<int, float> shownModalProgress = new Dictionary<int, float>();
         private readonly List<NavItem> navItems = new List<NavItem>();
         private CityHudIcons hudIcons;
         private Page page;
@@ -103,6 +105,7 @@ namespace NewGaza
             structuralKey = StateKey();
             finaleShown = session.Economy.CityComplete;
             BuildMainMenu();
+            BuildFeedback();
             ShowMainMenu(true);
         }
 
@@ -223,6 +226,7 @@ namespace NewGaza
         private void Update()
         {
             if (!initialized) return;
+            AnimateFeedback();
             LayoutSafeArea(false);
             if (closingCameraBlock && Time.unscaledTime >= releaseBlockUntil && !PointerHeld())
             {
@@ -343,7 +347,7 @@ namespace NewGaza
             resourceLabel.SetText("خرسانة " + N(s.stock.concrete) + "   ·   حديد " + N(s.stock.iron) +
                 "   ·   خشب " + N(s.stock.wood) + "   ·   أخرى " + N(s.stock.other));
             districtLabel.SetText(GameCatalog.Districts[d].name + "   ·   " + Percent(session.Economy.Progress(d)) + " إنجاز");
-            districtFill.fillAmount = session.Economy.Progress(d);
+            CityProgressMotion.Set(districtFill, session.Economy.Progress(d), d);
             var text = new StringBuilder();
             if (s.jobStage == JobStage.Idle)
                 text.Append("فريق التدوير جاهز\n").Append("الركام المحلي: ").Append(s.districts[d].clearedLoads)
@@ -425,7 +429,7 @@ namespace NewGaza
             }
         }
 
-        private void OnChanged() { changed = true; }
+        private void OnChanged() { changed = true; DetectFeedback(); }
 
         private void OnPlotSelected(int index)
         {
@@ -486,6 +490,7 @@ namespace NewGaza
         private void OpenPage(Page requested)
         {
             if (requested == Page.None) { ClosePage(); return; }
+            CacheShownProgress();
             if (confirmationObject != null) CloseConfirmation();
             if (modalObject != null) Destroy(modalObject);
             modalObject = null;
@@ -564,6 +569,7 @@ namespace NewGaza
         private void RebuildPage(bool preserveScroll)
         {
             if (modalContent == null) return;
+            CacheShownProgress();
             float scroll = preserveScroll && modalScroll != null ? modalScroll.verticalNormalizedPosition : 1;
             for (int i = modalContent.childCount - 1; i >= 0; i--)
             {
@@ -618,7 +624,7 @@ namespace NewGaza
                 fill.type = Image.Type.Filled;
                 fill.fillMethod = Image.FillMethod.Horizontal;
                 fill.fillOrigin = 1;
-                modalBindings.Add(new Binding { fill = fill, progress = () => session.Economy.Progress(index) });
+                modalBindings.Add(new Binding { fill = fill, progressContext = index, progress = () => session.Economy.Progress(index) });
                 var visit = CardButton(card, state.unlocked ? "زيارة الحي" : "مقفل", 0, 199,
                     () => { session.ChooseDistrict(index); ClosePage(); }, state.unlocked, Teal, 2);
                 var reward = CardButton(card, state.rewardClaimed ? "تم الاستلام" : "مكافأة 100%", 1, 199,
@@ -1024,6 +1030,7 @@ namespace NewGaza
 
         private void ClosePage()
         {
+            CacheShownProgress();
             if (confirmationObject != null) CloseConfirmation();
             if (modalObject != null) Destroy(modalObject);
             modalObject = null;
@@ -1061,8 +1068,21 @@ namespace NewGaza
             {
                 if (bind.label != null && bind.value != null) bind.label.SetText(bind.value());
                 if (bind.button != null && bind.enabled != null) bind.button.interactable = bind.enabled();
-                if (bind.fill != null && bind.progress != null) bind.fill.fillAmount = bind.progress();
+                if (bind.fill != null && bind.progress != null)
+                {
+                    if (bind.fill.GetComponent<CityProgressMotion>() == null &&
+                        shownModalProgress.TryGetValue(bind.progressContext, out float previous))
+                        CityProgressMotion.Set(bind.fill, previous, bind.progressContext);
+                    CityProgressMotion.Set(bind.fill, bind.progress(), bind.progressContext);
+                    shownModalProgress[bind.progressContext] = bind.fill.fillAmount;
+                }
             }
+        }
+        private void CacheShownProgress()
+        {
+            foreach (var binding in modalBindings)
+                if (binding.fill != null && binding.progress != null)
+                    shownModalProgress[binding.progressContext] = binding.fill.fillAmount;
         }
         private void Bind(ArabicLabel label, Func<string> value) { modalBindings.Add(new Binding { label = label, value = value }); }
         private void BindButton(Button button, Func<bool> enabled) { modalBindings.Add(new Binding { button = button, enabled = enabled }); }
@@ -1190,6 +1210,7 @@ namespace NewGaza
         {
             var rect = Surface(text, parent, color);
             var button = rect.gameObject.AddComponent<Button>();
+            rect.gameObject.AddComponent<CityButtonMotion>();
             button.targetGraphic = rect.GetComponent<Image>();
             button.navigation = new Navigation { mode = Navigation.Mode.None };
             var colors = button.colors;

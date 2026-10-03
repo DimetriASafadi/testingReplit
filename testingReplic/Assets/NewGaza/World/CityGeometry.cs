@@ -76,6 +76,8 @@ namespace NewGaza
 
         internal void Release(Mesh mesh)
         {
+            // Shared primitive meshes belong to the geometry owner, not a single rig.
+            if (mesh == Box || mesh == Cylinder || mesh == Cone || mesh == Roof || mesh == Leaf || mesh == BrokenConcrete) return;
             if (mesh != null && owned.Remove(mesh))
                 UnityEngine.Object.Destroy(mesh);
         }

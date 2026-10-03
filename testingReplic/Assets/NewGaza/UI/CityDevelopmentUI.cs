@@ -237,6 +237,7 @@ namespace NewGaza
         {
             var rect = Rect(text, parent); var image = rect.gameObject.AddComponent<Image>(); image.color = teal;
             var button = rect.gameObject.AddComponent<Button>(); button.targetGraphic = image;
+            rect.gameObject.AddComponent<CityButtonMotion>();
             button.onClick.AddListener(callback);
             var label = Label(rect, text, 15); Stretch(label.rectTransform); label.alignment = TextAnchor.MiddleCenter;
             CityTypography.Apply(label, CityTextRole.Button);

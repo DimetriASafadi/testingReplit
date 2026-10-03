@@ -34,8 +34,49 @@ internal static class Program
         NeedsRewardsAndPersistence();
         MigrationAndCorruption();
         HomeMenuProjection();
+        FeedbackEvents();
         Console.WriteLine("PASS free-build development / " + assertions + " assertions");
         Console.WriteLine("Domain only: no Unity editor, physics, UI, shader, or device rendering was run.");
+    }
+
+    private static void FeedbackEvents()
+    {
+        var rules = Setup(out var economy); var state = economy.State;
+        var tracker = new CityFeedbackTracker();
+        var options = new JsonSerializerOptions { IncludeFields = true };
+        string before = JsonSerializer.Serialize(state, options);
+        Check(!tracker.Capture(state).Any, "cold save never plays previous achievements");
+        Check(JsonSerializer.Serialize(state, options) == before, "feedback never mutates game state");
+        Check(!tracker.Capture(state).Any, "idle ticks create no effects");
+        long balance = state.coins;
+        state.coins -= 10; Check(!tracker.Capture(state).Any, "spending is not a receipt");
+        state.coins += 25; var frame = tracker.Capture(state);
+        Check(frame.coins == 25 && !frame.reward, "actual positive receipt with exact delta");
+        Check(!tracker.Capture(state).Any, "receipt plays once");
+        state.lastGiftUtc = Now; state.coins += 100;
+        frame = tracker.Capture(state);
+        Check(frame.reward && frame.coins == 100, "actual daily gift fade and coins");
+        state.districts[0].projects[0].completed = true;
+        frame = tracker.Capture(state);
+        Check(frame.completed == 1 && !frame.reward, "one true project completion checkmark");
+        Check(!tracker.Capture(state).Any, "completion does not repeat");
+        state.development.buildings = new[] { new PlacedBuildingState { id = "feedback-building", completed = true } };
+        Check(tracker.Capture(state).completed == 1, "completed free building detected");
+        state.development.rubble[0].cleared = true;
+        Check(tracker.Capture(state).completed == 1, "site clearance detected");
+        state.roadSegments = new[] { new RoadSegmentState { id = "feedback-road", level = 0 } };
+        Check(!tracker.Capture(state).Any, "unimproved discovered road not an achievement");
+        state.roadSegments[0].level = 1;
+        Check(tracker.Capture(state).completed == 1, "real road improvement detected");
+        int d = Array.FindIndex(state.districts, district => !district.unlocked);
+        state.districts[d].unlocked = true; state.districts[0].rewardClaimed = true;
+        frame = tracker.Capture(state);
+        Check(frame.reward && frame.unlocked.Length == 1 && frame.unlocked[0] == d, "earned district transition and reward");
+        Check(!tracker.Capture(state).Any, "earned district appears once");
+        Check(!new CityFeedbackTracker().Capture(state).Any, "reopening save does not replay events");
+        state.development.buildings = Array.Empty<PlacedBuildingState>();
+        Check(!tracker.Capture(state).Any, "removal is not task completion");
+        Check(state.coins == balance + 115, "feedback does not grant currency");
     }
 
     private static void HomeMenuProjection()

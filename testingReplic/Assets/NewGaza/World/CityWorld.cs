@@ -1526,6 +1526,9 @@ namespace NewGaza
             }
             factory = batch.Build("Recycling factory • level " + factoryLevel,factorySite.transform,
                 new Vector3(0f,.25f,1.5f),true);
+            if (factoryLevel > 0)
+                CityFactoryMotion.Create(factory.transform, geometry, session.State,
+                    new Vector3(1.9f, 1.03f, -.3f), 1, "central", false);
         }
 
         private void BuildSelection()
