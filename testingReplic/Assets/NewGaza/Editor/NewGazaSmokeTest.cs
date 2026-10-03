@@ -14,12 +14,14 @@ namespace NewGaza.Editor
     {
         private const string PendingKey = "NewGaza.Smoke.Pending";
         private const string BatchKey = "NewGaza.Smoke.Batch";
+        private const string ErrorKey = "NewGaza.Smoke.Error";
         private static double began;
 
         static NewGazaSmokeTest()
         {
             EditorApplication.playModeStateChanged += OnPlayModeChanged;
             EditorApplication.update += Check;
+            Application.logMessageReceived += OnLog;
             if (SessionState.GetBool(PendingKey, false))
                 began = EditorApplication.timeSinceStartup;
         }
@@ -36,11 +38,29 @@ namespace NewGaza.Editor
             EditorSceneManager.OpenScene(NewGazaProjectSetup.ScenePath);
             SessionState.SetBool(PendingKey, true);
             SessionState.SetBool(BatchKey, Application.isBatchMode);
+            SessionState.SetString(ErrorKey, "");
             began = EditorApplication.timeSinceStartup;
             EditorApplication.EnterPlaymode();
         }
 
-        public static void RunBatch() { Run(); }
+        public static void RunBatch()
+        {
+            SessionState.SetBool(BatchKey, true);
+            try
+            {
+                NewGazaSmokeResult.ValidateBatch();
+                Run();
+            }
+            catch (Exception e) { Finish(false, e.ToString()); }
+        }
+
+        private static void OnLog(string message, string stackTrace, LogType type)
+        {
+            if (SessionState.GetBool(PendingKey, false) &&
+                (type == LogType.Error || type == LogType.Exception || type == LogType.Assert) &&
+                string.IsNullOrEmpty(SessionState.GetString(ErrorKey, "")))
+                SessionState.SetString(ErrorKey, message);
+        }
 
         private static void OnPlayModeChanged(PlayModeStateChange change)
         {
@@ -1161,7 +1181,22 @@ namespace NewGaza.Editor
 
         private static void Finish(bool success, string message)
         {
+            string runtimeError = SessionState.GetString(ErrorKey, "");
+            if (success && !string.IsNullOrEmpty(runtimeError))
+            {
+                success = false;
+                message = "Runtime error during smoke test: " + runtimeError;
+            }
             SessionState.SetBool(PendingKey, false);
+            if (SessionState.GetBool(BatchKey, false))
+            {
+                try { NewGazaSmokeResult.Write(success, message); }
+                catch (Exception e)
+                {
+                    success = false;
+                    message = "Smoke evidence could not be written: " + e.Message;
+                }
+            }
             if (success) Debug.Log("New Gaza smoke test PASS: " + message);
             else Debug.LogError("New Gaza smoke test FAIL: " + message);
             if (SessionState.GetBool(BatchKey, false)) EditorApplication.Exit(success ? 0 : 1);
