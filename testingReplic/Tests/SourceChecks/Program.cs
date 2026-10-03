@@ -747,6 +747,11 @@ internal static class Program
 
         var world = Type(roots, "World/CityWorld.cs", "CityWorld", "NewGaza");
         if (world == null) return;
+        string districtBuild = Compact(world.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(method => method.Identifier.ValueText == "BuildDistricts")?.ToString() ?? "");
+        Require(districtBuild.Contains("Point(route[route.Length-1])-routeMidpoint", StringComparison.Ordinal) &&
+            !districtBuild.Contains("Point(routeMidpoint)", StringComparison.Ordinal),
+            "Rashid badge offset must subtract the already-converted Vector3 route midpoint, not pass it to Point(GeoPoint).");
         var initialize = world.Members.OfType<MethodDeclarationSyntax>()
             .FirstOrDefault(method => method.Identifier.ValueText == "Initialize");
         var initializeCalls = initialize?.DescendantNodes().OfType<InvocationExpressionSyntax>()
