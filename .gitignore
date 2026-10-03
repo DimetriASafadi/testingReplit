@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 /exports/unity-compile/
 /exports/unity-compile-cases/
+/exports/unity-player-cases/
 
 # The complete downloadable source ZIP exceeds the GitHub API request limit.
 # Its verified binary parts are tracked; tools/join_unity_source.py restores it.
