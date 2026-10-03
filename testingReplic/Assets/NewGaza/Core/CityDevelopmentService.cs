@@ -82,6 +82,8 @@ namespace NewGaza.Core
             economy.Tick(now);
             var site = Site(siteId);
             if (site == null || site.cleared) return ActionResult.Fail("هذا الموقع نظيف بالفعل أو غير معروف");
+            if (State.factoryLevel == 0) return ActionResult.Fail("أكمل بناء مصنع إعادة تدوير الركام أولاً");
+            if (now > long.MaxValue - RubbleEconomy.TotalSeconds(State, site)) return ActionResult.Fail("وقت الجهاز غير صالح");
             if (!State.districts[site.district].unlocked) return ActionResult.Fail("الحي مقفل");
             if (depotId != "central")
             {
@@ -91,11 +93,12 @@ namespace NewGaza.Core
             }
             else if (State.factoryLevel == 0 || Data.dynamicFactoryProvided)
                 return ActionResult.Fail("المصنع المركزي غير متاح");
-            var result = economy.StartSalvage(site.district, now);
+            var result = economy.StartSalvage(site.district, now, siteId);
             if (!result.success) return result;
             Data.activeRubbleId = siteId;
             Data.dispatchDepotId = depotId;
             Data.crewArrived = false;
+            State.jobFinishUtc = State.lastSeenUtc + RubbleEconomy.ClearingSeconds(State, site);
             return ActionResult.Ok("انطلقت الآليات إلى المبنى المهدّم عبر الشوارع؛ تبدأ الإزالة بعد وصولها");
         }
 

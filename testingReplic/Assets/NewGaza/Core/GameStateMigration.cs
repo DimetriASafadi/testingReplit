@@ -29,6 +29,7 @@ namespace NewGaza.Core
             var upgraded = GameCatalog.CreateNew(saved.lastSeenUtc);
             // This is an existing game, not a fresh free-build campaign.
             upgraded.development = null;
+            upgraded.equipmentUnits = null;
             upgraded.playerName = saved.playerName;
             upgraded.coins = saved.coins;
             upgraded.stock = new ResourceStock

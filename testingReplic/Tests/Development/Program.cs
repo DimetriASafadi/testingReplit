@@ -21,6 +21,7 @@ internal static class Program
     private static CityDevelopmentService Setup(out EconomyService economy)
     {
         var state = GameCatalog.CreateNew(Now);
+        state.development.requiresPlacedFactory = false;
         state.coins = 10000000; state.stock.concrete = 10000; state.stock.iron = 10000;
         economy = new EconomyService(state);
         return new CityDevelopmentService(economy);
@@ -35,6 +36,7 @@ internal static class Program
         MigrationAndCorruption();
         HomeMenuProjection();
         FeedbackEvents();
+        EconomyChecks.Run(Check);
         Console.WriteLine("PASS free-build development / " + assertions + " assertions");
         Console.WriteLine("Domain only: no Unity editor, physics, UI, shader, or device rendering was run.");
     }
@@ -182,6 +184,7 @@ internal static class Program
         string site = CityDevelopmentService.SiteId(0, 0);
         Check(!service.Clear(site, "central", Now).success, "factory required");
         state.factoryLevel = 1; state.excavators = state.trucks = state.bulldozers = 1;
+        state.equipmentUnits = null;
         economy.ClearingCrewReady = () => false;
         Check(service.Clear(site, "central", Now).success, "selected ruin dispatch");
         Check(!service.Clear(CityDevelopmentService.SiteId(0, 1), "central", Now).success, "one pooled fleet contract");
@@ -197,7 +200,8 @@ internal static class Program
         economy.Tick(Now + 20000);
         Check(service.Site(site).cleared && state.jobStage == JobStage.Idle && service.Data.activeRubbleId == null, "chosen site only cleared");
         Check(!service.Site(CityDevelopmentService.SiteId(0, 1)).cleared, "neighbour remains damaged");
-        Check(state.stock.concrete == 10040 && state.stock.iron == 10015, "recycled stock once");
+        var output = RubbleEconomy.Yield(state, service.Site(site));
+        Check(state.stock.concrete == 10000 + output.concrete && state.stock.iron == 10000 + output.iron, "bounded recycled stock once");
         Check(!service.Clear(site, "central", state.lastSeenUtc).success, "no repeated ruin reward");
         Check(!service.Clear(CityDevelopmentService.SiteId(1, 0), "central", state.lastSeenUtc).success, "locked clearance");
         CityDevelopmentService.Validate(state);

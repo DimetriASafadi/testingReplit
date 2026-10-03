@@ -671,7 +671,8 @@ namespace NewGaza
                 session.Development != null ? session.Development.WorkPosition :
                     districts[Mathf.Clamp(state.jobDistrict,0,districts.Length - 1)].rubble.transform.position,
                 session.Development != null ? session.Development.DepotPosition : factorySite.transform.position);
-            factorySite.SetActive(state.development == null || !state.development.dynamicFactoryProvided);
+            factorySite.SetActive(state.development == null ||
+                (!state.development.requiresPlacedFactory && !state.development.dynamicFactoryProvided));
         }
 
         private static ProjectState FindProject(DistrictState district, string id)

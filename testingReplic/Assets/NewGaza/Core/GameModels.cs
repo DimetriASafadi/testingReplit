@@ -106,6 +106,7 @@ namespace NewGaza.Core
         public int trucks;
         public int bulldozers;
         public int equipmentLevel = 1;
+        public EquipmentUnitState[] equipmentUnits;
         public int selectedDistrict;
         public DistrictState[] districts;
         public JobStage jobStage;
@@ -126,11 +127,21 @@ namespace NewGaza.Core
         public bool initialized;
         public bool legacyProgress;
         public bool dynamicFactoryProvided;
+        public bool requiresPlacedFactory;
         public RubbleSiteState[] rubble = new RubbleSiteState[0];
         public PlacedBuildingState[] buildings = new PlacedBuildingState[0];
         public string activeRubbleId;
         public string dispatchDepotId;
         public bool crewArrived;
+    }
+
+    [Serializable]
+    public class EquipmentUnitState
+    {
+        public string id, kind;
+        public long purchasePrice;
+        public int level = 1;
+        public int legacyPower;
     }
 
     [Serializable]

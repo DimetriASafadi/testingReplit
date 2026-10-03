@@ -171,7 +171,9 @@ namespace NewGaza
                 bool active = development.Rules.Data.activeRubbleId == selected.id;
                 actionText.SetText(selected.cleared ? "أرض نظيفة — اختر مبنى من المتجر وضعه هنا أو على أي مساحة نظيفة مناسبة" :
                     active ? "الآليات في الطريق أو تعمل على الإزالة والنقل والتدوير\n" + StageText(session.State.jobStage) :
-                    "مبنى مهدّم — إزالة الدمار تُرسل الآليات من أقرب مصنع أو مخزن جاهز عبر الشوارع");
+                    "العائد: " + RubbleEconomy.Reward(selected) + " عملة = ثلث " + RubbleEconomy.BuildingPrice(selected) +
+                    "\nالعمل: نحو " + ((RubbleEconomy.TotalSeconds(session.State, selected) + 59) / 60) +
+                    " دقيقة بعد الوصول · تُصرف العملات بعد التدوير");
                 SetButton(action, selected.cleared ? "اختر مبنى" : active ? "قيد التنفيذ" : "إزالة الدمار");
                 action.interactable = selected.cleared || session.State.jobStage == JobStage.Idle;
             }

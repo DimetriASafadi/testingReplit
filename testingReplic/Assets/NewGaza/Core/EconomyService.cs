@@ -27,6 +27,7 @@ namespace NewGaza.Core
             if (state == null) throw new ArgumentNullException(nameof(state), "بيانات الحفظ مفقودة");
             State = state;
             ValidateState();
+            EquipmentEconomy.Ensure(State);
         }
 
         public void RegisterRoadSegments(RoadSegmentDefinition[] defs)
@@ -97,6 +98,7 @@ namespace NewGaza.Core
             if (now < 0) throw new ArgumentOutOfRangeException(nameof(now), "وقت الجهاز غير صالح");
             ValidateState();
             long effective = Math.Max(now, State.lastSeenUtc);
+            EquipmentEconomy.Ensure(State);
             bool waitingForCrew = false;
             if (State.jobStage == JobStage.Clearing && State.development != null &&
                 State.development.activeRubbleId != null && !State.development.crewArrived)
@@ -122,15 +124,18 @@ namespace NewGaza.Core
                 }
                 else
                 {
-                    int multiplier = State.factoryLevel;
-                    if (!FitsStock(40 * multiplier, 15 * multiplier, 12 * multiplier, 8 * multiplier))
+                    var site = RubbleEconomy.Active(State);
+                    long reward = RubbleEconomy.Reward(site);
+                    var yield = RubbleEconomy.Yield(State, site);
+                    if (!FitsCoins(reward) || !FitsStock(yield.concrete, yield.iron, yield.wood, yield.other))
                     {
                         // Other actions can fill storage after a contract starts. Keep the
                         // finished batch intact and retry delivery on a later Tick, allowing
                         // spending/sales and normal project timers to continue meanwhile.
                         break;
                     }
-                    AddStock(40 * multiplier, 15 * multiplier, 12 * multiplier, 8 * multiplier);
+                    AddStock(yield.concrete, yield.iron, yield.wood, yield.other);
+                    State.coins += reward;
                     var district = State.districts[State.jobDistrict];
                     if (district.clearedLoads < GameCatalog.Districts[State.jobDistrict].rubbleLoads)
                         district.clearedLoads++;
@@ -167,6 +172,10 @@ namespace NewGaza.Core
         public ActionResult BuyEquipment(string kind, long now)
         {
             if (!Prepare(now)) return BadTime();
+            if (kind == "factory" && State.development != null && State.development.requiresPlacedFactory)
+                return ActionResult.Fail("اختر مصنع إعادة التدوير من المتجر وحدد مكانه على أرض فارغة");
+            if (kind != "factory" && !EquipmentEconomy.CanBuy(State))
+                return ActionResult.Fail("ضع مصنع إعادة التدوير على الخريطة أولاً");
             long cost;
             switch (kind)
             {
@@ -186,6 +195,7 @@ namespace NewGaza.Core
             }
             if (!CanPay(cost, 0, 0)) return ActionResult.Fail("الرصيد لا يكفي لشراء المعدة");
             State.coins -= cost;
+            if (kind != "factory") EquipmentEconomy.Add(State, kind, cost);
             switch (kind)
             {
                 case "factory": State.factoryLevel = 1; break;
@@ -211,21 +221,30 @@ namespace NewGaza.Core
 
         public ActionResult UpgradeEquipment(long now)
         {
+            return ActionResult.Fail("اختر آلة محددة من الأسطول؛ لكل آلة ثلاث ترقيات مستقلة");
+        }
+
+        public ActionResult UpgradeEquipment(string unitId, long now)
+        {
             if (!Prepare(now)) return BadTime();
-            if (State.excavators == 0 || State.trucks == 0 || State.bulldozers == 0)
-                return ActionResult.Fail("اشتر حفارة وشاحنة وجرافة قبل ترقية المعدات");
-            if (State.equipmentLevel >= 5) return ActionResult.Fail("المعدات في المستوى الخامس بالفعل");
+            var unit = Array.Find(State.equipmentUnits, u => u.id == unitId);
+            if (unit == null) return ActionResult.Fail("المعدة غير موجودة");
+            if (unit.level >= 4) return ActionResult.Fail("اكتملت الترقيات الثلاث لهذه الآلة");
             if (State.jobStage != JobStage.Idle) return ActionResult.Fail("انتظر انتهاء العقد قبل ترقية المعدات");
-            long cost = State.equipmentLevel * 12000L;
+            long cost = EquipmentEconomy.UpgradeCost(unit);
             if (!CanPay(cost, 0, 0)) return ActionResult.Fail("الرصيد لا يكفي لترقية المعدات");
             State.coins -= cost;
-            State.equipmentLevel++;
+            unit.level++;
             return ActionResult.Ok("تمت ترقية المعدات؛ إزالة ونقل أسرع");
         }
 
-        public ActionResult StartSalvage(int district, long now)
+        public ActionResult StartSalvage(int district, long now, string siteId = null)
         {
             if (!Prepare(now)) return BadTime();
+            if (State.development != null && State.development.requiresPlacedFactory &&
+                (siteId == null || !Array.Exists(State.development.rubble,
+                    s => s.id == siteId && s.district == district && !s.cleared)))
+                return ActionResult.Fail("اختر موقع ركام موجودًا على الخريطة؛ لا يوجد ركام على الأرض الفارغة");
             if (!IsUnlocked(district)) return ActionResult.Fail("لا يمكن العمل في حي مقفل");
             if (State.jobStage != JobStage.Idle)
                 return ActionResult.Fail(State.jobStage == JobStage.Recycling && State.jobFinishUtc <= State.lastSeenUtc
@@ -233,10 +252,15 @@ namespace NewGaza.Core
                     : "هناك عقد إزالة ونقل وتدوير قيد التنفيذ");
             if (State.factoryLevel == 0 || State.excavators == 0 || State.trucks == 0 || State.bulldozers == 0)
                 return ActionResult.Fail("يلزم مصنع وحفارة وجرافة وشاحنة لإزالة الركام ونقله وتدويره");
-            if (!FitsStock(40 * State.factoryLevel, 15 * State.factoryLevel, 12 * State.factoryLevel, 8 * State.factoryLevel))
+            var site = State.development == null || siteId == null ? null :
+                Array.Find(State.development.rubble, s => s.id == siteId && !s.cleared);
+            var output = RubbleEconomy.Yield(State, site);
+            if (!FitsCoins(RubbleEconomy.Reward(site)) ||
+                !FitsStock(output.concrete, output.iron, output.wood, output.other))
                 return ActionResult.Fail("المخزن ممتلئ؛ بع بعض المواد أولاً");
-            long duration = ClearingSeconds();
-            if (!CanSchedule(duration + HaulingSeconds() + RecyclingSeconds())) return BadTime();
+            long duration = site != null ? RubbleEconomy.ClearingSeconds(State, site) : ClearingSeconds();
+            long total = site != null ? RubbleEconomy.TotalSeconds(State, site) : duration + HaulingSeconds() + RecyclingSeconds();
+            if (!CanSchedule(total)) return BadTime();
             State.jobDistrict = district;
             State.jobStage = JobStage.Clearing;
             State.jobFinishUtc = State.lastSeenUtc + duration;
@@ -500,10 +524,14 @@ namespace NewGaza.Core
         }
         private long ClearingSeconds()
         {
-            return Math.Max(1L, 180L / ((long)State.excavators * State.bulldozers * State.equipmentLevel));
+            var site = RubbleEconomy.Active(State);
+            if (site != null) return RubbleEconomy.ClearingSeconds(State, site);
+            return Math.Max(1L, (long)Math.Ceiling(180 /
+                Math.Sqrt(EquipmentEconomy.Capacity(State, "excavator") * EquipmentEconomy.Capacity(State, "bulldozer"))));
         }
-        private long HaulingSeconds() { return Math.Max(1L, 120L / ((long)State.trucks * State.equipmentLevel)); }
-        private long RecyclingSeconds() { return Math.Max(1L, 240L / State.factoryLevel); }
+        private long HaulingSeconds() { return RubbleEconomy.Active(State) != null ? RubbleEconomy.HaulingSeconds(State) :
+            Math.Max(1L, (long)Math.Ceiling(120L / EquipmentEconomy.Capacity(State, "truck"))); }
+        private long RecyclingSeconds() { return RubbleEconomy.Active(State) != null ? RubbleEconomy.RecyclingSeconds(State) : Math.Max(1L, 240L / State.factoryLevel); }
         private bool CanSchedule(long seconds) { return seconds > 0 && State.lastSeenUtc <= long.MaxValue - seconds; }
         private static long AddTime(long timestamp, long seconds)
         {
@@ -530,6 +558,7 @@ namespace NewGaza.Core
                 || State.selectedDistrict < 0 || State.selectedDistrict >= catalog.Length)
                 throw new InvalidOperationException(error);
             if (State.roadSegments == null) State.roadSegments = new RoadSegmentState[0];
+            if (version == 2) EquipmentEconomy.Validate(State);
             var roadIds = new HashSet<string>(StringComparer.Ordinal);
             foreach (var road in State.roadSegments)
                 if (road == null || !RoadEconomy.IsCanonicalId(road.id) || road.level < 0 || road.level > 2

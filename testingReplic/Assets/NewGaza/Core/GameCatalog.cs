@@ -19,7 +19,8 @@ namespace NewGaza.Core
         {
             if (now < 0) throw new ArgumentOutOfRangeException(nameof(now), "وقت الجهاز غير صالح");
             var state = new GameState { lastSeenUtc = now, districts = new DistrictState[Districts.Length],
-                development = new CityDevelopmentState() };
+                equipmentUnits = Array.Empty<EquipmentUnitState>(),
+                development = new CityDevelopmentState { requiresPlacedFactory = true } };
             for (int i = 0; i < Districts.Length; i++)
             {
                 var definition = Districts[i];

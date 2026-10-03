@@ -400,7 +400,7 @@ namespace NewGaza
             }
             switch (TutorialStep())
             {
-                case 0: text = "خطوتك الأولى\nمصنع التدوير يحوّل الركام إلى مواد بناء.\nميزانية البداية: 50,000 عملة"; action = "المصنع"; break;
+                case 0: text = "خطوتك الأولى\nاختر أرضًا فارغة لبناء مصنع التدوير.\nالتكلفة: 15,000 من ميزانية 50,000"; action = "ابنِ المصنع"; break;
                 case 1: text = "جهّز فريقك\nاشتر حفارة واحدة لإزالة الركام.\nالتكلفة: 8,000 عملة"; action = "حفارة"; break;
                 case 2: text = "النقل أولاً\nشاحنتان تسرّعان النقل.\n6,000 عملة لكل شاحنة"; action = "شاحنات"; break;
                 case 3: text = "آخر معدات البداية\nاشتر جرافة واحدة بـ 5,000.\nالحزمة كاملة: 40,000 عملة"; action = "جرافة"; break;
@@ -416,6 +416,8 @@ namespace NewGaza
 
         private void TutorialAction()
         {
+            if (TutorialStep() == 0 && session.State.development != null && session.State.development.requiresPlacedFactory)
+            { StartFactoryPlacement(); return; }
             if (session.Development != null && !session.Development.Rules.Data.legacyProgress &&
                 (TutorialStep() == 4 || TutorialStep() == 5 || TutorialStep() == 7))
             { session.Development.OpenStore(); return; }
@@ -745,12 +747,14 @@ namespace NewGaza
 
         private void BuildFleet()
         {
-            PageHeading("الأسطول والمصنع", "خطة البداية: مصنع 15,000 + حفارة 8,000 + شاحنتان 12,000 + جرافة 5,000 = 40,000. يتبقى 10,000 من ميزانية البداية.");
-            FleetCard("factory", "مصنع التدوير", GameCatalog.FactoryCost,
-                "يحوّل كل دفعة إلى خرسانة وحديد وخشب ومواد أخرى. زيادة المستوى تحسّن الإنتاج والسرعة.",
+            PageHeading("الأسطول والمصنع", "ابنِ مصنع التدوير على أرض فارغة، ثم اشترِ حفارة وشاحنة وجرافة. التكلفة الأولية 34,000 عملة، ويتبقى 16,000.");
+            if (session.State.development != null && session.State.development.requiresPlacedFactory)
+                PlacedFactoryCard();
+            else FleetCard("factory", "مصنع التدوير", GameCatalog.FactoryCost,
+                "مصنع الحفظ السابق؛ يمكن بناء مصانع جديدة في مواقع تختارها من المتجر.",
                 () => session.State.factoryLevel, true);
             FleetCard("excavator", "الحفارات", GameCatalog.ExcavatorCost, "تسرّع إزالة الركام مع الجرافة. ابدأ بحفارة واحدة.", () => session.State.excavators, false);
-            FleetCard("truck", "الشاحنات", GameCatalog.TruckCost, "المزيد من الشاحنات يعني نقلاً أسرع. خطتك الأولى شاحنتان.", () => session.State.trucks, false);
+            FleetCard("truck", "الشاحنات", GameCatalog.TruckCost, "ابدأ بشاحنة واحدة. شراء المزيد أو ترقية شاحنة يحسّن قدرة النقل.", () => session.State.trucks, false);
             FleetCard("bulldozer", "الجرافات", GameCatalog.BulldozerCost, "تعمل مع الحفارة في مرحلة الإزالة. ابدأ بجرافة واحدة.", () => session.State.bulldozers, false);
             var factory = ListCard("ترقية مصنع التدوير", 226);
             CardLabel(factory, "المستوى: " + session.State.factoryLevel + " / 5\n" +
@@ -761,15 +765,7 @@ namespace NewGaza
                 "\nمزيد من المواد وتدوير أسرع.", () => session.Perform(e => e.UpgradeFactory(session.Now))),
                 session.State.factoryLevel > 0 && session.State.factoryLevel < 5 && session.State.jobStage == JobStage.Idle &&
                 session.State.coins >= session.State.factoryLevel * 20000L, Teal, 1);
-            var equipment = ListCard("ترقية جميع المعدات", 226);
-            CardLabel(equipment, "المستوى: " + session.State.equipmentLevel + " / 5\n" +
-                (session.State.equipmentLevel >= 5 ? "المعدات في أعلى مستوى." : "تكلفة الترقية: " + N(session.State.equipmentLevel * 12000L) + " عملة") +
-                "\nتحتاج حفارة وشاحنة وجرافة، وفريقاً غير مشغول.", 62, 78, 18, Muted);
-            CardButton(equipment, "مراجعة الترقية", 0, 147, () => Confirm("ترقية المعدات",
-                "التكلفة: " + N(session.State.equipmentLevel * 12000L) + " عملة\nالمستوى التالي: " + (session.State.equipmentLevel + 1) +
-                "\nإزالة ونقل أسرع.", () => session.Perform(e => e.UpgradeEquipment(session.Now))),
-                session.State.equipmentLevel < 5 && session.State.excavators > 0 && session.State.trucks > 0 && session.State.bulldozers > 0 &&
-                session.State.jobStage == JobStage.Idle && session.State.coins >= session.State.equipmentLevel * 12000L, Teal, 1);
+            IndividualEquipmentCards();
         }
 
         private void FleetCard(string kind, string name, long cost, string description, Func<int> amount, bool factory)
@@ -782,26 +778,35 @@ namespace NewGaza
                 () => Confirm("شراء " + name, "التكلفة: " + N(cost) + " عملة\nرصيدك: " + N(session.State.coins) +
                     "\nالشراء اختياري ولا يتم بمجرد اختيار المعدة.",
                     () => session.Perform(e => e.BuyEquipment(kind, session.Now))),
-                (!factory || amount() == 0) && session.State.coins >= cost, Teal, 1);
+                (!factory || amount() == 0) && session.State.coins >= cost &&
+                (factory || EquipmentEconomy.CanBuy(session.State)), Teal, 1);
         }
 
         private void BuildResources()
         {
             int d = session.State.selectedDistrict;
             bool imported = session.State.districts[d].clearedLoads >= GameCatalog.Districts[d].rubbleLoads;
+            bool placedCampaign = session.State.development != null && session.State.development.requiresPlacedFactory;
             PageHeading("المواد والتدوير", "المواد محفوظة في المخزن حتى تستخدمها أو تبيعها. احتفظ بالخرسانة والحديد للمشاريع؛ البيع يستهلك كامل النوع المحدد.");
-            var salvage = ListCard(imported ? "عقد تدوير ركام مستورد" : "إزالة الركام المحلي", 306);
-            CardLabel(salvage, imported ? "انتهى الركام المحلي. العقد المستورد ينتج مواد لكنه لا يزيد نسبة إنجاز الحي."
+            var salvage = ListCard(placedCampaign ? "إزالة ركام موقع محدد" : imported ? "عقد تدوير ركام مستورد" : "إزالة الركام المحلي", 306);
+            CardLabel(salvage, placedCampaign ? "اختر موقع الركام على الخريطة. العائد النقدي ثلث سعر الوحدة المرتبطة به، والمدة حسب حجمه وقدرة المعدات."
+                : imported ? "انتهى الركام المحلي. العقد المستورد ينتج مواد لكنه لا يزيد نسبة إنجاز الحي."
                 : "الإزالة ثم النقل ثم التدوير تلقائياً. كل دفعة محلية مكتملة تزيد تقدم إزالة الركام.", 62, 60, 18, Muted);
             var job = CardLabel(salvage, "", 131, 79, 18, Cream);
             Bind(job, () => (session.State.jobStage == JobStage.Idle ? "الفريق جاهز" : Stage(session.State.jobStage) + " · " +
                 TimeLeft(session.State.jobFinishUtc - session.Now)) + "\nدفعات محلية: " + session.State.districts[d].clearedLoads +
                 " / " + GameCatalog.Districts[d].rubbleLoads +
-                "\nإنتاج الدفعة: " + 40 * session.State.factoryLevel + " خرسانة · " + 15 * session.State.factoryLevel + " حديد");
-            var start = CardButton(salvage, "بدء عقد التدوير", 0, 225, () => Confirm(imported ? "عقد ركام مستورد" : "بدء إزالة الركام",
+                (placedCampaign ? "\nالعائد والمدة معروضان عند تحديد موقع الركام." :
+                    "\nإنتاج الدفعة: " + 40 * session.State.factoryLevel + " خرسانة · " + 15 * session.State.factoryLevel + " حديد"));
+            var start = CardButton(salvage, placedCampaign ? "اختر موقع ركام على الخريطة" : "بدء عقد التدوير", 0, 225, () =>
+            {
+                if (placedCampaign)
+                { ClosePage(); ShowMainMenu(false); session.Notify("اضغط على موقع ركام لتراجع عائده ومدته ثم تبدأ الإزالة"); return; }
+                Confirm(imported ? "عقد ركام مستورد" : "بدء إزالة الركام",
                 "لا تكلفة عملات لهذا العقد.\nتحتاج مصنعاً وحفارة وشاحنة وجرافة.\nالمراحل تعمل تلقائياً أثناء غيابك.\n" +
                 (imported ? "العقد المستورد لا يزيد إنجاز الحي." : "إكمال الدفعة المحلية يزيد تقدم إزالة الركام."),
-                () => session.Perform(e => e.StartSalvage(d, session.Now))), true, Teal, 1);
+                () => session.Perform(e => e.StartSalvage(d, session.Now)));
+            }, true, Teal, 1);
             BindButton(start, () => session.State.jobStage == JobStage.Idle && session.State.factoryLevel > 0 &&
                 session.State.excavators > 0 && session.State.trucks > 0 && session.State.bulldozers > 0);
             if (session.State.factoryLevel == 0 || session.State.excavators == 0 || session.State.trucks == 0 || session.State.bulldozers == 0)
@@ -1091,6 +1096,8 @@ namespace NewGaza
         {
             var s = session.State;
             var key = new StringBuilder(1024);
+            foreach (var unit in s.equipmentUnits)
+                key.Append('|').Append(unit.id).Append(':').Append(unit.level);
             key.Append(s.selectedDistrict).Append('|').Append(s.coins).Append('|').Append(s.factoryLevel).Append('|')
                 .Append(s.excavators).Append('|').Append(s.trucks).Append('|').Append(s.bulldozers).Append('|').Append(s.equipmentLevel)
                 .Append('|').Append(s.stock.concrete).Append('|').Append(s.stock.iron).Append('|').Append(s.stock.wood).Append('|')

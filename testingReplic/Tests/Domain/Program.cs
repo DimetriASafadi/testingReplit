@@ -26,7 +26,12 @@ internal static class Program
         Console.WriteLine("PASS " + tests.Length + " regression groups / " + assertions + " assertions");
     }
 
-    private static EconomyService New() { return new EconomyService(GameCatalog.CreateNew(Epoch)); }
+    // Legacy contract regression suite. Fresh placed-factory onboarding is covered in Development.
+    private static EconomyService New()
+    {
+        var state = GameCatalog.CreateNew(Epoch); state.development.requiresPlacedFactory = false;
+        return new EconomyService(state);
+    }
     private static void Check(bool value, string message)
     {
         assertions++;
@@ -57,6 +62,7 @@ internal static class Program
     }
     private static void Fleet(EconomyService economy)
     {
+        if (economy.State.development != null) economy.State.development.requiresPlacedFactory = false;
         Ok(economy.BuyEquipment("factory", economy.State.lastSeenUtc));
         Ok(economy.BuyEquipment("excavator", economy.State.lastSeenUtc));
         Ok(economy.BuyEquipment("bulldozer", economy.State.lastSeenUtc));
@@ -414,13 +420,14 @@ internal static class Program
             long coins = e.State.coins;
             Ok(e.UpgradeFactory(e.State.lastSeenUtc));
             Equal(coins - (level - 1) * 20000L, e.State.coins, "Factory upgrade cost");
-            Ok(e.UpgradeEquipment(e.State.lastSeenUtc));
-            Equal(level, e.State.factoryLevel, "Factory level"); Equal(level, e.State.equipmentLevel, "Equipment level");
+            if (level <= 4)
+                foreach (var unit in e.State.equipmentUnits) Ok(e.UpgradeEquipment(unit.id, e.State.lastSeenUtc));
+            Equal(level, e.State.factoryLevel, "Factory level");
         }
         Fail(e.UpgradeFactory(e.State.lastSeenUtc)); Fail(e.UpgradeEquipment(e.State.lastSeenUtc));
         int stock = e.State.stock.concrete;
         Ok(e.StartSalvage(0, e.State.lastSeenUtc));
-        Equal(36L, e.State.jobFinishUtc - e.State.lastSeenUtc, "Level five clearing speed");
+        Equal(103L, e.State.jobFinishUtc - e.State.lastSeenUtc, "Independent fully upgraded clearing speed");
         FinishJob(e);
         Equal(stock + 200, e.State.stock.concrete, "Level five factory yield");
         e.State.coins = 0;

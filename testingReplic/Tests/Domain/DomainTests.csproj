@@ -8,6 +8,8 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../../Assets/NewGaza/Core/EquipmentEconomy.cs" Link="EquipmentEconomy.cs" />
+    <Compile Include="../../Assets/NewGaza/Core/RubbleEconomy.cs" Link="RubbleEconomy.cs" />
     <Compile Include="../../Assets/NewGaza/Core/GameModels.cs" Link="Core/GameModels.cs" />
     <Compile Include="../../Assets/NewGaza/Core/GameCatalog.cs" Link="Core/GameCatalog.cs" />
     <Compile Include="../../Assets/NewGaza/Core/GameGeography.cs" Link="Core/GameGeography.cs" />
