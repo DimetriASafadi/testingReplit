@@ -199,6 +199,8 @@ test fixtures, not playable builds.
 `Tests/SourceChecks/EditorCompilationChecks.cs` compiles limited API contracts and
 targeted files; it is not a full-project compile against Unity assemblies.
 `Assets/NewGaza/Editor/NewGazaSmokeTest.cs` is a separate real-Unity Play Mode check:
+use the explicit [graphics-capable smoke runner](UNITY-SMOKE.md) for retained
+results and timeout handling (including approval of local game-save effects), or
 run `New Gaza → Run play mode smoke test` after compilation, in a graphics-capable
 Editor. Headless compilation does not prove gameplay or visual correctness.
 

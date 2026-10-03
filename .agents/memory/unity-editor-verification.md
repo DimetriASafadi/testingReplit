@@ -14,3 +14,15 @@ Keep source-only delivery possible when the workspace lacks a licensed Editor, b
 **Why:** This project is authored in an environment without Unity. Requiring Editor access for all source exports would block delivery, while calling a source export verified would repeat the previous missed compiler regressions.
 
 **How to apply:** Distinguish runner protocol tests, isolated real-Unity compiler probes, full-project compilation, and Play Mode/device checks in reports. Never describe one as evidence that another passed.
+
+Keep asynchronous Play Mode smoke runs separate from the headless compilation gate,
+and obtain explicit approval of local game-save effects before batch smoke runs.
+
+**Why:** Unity's executeMethod returns before the Play Mode checks finish, so
+compilation's quit/no-graphics flags invalidate smoke evidence. The checks avoid
+deliberate purchases/rewards, but ordinary game startup ticks elapsed economy and
+writes persistent saves, including on failing runs.
+
+**How to apply:** Require matching real-Editor/graphics evidence and retain failure
+and timeout logs. Back up saves on the approved machine; a project copy alone does
+not isolate Unity persistentDataPath. Report unavailable Editor runs as NOT RUN.
