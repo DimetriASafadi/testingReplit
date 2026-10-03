@@ -464,3 +464,87 @@ mtime_ms = 1791036802920
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/93caba84-cc0c-46d9-9476-79ff019a64df/372d620a-f0b4-437d-a578-11ebf48a627c"
 storage_version_token = "1791037431581720"
 content_type = "image/png"
+
+[[outputs]]
+id = "H78VIg26bQ9Gli8FFl9Va"
+uri = "file://exports/NewGaza-Free-Build-Update.zip"
+type = "unspecified"
+title = "تحديث New Gaza — البناء الحر وإزالة الدمار"
+description = "حزمة تحديث لمشروع Unity الحالي: المتجر والمباني التجريبية ومواقع الإزالة ومسارات المخازن وحفظ التقدم. ادمج المجلدات داخل مشروع Unity واقرأ INSTALL.ar.txt. دون ملفات .meta جديدة؛ ليست APK أو مشروعًا مستقلًا."
+logical_id = "4fc9720f-00ac-4102-a77b-6b898de67887"
+content_hash = "sha256:60b73dfd6b82d04ab83cf4b989284da9bda3187f75521fe5f409642d18c14f87"
+size = 109656
+mtime_ms = 1791039812230
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/4fc9720f-00ac-4102-a77b-6b898de67887/be864df2-e9e5-4320-90a9-706f452d1849"
+storage_version_token = "1791039847736926"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "CqxIMHid1SX5lkpUSKa91"
+uri = "file://exports/typography/NewGaza-Unicode-Font-Proof.png"
+type = "image"
+title = "معاينة خطوط New Gaza العربية"
+description = "صورة من ملفات الخطوط الفعلية ومنسّق العربية في اللعبة: Cairo للعناوين، Tajawal للنصوص والأزرار، Roboto للأرقام والإنجليزية. ليست لقطة من Unity."
+logical_id = "f6f5eff9-9e41-4364-97b8-aba7a49e74b0"
+content_hash = "sha256:ca50b4be19385c0b0aa0cea1ad8dc4487bbe8c30729208c3a1522c0c259d0a25"
+size = 64489
+mtime_ms = 1791040567510
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/f6f5eff9-9e41-4364-97b8-aba7a49e74b0/d6cf14f8-9b65-4a34-a171-06e7df1b2b62"
+storage_version_token = "1791040825304358"
+content_type = "image/png"
+
+[[outputs]]
+id = "To9toGA_x6tHsAD80FKMf"
+uri = "file://exports/typography/NewGaza-Unicode-Typography-Update.zip"
+type = "unspecified"
+title = "تحديث خطوط اللعبة — Unicode وRTL"
+description = "حزمة Unity تراكمية تشمل الخطوط المفعّلة والتراخيص وتوحيد الأحجام، مع الاحتفاظ بتحديث البناء الحر السابق. ادمجها داخل المشروع واقرأ INSTALL.ar.txt وTYPOGRAPHY.ar.md. دون ملفات .meta جديدة."
+logical_id = "b7cb7c4e-0889-4cdc-ac51-efbaa0470b54"
+content_hash = "sha256:4ad45d113395b6e724fb02047614a1be472c0782b55fcfcc94e47d63d38b5a95"
+size = 1092621
+mtime_ms = 1791040789082
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/b7cb7c4e-0889-4cdc-ac51-efbaa0470b54/2f30d902-9425-4884-b304-169f9ed2ca16"
+storage_version_token = "1791040826653563"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "MBixXghCcDDXKOkYBx8sK"
+uri = "file://testingReplic/Assets/NewGaza/Resources/Menu/MenuIcons.png"
+type = "image"
+title = "أيقونات الواجهة المستخدمة"
+description = "أيقونات موحّدة مستوحاة من المرجع: المخزن والمعدات والطريق والمتجر والهدايا والعملات والمواد والمصنع. هذه الأيقونات الفعلية، وليست لقطة لواجهة Unity."
+logical_id = "43715a7d-b4c3-4974-a5d4-8ac1c88a0487"
+content_hash = "sha256:cdec8d068c6e97b149f7f77e66c01c20e4c1acd310853c9039ca98114b3cd904"
+size = 1087881
+mtime_ms = 1791041652810
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/43715a7d-b4c3-4974-a5d4-8ac1c88a0487/6af93022-209c-48f3-b2c6-ba48d5597bfb"
+storage_version_token = "1791042567050214"
+content_type = "image/png"
+
+[[outputs]]
+id = "rZxIEw6uPTzxFlGkX077J"
+uri = "file://exports/menu/NewGaza-Main-Menu-Update.zip"
+type = "unspecified"
+title = "تحديث الرئيسية والقوائم — New Gaza"
+description = "حزمة Unity تراكمية تضم الواجهة المرتبطة بمنطق اللعبة والأيقونات وتحديثي الخطوط والبناء السابقين. ادمجها داخل مشروع Unity واقرأ INSTALL.ar.txt وMAIN_MENU.ar.md. دون ملفات .meta جديدة."
+logical_id = "99b2e548-1767-417e-9dd8-15e0046ac79a"
+content_hash = "sha256:a2ae7320e997c8286e3c8e56754b197765faf382b71c980b2615a6fb7b836468"
+size = 2195774
+mtime_ms = 1791042441019
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/99b2e548-1767-417e-9dd8-15e0046ac79a/9515ddf5-8830-4c4d-92fa-1c307ba3a98f"
+storage_version_token = "1791042568391781"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "1llC055i2A3nYQaEMe7ds"
+uri = "file://exports/animation/NewGaza-Visual-Effects-Update.zip"
+type = "unspecified"
+title = "تحديث المؤثرات والحركة — New Gaza"
+description = "حزمة Unity تراكمية: حركة الأزرار والتقدم والعملات والمكافآت والإنجازات وفتح الأحياء، وسيور المصانع. تشمل تحديثات الرئيسية والخطوط والبناء السابقة، دون ملفات .meta جديدة. اقرأ INSTALL.ar.txt وVISUAL_EFFECTS.ar.md."
+logical_id = "c58f6919-4f35-4ab6-b439-978d4ea1e662"
+content_hash = "sha256:c5d8e768e204b58cb2276e12705e7c78c4b097a07f345eb4c8feba7d8fd3f57b"
+size = 2208674
+mtime_ms = 1791043638669
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/c58f6919-4f35-4ab6-b439-978d4ea1e662/f87a80b1-01ab-45ee-b5c5-09ce24801649"
+storage_version_token = "1791043689683627"
+content_type = "application/octet-stream"
