@@ -6,3 +6,7 @@ packages = ["blender", "freetype", "lcms2", "libimagequant", "libjpeg", "libtiff
 
 [agent]
 expertMode = true
+
+[postMerge]
+path = "tools/post_merge_setup.sh"
+timeoutMs = 120000
