@@ -543,6 +543,25 @@ internal static class Program
             "\"originLongitude\":34.45,\"unitsPerKilometre\":50}},\"buildings\":[],\"areas\":[]}";
         ExpectFailureContains(() => CityBasemap.ParseAndValidate(validHeaderWithoutRoads,
             "missing feature fixture"), "roads is missing", "missing required road array is explicit");
+        ExpectFailureContains(() => CityBasemap.ParseAndValidate(
+            "{\"schema\":1,\"originLatitude\":31.515,\"originLongitude\":34.45,\"unitsPerKm\":50}",
+            "flat origin fixture"), "roads is missing",
+            "flat header ignores materialized absent legacy origin");
+        ExpectFailureContains(() => CityBasemap.ParseAndValidate(
+            "{\"schema\":1,\"origin\":{\"latitude\":31.515,\"longitude\":34.45},\"unitsPerKm\":50}",
+            "legacy origin fixture"), "roads is missing", "explicit legacy origin remains supported");
+        ExpectFailureContains(() => CityBasemap.ParseAndValidate(
+            validHeaderWithoutRoads.Replace("\"projection\":",
+                "\"origin\":{\"latitude\":0,\"longitude\":0},\"projection\":"),
+            "nested alternate origin fixture"), "roads is missing",
+            "nested origin key is not treated as a top-level origin");
+        ExpectFailureContains(() => CityBasemap.ParseAndValidate(
+            validHeaderWithoutRoads.Insert(1, "\"origin\":{\"latitude\":0,\"longitude\":0},"),
+            "explicit wrong origin fixture"), "origin must be",
+            "provided invalid origin is not silently repaired by metadata");
+        ExpectFailureContains(() => CityBasemap.ParseAndValidate(
+            validHeaderWithoutRoads.Replace("31.515", "31.600"),
+            "wrong metadata origin fixture"), "origin must be", "wrong metadata origin is rejected");
         string valid = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "GazaBasemap.json"));
         int marker = valid.IndexOf("\"schemaVersion\":1", StringComparison.Ordinal);
         Check(marker >= 0, "schema version marker exists");

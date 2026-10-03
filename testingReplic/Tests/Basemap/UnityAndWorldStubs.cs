@@ -80,7 +80,12 @@ namespace UnityEngine
         };
         public static T FromJson<T>(string json)
         {
-            return JsonSerializer.Deserialize<T>(json, Options);
+            T value = JsonSerializer.Deserialize<T>(json, Options);
+            // Exercise the Unity inline-serialization case absent from the .NET
+            // serializer: an omitted optional origin exists but contains zeros.
+            if (value is NewGaza.CityBasemap map && map.origin == null)
+                map.origin = new NewGaza.CityBasemapOrigin();
+            return value;
         }
     }
     public struct Vector2
