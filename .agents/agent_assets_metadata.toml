@@ -408,3 +408,17 @@ mtime_ms = 1791025271733
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/1cd6d849-df2b-4e54-9dad-34a407c07573/e2cd5aa1-bfcd-409c-a248-eb57d2159554"
 storage_version_token = "1791025332543536"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "yTmJ6rrR6hHv6IE3r4y91"
+uri = "file://exports/uploaded-equipment-inspection/source-preview.png"
+type = "image"
+title = "معاينة الآليات الموجودة في ملف FBX الأصلي"
+description = "معاينة خارجية من Blender قبل التعديل؛ تظهر النسخ الكبيرة في الصف العلوي والنسخ الأصغر والأجزاء الإضافية أسفلها. ليست لقطة من Unity."
+logical_id = "4082326f-ad4a-404d-a594-a269ee34895a"
+content_hash = "sha256:e072f174349c01174443bbb27e0209d96bfabd0d68e721133f0916752667c95e"
+size = 1032682
+mtime_ms = 1791035454593
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/4082326f-ad4a-404d-a594-a269ee34895a/9a8dac06-0734-40ea-8aa0-48b2e46cb61b"
+storage_version_token = "1791035506160203"
+content_type = "image/png"
