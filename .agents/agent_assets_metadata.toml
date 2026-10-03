@@ -5,14 +5,14 @@ generated = []
 id = "1fWh6uOeYQs-_P59ry1Dn"
 uri = "file://exports/NewGaza-Unity-Source.zip"
 type = "unspecified"
-title = "Updated full Unity source package"
-description = "Includes the counter fix and the recently merged build and smoke runners. Source checks and nine player-runner tests passed; real Unity compilation was not run here."
+title = "Full Unity source — basemap startup fix"
+description = "Updated loader and regression tests. The source checks and 276,786 basemap assertions passed; Unity startup was not run here."
 logical_id = "5dbf8b92-3bf8-4fbf-a60d-a4baffa6cc98"
-content_hash = "sha256:100ff8256844b4706e4a622c298480de1af90881fe155101967ebe6764f8c357"
-size = 45547602
-mtime_ms = 1791024599522
-storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/5dbf8b92-3bf8-4fbf-a60d-a4baffa6cc98/4e9acd58-323d-4c49-97c6-4b7c1f57ca2e"
-storage_version_token = "1791024641983756"
+content_hash = "sha256:e2ee23c999a9f4ec948f33913008da59e18b8d76cfc2073194b92f64f0619231"
+size = 45548516
+mtime_ms = 1791025270922
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/5dbf8b92-3bf8-4fbf-a60d-a4baffa6cc98/82381712-b3c3-4859-aee0-11428b7cb4c2"
+storage_version_token = "1791025334510156"
 content_type = "application/octet-stream"
 
 [[outputs]]
@@ -393,4 +393,18 @@ size = 2434
 mtime_ms = 1791024600268
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/37eda8ed-6d62-48cd-ad15-2dff9d799881/52898bb1-4b76-4db5-babf-afe675ab4dc7"
 storage_version_token = "1791024640209440"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "FAY0c4tKJPc6IgXnuAV2J"
+uri = "file://exports/NewGaza-Basemap-Startup-Fix.zip"
+type = "unspecified"
+title = "Basemap startup fix — replacement file"
+description = "Replace Assets/NewGaza/World/CityBasemap.cs inside your Unity project. Keep its existing .meta file. No map geometry or saved progress is changed."
+logical_id = "1cd6d849-df2b-4e54-9dad-34a407c07573"
+content_hash = "sha256:ee8b20a9ac6218762f5d20390119d711e2474b4131f227fd874f9d6bdcf94b3c"
+size = 3848
+mtime_ms = 1791025271733
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/1cd6d849-df2b-4e54-9dad-34a407c07573/e2cd5aa1-bfcd-409c-a248-eb57d2159554"
+storage_version_token = "1791025332543536"
 content_type = "application/octet-stream"
