@@ -5,14 +5,14 @@ generated = []
 id = "1fWh6uOeYQs-_P59ry1Dn"
 uri = "file://exports/NewGaza-Unity-Source.zip"
 type = "unspecified"
-title = "مشروع Unity الكامل — بعد إصلاح CS1503"
-description = "الحزمة الكاملة المحدّثة، تتضمن تصحيح CityWorld.cs. اجتازت فحوص المصدر؛ لم يُجرَ تجميع داخل Unity هنا."
+title = "Updated complete Unity source project"
+description = "Full project with the screenshot’s error sources corrected. Source, targeted editor compilation and equipment checks passed; a full Unity Editor compilation was not run here."
 logical_id = "5dbf8b92-3bf8-4fbf-a60d-a4baffa6cc98"
-content_hash = "sha256:dfc425798f3be90fd8fe68f97ec231247cca18cf7a5452a621df58a6763b5f07"
-size = 45516795
-mtime_ms = 1791013185968
-storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/5dbf8b92-3bf8-4fbf-a60d-a4baffa6cc98/1e227019-ab12-4a72-ada1-4e788b364257"
-storage_version_token = "1791013248521815"
+content_hash = "sha256:beb66b028cb4a07271af22178469e25c04c54df815ccb444141787747e2f4a57"
+size = 45519232
+mtime_ms = 1791013714752
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/5dbf8b92-3bf8-4fbf-a60d-a4baffa6cc98/62f7ee44-0711-472e-a8c3-71a3ab1d2020"
+storage_version_token = "1791013819857505"
 content_type = "application/octet-stream"
 
 [[outputs]]
@@ -365,4 +365,18 @@ size = 19973
 mtime_ms = 1791013186504
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/daa49732-1e3a-47b6-8baf-62e854298b45/87bfcc53-5bf3-48ce-8998-d04a6bb2acc7"
 storage_version_token = "1791013232813656"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "HfZkVBl5-mJFspnARJpn3"
+uri = "file://exports/NewGaza-Unity6-Editor-Fix.zip"
+type = "unspecified"
+title = "Unity 6 console fixes — replacement files"
+description = "Extract into your Unity project root and replace the four included .cs files. Keep existing .meta files. Includes editor access, numeric checks, audio import settings and the earlier CityWorld correction."
+logical_id = "ecd2958b-0065-429d-ab94-862ae8132515"
+content_hash = "sha256:1cdde8f9fd5b995666d8eb24d9efe5a8643ad2db823745c01ddc1768986b41d9"
+size = 35678
+mtime_ms = 1791013715984
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/ecd2958b-0065-429d-ab94-862ae8132515/b741a85e-0248-4905-977f-b5a9e17153df"
+storage_version_token = "1791013818031362"
 content_type = "application/octet-stream"
