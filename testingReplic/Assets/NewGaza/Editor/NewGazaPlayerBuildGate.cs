@@ -26,8 +26,8 @@ namespace NewGaza.Editor
             public string scope;
             public string buildPath;
             public string buildResult;
-            public uint totalErrors;
-            public uint totalWarnings;
+            public int totalErrors;
+            public int totalWarnings;
             public string[] buildErrors;
         }
 
