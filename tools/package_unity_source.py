@@ -44,7 +44,7 @@ paths += ["tools/fetch_gaza_basemap.py", "tools/package_unity_source.py"]
 paths += ["tools/join_unity_source.py"]
 paths += ["tools/unity_compile.py", "tools/verify_unity_compile_cases.py",
           "tools/verify_unity_player_cases.py", "tools/tests/test_unity_compile.py",
-          "tools/tests/test_unity_player.py"]
+          "tools/tests/test_unity_player.py", "tools/tests/test_unity_basemap.py"]
 paths += ["tools/prepare_equipment_audio.py"]
 paths += ["tools/export_equipment_fbx.py", "tools/render_equipment_proof.py",
           "tools/package_equipment_assets.py"]

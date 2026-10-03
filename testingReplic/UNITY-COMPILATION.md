@@ -55,6 +55,12 @@ create or ship `.meta` files. Original imported metadata is retained.
 
 ## Opt-in Android / iOS player build gate
 
+For **real JsonUtility/Resources map loading before game startup**, use
+`--basemap` instead of the default compilation-only gate. It stays in Edit Mode
+and does not touch game saves. See [UNITY-BASEMAP.md](UNITY-BASEMAP.md) for commands,
+compatibility cases and evidence requirements. Its workspace engine status is
+**NOT RUN** until a licensed matching Editor produces a fresh complete result.
+
 The default command still checks **Editor only**. No mobile target runs unless
 you explicitly select it; only `Android` and `iOS` are approved options:
 
