@@ -10,3 +10,11 @@ __pycache__/
 # The complete downloadable source ZIP exceeds the GitHub API request limit.
 # Its verified binary parts are tracked; tools/join_unity_source.py restores it.
 /exports/NewGaza-Unity-Source.zip
+/exports/Uploaded-Equipment-All-Variants.zip
+/exports/uploaded-equipment/All_Variants_Articulated.blend*
+/exports/uploaded-equipment/FBX/
+/exports/uploaded-equipment/Textures/
+/exports/uploaded-equipment/*_Frame_*.png
+/exports/uploaded-equipment-inspection/source-components.blend*
+/exports/uploaded-equipment-inspection/component-*
+/exports/uploaded-equipment-inspection/construction_vehicle_3d_model_*.png

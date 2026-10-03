@@ -26,3 +26,9 @@ Exercise the configured production transport path as well as any compatibility-o
 **Why:** Introducing street routing initially moved the configured receiver to the excavator's center while the older unconfigured contact tests still passed. A correct path alone does not preserve a calibrated loading dock.
 
 **How to apply:** Measure actual receiving-bed contact after the configured fleet arrives through the sourced network. Keep access routing separate from the authored mechanical dock arrangement.
+
+Check geometric role ownership as well as valid meshes and joint motion when separating welded machinery.
+
+**Why:** An arm/body half-space cut on an image-reconstructed excavator assigned front track fragments to the arm assembly. Finite geometry, closed cut surfaces and a moving hierarchy all passed; the posed render revealed the misplaced undercarriage.
+
+**How to apply:** Protect the stationary undercarriage before arm segmentation, assert that its source vertices never enter arm/dipper/bucket parts, inspect posed renders, and verify measured movement after FBX re-import rather than merely counting animation curves.
