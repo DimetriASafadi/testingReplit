@@ -5,14 +5,14 @@ generated = []
 id = "1fWh6uOeYQs-_P59ry1Dn"
 uri = "file://exports/NewGaza-Unity-Source.zip"
 type = "unspecified"
-title = "مشروع Unity المحدّث — المباني والعمّال"
-description = "أرشيف المصدر الكامل: الأشكال مرتبطة بتقدم المشروع، وعمّال متحركون لكل مرحلة. ليس APK أو نسخة تم اختبارها على الهاتف."
+title = "مشروع Unity الكامل — بعد إصلاح CS1503"
+description = "الحزمة الكاملة المحدّثة، تتضمن تصحيح CityWorld.cs. اجتازت فحوص المصدر؛ لم يُجرَ تجميع داخل Unity هنا."
 logical_id = "5dbf8b92-3bf8-4fbf-a60d-a4baffa6cc98"
-content_hash = "sha256:92be5ce96906380ce21f2546a40f6ef6f530d0d0a6d16bb407e7122c22feb754"
-size = 45516655
-mtime_ms = 1790954230049
-storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/5dbf8b92-3bf8-4fbf-a60d-a4baffa6cc98/18278e3f-3098-4a8e-993f-8ed8a8b772ad"
-storage_version_token = "1790954517956683"
+content_hash = "sha256:dfc425798f3be90fd8fe68f97ec231247cca18cf7a5452a621df58a6763b5f07"
+size = 45516795
+mtime_ms = 1791013185968
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/5dbf8b92-3bf8-4fbf-a60d-a4baffa6cc98/1e227019-ab12-4a72-ada1-4e788b364257"
+storage_version_token = "1791013248521815"
 content_type = "application/octet-stream"
 
 [[outputs]]
@@ -352,3 +352,17 @@ mtime_ms = 1790953566777
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/48963d2c-34b1-411d-bfbe-cbbd8017080e/5902d182-b400-43d8-98dc-30ceb2605ed5"
 storage_version_token = "1790954522166068"
 content_type = "image/gif"
+
+[[outputs]]
+id = "mHgN7VTqLQjdcRs0Co3SJ"
+uri = "file://exports/NewGaza-CS1503-Fix.zip"
+type = "unspecified"
+title = "إصلاح خطأ CS1503 — ملف الاستبدال"
+description = "فك الضغط داخل مجلد مشروع Unity واستبدل Assets/NewGaza/World/CityWorld.cs. يحتوي على الملف المصحّح فقط، دون .meta."
+logical_id = "daa49732-1e3a-47b6-8baf-62e854298b45"
+content_hash = "sha256:95b68693849dfe76bc0154bd46539bd0cfdd45619f85e34cdb7f4bd5f802fbc3"
+size = 19973
+mtime_ms = 1791013186504
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/daa49732-1e3a-47b6-8baf-62e854298b45/87bfcc53-5bf3-48ce-8998-d04a6bb2acc7"
+storage_version_token = "1791013232813656"
+content_type = "application/octet-stream"
