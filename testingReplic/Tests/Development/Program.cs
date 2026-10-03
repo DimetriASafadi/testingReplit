@@ -33,8 +33,49 @@ internal static class Program
         ClearingAndTravel();
         NeedsRewardsAndPersistence();
         MigrationAndCorruption();
+        HomeMenuProjection();
         Console.WriteLine("PASS free-build development / " + assertions + " assertions");
         Console.WriteLine("Domain only: no Unity editor, physics, UI, shader, or device rendering was run.");
+    }
+
+    private static void HomeMenuProjection()
+    {
+        var rules = Setup(out var economy); var state = economy.State;
+        int initial = state.selectedDistrict;
+        var options = new JsonSerializerOptions { IncludeFields = true };
+        var before = JsonSerializer.Serialize(state, options);
+        var home = CityHomeSummary.Create(economy);
+        Check(JsonSerializer.Serialize(state, options) == before, "home projection must not mutate save, coins, gifts, or access");
+        Check(home.District == initial && home.DistrictName == GameCatalog.Districts[initial].name, "first home district");
+        Check(home.Coins == state.coins && home.Concrete == state.stock.concrete &&
+            home.Iron == state.stock.iron && home.Wood == state.stock.wood, "actual resource strip values");
+        Check(home.Progress == economy.Progress(initial) && home.FactoryLevel == state.factoryLevel, "authoritative progress/factory");
+        Check(home.TotalSites > 0 && home.TotalSites >= home.ClearedSites, "actual district rubble counts");
+        Check(home.GiftReady && home.GiftSeconds == 0, "new player gift really ready");
+        Check(home.NeedsText.Split('\n').Length == 3, "compact three-row regional requirements");
+        state.districts[1].unlocked = true;
+        state.selectedDistrict = 1; state.jobDistrict = initial; state.jobStage = JobStage.Clearing;
+        Check(CityHomeSummary.ResumeDistrict(state) == initial, "resume active rubble work rather than camera district");
+        state.jobStage = JobStage.Idle;
+        state.development.buildings = new[] { new PlacedBuildingState { id = "menu-test", district = initial, startedUtc = Now,
+            finishUtc = Now + 30, definitionId = CityBuildingCatalog.All[0].id } };
+        Check(CityHomeSummary.ResumeDistrict(state) == initial, "resume unfinished free building");
+        home = CityHomeSummary.Create(economy);
+        Check(home.BuildingWorks == 1 && home.CompletedBuildings == 0, "live unfinished building count");
+        state.development.buildings[0].completed = true;
+        Check(CityHomeSummary.ResumeDistrict(state) == 1, "completed building does not redirect away from chosen district");
+        state.development.buildings[0].completed = false; state.districts[initial].unlocked = false;
+        Check(CityHomeSummary.ResumeDistrict(state) == 1, "never resume inaccessible building");
+        state.districts[initial].unlocked = true; state.development.buildings = Array.Empty<PlacedBuildingState>();
+        state.selectedDistrict = 1; state.districts[1].rewardClaimed = true;
+        Check(CityHomeSummary.ResumeDistrict(state) == initial, "resume first open unrewarded area if selected is completed");
+        state.lastGiftUtc = Now;
+        home = CityHomeSummary.Create(economy);
+        Check(!home.GiftReady && home.GiftSeconds == 86400, "real gift cooldown, no fake readiness");
+        state.lastSeenUtc = Now + 86399;
+        Check(CityHomeSummary.Create(economy).GiftSeconds == 1, "gift countdown before boundary");
+        state.lastSeenUtc++;
+        Check(CityHomeSummary.Create(economy).GiftReady, "gift opens at 24 hours");
     }
     private static void Catalog()
     {

@@ -184,6 +184,12 @@ namespace NewGaza
             ui.OpenStore();
         }
 
+        public void SetHomeVisible(bool visible)
+        {
+            if (visible) { ClearSelection(); ui.CloseStore(); }
+            ui.SetHomeVisible(visible);
+        }
+
         public void ChooseBuilding(string id)
         {
             chosen = CityBuildingCatalog.Find(id);

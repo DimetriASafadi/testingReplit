@@ -26,14 +26,14 @@ namespace NewGaza
             public Func<float> progress;
         }
 
-        private static readonly Color Navy = new Color32(23, 29, 34, 255);
-        private static readonly Color Panel = new Color32(34, 42, 47, 250);
-        private static readonly Color Card = new Color32(46, 56, 61, 255);
-        private static readonly Color Cream = new Color32(244, 243, 237, 255);
-        private static readonly Color Muted = new Color32(190, 200, 198, 255);
-        private static readonly Color Teal = new Color32(74, 117, 104, 255);
-        private static readonly Color SelectedNav = new Color32(76, 114, 103, 255);
-        private static readonly Color Gold = new Color32(216, 181, 105, 255);
+        private static readonly Color Navy = new Color32(7, 27, 54, 255);
+        private static readonly Color Panel = new Color32(7, 27, 54, 245);
+        private static readonly Color Card = new Color32(18, 61, 112, 255);
+        private static readonly Color Cream = new Color32(255, 255, 255, 255);
+        private static readonly Color Muted = new Color32(217, 224, 232, 255);
+        private static readonly Color Teal = new Color32(22, 139, 219, 255);
+        private static readonly Color SelectedNav = new Color32(22, 139, 219, 255);
+        private static readonly Color Gold = new Color32(255, 198, 41, 255);
         private static readonly Color Red = new Color32(224, 123, 112, 255);
         private sealed class NavItem
         {
@@ -102,6 +102,8 @@ namespace NewGaza
             RefreshHud();
             structuralKey = StateKey();
             finaleShown = session.Economy.CityComplete;
+            BuildMainMenu();
+            ShowMainMenu(true);
         }
 
         private static void EnsureEventSystem()
@@ -178,6 +180,11 @@ namespace NewGaza
             AddNav("الأسطول", Page.Fleet, CityHudIcons.Icon.Fleet);
             AddNav("استثمارات", Page.Investments, CityHudIcons.Icon.Investment);
             AddNav("الموارد", Page.Resources, CityHudIcons.Icon.Resources);
+            var home = ActionButton(navigation, "الرئيسية", () => { ClosePage(); ShowMainMenu(true); },
+                Card, CityHudIcons.Icon.Map, 16);
+            home.name = "Home navigation";
+            navItems.Add(new NavItem { page = Page.None, button = home,
+                label = home.GetComponentInChildren<ArabicLabel>() });
 
             toastPanel = Surface("Notification", safe, Navy);
             toastObject = toastPanel.gameObject;
@@ -220,14 +227,15 @@ namespace NewGaza
             if (closingCameraBlock && Time.unscaledTime >= releaseBlockUntil && !PointerHeld())
             {
                 closingCameraBlock = false;
-                CityCamera.ModalOpen = modalObject != null || confirmationObject != null;
+                CityCamera.ModalOpen = MainMenuVisible || modalObject != null || confirmationObject != null;
             }
             if (toastObject.activeSelf && Time.unscaledTime > toastUntil) toastObject.SetActive(false);
             if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
             {
                 if (confirmationObject != null) CloseConfirmation();
                 else if (page != Page.None) ClosePage();
-                else OpenPage(Page.Settings);
+                else if (MainMenuVisible) ContinueReconstruction();
+                else ShowMainMenu(true);
             }
             if (Time.unscaledTime < nextRefresh) return;
             nextRefresh = Time.unscaledTime + 0.35f;
@@ -318,6 +326,7 @@ namespace NewGaza
             Place(selection.Find("Clear selection") as RectTransform, 12, 8, 64, 64, true);
             Place(toastPanel, Mathf.Max(12, (width - 620) * 0.5f), 105, Mathf.Min(width - 24, 620), 104, false);
             LayoutModal();
+            LayoutMainMenu(width, height);
             if (confirmationPanel != null)
                 Center(confirmationPanel, Mathf.Min(width - 32, 620), Mathf.Min(height - 32, 500));
             // Children use stretch anchors and ArabicLabel reflows on width change.
@@ -355,7 +364,8 @@ namespace NewGaza
             RefreshTutorial();
             RefreshSelection();
             bool portrait = Screen.height > Screen.width;
-            tutorialObject.SetActive(!(portrait && selectedPlot != -1));
+            tutorialObject.SetActive(!MainMenuVisible && !(portrait && selectedPlot != -1));
+            RefreshMainMenu();
         }
 
         private int TutorialStep()
@@ -487,6 +497,7 @@ namespace NewGaza
             closingCameraBlock = false;
             BuildModalShell();
             RebuildPage(false);
+            BringHomeTopForward();
             if (toastObject != null) toastObject.transform.SetAsLastSibling();
         }
 
@@ -536,7 +547,13 @@ namespace NewGaza
             if (modalPanel == null) return;
             float width = Mathf.Min(safe.rect.width - 24, 850);
             float height = Mathf.Min(safe.rect.height - 24, 900);
-            Center(modalPanel, width, height);
+            if (MainMenuVisible)
+            {
+                height = Mathf.Min(height, safe.rect.height - HomeTopHeight - 42);
+                Center(modalPanel, width, height);
+                modalPanel.anchoredPosition = new Vector2(0, -(HomeTopHeight + 14) * .5f);
+            }
+            else Center(modalPanel, width, height);
             Place(modalTitle.rectTransform, 150, 10, width - 170, 49, true);
             Place(modalSubtitle.rectTransform, 18, 60, width - 36, 55, true);
             Place(modalPanel.Find("Close modal") as RectTransform, 14, 12, 126, 64, true);
@@ -918,9 +935,15 @@ namespace NewGaza
                 if (district.rewardClaimed) claimed++;
                 foreach (var p in district.projects) if (p.completed) built++;
             }
+            int cleared = 0;
+            if (session.State.development != null && session.State.development.initialized)
+            {
+                foreach (var building in session.State.development.buildings) if (building.completed) built++;
+                foreach (var site in session.State.development.rubble) if (site.cleared) cleared++;
+            }
             var card = ListCard(complete ? "مدينة تستحق الحياة" : "كل خطوة تصنع فرقاً", 390);
             CardLabel(card, "مكافآت المناطق المستلمة (مع الرشيد): " + claimed + " / " +
-                GameCatalog.Districts.Length + "\nالمشاريع المكتملة: " + built +
+                GameCatalog.Districts.Length + "\nالمباني والمشاريع المكتملة: " + built + "\nالمواقع النظيفة: " + cleared +
                 "\nالرصيد: " + N(session.State.coins) + " عملة\nالأسطول: " + session.State.excavators + " حفارة · " +
                 session.State.trucks + " شاحنة · " + session.State.bulldozers + " جرافة\nالمصنع: المستوى " +
                 session.State.factoryLevel + (complete ? "\nتاريخ اكتمال المدينة: " + Stamp(session.State.cityCompletedUtc) : ""),
@@ -1315,6 +1338,7 @@ namespace NewGaza
             }
             hudIcons?.Dispose();
             hudIcons = null;
+            DisposeHomeArt();
         }
     }
 }

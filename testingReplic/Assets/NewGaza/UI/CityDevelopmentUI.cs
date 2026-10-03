@@ -20,8 +20,8 @@ namespace NewGaza
         private Vector3? storeLocation;
         private int lastWidth, lastHeight;
         private Rect lastSafe;
-        private readonly Color panel = new Color(.08f, .18f, .19f, .96f);
-        private readonly Color teal = new Color(.16f, .43f, .41f);
+        private readonly Color panel = new Color(7f / 255, 27f / 255, 54f / 255, .96f);
+        private readonly Color teal = new Color(22f / 255, 139f / 255, 219f / 255);
 
         internal void Initialize(CityDevelopment controller, GameSession game)
         {
@@ -190,6 +190,11 @@ namespace NewGaza
                 actionText.SetText("اكتملت إزالة الركام واحتياجات " + GameCatalog.Districts[d].name + " — استلم المكافأة لفتح الحي التالي");
                 SetButton(action, "استلام المكافأة"); action.interactable = true;
             }
+        }
+
+        internal void SetHomeVisible(bool visible)
+        {
+            GetComponentInChildren<Canvas>(true).gameObject.SetActive(!visible);
         }
 
         private static string StageText(JobStage stage) => stage == JobStage.Clearing ? "الانتقال ثم إزالة الركام" :
