@@ -1,16 +1,16 @@
 {
-  "bytes": 45519232,
-  "sha256": "beb66b028cb4a07271af22178469e25c04c54df815ccb444141787747e2f4a57",
+  "bytes": 45547602,
+  "sha256": "100ff8256844b4706e4a622c298480de1af90881fe155101967ebe6764f8c357",
   "parts": [
     {
       "name": "NewGaza-Unity-Source.zip.part01",
-      "sha256": "8c50f2d55b8b11e901a3d331d17cf2299a21d6e9f502ac2a94c76ad9b7066641",
+      "sha256": "6252f445c1995e6712adf94795539d50f4e778ea52a581ba197fc78d2b744674",
       "bytes": 25165824
     },
     {
       "name": "NewGaza-Unity-Source.zip.part02",
-      "sha256": "6ae5c323d7bef1d36721468f5d5971db8d9aed78a30646819ee9b53255cda90f",
-      "bytes": 20353408
+      "sha256": "12e99a4c44a8e1c60cb7a970830984950473749f277dda4c9d6b0bc6aedf1103",
+      "bytes": 20381778
     }
   ]
 }

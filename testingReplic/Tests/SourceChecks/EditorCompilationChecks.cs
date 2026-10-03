@@ -32,6 +32,35 @@ internal static class EditorCompilationChecks
         var finiteMethods = Read("Editor/NewGazaSmokeTest.cs").DescendantNodes()
             .OfType<MethodDeclarationSyntax>()
             .Where(method => method.Identifier.ValueText == "IsFinite");
+        var playerGate = Read("Editor/NewGazaPlayerBuildGate.cs");
+        var resultCounters = playerGate.DescendantNodes().OfType<ClassDeclarationSyntax>()
+            .Single(type => type.Identifier.ValueText == "Result")
+            .WithMembers(SyntaxFactory.List<MemberDeclarationSyntax>(
+                playerGate.DescendantNodes().OfType<FieldDeclarationSyntax>()
+                    .Where(field => field.Declaration.Variables.Any(variable =>
+                        variable.Identifier.ValueText == "totalErrors" ||
+                        variable.Identifier.ValueText == "totalWarnings"))));
+        var counterAssignments = playerGate.DescendantNodes().OfType<AssignmentExpressionSyntax>()
+            .Where(assignment => assignment.Left.ToString() == "result.totalErrors" ||
+                assignment.Left.ToString() == "result.totalWarnings");
+        string playerReportContract = @"
+using System;
+using UnityEditor.Build.Reporting;
+namespace UnityEditor.Build.Reporting
+{
+    public struct BuildSummary { public int totalErrors, totalWarnings; }
+    public sealed class BuildReport { public BuildSummary summary; }
+}
+internal static class PlayerReportContractProbe
+{
+    " + resultCounters + @"
+    private static void Validate(BuildReport build)
+    {
+        var result = new Result();
+        " + string.Join("\n", counterAssignments.Select(assignment => assignment + ";")) + @"
+    }
+}
+";
 
         // Retain actual access modifiers, signatures and constants. Other runtime
         // behavior is covered separately, so no fabricated Unity world is needed.
@@ -117,6 +146,7 @@ internal static class EditorContractProbe
         var editor = CSharpCompilation.Create("Assembly-CSharp-Editor",
             new[] {
                 CSharpSyntaxTree.ParseText(editorContract),
+                CSharpSyntaxTree.ParseText(playerReportContract),
                 CSharpSyntaxTree.ParseText(File.ReadAllText(
                     Path.Combine(sourceRoot, "Editor/CityAudioImportSettings.cs")))
             }, references.Cast<MetadataReference>().Append(

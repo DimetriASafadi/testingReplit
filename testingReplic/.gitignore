@@ -91,6 +91,8 @@ Assets/GeneratedLocalRepo/
 !/Tests/Equipment/EquipmentTests.csproj
 !/Tests/Roads/RoadsTests.csproj
 !/Tests/RoadView/RoadViewTests.csproj
+!/Tests/Construction/ConstructionTests.csproj
+!/Tests/ConstructionCrew/ConstructionCrewTests.csproj
 /Tests/SourceChecks/obj/
 /Tests/SourceChecks/bin/
 /Tests/**/bin/
