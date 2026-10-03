@@ -419,7 +419,7 @@ namespace NewGaza
                     new Vector3(routeDirection.z,0f,-routeDirection.x) * 17f :
                     urbanContext.GetUtilityPosition(definition.id, 0);
                 Vector3 badgePos = coast ?
-                    Point(route[route.Length - 1]) - Point(routeMidpoint) :
+                    Point(route[route.Length - 1]) - routeMidpoint :
                     urbanContext.GetUtilityPosition(definition.id, 1);
                 Vector3 cranePos = coast ?
                     salvagePos + new Vector3(5f,0f,1.5f) :
