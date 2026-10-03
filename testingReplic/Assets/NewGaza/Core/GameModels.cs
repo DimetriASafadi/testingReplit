@@ -115,6 +115,43 @@ namespace NewGaza.Core
         public long lastGiftUtc;
         public long cityCompletedUtc;
         public RoadSegmentState[] roadSegments = new RoadSegmentState[0];
+        public CityDevelopmentState development;
+    }
+
+    // Optional additive module: older v1/v2 saves keep their IDs, dates and rewards.
+    [Serializable]
+    public class CityDevelopmentState
+    {
+        public int schema = 1;
+        public bool initialized;
+        public bool legacyProgress;
+        public bool dynamicFactoryProvided;
+        public RubbleSiteState[] rubble = new RubbleSiteState[0];
+        public PlacedBuildingState[] buildings = new PlacedBuildingState[0];
+        public string activeRubbleId;
+        public string dispatchDepotId;
+        public bool crewArrived;
+    }
+
+    [Serializable]
+    public class RubbleSiteState
+    {
+        public string id;
+        public int district;
+        public string projectId;
+        public bool cleared;
+    }
+
+    [Serializable]
+    public class PlacedBuildingState
+    {
+        public string id;
+        public string definitionId;
+        public int district;
+        public float x, z;
+        public int quarterTurn;
+        public long startedUtc, finishUtc, lastIncomeUtc;
+        public bool completed;
     }
 
     public struct ActionResult

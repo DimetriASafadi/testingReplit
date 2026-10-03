@@ -27,6 +27,8 @@ namespace NewGaza.Core
             EconomyService.ValidateState(saved, LegacyCatalog, 1);
 
             var upgraded = GameCatalog.CreateNew(saved.lastSeenUtc);
+            // This is an existing game, not a fresh free-build campaign.
+            upgraded.development = null;
             upgraded.playerName = saved.playerName;
             upgraded.coins = saved.coins;
             upgraded.stock = new ResourceStock

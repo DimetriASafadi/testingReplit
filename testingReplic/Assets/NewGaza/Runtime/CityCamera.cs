@@ -209,7 +209,13 @@ namespace NewGaza
 
         private void Tap(Vector2 position, bool inspect)
         {
+            if (session.Development != null && session.Development.Placing)
+            {
+                session.Development.PreviewAt(GroundPoint(position));
+                return;
+            }
             var ray = view.ScreenPointToRay(position);
+            if (session.Development != null && session.Development.TryPick(ray)) return;
             CitySelectable selected = null;
             if (Physics.Raycast(ray, out var hit, 1600))
                 selected = hit.collider.GetComponentInParent<CitySelectable>();
@@ -237,6 +243,8 @@ namespace NewGaza
             lastTapTime = Time.unscaledTime;
             if (session.State.selectedDistrict != selected.districtIndex)
                 session.ChooseDistrict(selected.districtIndex);
+            if (selected.plotIndex >= 0 && session.Development != null &&
+                session.Development.SelectParcel(selected.districtIndex, selected.plotIndex)) return;
             session.SelectPlot(selected.plotIndex);
             if (inspect || !secondTap) return;
             if (selected.plotIndex == -2)

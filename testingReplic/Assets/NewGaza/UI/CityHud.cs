@@ -363,7 +363,7 @@ namespace NewGaza
             var s = session.State;
             if (s.factoryLevel == 0) return 0;
             if (s.excavators == 0) return 1;
-            if (s.trucks < 2) return 2;
+            if (s.trucks < (session.Development != null ? 1 : 2)) return 2;
             if (s.bulldozers == 0) return 3;
             if (s.jobStage != JobStage.Idle) return 5;
             if (s.districts[s.selectedDistrict].clearedLoads == 0) return 4;
@@ -375,6 +375,15 @@ namespace NewGaza
         private void RefreshTutorial()
         {
             string text, action;
+            if (session.Development != null && !session.Development.Rules.Data.legacyProgress)
+            {
+                int step = TutorialStep();
+                if (step == 4) { text = "ابدأ الإعمار\nاضغط على مبنى مهدّم ثم اختر إزالة الدمار.\nتسلك الآليات الشوارع من أقرب مخزن."; action = "المتجر"; }
+                else if (step == 5) { text = "العمل مستمر\nتبدأ الإزالة بعد وصول الآليات.\nبعد الوصول تستمر المؤقتات أثناء غيابك."; action = "المتجر"; }
+                else if (step == 7) { text = "اختر مكان البناء\nنظّف الأرض ثم اختر مبنى من المتجر.\nاحتياجات الحي تظهر تحت اسم المنطقة."; action = "المتجر"; }
+                else { text = null; action = null; }
+                if (text != null) { tutorialLabel.SetText(text); ButtonText(tutorialButton, action); return; }
+            }
             switch (TutorialStep())
             {
                 case 0: text = "خطوتك الأولى\nمصنع التدوير يحوّل الركام إلى مواد بناء.\nميزانية البداية: 50,000 عملة"; action = "المصنع"; break;
@@ -393,6 +402,9 @@ namespace NewGaza
 
         private void TutorialAction()
         {
+            if (session.Development != null && !session.Development.Rules.Data.legacyProgress &&
+                (TutorialStep() == 4 || TutorialStep() == 5 || TutorialStep() == 7))
+            { session.Development.OpenStore(); return; }
             switch (TutorialStep())
             {
                 case 0: case 1: case 2: case 3: OpenPage(Page.Fleet); break;
@@ -546,7 +558,9 @@ namespace NewGaza
             switch (page)
             {
                 case Page.Map: BuildMap(); break;
-                case Page.Projects: BuildProjects(false); break;
+                case Page.Projects:
+                    if (session.Development != null && !legacyProjectPage) { ClosePage(); session.Development.OpenStore(); return; }
+                    BuildProjects(false); break;
                 case Page.Fleet: BuildFleet(); break;
                 case Page.Investments: BuildProjects(true); break;
                 case Page.Resources: BuildResources(); break;
@@ -996,6 +1010,7 @@ namespace NewGaza
             nameInput = null;
             modalBindings.Clear();
             page = Page.None;
+            legacyProjectPage = false;
             RefreshNavigation();
             ReleaseCameraAfterTouch();
         }

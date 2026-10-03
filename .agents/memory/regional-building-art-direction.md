@@ -23,6 +23,12 @@ description: User-requested east-to-west differences in New Gaza buildings and u
 
 **How to apply:** Preserve approved geography and distribution while changing gameplay. Regional needs must reflect east-to-west land-use differences, not just building appearance. Dispatch equipment from its depot along useful roads. Distinguish the camera-focused district name from the selected work district, and use translucent region shading without obscuring the city.
 
+The user chose: «داخل الأحياء المفتوحة فقط». Free construction and site-specific clearance retain gradual district access; not all districts become available at the start.
+
+**Why:** The user explicitly selected the progressive-access alternative.
+
+**How to apply:** Enforce access for both clearing and building while allowing unrestricted catalog choice on suitable clean land inside an accessible district.
+
 ## Destruction must read differently from unfinished construction
 
 An exposed concrete frame alone is not enough. Preserve obvious structural failure in the exported silhouette: fractured and tilted slabs, breached irregular walls, broken columns and substantial mixed rubble. Regional character must remain recognizable through that damage.

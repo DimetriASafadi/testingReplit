@@ -106,6 +106,19 @@ namespace NewGaza
         private bool truckTravelAdvancedThisFrame;
         internal float LastMeasuredTruckWorldSpeed { get; private set; }
         public float ActualWorldSpeed { get { return LastMeasuredTruckWorldSpeed; } }
+        public bool WorkCrewReady => excavatorDockedAtWork && bulldozerDockedAtWork &&
+            truckTripState == TruckTripState.ParkedAtWork;
+        public void BeginDepotDispatch()
+        {
+            // One pooled fleet, one contract. A new depot dispatch starts at that depot,
+            // not at the previous work site's cached pose.
+            previousDistrict = -1;
+            trackedDestinationInitialized = false;
+            trackedDestinationClearing = false;
+            excavatorDockedAtWork = bulldozerDockedAtWork = false;
+            truckTripState = TruckTripState.ParkedAtDepot;
+            routeCount = 0;
+        }
         internal float LastMeasuredTruckSpeedMetersPerSecond =>
             LastMeasuredTruckWorldSpeed * 20f;
         private Vector3 previousTruckPosition;
@@ -282,7 +295,8 @@ namespace NewGaza
             bool changed = previousDistrict != state.jobDistrict ||
                 previousStage != state.jobStage || locationChanged;
             bool previouslyOwnedTruck = truckOwned;
-            bool nextImportedJob = state.jobDistrict >= 0 &&
+            bool nextImportedJob = (state.development == null || state.development.activeRubbleId == null) &&
+                state.jobDistrict >= 0 &&
                 state.jobDistrict < state.districts.Length &&
                 state.districts[state.jobDistrict].clearedLoads >=
                     GameCatalog.Districts[state.jobDistrict].rubbleLoads;

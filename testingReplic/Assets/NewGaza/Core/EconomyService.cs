@@ -10,6 +10,8 @@ namespace NewGaza.Core
         private Dictionary<string, RoadSegmentDefinition> roadDefinitions;
         private bool roadDefinitionsRegistered;
         public GameState State { get; private set; }
+        public Func<bool> ClearingCrewReady { get; set; }
+        public Func<int, string, bool> LegacyLandReady { get; set; }
         public bool CityComplete
         {
             get
@@ -95,7 +97,17 @@ namespace NewGaza.Core
             if (now < 0) throw new ArgumentOutOfRangeException(nameof(now), "وقت الجهاز غير صالح");
             ValidateState();
             long effective = Math.Max(now, State.lastSeenUtc);
-            while (State.jobStage != JobStage.Idle && State.jobFinishUtc <= effective)
+            bool waitingForCrew = false;
+            if (State.jobStage == JobStage.Clearing && State.development != null &&
+                State.development.activeRubbleId != null && !State.development.crewArrived)
+            {
+                waitingForCrew = ClearingCrewReady == null || !ClearingCrewReady();
+                if (!waitingForCrew) State.development.crewArrived = true;
+                // Clearing has its own full duration AFTER physical arrival. The flag
+                // survives reload, so subsequent offline hauling/recycling is not lost.
+                State.jobFinishUtc = AddTime(effective, ClearingSeconds());
+            }
+            while (!waitingForCrew && State.jobStage != JobStage.Idle && State.jobFinishUtc <= effective)
             {
                 long boundary = State.jobFinishUtc;
                 if (State.jobStage == JobStage.Clearing)
@@ -122,6 +134,7 @@ namespace NewGaza.Core
                     var district = State.districts[State.jobDistrict];
                     if (district.clearedLoads < GameCatalog.Districts[State.jobDistrict].rubbleLoads)
                         district.clearedLoads++;
+                    CityDevelopmentService.CompleteSalvage(State);
                     State.jobStage = JobStage.Idle;
                     State.jobFinishUtc = 0;
                 }
@@ -139,6 +152,7 @@ namespace NewGaza.Core
                     }
                 }
             }
+            CityDevelopmentService.Advance(State, effective);
             State.lastSeenUtc = effective;
         }
 
@@ -261,6 +275,8 @@ namespace NewGaza.Core
             if (index < 0) return ActionResult.Fail("المشروع غير موجود");
             var definition = GameCatalog.Districts[district].projects[index];
             var project = State.districts[district].projects[index];
+            if (LegacyLandReady != null && !LegacyLandReady(district, projectId))
+                return ActionResult.Fail("أزل دمار هذا الموقع أولاً؛ لا يمكن البناء فوق مبنى أو موقع بناء جديد");
             if (!ValidDefinition(definition)) return ActionResult.Fail("بيانات تكلفة المشروع أو مدته غير صالحة");
             bool batch = IsBatch(definition);
             if (project.completed && !batch) return ActionResult.Fail("المشروع مكتمل بالفعل");
@@ -362,6 +378,8 @@ namespace NewGaza.Core
         public float Progress(int district)
         {
             if (!ValidDistrict(district)) return 0f;
+            if (State.development != null && State.development.initialized && !State.development.legacyProgress)
+                return CityDevelopmentService.Progress(State, district);
             var state = State.districts[district];
             var definition = GameCatalog.Districts[district];
             if (!IsUnlocked(district)) return 0f;
@@ -370,7 +388,9 @@ namespace NewGaza.Core
                 if (state.projects[i].completed) complete++;
             if (complete == state.projects.Length && state.clearedLoads >= definition.rubbleLoads) return 1f;
             float rubble = definition.rubbleLoads == 0 ? 1f : Math.Min(1f, (float)state.clearedLoads / definition.rubbleLoads);
-            return Math.Max(0f, Math.Min(1f, rubble * 0.3f + (float)complete / state.projects.Length * 0.7f));
+            float classic = Math.Max(0f, Math.Min(1f, rubble * 0.3f + (float)complete / state.projects.Length * 0.7f));
+            return State.development != null && State.development.initialized
+                ? Math.Max(classic, CityDevelopmentService.Progress(State, district)) : classic;
         }
 
         public long PendingIncome(int district, string projectId, long now)
@@ -437,6 +457,9 @@ namespace NewGaza.Core
 
         private bool IsComplete(int district)
         {
+            if (State.development != null && State.development.initialized &&
+                CityDevelopmentService.Complete(State, district)) return true;
+            if (State.development != null && State.development.initialized && !State.development.legacyProgress) return false;
             if (State.districts[district].clearedLoads < GameCatalog.Districts[district].rubbleLoads) return false;
             foreach (var project in State.districts[district].projects)
                 if (!project.completed) return false;
@@ -566,9 +589,14 @@ namespace NewGaza.Core
                 }
                 if (district.rewardClaimed)
                 {
-                    if (district.clearedLoads != definition.rubbleLoads) throw new InvalidOperationException(error);
-                    foreach (var project in district.projects)
-                        if (!project.completed) throw new InvalidOperationException(error);
+                    bool freeCompletion = version == 2 && State.development != null &&
+                        State.development.initialized && CityDevelopmentService.Complete(State, d);
+                    if (!freeCompletion)
+                    {
+                        if (district.clearedLoads != definition.rubbleLoads) throw new InvalidOperationException(error);
+                        foreach (var project in district.projects)
+                            if (!project.completed) throw new InvalidOperationException(error);
+                    }
                 }
                 claimedPrefix &= district.rewardClaimed;
             }
@@ -580,6 +608,7 @@ namespace NewGaza.Core
                 throw new InvalidOperationException(error);
             if (!IsUnlocked(State, State.selectedDistrict) || (State.cityCompletedUtc > 0 && !State.districts[catalog.Length - 1].rewardClaimed))
                 throw new InvalidOperationException(error);
+            if (version == 2) CityDevelopmentService.Validate(State);
         }
     }
 }

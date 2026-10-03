@@ -15,6 +15,8 @@ namespace NewGaza
         public bool Ready { get; private set; }
         public string SaveError { get; private set; }
         public CityAudio Audio { get; private set; }
+        public CityDevelopment Development { get; private set; }
+        public CityHud Hud { get; private set; }
         public long Now => Math.Max(DateTimeOffset.UtcNow.ToUnixTimeSeconds(), State == null ? 0 : State.lastSeenUtc);
         public event Action Changed;
         public event Action<string> Notification;
@@ -59,7 +61,6 @@ namespace NewGaza
                 InputSystemBootstrap.EnsureInputEnabled();
                 var loaded = GameSaveStore.Load(DateTimeOffset.UtcNow.ToUnixTimeSeconds(), out var warning);
                 Economy = new EconomyService(loaded);
-                Economy.Tick(Now);
                 ConfigureLighting();
                 world = new GameObject("City diorama").AddComponent<CityWorld>();
                 world.Initialize(this);
@@ -74,10 +75,15 @@ namespace NewGaza
                 cam.GetUniversalAdditionalCameraData().renderPostProcessing = false;
                 cityCamera = cameraObject.AddComponent<CityCamera>();
                 cityCamera.Initialize(this, world);
+                Development = new GameObject("Free building and local rubble work").AddComponent<CityDevelopment>();
+                Development.transform.SetParent(transform, false);
+                Development.Initialize(this, world, cityCamera);
+                Economy.Tick(Now);
                 Audio = new GameObject("Camera-focused city soundscape").AddComponent<CityAudio>();
                 Audio.transform.SetParent(transform, false);
                 Audio.Initialize(this, world, cityCamera, cam);
                 var hud = new GameObject("Arabic mobile HUD").AddComponent<CityHud>();
+                Hud = hud;
                 hud.Initialize(this, world, cityCamera);
                 Ready = true;
                 Save();

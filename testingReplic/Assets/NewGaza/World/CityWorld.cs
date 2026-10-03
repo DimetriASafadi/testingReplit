@@ -23,6 +23,7 @@ namespace NewGaza
             internal CityConstructionCrew crew;
             internal Vector3 size;
             internal ProjectDefinition definition;
+            internal string sourceBuildingId;
         }
 
         private sealed class DistrictView
@@ -466,7 +467,8 @@ namespace NewGaza
                     anchor.SetParent(district.root, false);
                     anchor.localPosition = position;
                     anchor.localRotation = rotation;
-                    district.plots[p] = new PlotView { anchor = anchor, size = size, definition = definition.projects[p] };
+                    district.plots[p] = new PlotView { anchor = anchor, size = size, definition = definition.projects[p],
+                        sourceBuildingId = coast ? null : sourcedPlots[p].sourceBuildingId };
                     AddHit(anchor.gameObject, i, p, new Vector3(0f,1.1f,0f),
                         new Vector3(size.x * .85f,2.2f,size.z * .83f));
                 }
@@ -626,6 +628,8 @@ namespace NewGaza
                     ProjectState project = FindProject(district, plot.definition.id);
                     int stage = project != null && project.completed ? 3 :
                         project != null && project.startedUtc > 0 ? 2 : remaining == 0 ? 1 : 0;
+                    if (session.Development != null && (project == null || (!project.completed && project.startedUtc == 0)))
+                        stage = session.Development.Rules.Site(CityDevelopmentService.SiteId(d, p)).cleared ? -2 : 0;
                     CityConstructionPhase phase = CityConstructionVisuals.ResolvePhase(project, session.Now);
                     constructing |= stage == 2;
                     if (stage != plot.stage || (stage == 2 && phase != plot.phase))
@@ -661,10 +665,13 @@ namespace NewGaza
             factoryHit.districtIndex = current;
             if (current != selectedDistrict) FocusDistrict(current);
             ProjectState coastalRoad = FindProject(state.districts[districts.Length - 1],"road");
-            completedCoastRoad.SetActive(coastalRoad != null && coastalRoad.completed);
+            completedCoastRoad.SetActive((coastalRoad != null && coastalRoad.completed) ||
+                state.districts[districts.Length - 1].rewardClaimed);
             fleet.Refresh(state,
-                districts[Mathf.Clamp(state.jobDistrict,0,districts.Length - 1)].rubble.transform.position,
-                factorySite.transform.position);
+                session.Development != null ? session.Development.WorkPosition :
+                    districts[Mathf.Clamp(state.jobDistrict,0,districts.Length - 1)].rubble.transform.position,
+                session.Development != null ? session.Development.DepotPosition : factorySite.transform.position);
+            factorySite.SetActive(state.development == null || !state.development.dynamicFactoryProvided);
         }
 
         private static ProjectState FindProject(DistrictState district, string id)
@@ -726,7 +733,8 @@ namespace NewGaza
                 (stage == 3 && !housing))
                 batch.Box(stage == 3 ? sidewalk : sand, new Vector3(0f,.04f,0f), footprint);
             float modelHeight = 0f;
-            if (stage == 0)
+            if (stage == -2) { /* Clean, empty land: no preselected housing foundation. */ }
+            else if (stage == 0)
             {
                 string districtId = GameCatalog.Districts[district].id;
                 CityRuinProfiles.Profile ruinProfile = CityRuinProfiles.ForDistrict(districtId);
@@ -1540,6 +1548,31 @@ namespace NewGaza
         {
             if (districts == null || districts.Length == 0) return transform.position;
             return transform.TransformPoint(districts[Mathf.Clamp(index,0,districts.Length - 1)].center);
+        }
+
+        internal CityGeometry DevelopmentGeometry => geometry;
+        internal CityBasemap DevelopmentMap => basemap;
+        internal Vector3 CentralDepotPosition => factorySite.transform.position;
+        internal Vector3 AggregateRubblePosition(int district) => districts[district].rubble.transform.position;
+
+        internal CityDevelopmentParcel[] DevelopmentParcels()
+        {
+            var result = new List<CityDevelopmentParcel>();
+            for (int d = 0; d < districts.Length; d++)
+                for (int p = 0; p < districts[d].plots.Length; p++)
+                {
+                    var plot = districts[d].plots[p];
+                    float yaw = plot.anchor.eulerAngles.y * Mathf.Deg2Rad;
+                    float w = plot.size.x * .85f, h = plot.size.z * .83f;
+                    var hit = plot.anchor.GetComponent<BoxCollider>();
+                    result.Add(new CityDevelopmentParcel {
+                        id = CityDevelopmentService.SiteId(d, p), district = d, plot = p,
+                        sourceBuildingId = plot.sourceBuildingId,
+                        position = plot.anchor.position, collider = hit,
+                        width = Mathf.Abs(Mathf.Cos(yaw)) * w + Mathf.Abs(Mathf.Sin(yaw)) * h,
+                        depth = Mathf.Abs(Mathf.Sin(yaw)) * w + Mathf.Abs(Mathf.Cos(yaw)) * h });
+                }
+            return result.ToArray();
         }
 
         public bool IsDistrictFogged(int index)

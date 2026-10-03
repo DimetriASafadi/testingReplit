@@ -96,6 +96,7 @@ namespace NewGaza
                 || (state.jobStage != JobStage.Idle && (state.jobDistrict < 0 || state.jobDistrict >= state.districts.Length)))
                 throw new InvalidDataException("Invalid district selection.");
             new EconomyService(state);
+            CityDevelopmentService.ValidateSpatial(state);
         }
 
         public static void Save(GameState state)
