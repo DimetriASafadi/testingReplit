@@ -10,3 +10,41 @@ expertMode = true
 [postMerge]
 path = "tools/post_merge_setup.sh"
 timeoutMs = 120000
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "persistence-regressions"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "native-source-and-movement"
+
+[[workflows.workflow]]
+name = "persistence-regressions"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "dotnet run --project testingReplic/Tests/Persistence/PersistenceTests.csproj --configuration Release && dotnet run --project testingReplic/Tests/Domain/DomainTests.csproj --configuration Release && dotnet run --project testingReplic/Tests/Development/DevelopmentTests.csproj --configuration Release"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "native-source-and-movement"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "dotnet run --project testingReplic/Tests/SourceChecks/SourceChecks.csproj --configuration Release && cd testingReplic && dotnet run --project Tests/Equipment/EquipmentTests.csproj --configuration Release -- --no-export"
+
+[workflows.workflow.metadata]
+isValidation = true

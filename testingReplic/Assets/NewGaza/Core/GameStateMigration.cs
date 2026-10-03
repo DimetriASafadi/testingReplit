@@ -44,6 +44,14 @@ namespace NewGaza.Core
             upgraded.equipmentLevel = saved.equipmentLevel;
             upgraded.lastGiftUtc = saved.lastGiftUtc;
             upgraded.cityCompletedUtc = saved.cityCompletedUtc;
+            upgraded.camera = saved.camera;
+            if (saved.fleet != null)
+                upgraded.fleet = new FleetSaveState {
+                    district = saved.fleet.district, stage = saved.fleet.stage,
+                    rubbleId = saved.fleet.rubbleId, depotId = saved.fleet.depotId,
+                    excavator = saved.fleet.excavator, truck = saved.fleet.truck,
+                    bulldozer = saved.fleet.bulldozer
+                };
             upgraded.jobStage = saved.jobStage;
             upgraded.jobFinishUtc = saved.jobFinishUtc;
             upgraded.roadSegments = new RoadSegmentState[saved.roadSegments.Length];
@@ -74,6 +82,14 @@ namespace NewGaza.Core
                 }
                 if (oldIndex == saved.selectedDistrict) upgraded.selectedDistrict = index;
                 if (oldIndex == saved.jobDistrict) upgraded.jobDistrict = index;
+            }
+            if (upgraded.fleet != null)
+            {
+                int oldDistrict = upgraded.fleet.district;
+                if (oldDistrict < 0 || oldDistrict >= LegacyIds.Length)
+                    throw new InvalidOperationException("Invalid legacy fleet district.");
+                upgraded.fleet.district = Array.FindIndex(GameCatalog.Districts,
+                    district => district.id == LegacyIds[oldDistrict]);
             }
             ReconcileUnlocks(upgraded);
             EconomyService.ValidateState(upgraded, GameCatalog.Districts, 2);

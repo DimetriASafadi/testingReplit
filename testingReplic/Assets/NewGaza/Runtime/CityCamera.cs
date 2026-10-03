@@ -32,6 +32,7 @@ namespace NewGaza
         private CitySelectable previousSelection;
         private float lastTapTime;
         private float finaleUntil;
+        private float saveViewAt = -1;
         private readonly List<RaycastResult> uiHits = new List<RaycastResult>();
         public static bool ModalOpen { get; set; }
         // Audio follows the rendered, eased view, never the pinch target ahead of the image.
@@ -46,7 +47,25 @@ namespace NewGaza
             view.orthographic = true;
             focus = targetFocus = world.DistrictPosition(session.State.selectedDistrict);
             zoom = targetZoom = world.DistrictViewingSize(session.State.selectedDistrict);
+            var saved = session.State.camera;
+            if (saved != null)
+            {
+                focus = targetFocus = new Vector3(
+                    Mathf.Clamp(saved.x, world.MapMinX, world.MapMaxX), 0,
+                    Mathf.Clamp(saved.z, world.MapMinZ, world.MapMaxZ));
+                yaw = saved.yaw;
+                zoom = targetZoom = Mathf.Clamp(saved.zoom, .6f, Mathf.Max(125, OverviewZoom()));
+            }
             UpdatePose(true);
+        }
+
+        internal void CaptureSave()
+        {
+            // Save the user's intended view, not an unfinished easing interpolation.
+            session.State.camera = new CameraSaveState {
+                x = targetFocus.x, z = targetFocus.z, zoom = targetZoom,
+                yaw = Mathf.Repeat(yaw, 360)
+            };
         }
 
         public void Focus(Vector3 point)
@@ -55,7 +74,11 @@ namespace NewGaza
             targetZoom = world.DistrictViewingSize(session.State.selectedDistrict);
             finaleUntil = 0;
         }
-        public void FrameCity() { targetFocus = CityCentre(); targetZoom = OverviewZoom(); finaleUntil = 0; }
+        public void FrameCity()
+        {
+            targetFocus = CityCentre(); targetZoom = OverviewZoom(); finaleUntil = 0;
+            saveViewAt = Time.unscaledTime + .25f;
+        }
         public void PlayFinale()
         {
             if (!session.Economy.CityComplete)
@@ -96,6 +119,8 @@ namespace NewGaza
         private void Update()
         {
             if (session == null || !session.Ready) return;
+            var beforeFocus = targetFocus;
+            float beforeZoom = targetZoom, beforeYaw = yaw;
             if (finaleUntil > Time.unscaledTime)
             {
                 yaw += Time.unscaledDeltaTime * 5;
@@ -104,6 +129,14 @@ namespace NewGaza
             else if (!ModalOpen) ReadInput();
             else { held = false; multiTouch = false; }
             UpdatePose(false);
+            if (finaleUntil <= Time.unscaledTime &&
+                (beforeFocus != targetFocus || beforeZoom != targetZoom || beforeYaw != yaw))
+                saveViewAt = Time.unscaledTime + .25f;
+            if (saveViewAt >= 0 && Time.unscaledTime >= saveViewAt)
+            {
+                saveViewAt = -1;
+                session.Save();
+            }
         }
 
         private void ReadInput()

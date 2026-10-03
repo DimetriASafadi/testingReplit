@@ -638,6 +638,7 @@ namespace NewGaza.Core
             if (!IsUnlocked(State, State.selectedDistrict) || (State.cityCompletedUtc > 0 && !State.districts[catalog.Length - 1].rewardClaimed))
                 throw new InvalidOperationException(error);
             if (version == 2) CityDevelopmentService.Validate(State);
+            PresentationSaveValidation.Validate(State);
         }
     }
 }

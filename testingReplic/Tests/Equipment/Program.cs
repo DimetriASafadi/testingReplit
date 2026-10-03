@@ -143,6 +143,8 @@ internal static class Program
             depotJson.GetProperty("z").GetSingle());
         GeoPoint jobPoint = GameGeography.DistrictPoint(0);
         Vector3 job = new Vector3(jobPoint.x, FixtureGroundY, jobPoint.z);
+        Console.WriteLine("PASS equipment persistence: " +
+            EquipmentPersistenceChecks.Run(geometry, material, roads, job, depot) + " assertions (native API fixture).");
 
         var state = new GameState
         {

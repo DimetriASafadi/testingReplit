@@ -23,36 +23,33 @@ namespace NewGaza
         public static GameState Load(long now, out string warning)
         {
             warning = null;
-            if (!File.Exists(SavePath))
+            Exception failure = null;
+            if (File.Exists(SavePath))
             {
-                if (File.Exists(SavePath + ".bak"))
-                {
-                    warning = "تم استرجاع النسخة الاحتياطية للحفظ.";
-                    return Read(SavePath + ".bak");
-                }
-                return GameCatalog.CreateNew(now);
+                try { return Read(SavePath); }
+                catch (Exception exception) { failure = exception; }
             }
-            try { return Read(SavePath); }
-            catch (Exception original)
+            // A validated backup is preferred to an interrupted write. A temporary
+            // file also rescues a first-ever save interrupted before its atomic move.
+            foreach (string recovery in new[] { SavePath + ".bak", SavePath + ".tmp" })
             {
-                if (File.Exists(SavePath + ".bak"))
+                if (!File.Exists(recovery)) continue;
+                try
                 {
-                    try
-                    {
-                        var restored = Read(SavePath + ".bak");
-                        // Preserve the invalid file for diagnosis rather than overwrite it.
+                    var restored = Read(recovery);
+                    if (File.Exists(SavePath))
                         File.Copy(SavePath, SavePath + ".damaged", true);
-                        File.Copy(SavePath + ".bak", SavePath, true);
-                        warning = "تعذّر قراءة آخر حفظ. تم استرجاع النسخة الاحتياطية.";
-                        return restored;
-                    }
-                    catch (Exception backupError)
-                    {
-                        throw new InvalidDataException("Both save files are unreadable. Your files have been preserved.", backupError);
-                    }
+                    // Restore the primary as well: the next Save must not rotate
+                    // a missing/damaged primary over the only healthy backup.
+                    File.Copy(recovery, SavePath, true);
+                    warning = "تم استرجاع النسخة الاحتياطية للحفظ.";
+                    return restored;
                 }
-                throw new InvalidDataException("Save is unreadable. Your file has been preserved.", original);
+                catch (Exception exception) { failure = exception; }
             }
+            if (failure != null || File.Exists(SavePath + ".damaged"))
+                throw new InvalidDataException("Save files are unreadable. Your progress has NOT been reset; files have been preserved.", failure);
+            return GameCatalog.CreateNew(now);
         }
 
         private static GameState Read(string path)
@@ -106,7 +103,17 @@ namespace NewGaza
             var payload = JsonUtility.ToJson(state);
             var envelope = new Envelope { payload = payload, checksum = Hash(payload) };
             string temporary = SavePath + ".tmp";
-            File.WriteAllText(temporary, JsonUtility.ToJson(envelope), Encoding.UTF8);
+            // Flush bytes before the atomic replace, rather than relying on quit
+            // or a buffered writer completing after mobile suspension.
+            using (var file = new FileStream(temporary, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                using (var writer = new StreamWriter(file, new UTF8Encoding(false), 4096, true))
+                {
+                    writer.Write(JsonUtility.ToJson(envelope));
+                    writer.Flush();
+                }
+                file.Flush(true);
+            }
             if (File.Exists(SavePath))
                 File.Replace(temporary, SavePath, SavePath + ".bak");
             else

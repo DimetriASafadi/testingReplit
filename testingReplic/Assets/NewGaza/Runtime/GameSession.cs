@@ -79,6 +79,8 @@ namespace NewGaza
                 Development.transform.SetParent(transform, false);
                 Development.Initialize(this, world, cityCamera);
                 Economy.Tick(Now);
+                world.Refresh();
+                world.Fleet.RestoreSave(State);
                 Audio = new GameObject("Camera-focused city soundscape").AddComponent<CityAudio>();
                 Audio.transform.SetParent(transform, false);
                 Audio.Initialize(this, world, cityCamera, cam);
@@ -128,12 +130,19 @@ namespace NewGaza
             if (Time.unscaledTime >= nextTick)
             {
                 nextTick = Time.unscaledTime + 1;
+                var stage = State.jobStage;
+                bool arrived = State.development != null && State.development.crewArrived;
+                int completed = CompletedBuildingCount();
                 Economy.Tick(Now);
                 Changed?.Invoke();
+                if (stage != State.jobStage ||
+                    arrived != (State.development != null && State.development.crewArrived) ||
+                    completed != CompletedBuildingCount())
+                    Save();
             }
             if (Time.unscaledTime >= nextSave)
             {
-                nextSave = Time.unscaledTime + 30;
+                nextSave = Time.unscaledTime + 5;
                 Save();
             }
         }
@@ -216,7 +225,13 @@ namespace NewGaza
             if (State == null) return;
             try
             {
+                // Record wall-clock advancement before any lifecycle checkpoint.
+                Economy.Tick(Now);
+                if (world != null) world.Refresh();
+                if (cityCamera != null) cityCamera.CaptureSave();
+                if (world != null && world.Fleet != null) world.Fleet.CaptureSave(State);
                 GameSaveStore.Save(State);
+                nextSave = Time.unscaledTime + 5;
                 SaveError = null;
             }
             catch (Exception e)
@@ -228,15 +243,38 @@ namespace NewGaza
             }
         }
 
-        private void OnApplicationPause(bool paused) { if (paused && Ready) Save(); }
+        private int CompletedBuildingCount()
+        {
+            int count = 0;
+            if (State.development != null)
+                foreach (var building in State.development.buildings)
+                    if (building.completed) count++;
+            return count;
+        }
+
+        private void OnApplicationPause(bool paused)
+        {
+            if (!Ready) return;
+            Save();
+            if (!paused) Changed?.Invoke();
+        }
         private void OnApplicationFocus(bool focused)
         {
             if (!Ready) return;
-            if (focused) { Economy.Tick(Now); Changed?.Invoke(); }
-            else Save();
+            Save();
+            if (focused) Changed?.Invoke();
         }
         private void OnApplicationQuit() { if (Ready) Save(); }
-        private void OnDestroy() { if (Instance == this) Instance = null; }
+        private void OnDisable()
+        {
+            // Checkpoint before teardown, while the live world/view can still be captured.
+            if (Ready && Instance == this) Save();
+        }
+        private void OnDestroy()
+        {
+            if (Instance != this) return;
+            Instance = null;
+        }
 
         private void OnGUI()
         {

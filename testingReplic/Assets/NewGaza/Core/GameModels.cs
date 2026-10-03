@@ -117,6 +117,9 @@ namespace NewGaza.Core
         public long cityCompletedUtc;
         public RoadSegmentState[] roadSegments = new RoadSegmentState[0];
         public CityDevelopmentState development;
+        // Additive: saves made before these snapshots remain valid.
+        public CameraSaveState camera;
+        public FleetSaveState fleet;
     }
 
     // Optional additive module: older v1/v2 saves keep their IDs, dates and rewards.
@@ -163,6 +166,27 @@ namespace NewGaza.Core
         public int quarterTurn;
         public long startedUtc, finishUtc, lastIncomeUtc;
         public bool completed;
+    }
+
+    [Serializable]
+    public class CameraSaveState
+    {
+        public float x, z, zoom, yaw;
+    }
+
+    [Serializable]
+    public class VehicleSaveState
+    {
+        public float x, y, z, yaw;
+    }
+
+    [Serializable]
+    public class FleetSaveState
+    {
+        public int district;
+        public JobStage stage;
+        public string rubbleId, depotId;
+        public VehicleSaveState excavator, truck, bulldozer;
     }
 
     public struct ActionResult
