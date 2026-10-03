@@ -73,6 +73,19 @@ namespace UnityEngine
 {
     public struct Vector3 { public float x, y, z; }
     public enum AudioClipLoadType { DecompressOnLoad }
+    public class TextAsset { public string text; }
+    public static class Resources { public static T Load<T>(string path) where T : class => null; }
+    public static class JsonUtility
+    {
+        public static T FromJson<T>(string text) => default;
+        public static string ToJson(object value, bool prettyPrint) => """";
+    }
+    public static class Application { public static string unityVersion => ""contract-only""; }
+    public static class Debug
+    {
+        public static void Log(object message) {}
+        public static void LogException(System.Exception error) {}
+    }
 }
 namespace NewGaza.Core { public sealed class GameState {} }
 namespace NewGaza
@@ -86,6 +99,8 @@ namespace NewGaza
         var runtime = CSharpCompilation.Create("Assembly-CSharp",
             new[] {
                 CSharpSyntaxTree.ParseText(runtimeContract),
+                CSharpSyntaxTree.ParseText(File.ReadAllText(
+                    Path.Combine(sourceRoot, "World/CityBasemap.cs"))),
                 CSharpSyntaxTree.ParseText(File.ReadAllText(
                     Path.Combine(sourceRoot, "Runtime/AssemblyInfo.cs")))
             }, references, new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
@@ -102,6 +117,16 @@ using NewGaza;
 using NewGaza.Core;
 namespace UnityEditor
 {
+    public static class EditorApplication
+    {
+        public static bool isPlayingOrWillChangePlaymode, isCompiling;
+        public static void Exit(int code) {}
+    }
+    public static class EditorUtility { public static bool scriptCompilationFailed; }
+    public static class AssetDatabase
+    {
+        public static string GetAssetPath(UnityEngine.TextAsset asset) => """";
+    }
     public enum AudioSampleRateSetting { OverrideSampleRate }
     public enum AudioCompressionFormat { Vorbis }
     public struct AudioImporterSampleSettings
@@ -147,6 +172,8 @@ internal static class EditorContractProbe
             new[] {
                 CSharpSyntaxTree.ParseText(editorContract),
                 CSharpSyntaxTree.ParseText(playerReportContract),
+                CSharpSyntaxTree.ParseText(File.ReadAllText(
+                    Path.Combine(sourceRoot, "Editor/NewGazaBasemapGate.cs"))),
                 CSharpSyntaxTree.ParseText(File.ReadAllText(
                     Path.Combine(sourceRoot, "Editor/CityAudioImportSettings.cs")))
             }, references.Cast<MetadataReference>().Append(
