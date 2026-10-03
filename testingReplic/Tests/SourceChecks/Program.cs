@@ -43,6 +43,7 @@ internal static class Program
                 }
             }
             CheckContracts(roots);
+            Failures.AddRange(EditorCompilationChecks.Check(sourceRoot));
             CheckSceneBootstrap(sourceRoot, roots);
             CheckDistrictFog(sourceRoot, roots);
             CheckWorldRenderingContracts(roots);
@@ -1546,7 +1547,8 @@ internal static class Program
             Require(importer.Contains("AudioFolder=\"Assets/NewGaza/Resources/Audio/\"", StringComparison.Ordinal) &&
                 importer.Contains("assetPath.StartsWith(AudioFolder,System.StringComparison.OrdinalIgnoreCase)", StringComparison.Ordinal) &&
                 importer.Contains("importer.forceToMono=true", StringComparison.Ordinal) &&
-                importer.Contains("importer.preloadAudioData=true", StringComparison.Ordinal) &&
+                importer.Contains("preloadAudioData=true", StringComparison.Ordinal) &&
+                !importer.Contains("importer.preloadAudioData", StringComparison.Ordinal) &&
                 importer.Contains("importer.loadInBackground=false", StringComparison.Ordinal) &&
                 importer.Contains("AudioSampleRateSetting.OverrideSampleRate", StringComparison.Ordinal) &&
                 importer.Contains("sampleRateOverride=24000", StringComparison.Ordinal) &&
