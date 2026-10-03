@@ -5,14 +5,14 @@ generated = []
 id = "1fWh6uOeYQs-_P59ry1Dn"
 uri = "file://exports/NewGaza-Unity-Source.zip"
 type = "unspecified"
-title = "Updated complete Unity source project"
-description = "Full project with the screenshot’s error sources corrected. Source, targeted editor compilation and equipment checks passed; a full Unity Editor compilation was not run here."
+title = "Updated full Unity source package"
+description = "Includes the counter fix and the recently merged build and smoke runners. Source checks and nine player-runner tests passed; real Unity compilation was not run here."
 logical_id = "5dbf8b92-3bf8-4fbf-a60d-a4baffa6cc98"
-content_hash = "sha256:beb66b028cb4a07271af22178469e25c04c54df815ccb444141787747e2f4a57"
-size = 45519232
-mtime_ms = 1791013714752
-storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/5dbf8b92-3bf8-4fbf-a60d-a4baffa6cc98/62f7ee44-0711-472e-a8c3-71a3ab1d2020"
-storage_version_token = "1791013819857505"
+content_hash = "sha256:100ff8256844b4706e4a622c298480de1af90881fe155101967ebe6764f8c357"
+size = 45547602
+mtime_ms = 1791024599522
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/5dbf8b92-3bf8-4fbf-a60d-a4baffa6cc98/4e9acd58-323d-4c49-97c6-4b7c1f57ca2e"
+storage_version_token = "1791024641983756"
 content_type = "application/octet-stream"
 
 [[outputs]]
@@ -379,4 +379,18 @@ size = 35678
 mtime_ms = 1791013715984
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/ecd2958b-0065-429d-ab94-862ae8132515/b741a85e-0248-4905-977f-b5a9e17153df"
 storage_version_token = "1791013818031362"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "a26s0HxUHWO786TABhG_a"
+uri = "file://exports/NewGaza-PlayerBuild-CS0266-Fix.zip"
+type = "unspecified"
+title = "Fix for the two CS0266 errors"
+description = "Extract into your Unity project root and replace Assets/NewGaza/Editor/NewGazaPlayerBuildGate.cs. Keep its existing .meta file. Error and warning counters now match Unity’s int type."
+logical_id = "37eda8ed-6d62-48cd-ad15-2dff9d799881"
+content_hash = "sha256:c09b8a24665a01bc20db09ac04f02de13209dcd95fee9bd6029d1c27a45e8abc"
+size = 2434
+mtime_ms = 1791024600268
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/37eda8ed-6d62-48cd-ad15-2dff9d799881/52898bb1-4b76-4db5-babf-afe675ab4dc7"
+storage_version_token = "1791024640209440"
 content_type = "application/octet-stream"
