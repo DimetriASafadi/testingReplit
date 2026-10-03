@@ -1,6 +1,6 @@
 {
-  "bytes": 45547602,
-  "sha256": "100ff8256844b4706e4a622c298480de1af90881fe155101967ebe6764f8c357",
+  "bytes": 45548516,
+  "sha256": "e2ee23c999a9f4ec948f33913008da59e18b8d76cfc2073194b92f64f0619231",
   "parts": [
     {
       "name": "NewGaza-Unity-Source.zip.part01",
@@ -9,8 +9,8 @@
     },
     {
       "name": "NewGaza-Unity-Source.zip.part02",
-      "sha256": "12e99a4c44a8e1c60cb7a970830984950473749f277dda4c9d6b0bc6aedf1103",
-      "bytes": 20381778
+      "sha256": "1b66cbe54d848ab29a8e324b284d1b5f8e71922e602112e2ab22efcf5b22b191",
+      "bytes": 20382692
     }
   ]
 }

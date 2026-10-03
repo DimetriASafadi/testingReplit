@@ -28,6 +28,9 @@ namespace NewGaza
         public CityBasemapRoad[] roads;
         public CityBasemapBuilding[] buildings;
         public CityBasemapArea[] areas;
+        [NonSerialized] private bool parsedLayout;
+        [NonSerialized] private bool originInJson;
+        [NonSerialized] private bool metadataInJson;
         /// <summary>Measured feature extent in source world units, not a political boundary.</summary>
         public CityBasemapExtent actualBounds;
 
@@ -64,6 +67,11 @@ namespace NewGaza
             }
             if (map == null)
                 throw new InvalidOperationException("City basemap " + sourceName + " contains no JSON object.");
+            // Unity's inline serializer can materialize absent optional classes.
+            // Select the supplied header, not a default-valued legacy object.
+            map.parsedLayout = true;
+            map.originInJson = HasTopLevelProperty(json, "origin");
+            map.metadataInJson = HasTopLevelProperty(json, "metadata");
             map.Validate(sourceName);
             return map;
         }
@@ -72,6 +80,13 @@ namespace NewGaza
         {
             get
             {
+                if (parsedLayout)
+                {
+                    if (originInJson) return origin == null ? double.NaN : origin.latitude;
+                    if (metadataInJson) return metadata == null || metadata.projection == null
+                        ? double.NaN : metadata.projection.originLatitude;
+                    return originLatitude;
+                }
                 if (origin != null) return origin.latitude;
                 if (metadata != null && metadata.projection != null) return metadata.projection.originLatitude;
                 return originLatitude;
@@ -82,6 +97,13 @@ namespace NewGaza
         {
             get
             {
+                if (parsedLayout)
+                {
+                    if (originInJson) return origin == null ? double.NaN : origin.longitude;
+                    if (metadataInJson) return metadata == null || metadata.projection == null
+                        ? double.NaN : metadata.projection.originLongitude;
+                    return originLongitude;
+                }
                 if (origin != null) return origin.longitude;
                 if (metadata != null && metadata.projection != null) return metadata.projection.originLongitude;
                 return originLongitude;
@@ -119,6 +141,35 @@ namespace NewGaza
             }
         }
 
+        private static bool HasTopLevelProperty(string json, string property)
+        {
+            int depth = 0;
+            for (int i = 0; i < json.Length; i++)
+            {
+                char character = json[i];
+                if (character == '"')
+                {
+                    int start = ++i;
+                    while (i < json.Length)
+                    {
+                        if (json[i] == '\\') { i += 2; continue; }
+                        if (json[i] == '"') break;
+                        i++;
+                    }
+                    if (depth == 1 && i - start == property.Length &&
+                        string.CompareOrdinal(json, start, property, 0, property.Length) == 0)
+                    {
+                        int next = i + 1;
+                        while (next < json.Length && char.IsWhiteSpace(json[next])) next++;
+                        if (next < json.Length && json[next] == ':') return true;
+                    }
+                }
+                else if (character == '{' || character == '[') depth++;
+                else if (character == '}' || character == ']') depth--;
+            }
+            return false;
+        }
+
         private void Validate(string sourceName)
         {
             if (EffectiveSchema != 1)
@@ -129,7 +180,9 @@ namespace NewGaza
             if (!Finite(latitude) || !Finite(longitude) ||
                 Math.Abs(latitude - ExpectedOriginLatitude) > .00001 ||
                 Math.Abs(longitude - ExpectedOriginLongitude) > .00001)
-                Fail(sourceName, "origin must be latitude 31.515, longitude 34.45.");
+                Fail(sourceName, "origin must be latitude 31.515, longitude 34.45 (found " +
+                    latitude.ToString("R", CultureInfo.InvariantCulture) + ", " +
+                    longitude.ToString("R", CultureInfo.InvariantCulture) + ").");
             if (!Finite(scale) || Math.Abs(scale - ExpectedUnitsPerKilometre) > .001f)
                 Fail(sourceName, "unitsPerKm must be 50.");
             if (roads == null || roads.Length == 0)
