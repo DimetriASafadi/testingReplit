@@ -14,3 +14,9 @@ Optional camera and vehicle poses must not make otherwise valid earned progress 
 **Why:** After introducing view persistence, the user's Unity startup rejected an existing save with “Invalid saved camera.” Unity can materialize an absent optional camera as a zero-valued object, unlike the .NET serializer used by the fixtures.
 
 **How to apply:** Cover both missing references and materialized zero-valued objects in save-load compatibility tests. Never recover invalid currency, buildings, timers or progression by resetting the campaign.
+
+Unity JSON may round-trip null optional string references as empty strings. Treat an empty optional target/depot reference as absence at the checksummed load boundary, not as an unknown identifier.
+
+**Why:** A Unity startup report rejected development data during save migration; the existing validator treated every non-null string, including empty strings, as a real work-site/depot ID. The .NET fixture did not exercise this representation.
+
+**How to apply:** Normalize only explicitly optional zero-length references; keep nonempty unknown IDs, required active-job relationships, timers and progress strict. Preserve raw files and include compatibility archives in the no-new-campaign guard.

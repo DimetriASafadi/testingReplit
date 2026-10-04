@@ -43,10 +43,80 @@ internal static class Program
             Recovery();
             FreshDirectory(root, "presentation");
             PresentationRecovery();
+            FreshDirectory(root, "development-compatibility");
+            DevelopmentCompatibility();
             Console.WriteLine("PASS persistence filesystem/domain fixture / " + checks + " assertions.");
             Console.WriteLine("Uses a .NET serializer contract, NOT Unity JsonUtility; Unity Editor/Play Mode/shaders NOT RUN.");
         }
         finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
+    }
+
+    private static void DevelopmentCompatibility()
+    {
+        foreach (int combination in new[] { 1, 2, 3 })
+        {
+            var state = GameCatalog.CreateNew(Now);
+            new CityDevelopmentService(new EconomyService(state));
+            state.development.activeRubbleId = (combination & 1) != 0 ? "" : null;
+            state.development.dispatchDepotId = (combination & 2) != 0 ? "" : null;
+            string gameplay = JsonSerializer.Serialize(state, Json);
+            WriteEnvelope(state);
+            string original = File.ReadAllText(GameSaveStore.SavePath);
+            string archive = GameSaveStore.SavePath + ".compatibility-backup";
+            if (File.Exists(archive)) File.Delete(archive);
+            var loaded = GameSaveStore.Load(Now + 400, out string warning);
+            Check(warning != null && loaded.development.activeRubbleId == null &&
+                loaded.development.dispatchDepotId == null, "Empty optional references load canonically");
+            // Only the two empty references may differ; no currency, buildings,
+            // rubble, rewards, timestamps or equipment may be silently reset.
+            state.development.activeRubbleId = state.development.dispatchDepotId = null;
+            Check(JsonSerializer.Serialize(loaded, Json) == JsonSerializer.Serialize(state, Json),
+                "Compatibility leaves all earned progress/timers exactly intact");
+            Check(File.ReadAllText(GameSaveStore.SavePath) == original &&
+                File.ReadAllText(archive) == original, "Raw primary retained and original archived");
+            var again = GameSaveStore.Load(Now + 800, out _);
+            Check(File.ReadAllText(archive) == original && again.coins == loaded.coins,
+                "Repeat load does not overwrite original or tick progress");
+            GameSaveStore.Save(loaded);
+            var reopened = GameSaveStore.Load(Now + 900, out _);
+            Check(JsonSerializer.Serialize(reopened, Json) == JsonSerializer.Serialize(loaded, Json),
+                "Canonical save remains readable");
+            Check(gameplay.Contains("\"\""), "Fixture actually contained empty string references");
+        }
+        foreach (string invalid in new[] { "missing", " ", "central-missing" })
+        {
+            var state = GameCatalog.CreateNew(Now);
+            new CityDevelopmentService(new EconomyService(state));
+            state.development.activeRubbleId = "";
+            state.development.dispatchDepotId = invalid;
+            DevelopmentSaveCompatibility.NormalizeForLoad(state);
+            Reject(() => GameSaveStore.Validate(state), "Unknown nonempty depot still rejected");
+            state.development.activeRubbleId = invalid;
+            state.development.dispatchDepotId = "central";
+            Reject(() => GameSaveStore.Validate(state), "Unknown nonempty rubble still rejected");
+        }
+        var rules = Setup(out var activeEconomy);
+        var active = activeEconomy.State;
+        active.factoryLevel = active.excavators = active.trucks = active.bulldozers = 1;
+        active.equipmentUnits = null;
+        string id = rules.Data.rubble[0].id;
+        Check(rules.Clear(id, "central", Now).success, "Valid active job for reference checks");
+        Check(DevelopmentSaveCompatibility.NormalizeForLoad(active) == null &&
+            active.development.activeRubbleId == id && active.development.dispatchDepotId == "central",
+            "Valid active work references untouched");
+        active.development.dispatchDepotId = "";
+        DevelopmentSaveCompatibility.NormalizeForLoad(active);
+        Reject(() => GameSaveStore.Validate(active), "Active work missing required depot still rejected");
+        var crew = GameCatalog.CreateNew(Now);
+        new CityDevelopmentService(new EconomyService(crew));
+        crew.development.activeRubbleId = crew.development.dispatchDepotId = "";
+        crew.development.crewArrived = true;
+        DevelopmentSaveCompatibility.NormalizeForLoad(crew);
+        Reject(() => GameSaveStore.Validate(crew), "Crew arrival without work is not silently repaired");
+        if (File.Exists(GameSaveStore.SavePath)) File.Delete(GameSaveStore.SavePath);
+        if (File.Exists(GameSaveStore.SavePath + ".bak")) File.Delete(GameSaveStore.SavePath + ".bak");
+        Check(File.Exists(GameSaveStore.SavePath + ".compatibility-backup"), "Compatibility archive retains existing progress");
+        Reject(() => GameSaveStore.Load(Now, out _), "Archive-only directory must never silently start a new campaign");
     }
 
     private static void FreshDirectory(string root, string name)

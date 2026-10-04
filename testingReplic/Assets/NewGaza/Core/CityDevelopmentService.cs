@@ -232,23 +232,25 @@ namespace NewGaza.Core
             if (data == null) return;
             const string error = "بيانات مواقع البناء غير صالحة؛ لم تتم إعادة ضبط الحفظ";
             if (data.schema != 1 || data.buildings == null || data.rubble == null || data.buildings.Length > MaximumBuildings)
-                throw new InvalidOperationException(error);
+                throw new InvalidOperationException(error + " [development schema/arrays: schema=" + data.schema + "]");
             if (!data.initialized)
             {
                 if (data.buildings.Length != 0 || data.rubble.Length != 0 || data.activeRubbleId != null || data.dispatchDepotId != null)
-                    throw new InvalidOperationException(error);
+                    throw new InvalidOperationException(error + " [uninitialized development contains progress/references]");
                 return;
             }
             int expected = 0;
             foreach (var district in GameCatalog.Districts) expected += district.projects.Length;
-            if (data.rubble.Length != expected) throw new InvalidOperationException(error);
+            if (data.rubble.Length != expected)
+                throw new InvalidOperationException(error + " [rubble count=" + data.rubble.Length + ", expected=" + expected + "]");
             var ids = new HashSet<string>(StringComparer.Ordinal);
             foreach (var site in data.rubble)
             {
                 if (site == null || site.district < 0 || site.district >= state.districts.Length ||
                     Array.Find(GameCatalog.Districts[site.district].projects, p => p.id == site.projectId) == null ||
                     site.id != GameCatalog.Districts[site.district].id + "/" + site.projectId || !ids.Add(site.id) ||
-                    (site.cleared && !state.districts[site.district].unlocked)) throw new InvalidOperationException(error);
+                    (site.cleared && !state.districts[site.district].unlocked))
+                    throw new InvalidOperationException(error + " [invalid rubble identity/district: " + (site?.id ?? "null") + "]");
             }
             ids.Clear();
             foreach (var building in data.buildings)
@@ -261,20 +263,21 @@ namespace NewGaza.Core
                     building.startedUtc > state.lastSeenUtc || building.finishUtc <= building.startedUtc ||
                     building.finishUtc - building.startedUtc != definition.duration ||
                     (building.completed && (building.finishUtc > state.lastSeenUtc || building.lastIncomeUtc < building.finishUtc || building.lastIncomeUtc > state.lastSeenUtc)) ||
-                    (!building.completed && building.lastIncomeUtc != 0)) throw new InvalidOperationException(error);
+                    (!building.completed && building.lastIncomeUtc != 0))
+                    throw new InvalidOperationException(error + " [invalid building identity/location/timer: " + (building?.id ?? "null") + "]");
             }
             if (data.activeRubbleId != null)
             {
                 var site = Array.Find(data.rubble, s => s.id == data.activeRubbleId);
                 if (site == null || site.cleared || site.district != state.jobDistrict || state.jobStage == JobStage.Idle || data.dispatchDepotId == null)
-                    throw new InvalidOperationException(error);
+                    throw new InvalidOperationException(error + " [activeRubbleId=" + data.activeRubbleId + ", stage=" + state.jobStage + "]");
             }
-            else if (data.crewArrived) throw new InvalidOperationException(error);
+            else if (data.crewArrived) throw new InvalidOperationException(error + " [crewArrived without active rubble]");
             if (data.dispatchDepotId != null && data.dispatchDepotId != "central")
             {
                 var depot = Array.Find(data.buildings, b => b.id == data.dispatchDepotId);
                 if (depot == null || !depot.completed || !CityBuildingCatalog.Find(depot.definitionId).EquipmentDepot)
-                    throw new InvalidOperationException(error);
+                    throw new InvalidOperationException(error + " [dispatchDepotId=" + data.dispatchDepotId + " is not a completed depot]");
             }
         }
 

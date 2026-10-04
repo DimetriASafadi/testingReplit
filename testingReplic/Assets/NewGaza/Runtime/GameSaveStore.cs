@@ -51,7 +51,10 @@ namespace NewGaza
             if (failure != null || File.Exists(SavePath + ".damaged") ||
                 File.Exists(SavePath + ".presentation-backup") ||
                 File.Exists(SavePath + ".bak.presentation-backup") ||
-                File.Exists(SavePath + ".tmp.presentation-backup"))
+                File.Exists(SavePath + ".tmp.presentation-backup") ||
+                File.Exists(SavePath + ".compatibility-backup") ||
+                File.Exists(SavePath + ".bak.compatibility-backup") ||
+                File.Exists(SavePath + ".tmp.compatibility-backup"))
                 throw new InvalidDataException("Save files are unreadable. Your progress has NOT been reset; files have been preserved.", failure);
             return GameCatalog.CreateNew(now);
         }
@@ -64,6 +67,7 @@ namespace NewGaza
                 || envelope.checksum != Hash(envelope.payload))
                 throw new InvalidDataException("Unsupported or damaged save envelope.");
             var state = JsonUtility.FromJson<GameState>(envelope.payload);
+            string compatibilityWarning = DevelopmentSaveCompatibility.NormalizeForLoad(state);
             // Camera/fleet poses are optional presentation, not earned progress.
             // Normalize only these after verifying the ORIGINAL payload checksum.
             // Unity may create a zero-zoom camera for an absent legacy field.
@@ -73,13 +77,19 @@ namespace NewGaza
             state = GameStateMigration.Upgrade(state);
             // Domain validation is authoritative; invalid primary files must also try the backup.
             Validate(state);
+            if (compatibilityWarning != null)
+            {
+                string original = path + ".compatibility-backup";
+                if (!File.Exists(original)) File.Copy(path, original, false);
+                warning = compatibilityWarning;
+            }
             if (presentationWarning != null)
             {
                 // Retain raw evidence before any later normal Save rotates files.
                 // Do not overwrite the first original affected save on repeat loads.
                 string original = path + ".presentation-backup";
                 if (!File.Exists(original)) File.Copy(path, original, false);
-                warning = presentationWarning;
+                warning = (warning == null ? "" : warning + "\n") + presentationWarning;
             }
             return state;
         }
