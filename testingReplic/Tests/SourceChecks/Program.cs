@@ -44,6 +44,7 @@ internal static class Program
             }
             CheckContracts(roots);
             CheckPointerProjection(roots);
+            CheckNativeWindowLayout(roots);
             Failures.AddRange(EditorCompilationChecks.Check(sourceRoot));
             CheckSceneBootstrap(sourceRoot, roots);
             CheckDistrictFog(sourceRoot, roots);
@@ -2356,6 +2357,38 @@ internal static class Program
 
     private static string Compact(string source) =>
         new string(source.Where(c => !char.IsWhiteSpace(c)).ToArray());
+
+    private static void CheckNativeWindowLayout(Dictionary<string, CompilationUnitSyntax> roots)
+    {
+        string hud = Compact(roots["UI/CityHud.cs"].ToFullString());
+        string development = Compact(roots["UI/CityDevelopmentUI.cs"].ToFullString());
+        string home = Compact(roots["UI/CityHudMainMenu.cs"].ToFullString());
+        string layout = Compact(roots["UI/CityUiLayout.cs"].ToFullString());
+        Require(hud.Contains("CityUiLayout.Apply(canvas,scaler,safe)") &&
+            development.Contains("CityUiLayout.Apply(canvas,scaler,safe)") &&
+            layout.Contains("CanvasScaler.ScaleMode.ConstantPixelSize") &&
+            layout.Contains("canvas.scaleFactor=viewport.scale"),
+            "All native canvases must share logical safe-area coordinates and scale.");
+        Require(!development.Contains("lastSafe.width") && !development.Contains("lastSafe.height"),
+            "Development panel geometry must not mix screen pixels with scaled canvas units.");
+        foreach (string name in new[] { "Close guide", "Close notification", "Close modal" })
+            Require(hud.Contains("\"" + name.Replace(" ", "") + "\""), name + " must have an explicit close control.");
+        foreach (string name in new[] { "Close region", "Close work panel" })
+            Require(development.Contains("\"" + name.Replace(" ", "") + "\""), name + " must have an explicit close control.");
+        Require(hud.Contains("ActionButton(confirmationPanel,\"إغلاق\",CloseConfirmation") &&
+            home.Contains("mainMenuClose=ActionButton(") && home.Contains("ContinueReconstruction"),
+            "Confirmation and home screen must provide a visible close path.");
+        Require(hud.Contains("BlockingWindowVisible||StoreVisible") &&
+            hud.Contains("elseif(StoreVisible)session.Development.CloseStore()") &&
+            hud.Contains("session.Development.CloseWorkPanel()") &&
+            development.Contains("session.Hud.BeginStoreWindow()") &&
+            development.Contains("session.Hud.EndStoreWindow()") &&
+            development.Contains("boolblocked=session.Hud!=null&&session.Hud.BlockingWindowVisible"),
+            "Native windows must coordinate mutual exclusion, Back and pointer-up camera blocking.");
+        Require(home.Contains("if(modalObject!=null||confirmationObject!=null)return;") &&
+            development.Contains("storeCanvas.overrideSorting=true;storeCanvas.sortingOrder=200;"),
+            "Home chrome must not cover modal controls; store must have its own overlay layer.");
+    }
 
     private static void CheckPointerProjection(Dictionary<string, CompilationUnitSyntax> roots)
     {

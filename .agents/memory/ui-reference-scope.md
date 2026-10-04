@@ -16,3 +16,9 @@ description: How to use the user's menu reference without inventing unsupported 
 **Why:** The user explicitly wants subtle visual feedback, not elaborate effects that reduce performance.
 
 **How to apply:** Use bounded, brief UI animation and shared low-poly factory parts; trigger achievements, currency and district reveals only from actual state changes and suppress replay when loading saved progress.
+
+All native pages, confirmation dialogs and small world panels need distinguishable purposes and an explicit close path. Layout must adapt to Unity Game View dimensions and safe areas.
+
+**Why:** The user could not distinguish the game's many windows, reported missing close controls, and saw buttons outside the screen/canvas in Unity.
+
+**How to apply:** Use one scale/coordinate policy for every canvas. Do not mix raw screen pixels and scaled logical dimensions. Coordinate window visibility and input blocking centrally so one window cannot obscure another's close controls.

@@ -20,6 +20,7 @@ namespace NewGaza
         private RectTransform mainMenuActions;
         private RectTransform mainMenuActionContent;
         private ScrollRect mainMenuActionScroll;
+        private Button mainMenuClose;
         private RectTransform mainMenuIdentity;
         private RectTransform mainMenuHero;
         private RawImage mainMenuThumbnail;
@@ -48,6 +49,7 @@ namespace NewGaza
 
         private void BringHomeTopForward()
         {
+            if (modalObject != null || confirmationObject != null) return;
             if (MainMenuVisible && mainMenuHeader != null) mainMenuHeader.SetAsLastSibling();
         }
 
@@ -118,6 +120,7 @@ namespace NewGaza
 
         private void BuildHomeRail()
         {
+            mainMenuClose = ActionButton(mainMenuCenter, "إغلاق · المدينة", ContinueReconstruction, Card, CityHudIcons.Icon.Close, 14);
             string[] labels = { "المدينة", "الخريطة", "المصنع", "المكافآت", "الإحصائيات", "المعدات" };
             Action[] actions =
             {
@@ -340,7 +343,8 @@ namespace NewGaza
                 Place(mainMenuDistrict, width - margin - districtWidth, districtTop, districtWidth, districtHeight, true);
             }
 
-            Place(mainMenuLogo.rectTransform, 8, 4, centerWidth - 16, portrait ? 62 : 92, true);
+            Place(mainMenuClose.GetComponent<RectTransform>(), centerWidth - 138, 4, 130, 44, true);
+            Place(mainMenuLogo.rectTransform, 8, 4, centerWidth - 156, portrait ? 62 : 92, true);
             Place(mainMenuCenter.Find("Home slogan") as RectTransform, 8, portrait ? 66 : 100, centerWidth - 16, 30, true);
             Place(mainMenuHero, centerWidth * 0.06f, portrait ? 100 : 138, centerWidth * 0.88f, portrait ? 60 : 84, true);
             Place(mainMenuHero.Find("Reconstruction icon") as RectTransform, 14, 14, portrait ? 48 : 58, portrait ? 48 : 58, true);
@@ -457,14 +461,15 @@ namespace NewGaza
             mainMenuHeader.gameObject.SetActive(show);
             if (header != null) header.gameObject.SetActive(!show);
             if (activity != null) activity.gameObject.SetActive(!show);
-            if (tutorialObject != null) tutorialObject.SetActive(!show && !(Screen.height > Screen.width && selectedPlot != -1));
+            if (tutorialObject != null) tutorialObject.SetActive(!show && !tutorialDismissed &&
+                !(Screen.height > Screen.width && selectedPlot != -1));
             if (navigation != null) navigation.gameObject.SetActive(!show);
             if (selectionObject != null) selectionObject.SetActive(!show && selectedPlot != -1);
             if (session != null && session.Development != null) session.Development.SetHomeVisible(show);
             if (!show && wasVisible) ReleaseCameraAfterTouch();
             else
             {
-                CityCamera.ModalOpen = show || modalObject != null || confirmationObject != null;
+                CityCamera.ModalOpen = BlockingWindowVisible || StoreVisible;
                 closingCameraBlock = false;
             }
             if (show)

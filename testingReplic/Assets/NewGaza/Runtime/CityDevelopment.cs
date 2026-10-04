@@ -183,6 +183,11 @@ namespace NewGaza
             ui.OpenStore();
         }
 
+        public bool StoreOpen => ui != null && ui.StoreOpen;
+        public bool WorkPanelVisible => ui != null && ui.WorkPanelVisible;
+        public void CloseStore() { if (ui != null) ui.CloseStore(); }
+        public void CloseWorkPanel() { if (ui != null) ui.DismissAction(); }
+
         public void SetHomeVisible(bool visible)
         {
             if (visible) { ClearSelection(); ui.CloseStore(); }
@@ -193,6 +198,7 @@ namespace NewGaza
         {
             chosen = CityBuildingCatalog.Find(id);
             if (chosen == null) { session.Notify("المبنى غير معروف"); return; }
+            session.SelectPlot(-1);
             selectedSite = selectedBuilding = null; turn = 0; hasPreview = true;
             preview = cameraControl.AudioFocus;
             ui.CloseStore();

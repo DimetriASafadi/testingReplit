@@ -31,6 +31,7 @@ internal static class Program
     {
         Catalog();
         ScreenInputChecks.Run(Check);
+        InterfaceViewportChecks.Run(Check);
         PlacementAndTimers();
         ClearingAndTravel();
         NeedsRewardsAndPersistence();

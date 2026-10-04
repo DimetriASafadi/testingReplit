@@ -13,6 +13,14 @@ namespace NewGaza
         private GameSession session;
         private Font font;
         private RectTransform safe, titlePanel, actionPanel, shopPanel, shopContent;
+        private RectTransform toolbar, shopShield;
+        private Canvas canvas;
+        private CanvasScaler scaler;
+        private ArabicLabel actionHeading;
+        private bool regionVisible;
+        private int dismissedClaimDistrict = -1, lastFocus = -2;
+        public bool StoreOpen => shop != null && shop.activeInHierarchy;
+        public bool WorkPanelVisible => actionPanel != null && actionPanel.gameObject.activeInHierarchy;
         private ArabicLabel title, needs, actionText, categoryText;
         private Button action, rotate, dismiss;
         private GameObject shop;
@@ -28,21 +36,37 @@ namespace NewGaza
             development = controller; session = game;
             font = CityTypography.FontFor(CityTextRole.Body);
             if (font == null) throw new InvalidOperationException("Arabic UI font is missing");
-            var canvas = gameObject.AddComponent<Canvas>(); canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas = gameObject.AddComponent<Canvas>(); canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            scaler = gameObject.AddComponent<CanvasScaler>();
             canvas.sortingOrder = 25; gameObject.AddComponent<GraphicRaycaster>();
             safe = Rect("Safe area", transform); Stretch(safe);
             titlePanel = Panel("Camera region", safe, false);
             title = Label(titlePanel, "", 19); Box(title.rectTransform, 8, 5, 0, 28, true);
             needs = Label(titlePanel, "", 12); Box(needs.rectTransform, 8, 35, 0, 58, true);
-            var shopButton = Button(safe, "متجر المباني", () => development.OpenStore());
-            Box(shopButton.transform as RectTransform, 12, 232, 150, 40, true);
+            var closeRegion = Button(titlePanel, "إغلاق", () =>
+            { regionVisible = false; session.Hud.EndStoreWindow(); Refresh(); });
+            closeRegion.name = "Close region";
+            toolbar = Rect("World tools", safe);
+            var shopButton = Button(toolbar, "متجر المباني", () => development.OpenStore());
+            Box(shopButton.transform as RectTransform, 0, 0, 184, 44, true);
+            var regionButton = Button(toolbar, "احتياجات الحي", () => { regionVisible = !regionVisible; Refresh(); });
+            Box(regionButton.transform as RectTransform, 192, 0, 148, 44, true);
             actionPanel = Panel("Local work / building confirmation", safe, true);
-            actionText = Label(actionPanel, "", 15); Box(actionText.rectTransform, 10, 6, 0, 90, true);
+            actionPanel.GetComponent<Image>().color = new Color(18f / 255, 61f / 255, 112f / 255, .98f);
+            actionHeading = Label(actionPanel, "تفاصيل الموقع", 19);
+            actionText = Label(actionPanel, "", 15);
+            var closeAction = Button(actionPanel, "إغلاق", DismissAction); closeAction.name = "Close work panel";
             action = Button(actionPanel, "تأكيد", DoAction);
             rotate = Button(actionPanel, "تدوير", () => development.Rotate());
-            dismiss = Button(actionPanel, "إلغاء", () => development.ClearSelection());
-            shopPanel = Panel("Building shop", safe, true); shop = shopPanel.gameObject; Stretch(shopPanel);
-            var heading = Label(shopPanel, "متجر المباني — نماذج تجريبية", 21); Box(heading.rectTransform, 12, 16, 0, 38, true);
+            dismiss = Button(actionPanel, "إغلاق", DismissAction);
+            shopShield = Panel("Store touch shield", safe, true); Stretch(shopShield);
+            shopShield.GetComponent<Image>().color = new Color(0, 0, 0, .8f);
+            var storeCanvas = shopShield.gameObject.AddComponent<Canvas>();
+            storeCanvas.overrideSorting = true; storeCanvas.sortingOrder = 200;
+            shopShield.gameObject.AddComponent<GraphicRaycaster>();
+            shop = shopShield.gameObject;
+            shopPanel = Panel("Building shop", shopShield, true);
+            var heading = Label(shopPanel, "صفحة · متجر المباني", 21); Box(heading.rectTransform, 12, 16, 0, 38, true);
             var close = Button(shopPanel, "إغلاق", CloseStore); Box(close.transform as RectTransform, 12, 60, 90, 36, true);
             var filter = Button(shopPanel, "التصنيف التالي", () => { category = (category + 2) % 8 - 1; PopulateStore(); });
             Box(filter.transform as RectTransform, 112, 60, 150, 36, true);
@@ -75,36 +99,62 @@ namespace NewGaza
         private void Resize()
         {
             lastWidth = Screen.width; lastHeight = Screen.height; lastSafe = Screen.safeArea;
-            safe.anchorMin = new Vector2(lastSafe.xMin / Screen.width, lastSafe.yMin / Screen.height);
-            safe.anchorMax = new Vector2(lastSafe.xMax / Screen.width, lastSafe.yMax / Screen.height);
-            safe.offsetMin = safe.offsetMax = Vector2.zero;
-            float width = Mathf.Min(lastSafe.width - 24, 420);
-            Box(titlePanel, 12, lastSafe.height > lastSafe.width ? 126 : 104, width, 100, true);
+            if (!CityUiLayout.Apply(canvas, scaler, safe)) return;
+            float safeWidth = safe.rect.width, safeHeight = safe.rect.height;
+            bool portrait = safeHeight > safeWidth;
+            float width = Mathf.Min(safeWidth - 24, 420);
+            float toolbarTop = portrait ? 308 : 156;
+            Box(toolbar, 12, toolbarTop, 340, 44, true);
+            Box(titlePanel, 12, toolbarTop + 52, width, 142, true);
+            Box(title.rectTransform, 12, 8, width - 110, 32, false);
+            Box(needs.rectTransform, 12, 48, width - 24, 84, false);
+            Box(titlePanel.Find("Close region") as RectTransform, 8, 8, 84, 36, true);
             actionPanel.anchorMin = new Vector2(.5f, 0); actionPanel.anchorMax = new Vector2(.5f, 0);
-            actionPanel.pivot = new Vector2(.5f, 0); actionPanel.anchoredPosition = new Vector2(0, 178);
-            actionPanel.sizeDelta = new Vector2(Mathf.Min(lastSafe.width - 24, 520), 146);
-            if (lastSafe.width > lastSafe.height)
+            actionPanel.pivot = new Vector2(.5f, 0); actionPanel.anchoredPosition = new Vector2(0, 116);
+            actionPanel.sizeDelta = new Vector2(Mathf.Min(safeWidth - 24, 620), 212);
+            if (!portrait)
             {
                 actionPanel.anchorMin = actionPanel.anchorMax = Vector2.zero;
-                actionPanel.pivot = Vector2.zero; actionPanel.anchoredPosition = new Vector2(12, 98);
-                actionPanel.sizeDelta = new Vector2(Mathf.Min(lastSafe.width * .52f, 520), 146);
-                Box(titlePanel, 12, 104, Mathf.Min(lastSafe.width * .4f, 420), 100, true);
+                actionPanel.pivot = Vector2.zero; actionPanel.anchoredPosition = new Vector2(12, 116);
+                actionPanel.sizeDelta = new Vector2(Mathf.Min(safeWidth * .47f, 620), 212);
             }
-            Box(categoryText.rectTransform, 12, 103, Mathf.Max(100, lastSafe.width - 194), 32, false);
+            shopPanel.anchorMin = shopPanel.anchorMax = shopPanel.pivot = new Vector2(.5f, .5f);
+            shopPanel.anchoredPosition = Vector2.zero;
+            shopPanel.sizeDelta = new Vector2(Mathf.Min(safeWidth - 24, 850), Mathf.Min(safeHeight - 24, 900));
+            Box(categoryText.rectTransform, 12, 103, shopPanel.sizeDelta.x - 206, 32, false);
             categoryText.alignment = TextAnchor.UpperLeft;
+            float actionWidth = actionPanel.sizeDelta.x;
+            Box(actionHeading.rectTransform, 12, 8, actionWidth - 112, 32, false);
+            Box(actionPanel.Find("Close work panel") as RectTransform, 8, 8, 84, 36, true);
+            Box(actionText.rectTransform, 12, 48, actionWidth - 24, 96, false);
             float buttonWidth = (actionPanel.sizeDelta.x - 32) / 3;
-            Box(action.transform as RectTransform, 8, 102, buttonWidth, 36, false);
-            Box(rotate.transform as RectTransform, 16 + buttonWidth, 102, buttonWidth, 36, false);
-            Box(dismiss.transform as RectTransform, 24 + buttonWidth * 2, 102, buttonWidth, 36, false);
+            Box(action.transform as RectTransform, 8, 152, buttonWidth, 44, false);
+            Box(rotate.transform as RectTransform, 16 + buttonWidth, 152, buttonWidth, 44, false);
+            Box(dismiss.transform as RectTransform, 24 + buttonWidth * 2, 152, buttonWidth, 44, false);
         }
 
         public void OpenStore() => OpenStore(null);
         internal void OpenStore(Vector3? target)
         {
-            storeLocation = target; shop.SetActive(true); CityCamera.ModalOpen = true; PopulateStore();
+            session.Hud.BeginStoreWindow();
+            storeLocation = target; shop.SetActive(true); CityCamera.ModalOpen = true; Resize(); PopulateStore(); Refresh();
         }
 
-        public void CloseStore() { shop.SetActive(false); CityCamera.ModalOpen = false; }
+        public void CloseStore()
+        {
+            bool wasOpen = StoreOpen;
+            shop.SetActive(false);
+            if (wasOpen && session.Hud != null) session.Hud.EndStoreWindow();
+            Refresh();
+        }
+
+        internal void DismissAction()
+        {
+            development.ClearSelection();
+            dismissedClaimDistrict = development.FocusDistrict;
+            session.Hud.EndStoreWindow();
+            Refresh();
+        }
 
         private void PopulateStore()
         {
@@ -137,6 +187,10 @@ namespace NewGaza
         {
             if (title == null || development.Rules == null) return;
             int d = development.FocusDistrict;
+            if (lastFocus != d) { lastFocus = d; dismissedClaimDistrict = -1; }
+            bool blocked = session.Hud != null && session.Hud.BlockingWindowVisible;
+            toolbar.gameObject.SetActive(!blocked && !StoreOpen);
+            titlePanel.gameObject.SetActive(regionVisible && !blocked && !StoreOpen);
             if (d < 0) { title.SetText("خارج الأحياء — الساحل أو حدود المدينة"); needs.SetText(""); }
             else
             {
@@ -154,7 +208,11 @@ namespace NewGaza
             bool building = development.SelectedBuilding != null;
             bool claim = d >= 0 && session.State.districts[d].unlocked && !session.State.districts[d].rewardClaimed &&
                 CityDevelopmentService.Complete(session.State, d);
-            actionPanel.gameObject.SetActive(!shop.activeSelf && (placing || site || building || claim));
+            actionPanel.gameObject.SetActive(!blocked && !StoreOpen &&
+                (placing || site || building || (claim && dismissedClaimDistrict != d)));
+            actionHeading.SetText(placing ? "تأكيد البناء" : site ? "تفاصيل موقع الركام" :
+                building ? "تفاصيل المبنى" : "مكافأة الحي");
+            SetButton(dismiss, placing ? "إلغاء الوضع" : "إغلاق");
             rotate.gameObject.SetActive(placing);
             if (placing)
             {
@@ -197,6 +255,7 @@ namespace NewGaza
         internal void SetHomeVisible(bool visible)
         {
             GetComponentInChildren<Canvas>(true).gameObject.SetActive(!visible);
+            if (!visible) { Resize(); Refresh(); }
         }
 
         private static string StageText(JobStage stage) => stage == JobStage.Clearing ? "الانتقال ثم إزالة الركام" :

@@ -49,6 +49,9 @@ namespace NewGaza
         private Font arabicFont;
         private Canvas canvas;
         private CanvasScaler scaler;
+        private bool tutorialDismissed;
+        public bool BlockingWindowVisible => MainMenuVisible || modalObject != null || confirmationObject != null;
+        private bool StoreVisible => session != null && session.Development != null && session.Development.StoreOpen;
         private RectTransform safe;
         private RectTransform header, activity, tutorial, navigation, selection;
         private ArabicLabel titleLabel, balanceLabel, resourceLabel, districtLabel, activityLabel, tutorialLabel, selectionLabel;
@@ -130,10 +133,7 @@ namespace NewGaza
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 100;
             scaler = root.GetComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            scaler.matchWidthOrHeight = 0.5f;
-            scaler.referenceResolution = new Vector2(1280, 720);
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
             safe = Rect("Safe area", root.transform);
             Stretch(safe, 0, 0, 0, 0);
         }
@@ -167,6 +167,9 @@ namespace NewGaza
             tutorialLabel = Label(tutorial, "", 18, Cream);
             tutorialLabel.alignment = TextAnchor.UpperRight;
             tutorialButton = ActionButton(tutorial, "ابدأ", TutorialAction, Teal);
+            var closeGuide = ActionButton(tutorial, "إغلاق الدليل", () =>
+            { tutorialDismissed = true; tutorialObject.SetActive(false); ReleaseCameraAfterTouch(); }, Card, CityHudIcons.Icon.Close, 12);
+            closeGuide.name = "Close guide";
 
             selection = Surface("Deliberate selection", safe, Panel);
             selectionObject = selection.gameObject;
@@ -192,7 +195,10 @@ namespace NewGaza
             toastPanel = Surface("Notification", safe, Navy);
             toastObject = toastPanel.gameObject;
             toastLabel = Label(toastPanel, "", 20, Cream);
-            Stretch(toastLabel.rectTransform, 20, 12, 20, 12);
+            Stretch(toastLabel.rectTransform, 20, 12, 84, 12);
+            var closeToast = ActionButton(toastPanel, "إغلاق", () =>
+            { toastObject.SetActive(false); ReleaseCameraAfterTouch(); }, Card, CityHudIcons.Icon.Close, 12);
+            closeToast.name = "Close notification";
             toastPanel.GetComponent<Image>().raycastTarget = false;
             toastObject.SetActive(false);
         }
@@ -228,16 +234,25 @@ namespace NewGaza
             if (!initialized) return;
             AnimateFeedback();
             LayoutSafeArea(false);
+            if (confirmationObject != null)
+                Place(toastPanel, Mathf.Max(12, (safe.rect.width - 620) * .5f), 4,
+                    Mathf.Min(safe.rect.width - 24, 620), 104, true);
+            else
+                Place(toastPanel, Mathf.Max(12, (safe.rect.width - 620) * .5f), 105,
+                    Mathf.Min(safe.rect.width - 24, 620), 104, false);
             if (closingCameraBlock && Time.unscaledTime >= releaseBlockUntil && !PointerHeld())
             {
                 closingCameraBlock = false;
-                CityCamera.ModalOpen = MainMenuVisible || modalObject != null || confirmationObject != null;
+                CityCamera.ModalOpen = BlockingWindowVisible || StoreVisible;
             }
             if (toastObject.activeSelf && Time.unscaledTime > toastUntil) toastObject.SetActive(false);
             if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
             {
                 if (confirmationObject != null) CloseConfirmation();
+                else if (StoreVisible) session.Development.CloseStore();
                 else if (page != Page.None) ClosePage();
+                else if (session.Development != null && session.Development.WorkPanelVisible)
+                    session.Development.CloseWorkPanel();
                 else if (MainMenuVisible) ContinueReconstruction();
                 else ShowMainMenu(true);
             }
@@ -285,15 +300,11 @@ namespace NewGaza
             previousSafe = area;
             previousWidth = Screen.width;
             previousHeight = Screen.height;
-            bool portrait = Screen.height > Screen.width;
-            scaler.referenceResolution = portrait ? new Vector2(720, 1280) : new Vector2(1280, 720);
-            safe.anchorMin = new Vector2(area.xMin / Math.Max(1, Screen.width), area.yMin / Math.Max(1, Screen.height));
-            safe.anchorMax = new Vector2(area.xMax / Math.Max(1, Screen.width), area.yMax / Math.Max(1, Screen.height));
-            safe.offsetMin = safe.offsetMax = Vector2.zero;
-            Canvas.ForceUpdateCanvases();
+            if (!CityUiLayout.Apply(canvas, scaler, safe)) return;
             float width = safe.rect.width;
             float height = safe.rect.height;
             if (width < 10 || height < 10) return;
+            bool portrait = height > width;
             float head = portrait ? 170 : 132;
             Place(header, 12, 12, width - 24, head, true);
             float titleWidth = portrait ? width - 270 : 265;
@@ -320,15 +331,17 @@ namespace NewGaza
             for (int i = 0; i < navigation.childCount; i++)
                 Place(navigation.GetChild(i) as RectTransform, 10 + (4 - i) * navWidth, 8, navWidth - 5, 76, false);
             float tutorialWidth = portrait ? width - 24 : Mathf.Min(420, width * 0.38f);
-            Place(tutorial, 12, 108, tutorialWidth, 122, false);
-            Place(tutorialLabel.rectTransform, 128, 10, tutorialWidth - 142, 101, true);
-            Place(tutorialButton.GetComponent<RectTransform>(), 12, 29, 104, 64, true);
+            Place(tutorial, 12, 108, tutorialWidth, 180, false);
+            Place(tutorialLabel.rectTransform, 128, 48, tutorialWidth - 142, 124, true);
+            Place(tutorial.Find("Close guide") as RectTransform, tutorialWidth - 110, 4, 102, 40, true);
+            Place(tutorialButton.GetComponent<RectTransform>(), 12, 80, 104, 64, true);
             float selectionWidth = portrait ? width - 24 : Mathf.Min(530, width * 0.47f);
             Place(selection, width - selectionWidth - 12, 108, selectionWidth, 154, false);
             Place(selectionLabel.rectTransform, 134, 10, selectionWidth - 150, 125, true);
             Place(selectionButton.GetComponent<RectTransform>(), 12, 75, 110, 64, true);
             Place(selection.Find("Clear selection") as RectTransform, 12, 8, 64, 64, true);
             Place(toastPanel, Mathf.Max(12, (width - 620) * 0.5f), 105, Mathf.Min(width - 24, 620), 104, false);
+            Place(toastPanel.Find("Close notification") as RectTransform, Mathf.Min(width - 24, 620) - 72, 12, 60, 48, true);
             LayoutModal();
             LayoutMainMenu(width, height);
             if (confirmationPanel != null)
@@ -368,7 +381,9 @@ namespace NewGaza
             RefreshTutorial();
             RefreshSelection();
             bool portrait = Screen.height > Screen.width;
-            tutorialObject.SetActive(!MainMenuVisible && !(portrait && selectedPlot != -1));
+            tutorialObject.SetActive(!tutorialDismissed && !BlockingWindowVisible && !StoreVisible &&
+                !(portrait && selectedPlot != -1) &&
+                !(session.Development != null && session.Development.WorkPanelVisible));
             RefreshMainMenu();
         }
 
@@ -492,6 +507,7 @@ namespace NewGaza
         private void OpenPage(Page requested)
         {
             if (requested == Page.None) { ClosePage(); return; }
+            if (session.Development != null) session.Development.CloseStore();
             CacheShownProgress();
             if (confirmationObject != null) CloseConfirmation();
             if (modalObject != null) Destroy(modalObject);
@@ -510,7 +526,7 @@ namespace NewGaza
 
         private void BuildModalShell()
         {
-            var blocker = Surface("Modal touch shield", safe, new Color(0.015f, 0.035f, 0.055f, 0.80f), false);
+            var blocker = Surface("Modal touch shield", safe, new Color(0.015f, 0.035f, 0.055f, 0.80f), true);
             Stretch(blocker, 0, 0, 0, 0);
             modalObject = blocker.gameObject;
             modalPanel = Surface("Modal panel", blocker, Panel);
@@ -554,13 +570,7 @@ namespace NewGaza
             if (modalPanel == null) return;
             float width = Mathf.Min(safe.rect.width - 24, 850);
             float height = Mathf.Min(safe.rect.height - 24, 900);
-            if (MainMenuVisible)
-            {
-                height = Mathf.Min(height, safe.rect.height - HomeTopHeight - 42);
-                Center(modalPanel, width, height);
-                modalPanel.anchoredPosition = new Vector2(0, -(HomeTopHeight + 14) * .5f);
-            }
-            else Center(modalPanel, width, height);
+            Center(modalPanel, width, height);
             Place(modalTitle.rectTransform, 150, 10, width - 170, 49, true);
             Place(modalSubtitle.rectTransform, 18, 60, width - 36, 55, true);
             Place(modalPanel.Find("Close modal") as RectTransform, 14, 12, 126, 64, true);
@@ -601,7 +611,7 @@ namespace NewGaza
 
         private void PageHeading(string title, string subtitle)
         {
-            modalTitle.SetText(title);
+            modalTitle.SetText("صفحة · " + title);
             modalSubtitle.SetText(subtitle);
         }
 
@@ -925,6 +935,7 @@ namespace NewGaza
             ListAction("إعادة تأطير المدينة", () => { ClosePage(); cityCamera.FrameCity(); }, Card);
             if (!string.IsNullOrEmpty(session.SaveError)) Note(session.SaveError + " لم يُعد ضبط تقدمك.", Red);
             ListAction("العودة إلى المدينة", ClosePage, Teal);
+            ListAction("إظهار دليل البداية", () => { tutorialDismissed = false; ClosePage(); }, Card);
         }
 
         private static string CleanName(string value)
@@ -971,13 +982,21 @@ namespace NewGaza
         {
             if (confirmationObject != null) CloseConfirmation();
             CityCamera.ModalOpen = true;
-            var shield = Surface("Confirmation touch shield", safe, new Color(0.01f, 0.025f, 0.04f, 0.88f), false);
+            if (session.Development != null) session.Development.CloseStore();
+            var shield = Surface("Confirmation touch shield", safe, new Color(0.01f, 0.025f, 0.04f, 0.88f), true);
             Stretch(shield, 0, 0, 0, 0);
             confirmationObject = shield.gameObject;
-            confirmationPanel = Surface("Review before transaction", shield, Panel);
+            confirmationPanel = Surface("Review before transaction", shield, Card);
             Center(confirmationPanel, Mathf.Min(safe.rect.width - 32, 620), Mathf.Min(safe.rect.height - 32, 500));
             var heading = Label(confirmationPanel, title, 26, Cream);
-            PlaceCard(heading.rectTransform, 20, 15, -40, 69);
+            var kind = Label(confirmationPanel, "حوار تأكيد · راجع العملية قبل التنفيذ", 16, Gold);
+            PlaceCard(kind.rectTransform, 20, 10, -104, 28);
+            PlaceCard(heading.rectTransform, 20, 42, -40, 44);
+            var closeDialog = ActionButton(confirmationPanel, "إغلاق", CloseConfirmation, Navy, CityHudIcons.Icon.Close, 12);
+            Place(closeDialog.GetComponent<RectTransform>(), 16, 10, 64, 38, true);
+            closeDialog.GetComponent<RectTransform>().anchorMin = closeDialog.GetComponent<RectTransform>().anchorMax = new Vector2(1, 1);
+            closeDialog.GetComponent<RectTransform>().pivot = new Vector2(1, 1);
+            closeDialog.GetComponent<RectTransform>().anchoredPosition = new Vector2(-16, -10);
             var scroll = Rect("Scrollable confirmation", confirmationPanel);
             Stretch(scroll, 20, 88, 20, 100);
             var scrollRect = scroll.gameObject.AddComponent<ScrollRect>();
@@ -1057,6 +1076,16 @@ namespace NewGaza
             closingCameraBlock = true;
             releaseBlockUntil = Time.unscaledTime + 0.22f;
         }
+
+        public void BeginStoreWindow()
+        {
+            ClosePage();
+            session.SelectPlot(-1);
+            ShowMainMenu(false);
+            CityCamera.ModalOpen = true;
+        }
+
+        public void EndStoreWindow() { ReleaseCameraAfterTouch(); }
 
         private void ShowToast(string message)
         {
