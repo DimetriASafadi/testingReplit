@@ -20,6 +20,19 @@ namespace NewGaza
 
         public static string SavePath => Path.Combine(Application.persistentDataPath, "new-gaza.json");
 
+        // Explicit reset only: keep a restorable copy, and remove every recovery file
+        // so Load cannot resurrect the previous city from .bak or .tmp.
+        public static string ArchiveAndClear()
+        {
+            string folder = Application.persistentDataPath;
+            string archive = Path.Combine(folder, "ResetBackups", DateTime.UtcNow.ToString("yyyyMMdd-HHmmss-fffffff"));
+            Directory.CreateDirectory(archive);
+            string[] files = Directory.GetFiles(folder, "new-gaza.json*");
+            foreach (string file in files) File.Copy(file, Path.Combine(archive, Path.GetFileName(file)), false);
+            foreach (string file in files) File.Delete(file);
+            return archive;
+        }
+
         public static GameState Load(long now, out string warning)
         {
             warning = null;

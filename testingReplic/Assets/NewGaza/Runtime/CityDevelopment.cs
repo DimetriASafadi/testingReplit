@@ -40,6 +40,7 @@ namespace NewGaza
         public int Rotation => turn;
         public string SelectedSite => selectedSite;
         public string SelectedBuilding => selectedBuilding;
+        public Vector3 CentralFactoryMapPosition => world.CentralDepotPosition;
 
         public Vector3 WorkPosition
         {
@@ -273,6 +274,18 @@ namespace NewGaza
             session.SelectPlot(-1);
             ui.Refresh();
             return true;
+        }
+
+        public void SelectFactory(string id)
+        {
+            var building = Rules.Building(id);
+            if (building == null || !session.State.districts[building.district].unlocked) return;
+            Cancel();
+            selectedSite = null;
+            selectedBuilding = id;
+            FocusDistrict = building.district;
+            session.SelectPlot(-1);
+            ui.Refresh();
         }
 
         public bool TryPick(Ray ray)

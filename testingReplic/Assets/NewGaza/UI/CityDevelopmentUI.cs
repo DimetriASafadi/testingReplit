@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using NewGaza.Core;
 using NewGaza.UI;
@@ -9,6 +10,65 @@ namespace NewGaza
 {
     public sealed class CityDevelopmentUI : MonoBehaviour
     {
+        private readonly Dictionary<string, RectTransform> factoryMarkers = new Dictionary<string, RectTransform>();
+        private RectTransform factoryMarkerLayer;
+
+        private void LateUpdate()
+        {
+            if (development == null || Camera.main == null) return;
+            if (factoryMarkerLayer == null)
+            {
+                factoryMarkerLayer = Rect("Recycling factories on map", transform);
+                Stretch(factoryMarkerLayer);
+                factoryMarkerLayer.SetAsFirstSibling();
+            }
+            foreach (var marker in factoryMarkers.Values) marker.gameObject.SetActive(false);
+            var state = session.State;
+            if (state.factoryLevel > 0 && !state.development.requiresPlacedFactory &&
+                !state.development.dynamicFactoryProvided)
+                ShowFactoryMarker("central", development.CentralFactoryMapPosition + Vector3.up * .5f,
+                    true, () => session.Notify("هذا مصنع إعادة التدوير المركزي المحفوظ من تقدمك السابق."));
+            foreach (var building in development.Rules.Data.buildings)
+            {
+                var definition = CityBuildingCatalog.Find(building.definitionId);
+                if (definition.category != BuildingCategory.Recycling) continue;
+                if (!state.districts[building.district].unlocked) continue;
+                string id = building.id;
+                ShowFactoryMarker(id, new Vector3(building.x, definition.floors * .15f + .25f, building.z),
+                    building.completed, () => development.SelectFactory(id));
+            }
+        }
+
+        private void ShowFactoryMarker(string id, Vector3 position, bool completed, Action select)
+        {
+                if (!factoryMarkers.TryGetValue(id, out var marker))
+                {
+                    var button = Button(factoryMarkerLayer, "مصنع إعادة التدوير", select);
+                    button.gameObject.name = "Recycling factory map marker " + id;
+                    marker = (RectTransform)button.transform;
+                    marker.anchorMin = marker.anchorMax = marker.pivot = new Vector2(.5f, .5f);
+                    marker.sizeDelta = new Vector2(214, 56);
+                    button.GetComponent<Image>().color = new Color(.02f, .32f, .23f, .97f);
+                    var outline = button.gameObject.AddComponent<Outline>();
+                    outline.effectColor = new Color(.4f, 1f, .7f);
+                    outline.effectDistance = new Vector2(2, -2);
+                    button.GetComponentInChildren<ArabicLabel>().fontSize = 19;
+                    factoryMarkers.Add(id, marker);
+                }
+                var screen = Camera.main.WorldToViewportPoint(position);
+                bool visible = !development.Placing && screen.z > 0 && screen.x >= 0 && screen.x <= 1 &&
+                    screen.y >= 0 && screen.y <= 1;
+                marker.gameObject.SetActive(visible);
+                if (!visible) return;
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(factoryMarkerLayer,
+                    new Vector2(screen.x * Screen.width, screen.y * Screen.height), null, out var point);
+                marker.anchoredPosition = new Vector2(
+                    Mathf.Clamp(point.x, factoryMarkerLayer.rect.xMin + 110, factoryMarkerLayer.rect.xMax - 110),
+                    Mathf.Clamp(point.y, factoryMarkerLayer.rect.yMin + 170, factoryMarkerLayer.rect.yMax - 120));
+                marker.GetComponentInChildren<ArabicLabel>().SetText("مصنع إعادة التدوير\n" +
+                    (id == "central" ? "جاهز • مصنع مركزي" :
+                        completed ? "جاهز • اضغط للتحديد" : "قيد البناء • اضغط للتحديد"));
+        }
         private CityDevelopment development;
         private GameSession session;
         private Font font;

@@ -45,6 +45,21 @@ internal static class Program
             PresentationRecovery();
             FreshDirectory(root, "development-compatibility");
             DevelopmentCompatibility();
+            FreshDirectory(root, "explicit-reset");
+            var resetState = GameCatalog.CreateNew(Now);
+            resetState.coins = 12345;
+            GameSaveStore.Save(resetState);
+            GameSaveStore.Save(resetState);
+            File.Copy(GameSaveStore.SavePath, GameSaveStore.SavePath + ".tmp");
+            File.Copy(GameSaveStore.SavePath, GameSaveStore.SavePath + ".damaged");
+            File.Copy(GameSaveStore.SavePath, GameSaveStore.SavePath + ".presentation-backup");
+            string archive = GameSaveStore.ArchiveAndClear();
+            Check(Directory.GetFiles(Application.persistentDataPath, "new-gaza.json*").Length == 0,
+                "explicit reset removes primary and every recovery file");
+            Check(Directory.GetFiles(archive).Length == 5, "reset archives all save files before removal");
+            var restarted = GameSaveStore.Load(Now + 1, out _);
+            Check(restarted.coins == 1000000 && restarted.development.buildings.Length == 0 &&
+                restarted.jobStage == JobStage.Idle, "reset starts fresh city with million and no restored construction");
             Console.WriteLine("PASS persistence filesystem/domain fixture / " + checks + " assertions.");
             Console.WriteLine("Uses a .NET serializer contract, NOT Unity JsonUtility; Unity Editor/Play Mode/shaders NOT RUN.");
         }

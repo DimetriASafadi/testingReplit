@@ -55,7 +55,8 @@ internal static class Program
             VerifyUtilitySites(map, context, requests);
             VerifyExtrusions(map, context, models, requests);
             VerifyExtent(map);
-            Check(models.ContextModelCopies <= 1200, "authored low-LOD copy cap");
+            Check(models.ContextModelCopies <= CityUrbanContext.MaxAuthoredModelCopies, "authored low-LOD copy cap");
+            Check(models.ContextModelCopies >= 4000, "dense authored destroyed buildings, not merely a raised unused cap");
             for (int i = 0; i < models.ContextPlacements.Count; i++)
                 Check(models.ContextPlacements[i].footprintIsLocal,
                     "context placement requests oriented local footprint sizing");

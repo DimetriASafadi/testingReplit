@@ -10,6 +10,20 @@ internal static class SalvageScenarioChecks
         var economy = new EconomyService(GameCatalog.CreateNew(start));
         var rules = new CityDevelopmentService(economy);
         var state = economy.State;
+        check(state.coins == 1000000 && state.millionOpeningBalanceApplied, "fresh opening receives one million");
+        var prior = GameCatalog.CreateNew(start);
+        prior.millionOpeningBalanceApplied = false;
+        prior.coins = 12000;
+        prior.stock.iron = 7;
+        check(GameCatalog.ApplyMillionOpeningBalance(prior) && prior.coins == 1000000 && prior.stock.iron == 7,
+            "existing lower balance receives one-time million without changing stock");
+        prior.coins -= 15000;
+        var fundingOptions = new JsonSerializerOptions { IncludeFields = true };
+        prior = JsonSerializer.Deserialize<GameState>(JsonSerializer.Serialize(prior, fundingOptions), fundingOptions);
+        check(!GameCatalog.ApplyMillionOpeningBalance(prior) && prior.coins == 985000, "reload never refills spent opening money");
+        prior.millionOpeningBalanceApplied = false;
+        prior.coins = 2000000;
+        check(GameCatalog.ApplyMillionOpeningBalance(prior) && prior.coins == 2000000, "higher earned balance is preserved");
         string siteId = CityDevelopmentService.SiteId(0, 0);
         check(rules.Clear(siteId, null, start).message.Contains("مصنع"), "missing factory is reported first");
         check(rules.Build("recycling", 0, 10, 10, 0, start, (a,b,c,d,e) => null).success, "place recycling factory");

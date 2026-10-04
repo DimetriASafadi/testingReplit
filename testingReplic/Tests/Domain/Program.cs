@@ -32,6 +32,7 @@ internal static class Program
     private static EconomyService New()
     {
         var state = GameCatalog.CreateNew(Epoch); state.development.requiresPlacedFactory = false;
+        state.coins = 50000; // Preserve the historical economy contract fixture, not the new runtime opening.
         return new EconomyService(state);
     }
     private static void Check(bool value, string message)

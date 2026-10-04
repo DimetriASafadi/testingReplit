@@ -13,3 +13,4 @@
 - [UI reference scope](ui-reference-scope.md) — references guide appearance; omit unsupported content and bind menu values/actions to real gameplay.
 - [Economy and onboarding](economic-balance-and-onboarding.md) — rubble pays one-third of its building price; start with placed recycler and equipment, then build on clean land.
 - [Persistence expectations](persistence-expectations.md) — المستخدم يريد استعادة التقدم والحركة ومؤقتات وقت النظام؛ اختبار Unity على جهازه لا يوقف تنفيذ الحفظ.
+- [Destroyed city density](destroyed-city-density.md) — المستخدم يريد خريطة مليئة بالمباني المدمرة؛ تحقق من العدد الفعلي وتوزيعه، لا من رفع الحد فقط.

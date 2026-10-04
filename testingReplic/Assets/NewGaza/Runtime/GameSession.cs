@@ -61,6 +61,7 @@ namespace NewGaza
                 InputSystemBootstrap.EnsureInputEnabled();
                 var loaded = GameSaveStore.Load(DateTimeOffset.UtcNow.ToUnixTimeSeconds(), out var warning);
                 Economy = new EconomyService(loaded);
+                if (GameCatalog.ApplyMillionOpeningBalance(State)) GameSaveStore.Save(State);
                 ConfigureLighting();
                 world = new GameObject("City diorama").AddComponent<CityWorld>();
                 world.Initialize(this);

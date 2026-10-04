@@ -15,10 +15,21 @@ namespace NewGaza.Core
         public static int NeighborhoodCount => Districts.Length - 1;
         public static int FinalDistrictIndex => Districts.Length - 1;
 
+        // Applied only by runtime startup, never on each economy validation or tick.
+        public static bool ApplyMillionOpeningBalance(GameState state)
+        {
+            if (state == null) throw new ArgumentNullException(nameof(state));
+            if (state.millionOpeningBalanceApplied) return false;
+            state.coins = Math.Max(state.coins, 1000000);
+            state.millionOpeningBalanceApplied = true;
+            return true;
+        }
+
         public static GameState CreateNew(long now)
         {
             if (now < 0) throw new ArgumentOutOfRangeException(nameof(now), "وقت الجهاز غير صالح");
-            var state = new GameState { lastSeenUtc = now, districts = new DistrictState[Districts.Length],
+            var state = new GameState { coins = 1000000, millionOpeningBalanceApplied = true,
+                lastSeenUtc = now, districts = new DistrictState[Districts.Length],
                 equipmentUnits = Array.Empty<EquipmentUnitState>(),
                 development = new CityDevelopmentState { requiresPlacedFactory = true } };
             for (int i = 0; i < Districts.Length; i++)

@@ -11,9 +11,9 @@ namespace NewGaza
     internal sealed class CityUrbanContext
     {
         internal const int ChunkSize = 40; // ~800m chunks at the source's 50 units/km scale.
-        internal const int MaxAuthoredModelCopies = 1200;
+        internal const int MaxAuthoredModelCopies = 4800;
         internal const int MaxSourceLodTriangles = 450;
-        internal const int MaxContextTriangles = 700000;
+        internal const int MaxContextTriangles = 2500000;
         private const float GroundY = -.09f;
         private readonly Dictionary<string, CityUrbanDistrictPresentation> districts =
             new Dictionary<string, CityUrbanDistrictPresentation>(StringComparer.Ordinal);
@@ -314,7 +314,7 @@ namespace NewGaza
             for (int i = 0; i < renderable.Count; i++)
                 reservedOutlineTriangles += EstimateExtrudedBuildingTriangles(renderable[i]);
             if (result.triangleCount + reservedOutlineTriangles > MaxContextTriangles)
-                throw new InvalidOperationException("Actual OSM building volumes exceed the 700000-triangle context budget.");
+                throw new InvalidOperationException("Actual OSM building volumes exceed the bounded context triangle budget.");
             int affordableCopies = Math.Min(authoredCandidates.Count,
                 (MaxContextTriangles - result.triangleCount - reservedOutlineTriangles) /
                     MaxSourceLodTriangles);
@@ -353,7 +353,7 @@ namespace NewGaza
             }
             result.triangleCount += affordableCopies * MaxSourceLodTriangles;
             if (result.triangleCount > MaxContextTriangles)
-                throw new InvalidOperationException("Sourced city context exceeds its 700000-triangle static budget.");
+                throw new InvalidOperationException("Sourced city context exceeds its bounded static triangle budget.");
 
             foreach (KeyValuePair<ChunkKey, ContextChunk> pair in chunks)
                 pair.Value.Build(pair.Key, parent, geometry);
@@ -677,15 +677,21 @@ namespace NewGaza
             {
                 if (buckets[i] == null) continue;
                 buckets[i].Sort((a, b) => string.CompareOrdinal(a.FeatureId, b.FeatureId));
-                result.Add(buckets[i][buckets[i].Count / 2]);
             }
-            // At most one authored LOD per ~800m stratum bucket, capped below the 700k budget.
-            if (result.Count > maximum)
+            // Visit every occupied geographic bucket before taking another building
+            // from any bucket. A one-per-bucket cap left most of the map as low-detail
+            // outlines, even when more authored destroyed models fit the budget.
+            for (int pass = 0; result.Count < maximum; pass++)
             {
-                var reduced = new List<CityBasemapBuilding>(maximum);
-                for (int i = 0; i < maximum; i++)
-                    reduced.Add(result[(int)((long)i * result.Count / maximum)]);
-                result = reduced;
+                bool added = false;
+                for (int i = 0; i < buckets.Length && result.Count < maximum; i++)
+                {
+                    var bucket = buckets[i];
+                    if (bucket == null || pass >= bucket.Count) continue;
+                    result.Add(bucket[(bucket.Count / 2 + pass) % bucket.Count]);
+                    added = true;
+                }
+                if (!added) break;
             }
             return result;
         }

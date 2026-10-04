@@ -72,5 +72,30 @@ namespace NewGaza.Editor
 
         [MenuItem("New Gaza/Open save folder", priority = 3)]
         public static void OpenSaveFolder() { EditorUtility.RevealInFinder(Application.persistentDataPath); }
+
+        [MenuItem("New Gaza/Reset game (file save and PlayerPrefs)", priority = 6)]
+        public static void ResetGame()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                EditorUtility.DisplayDialog("New Gaza", "أوقف Play أولاً حتى لا تعيد اللعبة كتابة الحفظ بعد مسحه.", "حسنًا");
+                return;
+            }
+            if (!EditorUtility.DisplayDialog("إعادة اللعبة من البداية",
+                "سيُمسح التقدم والمباني والمعدات والعملات المحفوظة، وتبدأ بمليون عملة وخريطة مدمرة. سيتم أرشفة ملفات الحفظ أولاً. ClearPlayerPrefs وحده لا يمسح هذه الملفات. هل تريد المتابعة؟",
+                "أرشفة الحفظ وإعادة البداية", "إلغاء")) return;
+            try
+            {
+                string archive = GameSaveStore.ArchiveAndClear();
+                PlayerPrefs.DeleteAll();
+                PlayerPrefs.Save();
+                EditorUtility.DisplayDialog("New Gaza", "تمت إعادة الضبط. اضغط Play لتبدأ بمليون عملة. النسخة السابقة محفوظة في:\n" + archive, "حسنًا");
+            }
+            catch (System.Exception error)
+            {
+                Debug.LogException(error);
+                EditorUtility.DisplayDialog("New Gaza", "لم تكتمل إعادة الضبط:\n" + error.Message, "حسنًا");
+            }
+        }
     }
 }

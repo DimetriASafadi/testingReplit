@@ -674,3 +674,17 @@ mtime_ms = 1791107000907
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/45044f41-8bc6-42a6-a2cb-bec648f6ef51/3b61d1e1-0ee2-4e1f-9dac-f2d53b73a3b5"
 storage_version_token = "1791107012175458"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "u-8VAPwfNvi6FKD8BtCgR"
+uri = "file://exports/fixes/NewGaza-Million-Dense-City-Update.zip"
+type = "unspecified"
+title = "تحديث Unity — مليون عملة ودمار كثيف وعلامات المصانع"
+description = "حزمة تراكمية: مليون عملة للبداية وللحفظ القديم مرة واحدة، أمر إعادة ضبط مع أرشفة الحفظ، علامات مصانع التدوير، و4,800 نموذج مبنى مدمر موزّعة على الخريطة. تتضمن التحديثات السابقة وتعليمات التثبيت، دون ملفات .meta جديدة."
+logical_id = "a84872bd-70ef-4ea7-8160-b0be9ffacc40"
+content_hash = "sha256:eeb5fb79ab9507f9189bc79e4d0459daefb732531877dfae2b6111f5040ce6c4"
+size = 17448213
+mtime_ms = 1791108024711
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/a84872bd-70ef-4ea7-8160-b0be9ffacc40/1c03ee0f-2a5d-419a-8af9-5593bb39e203"
+storage_version_token = "1791108032321417"
+content_type = "application/octet-stream"

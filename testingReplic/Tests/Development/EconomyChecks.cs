@@ -12,13 +12,13 @@ internal static class EconomyChecks
         check(state.factoryLevel == 0 && state.equipmentUnits.Length == 0, "fresh opening has no automatic factory or equipment");
         check(!economy.BuyEquipment("factory", now).success, "central instant factory not sold to fresh players");
         check(!economy.BuyEquipment("excavator", now).success, "opening first requires placed recycler");
-        check(state.coins == 50000, "rejected opening actions leave starting balance intact");
+        check(state.coins == 1000000, "rejected opening actions leave million starting balance intact");
         check(!rules.Build("recycling", 0, 10, 10, 0, now, (d, region, x, z, turn) => "ركام").success, "factory cannot bypass land validator");
         check(rules.Build("recycling", 0, 10, 10, 0, now, (d, region, x, z, turn) => null).success, "factory may be placed on clear land");
-        check(state.coins == 35000 && state.factoryLevel == 0, "construction not instant completion");
+        check(state.coins == 985000 && state.factoryLevel == 0, "construction not instant completion");
         foreach (string kind in new[] { "excavator", "truck", "bulldozer" })
             check(economy.BuyEquipment(kind, now).success, "buy required equipment after placing factory: " + kind);
-        check(state.coins == 16000 && state.equipmentUnits.Length == 3, "comfortable initial balance and three owned machines");
+        check(state.coins == 966000 && state.equipmentUnits.Length == 3, "million opening less actual purchases, three owned machines");
         string siteId = CityDevelopmentService.SiteId(0, 0);
         check(!rules.Clear(siteId, rules.Data.buildings[0].id, now).success, "cannot process before factory finishes");
         economy.Tick(rules.Data.buildings[0].finishUtc);

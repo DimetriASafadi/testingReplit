@@ -100,6 +100,7 @@ namespace NewGaza.Core
         public int version = 2;
         public string playerName = "بنّاء المدينة";
         public long coins = 50000;
+        public bool millionOpeningBalanceApplied;
         public ResourceStock stock = new ResourceStock();
         public int factoryLevel;
         public int excavators;
