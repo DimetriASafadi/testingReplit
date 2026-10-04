@@ -38,3 +38,9 @@ Ensure custom .NET fixture project definitions are tracked despite Unity's gener
 **Why:** A configured regression workflow lost its development-test project definition while its source files remained; that project had existed only as an ignored local file.
 
 **How to apply:** Check tracking when creating fixture projects. Preserve Unity's normal generated-file exclusions; explicitly add the custom test project instead of relying on an untracked local build definition.
+
+A non-null Input System mouse is not evidence that its current position is usable.
+
+**Why:** The user's Unity Game view repeatedly supplied `inf, -inf` to screen ray projection while the mouse device existed. A .NET source fixture does not reproduce real device/window samples.
+
+**How to apply:** Validate finite positions and the active camera's actual pixel viewport before projection and UI raycasts. Cancel an interrupted gesture rather than treating invalid input as a release/tap at the last valid position.

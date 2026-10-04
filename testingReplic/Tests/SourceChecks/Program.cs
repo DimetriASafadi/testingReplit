@@ -43,6 +43,7 @@ internal static class Program
                 }
             }
             CheckContracts(roots);
+            CheckPointerProjection(roots);
             Failures.AddRange(EditorCompilationChecks.Check(sourceRoot));
             CheckSceneBootstrap(sourceRoot, roots);
             CheckDistrictFog(sourceRoot, roots);
@@ -2355,6 +2356,40 @@ internal static class Program
 
     private static string Compact(string source) =>
         new string(source.Where(c => !char.IsWhiteSpace(c)).ToArray());
+
+    private static void CheckPointerProjection(Dictionary<string, CompilationUnitSyntax> roots)
+    {
+        var camera = roots["Runtime/CityCamera.cs"];
+        var projections = camera.DescendantNodes().OfType<InvocationExpressionSyntax>()
+            .Where(call => call.Expression is MemberAccessExpressionSyntax member &&
+                member.Name.Identifier.ValueText == "ScreenPointToRay").ToArray();
+        Require(projections.Length == 2, "Camera projection entry points changed; review pointer guards.");
+        foreach (var call in projections)
+        {
+            var method = call.Ancestors().OfType<MethodDeclarationSyntax>().First();
+            Require(method.Identifier.ValueText == "TryGroundPoint" || method.Identifier.ValueText == "Tap",
+                "Every native screen ray must use a guarded projection entry point.");
+            Require(method.Body != null, "Projection guard requires an explicit method body.");
+            if (method.Body == null) continue;
+            string body = Compact(method.Body.ToFullString());
+            int guard = body.IndexOf("if(!CanProjectPointer(", StringComparison.Ordinal);
+            int ray = body.IndexOf("ScreenPointToRay(", StringComparison.Ordinal);
+            Require(guard >= 0 && guard < ray && body.Substring(guard, ray - guard).Contains("return"),
+                "Invalid pointer must return before native camera projection.");
+        }
+        string development = Compact(roots["Runtime/CityDevelopment.cs"].ToFullString());
+        Require(!development.Contains("ScreenPointToRay(") &&
+            development.Contains("cameraControl.TryGroundPoint(mouse.position.ReadValue(),outvarground)"),
+            "District hover must use the same guarded camera instead of an unchecked Camera.main ray.");
+        string input = Compact(camera.ToFullString());
+        Require(input.Contains("ScreenInputValidation.InViewport(") &&
+            input.Contains("!Application.isFocused") &&
+            input.Contains("if(!CanProjectPointer(touchPosition)){CancelGesture();return;}") &&
+            input.Contains("if(!CanProjectPointer(position)){CancelGesture();return;}") &&
+            input.Contains("ScreenInputValidation.Finite(scroll)") &&
+            input.Contains("ScreenInputValidation.Finite(delta)"),
+            "Focus, touch/mouse viewport and nonfinite scroll/rotation input guards must stay wired.");
+    }
 
     private static string FindSources(string[] args)
     {

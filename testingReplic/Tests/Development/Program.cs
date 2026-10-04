@@ -30,6 +30,7 @@ internal static class Program
     private static void Main()
     {
         Catalog();
+        ScreenInputChecks.Run(Check);
         PlacementAndTimers();
         ClearingAndTravel();
         NeedsRewardsAndPersistence();

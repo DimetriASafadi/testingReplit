@@ -141,6 +141,7 @@ namespace NewGaza
 
         private void ReadInput()
         {
+            if (!Application.isFocused) { CancelGesture(); return; }
             var touchscreen = Touchscreen.current;
             if (touchscreen != null)
             {
@@ -149,8 +150,10 @@ namespace NewGaza
                 foreach (var touch in touchscreen.touches)
                 {
                     if (!touch.press.isPressed) continue;
-                    if (count == 0) first = touch.position.ReadValue();
-                    else if (count == 1) second = touch.position.ReadValue();
+                    var touchPosition = touch.position.ReadValue();
+                    if (!CanProjectPointer(touchPosition)) { CancelGesture(); return; }
+                    if (count == 0) first = touchPosition;
+                    else if (count == 1) second = touchPosition;
                     count++;
                 }
                 if (count >= 2)
@@ -166,7 +169,7 @@ namespace NewGaza
                     {
                         if (span > 20 && lastSpan > 20)
                             targetZoom = Mathf.Clamp(targetZoom * lastSpan / span, 0.6f, Mathf.Max(125, OverviewZoom()));
-                        yaw -= Mathf.DeltaAngle(lastAngle, angle);
+                        yaw = Mathf.Repeat(yaw - Mathf.DeltaAngle(lastAngle, angle), 360);
                     }
                     lastSpan = span;
                     lastAngle = angle;
@@ -184,13 +187,18 @@ namespace NewGaza
                 if (held) { Pointer(previous, false); return; }
             }
             var mouse = Mouse.current;
-            if (mouse == null) return;
+            if (mouse == null) { CancelGesture(); return; }
             var position = mouse.position.ReadValue();
+            if (!CanProjectPointer(position)) { CancelGesture(); return; }
             float scroll = mouse.scroll.ReadValue().y;
-            if (!IsUI(position) && Mathf.Abs(scroll) > 0)
+            if (ScreenInputValidation.Finite(scroll) && !IsUI(position) && Mathf.Abs(scroll) > 0)
                 targetZoom = Mathf.Clamp(targetZoom * Mathf.Exp(-scroll * 0.0015f), 0.6f, Mathf.Max(125, OverviewZoom()));
             if (mouse.rightButton.isPressed && !IsUI(position))
-                yaw += mouse.delta.ReadValue().x * 0.25f;
+            {
+                float delta = mouse.delta.ReadValue().x;
+                if (ScreenInputValidation.Finite(delta))
+                    yaw = Mathf.Repeat(yaw + delta * 0.25f, 360);
+            }
             Pointer(position, mouse.leftButton.isPressed);
         }
 
@@ -198,6 +206,7 @@ namespace NewGaza
 
         private void Pointer(Vector2 position, bool down)
         {
+            if (!CanProjectPointer(position)) { CancelGesture(); return; }
             if (down && !held)
             {
                 held = true; start = previous = position;
@@ -233,15 +242,38 @@ namespace NewGaza
             }
         }
 
-        private Vector3 GroundPoint(Vector2 screen)
+        private void CancelGesture()
         {
+            held = multiTouch = moved = inspected = beganOnUI = false;
+        }
+
+        internal bool CanProjectPointer(Vector2 position)
+        {
+            if (!Application.isFocused || view == null || !view.isActiveAndEnabled ||
+                !ScreenInputValidation.Finite(view.orthographicSize) || view.orthographicSize <= 0) return false;
+            var rect = view.pixelRect;
+            return ScreenInputValidation.InViewport(position.x, position.y, rect.x, rect.y, rect.width, rect.height);
+        }
+
+        internal bool TryGroundPoint(Vector2 screen, out Vector3 point)
+        {
+            point = targetFocus;
+            if (!CanProjectPointer(screen)) return false;
             var ray = view.ScreenPointToRay(screen);
             var plane = new Plane(Vector3.up, Vector3.zero);
-            return plane.Raycast(ray, out float d) ? ray.GetPoint(d) : targetFocus;
+            if (!plane.Raycast(ray, out float d) || !ScreenInputValidation.Finite(d)) return false;
+            var ground = ray.GetPoint(d);
+            if (!ScreenInputValidation.Finite(ground.x) || !ScreenInputValidation.Finite(ground.y) ||
+                !ScreenInputValidation.Finite(ground.z)) return false;
+            point = ground;
+            return true;
         }
+
+        private Vector3 GroundPoint(Vector2 screen) => TryGroundPoint(screen, out var point) ? point : targetFocus;
 
         private void Tap(Vector2 position, bool inspect)
         {
+            if (!CanProjectPointer(position)) return;
             if (session.Development != null && session.Development.Placing)
             {
                 session.Development.PreviewAt(GroundPoint(position));
@@ -296,6 +328,7 @@ namespace NewGaza
 
         private bool IsUI(Vector2 screen)
         {
+            if (!CanProjectPointer(screen)) return true;
             if (EventSystem.current == null) return false;
             uiHits.Clear();
             EventSystem.current.RaycastAll(new PointerEventData(EventSystem.current) { position = screen }, uiHits);

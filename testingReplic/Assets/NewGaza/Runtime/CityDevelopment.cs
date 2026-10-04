@@ -131,11 +131,10 @@ namespace NewGaza
             FocusDistrict = DistrictAt(cameraControl.AudioFocus);
             int hovered = FocusDistrict;
             var mouse = Mouse.current;
-            if (mouse != null && !CityCamera.ModalOpen)
+            if (mouse != null && !CityCamera.ModalOpen &&
+                cameraControl.TryGroundPoint(mouse.position.ReadValue(), out var ground))
             {
-                var ray = Camera.main.ScreenPointToRay(mouse.position.ReadValue());
-                if (new Plane(Vector3.up, Vector3.zero).Raycast(ray, out float distance))
-                    hovered = DistrictAt(ray.GetPoint(distance));
+                hovered = DistrictAt(ground);
             }
             regions.Highlight(FocusDistrict, hovered);
             ui.Refresh();
