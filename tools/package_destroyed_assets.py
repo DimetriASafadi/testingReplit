@@ -12,6 +12,7 @@ KEYS = (
     "shujaiya", "tuffah", "sheikh_radwan", "daraj", "karama", "old_city",
     "nasr", "sabra", "zeitoun", "rimal", "tel_al_hawa", "sheikh_ijlin", "rashid",
     "mosque", "school", "clinic", "civic", "wall", "car", "crater", "debris",
+    "context_collapse", "context_shell", "context_pancake", "context_masonry",
 )
 files = []
 for suffix in KEYS:
@@ -40,6 +41,6 @@ with zipfile.ZipFile(destination) as archive:
         raise RuntimeError("Destroyed asset archive failed CRC validation")
     if any(name.endswith(".meta") for name in archive.namelist()):
         raise RuntimeError("Never deliver generated .meta files")
-    if len([name for name in archive.namelist() if name.endswith(".fbx")]) != 21:
-        raise RuntimeError("All 21 real FBX masters must be delivered")
-print(f"{destination.relative_to(ROOT)}: {destination.stat().st_size:,} bytes; 21 FBX; CRC OK")
+    if len([name for name in archive.namelist() if name.endswith(".fbx")]) != 25:
+        raise RuntimeError("All 25 real FBX masters must be delivered")
+print(f"{destination.relative_to(ROOT)}: {destination.stat().st_size:,} bytes; 25 FBX; CRC OK")

@@ -444,7 +444,7 @@ def parcel_and_stage(b, pw, pd, stage):
 
 def build_architecture(record, stage):
     key, label, floors, pw, pd, description = record
-    b = MeshBuilder(seed=sum(ord(c) for c in key))
+    b = MeshBuilder(seed=sum(ord(c) for c in key), fracture_boxes=False)
     parcel_and_stage(b, pw, pd, stage)
     if stage == "foundation":
         return b

@@ -27,7 +27,8 @@ from mathutils import Vector
 
 GROUND_Z = -0.09
 EXPECTED_COUNTS = {"roads": 4032, "buildings": 12000, "areas": 528}
-MODEL_KEYS = {"apartment_context", "ruined_building_context"}
+MODEL_KEYS = {"ruin_context_collapse", "ruin_context_shell",
+              "ruin_context_pancake", "ruin_context_masonry"}
 OSM_CAPTION = (
     "© OpenStreetMap contributors · ODbL 1.0 | OSM geometry is not evidence "
     "of current building condition."
@@ -455,7 +456,7 @@ class VolumeChunk:
     def __init__(self):
         self.vertices, self.faces, self.material_indices = [], [], []
 
-    def add(self, outline, height, wall_material=0, roof_material=1):
+    def add(self, outline, height, wall_material=0, roof_material=1, source_id=""):
         area = sum(
             outline[i][0] * outline[(i + 1) % len(outline)][1]
             - outline[i][1] * outline[(i + 1) % len(outline)][0]
@@ -463,19 +464,32 @@ class VolumeChunk:
         )
         order = list(reversed(range(len(outline)))) if area > 0 else list(range(len(outline)))
         offset = len(self.vertices)
-        # Match CityUrbanContext.AddExtrudedBuilding: walls start at native GroundY.
-        # The former footprint-decal lift made these volumes float above the sourced
-        # ground/roads and cast long detached black shadows in the close preview.
+        # Source height is metadata, not an intact roof. Mirror the native
+        # stable bay omissions, shortened walls and uneven broken upper edges.
         base = GROUND_Z
+        seed = 2166136261
+        for character in source_id:
+            seed = ((seed ^ ord(character)) * 16777619) & 0xffffffff
+        seed &= 0x7fffffff
+        ruin_height = height * (.3 + (seed % 4) * .12)
         for x, z in outline:
-            self.vertices.extend(((x, -z, base), (x, -z, base + height)))
-        for i, a in enumerate(order):
-            b = order[(i + 1) % len(order)]
-            self.faces.append((offset + a * 2, offset + b * 2,
-                               offset + b * 2 + 1, offset + a * 2 + 1))
-            self.material_indices.append(wall_material)
-        self.faces.append(tuple(offset + i * 2 + 1 for i in order))
+            self.vertices.append((x, -z, base + .025))
+        self.faces.append(tuple(offset + i for i in order))
         self.material_indices.append(roof_material)
+        for i, a in enumerate(outline):
+            if (seed + i) % 3 == 0:
+                continue
+            b = outline[(i + 1) % len(outline)]
+            ta, tb = .06 + ((seed + i) % 4) * .035, .72 + ((seed + i) % 3) * .07
+            low = (a[0] + (b[0] - a[0]) * ta, a[1] + (b[1] - a[1]) * ta)
+            high = (a[0] + (b[0] - a[0]) * tb, a[1] + (b[1] - a[1]) * tb)
+            ha = ruin_height * (.42 + ((seed + i * 7) % 5) * .12)
+            hb = ruin_height * (.37 + ((seed + i * 11) % 6) * .1)
+            start = len(self.vertices)
+            self.vertices.extend(((low[0], -low[1], base), (low[0], -low[1], base + ha),
+                                  (high[0], -high[1], base + hb), (high[0], -high[1], base)))
+            self.faces.append(tuple(start + j for j in ((0, 1, 2, 3) if area > 0 else (3, 2, 1, 0))))
+            self.material_indices.append(wall_material)
 
 
 def add_osm_building_volumes(volumes):
@@ -486,7 +500,7 @@ def add_osm_building_volumes(volumes):
         center_x = sum(point[0] for point in outline) / len(outline)
         center_z = sum(point[1] for point in outline) / len(outline)
         key = (math.floor(center_x / chunk_size), math.floor(center_z / chunk_size))
-        chunks.setdefault(key, VolumeChunk()).add(outline, height)
+        chunks.setdefault(key, VolumeChunk()).add(outline, height, source_id=volume["id"])
     building_concrete = (0x85 / 255.0, 0x87 / 255.0, 0x80 / 255.0)
     wall = make_material("OSM outline walls • source concrete #858780", building_concrete)
     roof = make_material("OSM outline roofs • source concrete #858780", building_concrete)

@@ -3,10 +3,10 @@
   "key": "ruin_debris",
   "sourceFile": "original procedural geometry (no imported source model)",
   "targetTriangles": 900,
-  "actualTriangles": 694,
+  "actualTriangles": 742,
   "triangleTolerance": 0.0,
   "verifiedWithinBudget": true,
-  "vertexCount": 508,
+  "vertexCount": 532,
   "dimensionsNormalizedBlenderXYZ": [
     8.743752479553223,
     6.4607391357421875,
@@ -27,7 +27,7 @@
   "meshPath": "Resources/Models/ruin_debris.obj",
   "texturePath": "Resources/Models/ruin_debris_albedo.png",
   "fbxPath": "Art/DestroyedFBX/ruin_debris.fbx",
-  "triangleCount": 694,
+  "triangleCount": 742,
   "bounds": {
     "min": [
       -4.371876239776611,
@@ -54,8 +54,8 @@
   ],
   "uvCoverage": {
     "layer": "UVMap",
-    "loopCount": 2082,
-    "finiteLoopCount": 2082,
+    "loopCount": 2226,
+    "finiteLoopCount": 2226,
     "bounds": {
       "min": [
         0.02525000087916851,
@@ -68,14 +68,14 @@
     }
   },
   "objAudit": {
-    "vertices": 508,
+    "vertices": 532,
     "uvCoordinates": 82,
-    "normals": 612,
-    "triangles": 694
+    "normals": 623,
+    "triangles": 742
   },
   "fbxAudit": {
-    "triangles": 694,
-    "vertices": 508,
+    "triangles": 742,
+    "vertices": 532,
     "bounds": {
       "min": [
         -4.371876239776611,

@@ -18,8 +18,14 @@ LABELS = {
     "rashid": "الرشيد — مبنى سياحي ساحلي", "mosque": "مسجد مهدّم",
     "school": "مدرسة مدمّرة", "clinic": "مبنى صحي مدمّر", "civic": "مبنى خدمات مهدّم",
     "wall": "جدار مكسور", "car": "مركبة محترقة", "crater": "حفرة وركام", "debris": "أنقاض وخرسانة مكسورة",
+    "context_collapse": "انهيار خرسانة وحديد مكشوف",
+    "context_shell": "جدران مكسورة وغرف مكشوفة",
+    "context_pancake": "طوابق منهارة متراكمة",
+    "context_masonry": "ردم وطوب ووحدات مجوّفة",
 }
 GROUPS = (
+    ("Destroyed-Context.png", "خلفية الأحياء — أربعة أشكال دمار مختلفة",
+     ("context_collapse", "context_shell", "context_pancake", "context_masonry")),
     ("Regional-East-Central.png", "أطلال الأحياء — السكن العائلي والمناطق الوسطى",
      ("shujaiya", "tuffah", "sheikh_radwan", "daraj", "karama", "old_city")),
     ("Regional-Urban-Coast.png", "أطلال الأحياء — العمران والمناطق الغربية والساحل",

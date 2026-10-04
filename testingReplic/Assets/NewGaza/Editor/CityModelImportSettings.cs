@@ -11,6 +11,10 @@ namespace NewGaza.Editor
         private const string ModelsPrefix = "Assets/NewGaza/Resources/Models/";
         private static readonly string[] ModelPaths =
         {
+            ModelsPrefix + "ruin_context_collapse.obj",
+            ModelsPrefix + "ruin_context_shell.obj",
+            ModelsPrefix + "ruin_context_pancake.obj",
+            ModelsPrefix + "ruin_context_masonry.obj",
             ModelsPrefix + "apartment.obj",
             ModelsPrefix + "ruined_building.obj",
             ModelsPrefix + "rubble_heap.obj",
@@ -47,6 +51,7 @@ namespace NewGaza.Editor
         private static readonly string[] DestroyedModelKeys =
         {
             "ruin_shujaiya", "ruin_tuffah", "ruin_sheikh_radwan", "ruin_daraj",
+            "ruin_context_collapse", "ruin_context_shell", "ruin_context_pancake", "ruin_context_masonry",
             "ruin_karama", "ruin_old_city", "ruin_nasr", "ruin_sabra",
             "ruin_zeitoun", "ruin_rimal", "ruin_tel_al_hawa", "ruin_sheikh_ijlin",
             "ruin_rashid", "ruin_mosque", "ruin_school", "ruin_clinic", "ruin_civic",

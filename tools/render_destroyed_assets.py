@@ -19,6 +19,7 @@ KEYS = (
     "shujaiya", "tuffah", "sheikh_radwan", "daraj", "karama", "old_city",
     "nasr", "sabra", "zeitoun", "rimal", "tel_al_hawa", "sheikh_ijlin", "rashid",
     "mosque", "school", "clinic", "civic", "wall", "car", "crater", "debris",
+    "context_collapse", "context_shell", "context_pancake", "context_masonry",
 )
 
 

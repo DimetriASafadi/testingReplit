@@ -78,7 +78,7 @@ namespace NewGaza.Core
                         Project("power", "شبكة كهرباء " + names[i], ProjectKind.Power, 22000, 5400, 40, 35,
                             null, "بنية كهربائية لتشغيل الخدمات والإنتاج."),
                         Project("housing", "منزل صغير في " + names[i], ProjectKind.Housing, 25000, 7200, 80, 25,
-                            "water", "منزل صغير: ٢٥ ألف عملة، ساعتان حقيقيتان، ومواد من المخزون."),
+                            "water", "منزل صغير: ٢٥ ألف عملة وساعتان حقيقيتان؛ البناء بالمال فقط."),
                         Project("road", finale ? "طريق الكورنيش" : "طريق " + names[i], ProjectKind.Road, 150000, 64800, 300, 80,
                             "water", "طريق رئيسي: ١٥٠ ألف عملة و١٨ ساعة حقيقية."),
                         Project("park", finale ? "منتزه الكورنيش" : "حديقة " + names[i], ProjectKind.Park, 12000, 3600, 30, 5,
@@ -92,7 +92,7 @@ namespace NewGaza.Core
                             "services", "تجارة: دخل يتراكم كل ساعة بعد البناء؛ اجمعه دون إعادة البناء.",
                             finale ? 8000 : 3000, 3600),
                         Project("industry", "ورشة تدوير " + names[i], ProjectKind.Investment, 3000, 900, 10, 5,
-                            "power", "دفعة صناعية متكررة: تستهلك ١٠ خرسانة و٥ حديد؛ تنتج ٨٠ خرسانة و٣٠ حديد و٢٠ خشب و١٠ أخرى، ودخل ٤٥٠٠.",
+                            "power", "دفعة صناعية متكررة بتكلفة مالية ودخل ٤٥٠٠ عملة؛ لا تنتج أو تستهلك موارد الركام.",
                             4500, 0)
                     }
                 };
@@ -107,7 +107,7 @@ namespace NewGaza.Core
             return new ProjectDefinition
             {
                 id = id, name = name, kind = kind, cost = cost, durationSeconds = duration,
-                concreteCost = concrete, ironCost = iron, prerequisite = prerequisite,
+                concreteCost = 0, ironCost = 0, prerequisite = prerequisite,
                 description = description, income = income, incomeSeconds = incomeSeconds
             };
         }

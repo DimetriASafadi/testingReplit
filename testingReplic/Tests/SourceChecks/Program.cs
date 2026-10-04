@@ -237,6 +237,7 @@ internal static class Program
         {
             "apartment", "ruined_building", "rubble_heap",
             "apartment_context", "ruined_building_context",
+            "ruin_context_collapse", "ruin_context_shell", "ruin_context_pancake", "ruin_context_masonry",
             "ruin_shujaiya", "ruin_tuffah", "ruin_sheikh_radwan", "ruin_daraj",
             "ruin_karama", "ruin_old_city", "ruin_nasr", "ruin_sabra",
             "ruin_zeitoun", "ruin_rimal", "ruin_tel_al_hawa", "ruin_sheikh_ijlin",
@@ -893,7 +894,7 @@ internal static class Program
             .OrderBy(value => value, StringComparer.Ordinal)
             .ToArray() ?? Array.Empty<string>();
         bool buildsRoofAndExactWindingAwareWalls =
-            extrudeSource.Contains("AddPolygon(newList<Vector2>(outline),GroundY+building.height,material,chunks,geometry,owner)",
+            extrudeSource.Contains("AddPolygon(newList<Vector2>(outline),GroundY+.025f,material,chunks,geometry,owner)",
                 StringComparison.Ordinal) &&
             extrudeSource.Contains("List<float>cuts=SegmentChunkCuts(a.x,a.y,b.x,b.y)",
                 StringComparison.Ordinal) &&
@@ -917,7 +918,7 @@ internal static class Program
             Compact(chunkBuild.ToString()).Contains("mesh.SetTriangles(indices[pair.Key],0,true)",
                 StringComparison.Ordinal);
         Require(buildsRoofAndExactWindingAwareWalls && ownsAndCountsGeneratedSurfaces,
-            "Context buildings must emit roof polygons and exact winding-aware walls from every source edge, count generated triangles on their owner, and build owned normaled meshes.");
+            "Destroyed context must emit low collapsed slabs and winding-aware shortened walls, retain source metadata, count generated triangles, and build owned normaled meshes.");
     }
 
     private static void CheckSourcedUtilitiesAndDepot(TypeDeclarationSyntax context,

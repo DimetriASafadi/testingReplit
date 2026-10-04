@@ -39,6 +39,7 @@ internal static class Program
         HomeMenuProjection();
         FeedbackEvents();
         EconomyChecks.Run(Check);
+        SalvageScenarioChecks.Run(Check);
         Console.WriteLine("PASS free-build development / " + assertions + " assertions");
         Console.WriteLine("Domain only: no Unity editor, physics, UI, shader, or device rendering was run.");
     }
@@ -159,7 +160,7 @@ internal static class Program
         Check(!service.Build("small_house", 0, 1, 1, 0, Now, null).success, "missing terrain fails explicitly");
         Check(state.coins == coins && state.stock.concrete == concrete, "failure atomicity");
         Check(service.Build("small_house", 0, 1, 1, 0, Now, Land).success, "clean land placement");
-        Check(state.coins == coins - 2500 && state.stock.concrete == concrete - 5, "exact deduction");
+        Check(state.coins == coins - 2500 && state.stock.concrete == concrete, "cash-only deduction preserves resources");
         Check(!service.Build("small_house", 0, 1, 1, 0, Now, Land).success, "construction occupancy");
         Check(service.Build("equipment_store", 0, 3, 4, 1, Now, Land).success, "rotated second building");
         var building = service.Data.buildings[0];

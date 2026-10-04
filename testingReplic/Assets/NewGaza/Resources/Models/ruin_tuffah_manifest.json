@@ -3,14 +3,14 @@
   "key": "ruin_tuffah",
   "sourceFile": "original procedural geometry (no imported source model)",
   "targetTriangles": 2200,
-  "actualTriangles": 1410,
+  "actualTriangles": 998,
   "triangleTolerance": 0.0,
   "verifiedWithinBudget": true,
-  "vertexCount": 964,
+  "vertexCount": 706,
   "dimensionsNormalizedBlenderXYZ": [
-    11.19787311553955,
-    8.980536460876465,
-    10.273680686950684
+    11.326505661010742,
+    7.881412506103516,
+    6.733710289001465
   ],
   "origin": {
     "normalizedOriginBlender": [
@@ -20,30 +20,29 @@
     ],
     "pivot": "bottom-center"
   },
-  "districtId": "tuffah",
+  "districtId": "Tuffah",
   "category": "row_home",
   "floors": 3,
-  "damageType": "corner_collapse",
-  "width": 10.5,
-  "depth": 8.5,
+  "damageType": "grounded_breached_shell_compact_collapsed_slabs_dense_mixed_rubble",
+  "visualReference": "User supplied collapse piles, exposed rebar and destroyed masonry",
   "meshPath": "Resources/Models/ruin_tuffah.obj",
   "texturePath": "Resources/Models/ruin_tuffah_albedo.png",
   "fbxPath": "Art/DestroyedFBX/ruin_tuffah.fbx",
-  "triangleCount": 1410,
+  "triangleCount": 998,
   "bounds": {
     "min": [
-      -5.598936557769775,
-      -4.490268230438232,
+      -5.663252830505371,
+      -3.940706253051758,
       0.0
     ],
     "max": [
-      5.598936557769775,
-      4.490268230438232,
-      10.273680686950684
+      5.663252830505371,
+      3.940706253051758,
+      6.733710289001465
     ],
-    "width": 11.19787311553955,
-    "height": 10.273680686950684,
-    "depth": 8.980536460876465
+    "width": 11.326505661010742,
+    "height": 6.733710289001465,
+    "depth": 7.881412506103516
   },
   "units": "meters",
   "pivot": "bottom-center",
@@ -56,8 +55,8 @@
   ],
   "uvCoverage": {
     "layer": "UVMap",
-    "loopCount": 4230,
-    "finiteLoopCount": 4230,
+    "loopCount": 2994,
+    "finiteLoopCount": 2994,
     "bounds": {
       "min": [
         0.02525000087916851,
@@ -70,28 +69,28 @@
     }
   },
   "objAudit": {
-    "vertices": 964,
-    "uvCoordinates": 108,
-    "normals": 890,
-    "triangles": 1410
+    "vertices": 706,
+    "uvCoordinates": 74,
+    "normals": 790,
+    "triangles": 998
   },
   "fbxAudit": {
-    "triangles": 1410,
-    "vertices": 964,
+    "triangles": 998,
+    "vertices": 706,
     "bounds": {
       "min": [
-        -5.598936557769775,
-        -4.490268230438232,
+        -5.663252830505371,
+        -3.940706253051758,
         0.0
       ],
       "max": [
-        5.598936557769775,
-        4.490268230438232,
-        10.273680686950684
+        5.663252830505371,
+        3.940706253051758,
+        6.733710289001465
       ],
-      "width": 11.19787311553955,
-      "height": 10.273680686950684,
-      "depth": 8.980536460876465
+      "width": 11.326505661010742,
+      "height": 6.733710289001465,
+      "depth": 7.881412506103516
     },
     "uvChannels": 1,
     "textures": [

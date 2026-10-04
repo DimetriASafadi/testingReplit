@@ -81,8 +81,10 @@ EXTRAS = [
 class MeshBuilder:
     """Append separate authored solid components into a single UV-ready mesh."""
 
-    def __init__(self, seed):
+    def __init__(self, seed, fracture_boxes=True):
         self.rng = random.Random(seed)
+        self.seed = seed
+        self.fracture_boxes = fracture_boxes
         self.vertices = []
         self.faces = []
         self.face_tiles = []
@@ -105,6 +107,13 @@ class MeshBuilder:
             (-sx / 2, -sy / 2, ztop), (sx / 2, -sy / 2, ztop),
             (sx / 2, sy / 2, ztop), (-sx / 2, sy / 2, ztop),
         ]
+        if self.fracture_boxes and tile in ("concrete", "plaster", "brick", "stone"):
+            # Broken masonry edges rather than mathematically perfect cuboids.
+            # Keep thin-axis displacement bounded to avoid inverted slab faces.
+            edge_rng = random.Random(self.seed * 131 + len(self.vertices))
+            corners = [(x + edge_rng.uniform(-.055, .055) * sx,
+                        y + edge_rng.uniform(-.055, .055) * sy,
+                        z + edge_rng.uniform(-.055, .055) * sz) for x, y, z in corners]
         rx, ry, rz = rotation
         crx, srx = math.cos(rx), math.sin(rx)
         cry, sry = math.cos(ry), math.sin(ry)
@@ -249,11 +258,13 @@ def create_atlas():
             n += math.sin(local_x * .031 - local_y * .043 + tile) * .65
             n += math.sin(local_x * .43 + math.cos(local_y * .21) * 2.0) * .17
             h = ((local_x * 73856093 ^ local_y * 19349663 ^ tile * 83492791) & 255) / 255.0 - .5
-            variation = n * .045 + h * .065
+            variation = n * .065 + h * .11
             # Hairline cracks and eroded scratch marks.
             scratch = (local_x * 17 + local_y * 31 + tile * 11) % 197
             if scratch < 2:
                 variation -= .105
+            if abs(math.sin(local_x * .026 + math.sin(local_y * .043) * 1.7 + tile)) < .013:
+                variation -= .19
             # Brick has visible mortar courses and offset vertical joints.
             if tile == ATLAS_TILES["brick"]:
                 if local_y % 26 < 3 or (local_x + (13 if (local_y // 26) % 2 else 0)) % 39 < 3:
@@ -353,8 +364,8 @@ def add_ground_rubble(builder, width, depth, count, severe, seed_offset=0):
     for i in range(2 if severe else 1):
         x = rng.uniform(-width * .36, width * .36)
         y = rng.uniform(-depth * .35, depth * .35)
-        builder.box((x, y, .38 + i * .2), (rng.uniform(1.1, 2.0), rng.uniform(.5, 1.1), .24),
-                    "concrete", (rng.uniform(-.45, .45), rng.uniform(-.4, .4), rng.uniform(-.7, .7)))
+        builder.broken_plate((x, y, .38 + i * .2), (rng.uniform(1.1, 2.0), rng.uniform(.5, 1.1), .24),
+                    (rng.uniform(-.45, .45), rng.uniform(-.4, .4), rng.uniform(-.7, .7)), "concrete")
 
 
 def build_region(key, district, archetype, floors, damage, width, depth, seed):
@@ -739,11 +750,103 @@ def build_debris(seed):
         end = (x + rng.uniform(-1.1, 1.1), y + rng.uniform(-.9, .9), z + rng.uniform(-.35, .65))
         b.rod_between((x, y, z), end, rng.uniform(.035, .075), "rust" if i % 3 else "metal")
     for i in range(6):
-        b.box((rng.uniform(-3, 3), rng.uniform(-2, 2), rng.uniform(.55, 1.45)),
-              (rng.uniform(.8, 1.7), rng.uniform(.28, .7), .18), "concrete",
-              (rng.uniform(-.40, .40), rng.uniform(-.48, .48), rng.uniform(-.8, .8)))
+        b.broken_plate((rng.uniform(-3, 3), rng.uniform(-2, 2), rng.uniform(.55, 1.45)),
+              (rng.uniform(.8, 1.7), rng.uniform(.28, .7), .18),
+              (rng.uniform(-.40, .40), rng.uniform(-.48, .48), rng.uniform(-.8, .8)), "concrete")
     return b, {"districtId": None, "category": "debris", "floors": None,
                "damageType": "mixed_fractured_concrete_brick_metal_pile"}
+
+
+CONTEXT_KEYS = ["ruin_context_collapse", "ruin_context_shell",
+                "ruin_context_pancake", "ruin_context_masonry"]
+
+
+def build_reference_region(row, seed):
+    """Grounded partial shell plus a dense collapsed foreground, not clean frames."""
+    key, district, archetype, floors, damage, width, depth = row
+    b = MeshBuilder(seed)
+    rng = b.rng
+    # One grounded breached rear fragment identifies the former building.
+    # Tall districts retain a damaged corner, not floating disconnected storeys.
+    remaining = min(floors * 2.2, 17.0)
+    wall_y = depth * .28
+    wall_material = "stone" if archetype in ("historic", "stone") else "plaster"
+    b.damaged_wall(-width * .36, width * .34, 0, remaining, wall_y, .38,
+                   hole=(-width * .14, width * .17, .7, min(3.4, remaining * .6)),
+                   tile=wall_material)
+    b.box((-width * .35, depth * .09, remaining * .23),
+          (.42, depth * .43, remaining * .46), "brick", cut_top=True)
+    # Slabs lie on one another with varied tilt and lateral offsets. Grounded
+    # piles are visibly compact, rather than an orderly unfinished floor frame.
+    for i in range(min(floors + 2, 7)):
+        z = .5 + i * .43
+        b.broken_plate((rng.uniform(-width * .14, width * .14),
+                        rng.uniform(-depth * .19, depth * .02), z),
+                       (width * rng.uniform(.38, .62), depth * rng.uniform(.35, .54), .32),
+                       (rng.uniform(-.16, .2), rng.uniform(-.18, .22), rng.uniform(-.55, .55)))
+    if floors >= 4:
+        # An attached torn remnant bears on the standing rear wall.
+        b.broken_plate((width * .08, wall_y - .45, remaining * .57),
+                       (width * .47, depth * .22, .3), (.10, -.08, .13))
+    for i in range(42):
+        x, y = rng.uniform(-width * .46, width * .46), rng.uniform(-depth * .44, depth * .4)
+        s = rng.choices((.32, .65, 1.0, 1.5, 2.0), (10, 27, 33, 20, 10))[0]
+        b.rock((x, y, s * .32 + rng.uniform(0, .22)),
+               (s * 1.3, s * .85, s * .64), rng.choice(("concrete", "concrete", "brick", "stone")))
+    # Tilted fractured floor plates with projecting bent reinforcing bars.
+    for i in range(3):
+        x = -width * .22 + i * width * .2
+        y = -depth * .3
+        b.broken_plate((x, y, .75), (2.2, 1.8, .24), (.2, .35, i * .4))
+        start = (x + .2, y + .3, 1.2)
+        joint = (x + .15, y + .45, 1.7)
+        b.rod_between(start, joint, .045)
+        b.rod_between(joint, (x + .5, y + .6, 1.9), .045)
+    return b, {"districtId": district, "category": archetype, "floors": floors,
+               "damageType": "grounded_breached_shell_compact_collapsed_slabs_dense_mixed_rubble",
+               "visualReference": "User supplied collapse piles, exposed rebar and destroyed masonry"}
+
+
+def build_context(index):
+    """Reference-led original background LODs, not intact imported buildings."""
+    b = MeshBuilder(92017 + index * 431)
+    rng = b.rng
+    for i in range(18 if index != 1 else 10):
+        x, y = rng.uniform(-3.1, 3.1), rng.uniform(-2.5, 2.5)
+        mound = max(.12, (1 - (x / 3.8)**2) * (1 - (y / 3.2)**2))
+        s = rng.uniform(.45, 1.25)
+        b.rock((x, y, mound * (1.1 if index == 0 else .45)),
+               (s, s * .75, s * .6), "brick" if index == 3 and i % 3 else "concrete")
+    if index == 0:
+        for i in range(3):
+            b.broken_plate((i * 1.15 - 1.2, .2, 1.05 + i * .15), (2.8, 1.8, .25),
+                           (.1 + i * .12, -.12, i * .5))
+        for i in range(4):
+            b.rod_between((-.8 + i * .3, .8, 1.5), (-.6 + i * .3, 1.1, 2.2), .045)
+    elif index == 1:
+        b.damaged_wall(-3, 3, 0, 5.6, 1.7, .28, hole=(-1.5, 1.1, .8, 3.8))
+        b.damaged_wall(-3, .7, 0, 3.6, -1.7, .25, tile="brick")
+        for i in range(3):
+            b.broken_plate((-.7, .1, .7 + i * .55), (3.8, 2.5, .25), (.23, -.12 * i, .12))
+        for i in range(3):
+            b.rod_between((2.3 + i * .12, 1.7, 4.7), (2.25 + i * .12, 1.6, 5.8), .035)
+    elif index == 2:
+        for i in range(5):
+            b.broken_plate((.22 * i, -.12 * i, .55 + i * .65), (5.8 - i * .45, 4.1, .28),
+                           (.08 * i, -.10 + i * .08, .05 * i))
+        b.box((-2.3, .9, 1.35), (.32, .35, 2.5), cut_top=True)
+        b.rod_between((1.3, -.8, 3.5), (1.7, -.6, 4.1), .05)
+    else:
+        b.damaged_wall(-2.9, 2.7, 0, 2.2, 1.8, .3, tile="brick")
+        b.broken_plate((-.4, .2, 1.1), (4.5, 1.7, .28), (.3, -.2, -.35))
+        # Two visibly hollow broken masonry units, not solid miniature cubes.
+        for x in (-1.8, 1.3):
+            for side in (-1, 1):
+                b.box((x, -.7 + side * .32, .6), (.95, .12, .6), "concrete")
+                b.box((x + side * .42, -.7, .6), (.12, .65, .6), "concrete")
+    return b, {"districtId": None, "category": "destroyed_context_lod", "contextLOD": True,
+               "floors": None, "damageType": CONTEXT_KEYS[index],
+               "visualReference": "User rubble, pancake-collapse and breached-wall photographs"}
 
 
 def triangulate(obj):
@@ -877,10 +980,17 @@ def write_asset(builder, key, metadata, atlas):
     obj = make_object(builder, key, atlas)
     triangulate(obj)
     triangles = triangle_count(obj.data)
-    limit = 2200 if key.startswith("ruin_") and metadata.get("districtId") else (
+    limit = 450 if metadata.get("contextLOD") else 2200 if key.startswith("ruin_") and metadata.get("districtId") else (
         1600 if key in ("ruin_mosque", "ruin_school", "ruin_clinic", "ruin_civic") else 900)
     if triangles > limit:
-        raise RuntimeError(f"{key} exceeds triangle budget: {triangles}>{limit}")
+        # Retain the mobile budget when fractured plate faces add a small excess.
+        modifier = obj.modifiers.new("Bounded destruction LOD", "DECIMATE")
+        modifier.ratio = (limit - 12) / triangles
+        bpy.context.view_layer.objects.active = obj
+        bpy.ops.object.modifier_apply(modifier=modifier.name)
+        triangles = triangle_count(obj.data)
+        if triangles > limit:
+            raise RuntimeError(f"{key} exceeds triangle budget: {triangles}>{limit}")
     if not obj.data.vertices or any(not math.isfinite(float(v)) for vertex in obj.data.vertices for v in vertex.co):
         raise RuntimeError(f"{key} has empty or non-finite geometry.")
     bounds = bounds_dict(obj.data)
@@ -943,7 +1053,7 @@ def main():
     EXPORT_MANIFEST.parent.mkdir(parents=True, exist_ok=True)
     # Clean only this task's generated exact-key deliverables; never touch
     # existing shared Resources models or any Unity .meta files.
-    all_keys = [row[0] for row in REGIONS] + [row[0] for row in EXTRAS]
+    all_keys = [row[0] for row in REGIONS] + [row[0] for row in EXTRAS] + CONTEXT_KEYS
     for key in all_keys:
         for path in (RESOURCE_DIR / f"{key}.obj", RESOURCE_DIR / f"{key}_albedo.png",
                      RESOURCE_DIR / f"{key}_manifest.json", FBX_DIR / f"{key}.fbx"):
@@ -957,8 +1067,7 @@ def main():
     records = []
     for index, row in enumerate(REGIONS):
         key, district, archetype, floors, damage, width, depth = row
-        builder, metadata = build_region(key, district, archetype, floors, damage,
-                                         width, depth, 73001 + index * 811)
+        builder, metadata = build_reference_region(row, 73001 + index * 811)
         record = write_asset(builder, key, metadata, atlas)
         records.append(record)
         print(f"GENERATED {key}: {record['triangleCount']} triangles, {record['vertexCount']} vertices")
@@ -984,6 +1093,12 @@ def main():
         "generationCommand": "blender --background --factory-startup --python tools/generate_destroyed_assets.py",
         "assets": records,
     }
+    for index, key in enumerate(CONTEXT_KEYS):
+        builder, metadata = build_context(index)
+        record = write_asset(builder, key, metadata, atlas)
+        records.append(record)
+        print(f"GENERATED {key}: {record['triangleCount']} triangles")
+    manifest["assetCount"] = len(records)
     EXPORT_MANIFEST.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     print(f"COMPLETE: {len(records)} original destroyed assets; manifest={EXPORT_MANIFEST}")
 

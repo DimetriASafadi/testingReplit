@@ -108,6 +108,10 @@ namespace NewGaza
         public float ActualWorldSpeed { get { return LastMeasuredTruckWorldSpeed; } }
         public bool WorkCrewReady => excavatorDockedAtWork && bulldozerDockedAtWork &&
             truckTripState == TruckTripState.ParkedAtWork;
+        public bool DepotCrewReady => trackedDestinationInitialized && !trackedDestinationClearing &&
+            !excavatorOnRoad && !bulldozerOnRoad &&
+            truckTripState == TruckTripState.ParkedAtDepot;
+        private bool singleSiteRun;
         public void BeginDepotDispatch()
         {
             // One pooled fleet, one contract. A new depot dispatch starts at that depot,
@@ -319,6 +323,7 @@ namespace NewGaza
                 transitionClock = hadPreviousScene ? 0f : 2f;
             }
             stage = state.jobStage;
+            singleSiteRun = state.development != null && !string.IsNullOrEmpty(state.development.activeRubbleId);
             districtIndex = state.jobDistrict;
             jobCenter = nextJobCenter;
             depot = nextDepot;
@@ -1440,7 +1445,7 @@ namespace NewGaza
                 {
                     transferredCargoPieces = Mathf.Min(cargoPieces.Length,
                         transferredCargoPieces + 3);
-                    if (transferredCargoPieces > 0)
+                    if (transferredCargoPieces > 0 && !singleSiteRun)
                     {
                         excavatorWaitingForTruck = true;
                         excavatorHoldPhase = EquipmentMotion.DigCycleSeconds * .80f;

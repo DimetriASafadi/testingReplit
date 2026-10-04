@@ -3,14 +3,14 @@
   "key": "ruin_old_city",
   "sourceFile": "original procedural geometry (no imported source model)",
   "targetTriangles": 2200,
-  "actualTriangles": 1746,
+  "actualTriangles": 995,
   "triangleTolerance": 0.0,
   "verifiedWithinBudget": true,
-  "vertexCount": 1174,
+  "vertexCount": 704,
   "dimensionsNormalizedBlenderXYZ": [
-    13.049213409423828,
-    10.650444030761719,
-    10.50008773803711
+    13.070305824279785,
+    8.825557708740234,
+    6.7651686668396
   ],
   "origin": {
     "normalizedOriginBlender": [
@@ -20,30 +20,29 @@
     ],
     "pivot": "bottom-center"
   },
-  "districtId": "old_city",
+  "districtId": "Old City",
   "category": "heritage_stone_arches",
   "floors": 3,
-  "damageType": "stone_breach",
-  "width": 12.5,
-  "depth": 10.0,
+  "damageType": "grounded_breached_shell_compact_collapsed_slabs_dense_mixed_rubble",
+  "visualReference": "User supplied collapse piles, exposed rebar and destroyed masonry",
   "meshPath": "Resources/Models/ruin_old_city.obj",
   "texturePath": "Resources/Models/ruin_old_city_albedo.png",
   "fbxPath": "Art/DestroyedFBX/ruin_old_city.fbx",
-  "triangleCount": 1746,
+  "triangleCount": 995,
   "bounds": {
     "min": [
-      -6.524606704711914,
-      -5.325222015380859,
+      -6.535152912139893,
+      -4.412778854370117,
       0.0
     ],
     "max": [
-      6.524606704711914,
-      5.325222015380859,
-      10.50008773803711
+      6.535152912139893,
+      4.412778854370117,
+      6.7651686668396
     ],
-    "width": 13.049213409423828,
-    "height": 10.50008773803711,
-    "depth": 10.650444030761719
+    "width": 13.070305824279785,
+    "height": 6.7651686668396,
+    "depth": 8.825557708740234
   },
   "units": "meters",
   "pivot": "bottom-center",
@@ -56,8 +55,8 @@
   ],
   "uvCoverage": {
     "layer": "UVMap",
-    "loopCount": 5238,
-    "finiteLoopCount": 5238,
+    "loopCount": 2985,
+    "finiteLoopCount": 2985,
     "bounds": {
       "min": [
         0.02525000087916851,
@@ -70,28 +69,28 @@
     }
   },
   "objAudit": {
-    "vertices": 1174,
-    "uvCoordinates": 99,
-    "normals": 839,
-    "triangles": 1746
+    "vertices": 704,
+    "uvCoordinates": 80,
+    "normals": 788,
+    "triangles": 995
   },
   "fbxAudit": {
-    "triangles": 1746,
-    "vertices": 1174,
+    "triangles": 995,
+    "vertices": 704,
     "bounds": {
       "min": [
-        -6.524606704711914,
-        -5.325222015380859,
+        -6.535152912139893,
+        -4.412778854370117,
         0.0
       ],
       "max": [
-        6.524606704711914,
-        5.325222015380859,
-        10.50008773803711
+        6.535152912139893,
+        4.412778854370117,
+        6.7651686668396
       ],
-      "width": 13.049213409423828,
-      "height": 10.50008773803711,
-      "depth": 10.650444030761719
+      "width": 13.070305824279785,
+      "height": 6.7651686668396,
+      "depth": 8.825557708740234
     },
     "uvChannels": 1,
     "textures": [

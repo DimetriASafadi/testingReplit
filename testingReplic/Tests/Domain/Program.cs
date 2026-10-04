@@ -18,11 +18,13 @@ internal static class Program
             EarnedProgressionWithoutGrants, LegacyMigrationBoundaries, LegacyTimersAndJobs,
             ExpandedProgressionAndFinale, LegacyCorruption, RoadImprovements
         };
+        int failures = 0;
         foreach (var test in tests)
         {
-            test();
-            Console.WriteLine("PASS " + test.Method.Name);
+            try { test(); Console.WriteLine("PASS " + test.Method.Name); }
+            catch (Exception error) { failures++; Console.Error.WriteLine("FAIL " + test.Method.Name + ": " + error.Message); }
         }
+        if (failures > 0) throw new Exception(failures + " regression groups failed");
         Console.WriteLine("PASS " + tests.Length + " regression groups / " + assertions + " assertions");
     }
 
@@ -292,7 +294,8 @@ internal static class Program
     {
         var e = New();
         Fail(e.StartProject(0, "housing", Epoch)); // Requires water.
-        Fail(e.StartProject(0, "water", Epoch)); // Requires stored resources.
+        var cashOnly = New();
+        Ok(cashOnly.StartProject(0, "water", Epoch)); // Money only, even with empty material stock.
         var definition = GameCatalog.Districts[0].projects[6];
         long originalCost = definition.cost;
         int originalConcrete = definition.concreteCost;
@@ -352,10 +355,10 @@ internal static class Program
         Fail(e.StartProject(0, "industry", e.State.lastSeenUtc));
         Ok(e.CollectIncome(0, "industry", e.State.lastSeenUtc));
         Equal(coins + 1500, e.State.coins, "Industry net cash");
-        Equal(concrete + 70, e.State.stock.concrete, "Industry input/output concrete");
-        Equal(iron + 25, e.State.stock.iron, "Industry input/output iron");
-        Equal(20, e.State.stock.wood, "Industry wood output");
-        Equal(10, e.State.stock.other, "Industry other output");
+        Equal(concrete, e.State.stock.concrete, "Industry does not produce salvage concrete");
+        Equal(iron, e.State.stock.iron, "Industry does not produce salvage iron");
+        Equal(0, e.State.stock.wood, "Industry does not produce salvage wood");
+        Equal(0, e.State.stock.other, "Industry does not produce salvage materials");
         Fail(e.CollectIncome(0, "industry", e.State.lastSeenUtc));
         CompleteProject(e, 0, "industry"); Ok(e.CollectIncome(0, "industry", e.State.lastSeenUtc));
     }
@@ -388,7 +391,7 @@ internal static class Program
         Check(e.CanClaimDailyGift(Epoch), "First gift available");
         Ok(e.ClaimDailyGift(Epoch));
         Equal(53000L, e.State.coins, "Guaranteed daily coins");
-        Equal(20, e.State.stock.concrete, "Guaranteed daily materials");
+        Equal(0, e.State.stock.concrete, "Daily gifts do not grant salvage resources");
         Fail(e.ClaimDailyGift(Epoch)); Fail(e.ClaimDailyGift(Epoch - 1));
         Fail(e.ClaimDailyGift(Epoch + 86399));
         Check(!e.CanClaimDailyGift(Epoch + 86399), "Full 24 hours required");
@@ -478,7 +481,8 @@ internal static class Program
         e.State.stock.concrete = int.MaxValue - 40;
         Ok(e.StartProject(0, "farm", Epoch));
         Ok(e.StartSalvage(0, Epoch));
-        Ok(e.ClaimDailyGift(Epoch)); // Initially fits, but takes 20 of the batch's 40 free slots.
+        Ok(e.ClaimDailyGift(Epoch));
+        e.State.stock.concrete += 20; // Simulate another pending material delivery filling storage.
         long deadline = Epoch + 480;
         int concrete = e.State.stock.concrete;
         int iron = e.State.stock.iron;
@@ -525,8 +529,9 @@ internal static class Program
         industrial.State.stock.concrete = int.MaxValue - 80;
         long started = industrial.State.lastSeenUtc;
         Ok(industrial.StartSalvage(0, started));
-        Ok(industrial.CollectIncome(0, "industry", started)); // Production fills the batch's free space.
-        Equal(int.MaxValue, industrial.State.stock.concrete, "Industry can fill remaining storage while salvage is pending");
+        Ok(industrial.CollectIncome(0, "industry", started));
+        Equal(int.MaxValue - 80, industrial.State.stock.concrete, "Industry leaves salvage storage untouched");
+        industrial.State.stock.concrete = int.MaxValue; // Another pending resource delivery.
         int industryIron = industrial.State.stock.iron;
         industrial.Tick(started + 480);
         Equal(JobStage.Recycling, industrial.State.jobStage, "Industry-induced storage wait is recoverable");
@@ -553,12 +558,8 @@ internal static class Program
         Equal(0L, e.FindProject(0, "farm").finishUtc, "Unaffordable seeds do not create a timer");
         Fund(e);
         var water = Array.Find(GameCatalog.Districts[0].projects, p => p.id == "water");
-        e.State.stock.iron = water.ironCost - 1;
+        e.State.stock.iron = 0;
         long coins = e.State.coins; int concrete = e.State.stock.concrete;
-        Fail(e.StartProject(0, "water", Epoch));
-        Equal(coins, e.State.coins, "Missing iron does not charge money");
-        Equal(concrete, e.State.stock.concrete, "Missing iron does not consume concrete");
-        e.State.stock.iron++;
         CompleteProject(e, 0, "water");
         Equal(coins - water.cost, e.State.coins, "Exact project money consumption");
         Equal(concrete - water.concreteCost, e.State.stock.concrete, "Exact project concrete consumption");
@@ -566,12 +567,12 @@ internal static class Program
         Fund(e); CompleteProject(e, 0, "power"); CompleteProject(e, 0, "industry");
         e.State.stock.wood = int.MaxValue;
         coins = e.State.coins; concrete = e.State.stock.concrete;
-        Fail(e.CollectIncome(0, "industry", e.State.lastSeenUtc));
-        Equal(coins, e.State.coins, "Full industry output storage does not credit coins");
-        Equal(concrete, e.State.stock.concrete, "Full industry output storage does not partially deliver materials");
-        Equal(4500L, e.PendingIncome(0, "industry", e.State.lastSeenUtc), "Uncollected industry remains ready");
-        Ok(e.SellResources("wood", e.State.lastSeenUtc));
         Ok(e.CollectIncome(0, "industry", e.State.lastSeenUtc));
+        Equal(coins + 4500, e.State.coins, "Cash-only industry collection ignores full salvage storage");
+        Equal(concrete, e.State.stock.concrete, "Full industry output storage does not partially deliver materials");
+        Equal(0L, e.PendingIncome(0, "industry", e.State.lastSeenUtc), "Industry collected once");
+        Ok(e.SellResources("wood", e.State.lastSeenUtc));
+        Fail(e.CollectIncome(0, "industry", e.State.lastSeenUtc));
     }
 
     private static void AllDistrictProgression()
@@ -1001,8 +1002,8 @@ internal static class Program
         Equal(750L, RoadEconomy.GetCost(definitions[0], 1).coins, "Fractional kilometre repair cost");
         var upgrade = RoadEconomy.GetCost(definitions[0], 2);
         Equal(2000L, upgrade.coins, "Fractional kilometre upgrade coins");
-        Equal(3, upgrade.concrete, "Fractional kilometre concrete rounds up");
-        Equal(1, upgrade.iron, "Fractional kilometre iron rounds up");
+        Equal(0, upgrade.concrete, "Road improvements do not consume concrete");
+        Equal(0, upgrade.iron, "Road improvements do not consume iron");
         Equal(0.5f, RoadEconomy.SpeedMultiplier(0), "Road level zero speed");
         Equal(1f, RoadEconomy.SpeedMultiplier(1), "Road level one speed");
         Equal(2f, RoadEconomy.SpeedMultiplier(2), "Road level two speed");
@@ -1027,15 +1028,15 @@ internal static class Program
         coins = economy.State.coins;
         economy.State.stock.concrete = 0;
         economy.State.stock.iron = 0;
-        Fail(economy.ImproveRoad("12345:0", 2));
-        Equal(coins, economy.State.coins, "Missing upgrade materials do not charge currency");
+        Ok(economy.ImproveRoad("12345:0", 2));
+        Equal(coins - 2000, economy.State.coins, "Cash-only upgrade with empty storage");
         Equal(0, economy.State.stock.concrete, "Missing materials remain untouched");
         economy.State.stock.concrete = 10;
         economy.State.stock.iron = 10;
-        Ok(economy.ImproveRoad("12345:0", 2));
+        Fail(economy.ImproveRoad("12345:0", 2));
         Equal(2, RoadEconomy.GetLevel(economy.State, "12345:0"), "Upgrade follows repair");
-        Equal(7, economy.State.stock.concrete, "Upgrade concrete debited exactly");
-        Equal(9, economy.State.stock.iron, "Upgrade iron debited exactly");
+        Equal(10, economy.State.stock.concrete, "Concrete remains available for sale");
+        Equal(10, economy.State.stock.iron, "Iron remains available for sale");
         string serialized = Json(economy.State);
         var reloaded = new EconomyService(System.Text.Json.JsonSerializer.Deserialize<GameState>(serialized, JsonOptions));
         Equal(2, RoadEconomy.GetLevel(reloaded.State, "12345:0"), "Road level survives serialization");

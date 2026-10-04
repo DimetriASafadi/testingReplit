@@ -203,14 +203,14 @@ content_type = "application/octet-stream"
 id = "iLKhmrcrr--16Vq5QpSyg"
 uri = "file://exports/destroyed-assets/Regional-East-Central.png"
 type = "image"
-title = "معاينة أطلال السكن العائلي والمناطق الوسطى"
-description = "رسم من ملفات FBX الفعلية باستخدام Blender، وليس لقطة من Unity."
+title = "معاينة الأنقاض الإقليمية المحدّثة"
+description = "أمثلة للمباني المدمرة والردم المتراكم في الأحياء الشرقية والوسطى، من ملفات FBX الفعلية. معاينة Blender وليست Unity."
 logical_id = "b5e2c4de-fa0e-445a-9d7d-3948e5f868cf"
-content_hash = "sha256:e1f6163e8a8e3598d9ebe6433b3c2191d19160027252695ec6db7d18b8ccd380"
-size = 1184160
-mtime_ms = 1790948050236
-storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/b5e2c4de-fa0e-445a-9d7d-3948e5f868cf/4f3544b2-b594-4f5e-b929-1403fdffed8f"
-storage_version_token = "1790948229158709"
+content_hash = "sha256:aa2b0b4b19f38917c2f7aff5744742186372522046984db5e898137a130a3695"
+size = 1033749
+mtime_ms = 1791106241723
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/b5e2c4de-fa0e-445a-9d7d-3948e5f868cf/77bca559-2229-4d28-af18-1744ac4a35f3"
+storage_version_token = "1791106373559559"
 content_type = "image/png"
 
 [[outputs]]
@@ -631,4 +631,46 @@ size = 59499
 mtime_ms = 1791103153084
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/fd761325-573b-4f54-b262-4c1fa8befb78/f4d2d6da-b407-4b11-b6e6-1604377d7a82"
 storage_version_token = "1791103182005671"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "lRA-yxvLm2pxDnkl8WF9y"
+uri = "file://exports/fixes/NewGaza-Destroyed-City-Update.zip"
+type = "unspecified"
+title = "تحديث Unity — مدينة مدمّرة ومتنوعة"
+description = "123 ملفًا: المجسّمات والخامات والربط الفعلي بخلفية الخريطة، مع إصلاحات الحفظ والواجهة والزوم السابقة. بدون .meta؛ لا يمسح الحفظ. فُحصت الملفات والمعاينات، لكن Unity Editor غير متاح هنا."
+logical_id = "9df15c19-d193-42be-9214-115020a068ba"
+content_hash = "sha256:368ea7b6156a1e339cf407d7cf21b63bfc48da94c9a8a0a8ed1dfc18a44480d0"
+size = 17404271
+mtime_ms = 1791106314219
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/9df15c19-d193-42be-9214-115020a068ba/b658d325-2b20-4794-8029-d08c9a60d8a9"
+storage_version_token = "1791106370888735"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "GT9uEZXt-ZrHgL2leABzQ"
+uri = "file://exports/destroyed-assets/Destroyed-Context.png"
+type = "image"
+title = "معاينة أنواع الدمار الأربعة"
+description = "معاينة أصول FBX الفعلية في Blender: انهيار خرسانة، جدران مكسورة، طوابق متراكمة، وردم ووحدات مجوّفة. ليست لقطة Unity."
+logical_id = "684742a2-d510-4c5d-b21d-530cb1c8e927"
+content_hash = "sha256:76e9bcb4dd536e86dca51fc4c9990dc03324aa50d75b984615494bc8532175cf"
+size = 720415
+mtime_ms = 1791106241047
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/684742a2-d510-4c5d-b21d-530cb1c8e927/643a5d6c-f1e8-47a9-b86c-c7960127d448"
+storage_version_token = "1791106372220579"
+content_type = "image/png"
+
+[[outputs]]
+id = "ziZffAID6ZGBO8A9uHwet"
+uri = "file://exports/fixes/NewGaza-Salvage-Scenario-Update.zip"
+type = "unspecified"
+title = "تحديث Unity — إزالة الركام وبيع الموارد"
+description = "حزمة تراكمية تشمل المصنع والمعدات والرحلة والعمل والعودة، والموارد للبيع والبناء بالمال فقط، مع تحديث الدمار والإصلاحات السابقة. 130 ملفًا، دون .meta جديدة. تتضمن تعليمات التثبيت؛ لا تحذف الحفظ."
+logical_id = "45044f41-8bc6-42a6-a2cb-bec648f6ef51"
+content_hash = "sha256:080c426e33df4448d35309b3e5d610a8286254dc0fa10fbd985bc6f264a0d337"
+size = 17437528
+mtime_ms = 1791107000907
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/45044f41-8bc6-42a6-a2cb-bec648f6ef51/3b61d1e1-0ee2-4e1f-9dac-f2d53b73a3b5"
+storage_version_token = "1791107012175458"
 content_type = "application/octet-stream"

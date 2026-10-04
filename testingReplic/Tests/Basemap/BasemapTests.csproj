@@ -9,6 +9,7 @@
   <ItemGroup>
     <Compile Include="../../Assets/NewGaza/World/CityBasemap.cs" Link="CityBasemap.cs" />
     <Compile Include="../../Assets/NewGaza/World/CityUrbanContext.cs" Link="CityUrbanContext.cs" />
+    <Compile Include="../../Assets/NewGaza/World/CityRuinProfiles.cs" Link="CityRuinProfiles.cs" />
     <Compile Include="../../Assets/NewGaza/Core/GameGeography.cs" Link="GameGeography.cs" />
     <Compile Include="../../Assets/NewGaza/Core/GameModels.cs" Link="GameModels.cs" />
     <Compile Include="../../Assets/NewGaza/Core/GameCatalog.cs" Link="GameCatalog.cs" />

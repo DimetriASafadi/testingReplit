@@ -39,7 +39,7 @@ internal static class Program
             foreach (string failure in failures) Console.Error.WriteLine("  - " + failure);
             return 1;
         }
-        Console.WriteLine("Destroyed asset checks passed: all 13 stable district profiles and 21 reachable OBJ/atlas/manifest/FBX asset sets.");
+        Console.WriteLine("Destroyed asset checks passed: 13 stable district profiles, 21 site models and four destroyed-only context LOD asset sets.");
         return 0;
     }
 
@@ -86,7 +86,7 @@ internal static class Program
         string models = Path.Combine(root, "Assets", "NewGaza", "Resources", "Models");
         string fbxDirectory = Path.Combine(root, "Assets", "NewGaza", "Art", "DestroyedFBX");
         var measuredHeights = new Dictionary<string, double>(StringComparer.Ordinal);
-        foreach (string key in destroyedKeys)
+        foreach (string key in destroyedKeys.Concat(CityRuinProfiles.ContextModelKeys))
         {
             string objPath = Path.Combine(models, key + ".obj");
             string atlasPath = Path.Combine(models, key + "_albedo.png");

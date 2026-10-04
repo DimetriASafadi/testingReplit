@@ -24,3 +24,9 @@ Preserve the effective performance of already-upgraded legacy machines when intr
 **Why:** The previous fleet had up to five levels while the new purchase-plus-three-upgrades model has four. A direct replacement would downgrade old progress or make paid upgrades ineffective.
 
 **How to apply:** Carry forward earned efficiency independently of the new visible upgrade cap and verify remaining legacy upgrades actually add capacity.
+
+الموارد تأتي من إزالة الركام فقط وتُباع للحصول على المال؛ بناء المباني يتطلب المال فقط، لا موارد. يبدأ الإجراء بطلب مصنع إعادة تدوير، ثم حفار وجرافة وشاحنة نقل؛ تخرج المعدات من المصنع إلى الركام عبر الطرق، تعمل نحو دقيقة، ثم تعود إلى المصنع.
+
+**Why:** طلب المستخدم هذا التسلسل صراحةً، وأن تكون الموارد للبيع فقط. يحل هذا محل المكافأة النقدية التلقائية عند إزالة الركام؛ تظل قيمة بيع الناتج متناسبة مع ثلث سعر المبنى.
+
+**How to apply:** انتظر الوصول قبل حساب وقت العمل والعودة قبل إتاحة الإزالة التالية. لا تمنح موارد كهدايا أو تخصمها للبناء، ولا تمنح ثمنها تلقائيًا. احتفظ بالمخزون والتقدم السابقين عند تحديث الحفظ.

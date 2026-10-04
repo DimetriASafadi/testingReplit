@@ -3,14 +3,14 @@
   "key": "ruin_rashid",
   "sourceFile": "original procedural geometry (no imported source model)",
   "targetTriangles": 2200,
-  "actualTriangles": 2092,
+  "actualTriangles": 1067,
   "triangleTolerance": 0.0,
   "verifiedWithinBudget": true,
-  "vertexCount": 1420,
+  "vertexCount": 748,
   "dimensionsNormalizedBlenderXYZ": [
-    19.492176055908203,
-    16.732845306396484,
-    28.176424026489258
+    17.857568740844727,
+    12.946581840515137,
+    17.340452194213867
   ],
   "origin": {
     "normalizedOriginBlender": [
@@ -20,30 +20,29 @@
     ],
     "pivot": "bottom-center"
   },
-  "districtId": "rashid",
+  "districtId": "Rashid",
   "category": "coastal_hotel_wing",
   "floors": 9,
-  "damageType": "wing_collapse",
-  "width": 18.0,
-  "depth": 15.0,
+  "damageType": "grounded_breached_shell_compact_collapsed_slabs_dense_mixed_rubble",
+  "visualReference": "User supplied collapse piles, exposed rebar and destroyed masonry",
   "meshPath": "Resources/Models/ruin_rashid.obj",
   "texturePath": "Resources/Models/ruin_rashid_albedo.png",
   "fbxPath": "Art/DestroyedFBX/ruin_rashid.fbx",
-  "triangleCount": 2092,
+  "triangleCount": 1067,
   "bounds": {
     "min": [
-      -9.746088027954102,
-      -8.366422653198242,
+      -8.928784370422363,
+      -6.473290920257568,
       0.0
     ],
     "max": [
-      9.746088027954102,
-      8.366422653198242,
-      28.176424026489258
+      8.928784370422363,
+      6.473290920257568,
+      17.340452194213867
     ],
-    "width": 19.492176055908203,
-    "height": 28.176424026489258,
-    "depth": 16.732845306396484
+    "width": 17.857568740844727,
+    "height": 17.340452194213867,
+    "depth": 12.946581840515137
   },
   "units": "meters",
   "pivot": "bottom-center",
@@ -56,8 +55,8 @@
   ],
   "uvCoverage": {
     "layer": "UVMap",
-    "loopCount": 6276,
-    "finiteLoopCount": 6276,
+    "loopCount": 3201,
+    "finiteLoopCount": 3201,
     "bounds": {
       "min": [
         0.02525000087916851,
@@ -70,28 +69,28 @@
     }
   },
   "objAudit": {
-    "vertices": 1420,
-    "uvCoordinates": 99,
-    "normals": 1214,
-    "triangles": 2092
+    "vertices": 748,
+    "uvCoordinates": 80,
+    "normals": 829,
+    "triangles": 1067
   },
   "fbxAudit": {
-    "triangles": 2092,
-    "vertices": 1420,
+    "triangles": 1067,
+    "vertices": 748,
     "bounds": {
       "min": [
-        -9.746088027954102,
-        -8.366422653198242,
+        -8.928784370422363,
+        -6.473290920257568,
         0.0
       ],
       "max": [
-        9.746088027954102,
-        8.366422653198242,
-        28.176424026489258
+        8.928784370422363,
+        6.473290920257568,
+        17.340452194213867
       ],
-      "width": 19.492176055908203,
-      "height": 28.176424026489258,
-      "depth": 16.732845306396484
+      "width": 17.857568740844727,
+      "height": 17.340452194213867,
+      "depth": 12.946581840515137
     },
     "uvChannels": 1,
     "textures": [

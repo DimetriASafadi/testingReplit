@@ -166,7 +166,7 @@ namespace NewGaza
                 var captured = definition;
                 var row = Button(shopContent,
                     definition.name + "  ·  " + definition.widthMeters + " × " + definition.depthMeters + " متر\n" +
-                    definition.cost + " عملة  ·  " + definition.concrete + " خرسانة  ·  " + definition.iron + " حديد\n" +
+                    definition.cost + " عملة — البناء بالمال فقط\n" +
                     definition.duration + " ثانية  ·  " + definition.hourlyIncome + " دخل/ساعة" +
                     (definition.EquipmentDepot ? "  ·  نقطة انطلاق معدات" : ""),
                     () =>
@@ -229,9 +229,9 @@ namespace NewGaza
                 bool active = development.Rules.Data.activeRubbleId == selected.id;
                 actionText.SetText(selected.cleared ? "أرض نظيفة — اختر مبنى من المتجر وضعه هنا أو على أي مساحة نظيفة مناسبة" :
                     active ? "الآليات في الطريق أو تعمل على الإزالة والنقل والتدوير\n" + StageText(session.State.jobStage) :
-                    "العائد: " + RubbleEconomy.Reward(selected) + " عملة = ثلث " + RubbleEconomy.BuildingPrice(selected) +
-                    "\nالعمل: نحو " + ((RubbleEconomy.TotalSeconds(session.State, selected) + 59) / 60) +
-                    " دقيقة بعد الوصول · تُصرف العملات بعد التدوير");
+                    "موارد للبيع بقيمة تقارب " + RubbleEconomy.Reward(selected) + " عملة" +
+                    "\nمصنع تدوير ← حفار وجرافة وشاحنة ← وصول عبر الطرق" +
+                    "\nعمل نحو دقيقة بالمعدات الأساسية ثم العودة إلى المصنع. بع الموارد من المخزن لتحصل على المال.");
                 SetButton(action, selected.cleared ? "اختر مبنى" : active ? "قيد التنفيذ" : "إزالة الدمار");
                 action.interactable = selected.cleared || session.State.jobStage == JobStage.Idle;
             }

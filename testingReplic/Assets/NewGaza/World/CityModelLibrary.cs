@@ -49,6 +49,8 @@ namespace NewGaza
                     Load(key);
                 foreach (string key in CityRuinProfiles.ModelKeys)
                     Load(key);
+                foreach (string key in CityRuinProfiles.ContextModelKeys)
+                    Load(key);
             }
             catch
             {

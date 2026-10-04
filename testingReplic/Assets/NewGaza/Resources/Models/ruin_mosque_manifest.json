@@ -3,12 +3,12 @@
   "key": "ruin_mosque",
   "sourceFile": "original procedural geometry (no imported source model)",
   "targetTriangles": 1600,
-  "actualTriangles": 808,
+  "actualTriangles": 824,
   "triangleTolerance": 0.0,
   "verifiedWithinBudget": true,
-  "vertexCount": 620,
+  "vertexCount": 628,
   "dimensionsNormalizedBlenderXYZ": [
-    11.393463134765625,
+    11.407649993896484,
     9.188043594360352,
     12.957189559936523
   ],
@@ -27,19 +27,19 @@
   "meshPath": "Resources/Models/ruin_mosque.obj",
   "texturePath": "Resources/Models/ruin_mosque_albedo.png",
   "fbxPath": "Art/DestroyedFBX/ruin_mosque.fbx",
-  "triangleCount": 808,
+  "triangleCount": 824,
   "bounds": {
     "min": [
-      -5.6967315673828125,
+      -5.703824996948242,
       -4.594021797180176,
       0.0
     ],
     "max": [
-      5.6967315673828125,
+      5.703824996948242,
       4.594021797180176,
       12.957189559936523
     ],
-    "width": 11.393463134765625,
+    "width": 11.407649993896484,
     "height": 12.957189559936523,
     "depth": 9.188043594360352
   },
@@ -54,8 +54,8 @@
   ],
   "uvCoverage": {
     "layer": "UVMap",
-    "loopCount": 2424,
-    "finiteLoopCount": 2424,
+    "loopCount": 2472,
+    "finiteLoopCount": 2472,
     "bounds": {
       "min": [
         0.02525000087916851,
@@ -68,26 +68,26 @@
     }
   },
   "objAudit": {
-    "vertices": 620,
+    "vertices": 628,
     "uvCoordinates": 108,
-    "normals": 441,
-    "triangles": 808
+    "normals": 569,
+    "triangles": 824
   },
   "fbxAudit": {
-    "triangles": 808,
-    "vertices": 620,
+    "triangles": 824,
+    "vertices": 628,
     "bounds": {
       "min": [
-        -5.6967315673828125,
+        -5.703824996948242,
         -4.594021797180176,
         0.0
       ],
       "max": [
-        5.6967315673828125,
+        5.703824996948242,
         4.594021797180176,
         12.957189559936523
       ],
-      "width": 11.393463134765625,
+      "width": 11.407649993896484,
       "height": 12.957189559936523,
       "depth": 9.188043594360352
     },

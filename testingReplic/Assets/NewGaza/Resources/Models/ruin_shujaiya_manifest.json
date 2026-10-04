@@ -3,14 +3,14 @@
   "key": "ruin_shujaiya",
   "sourceFile": "original procedural geometry (no imported source model)",
   "targetTriangles": 2200,
-  "actualTriangles": 1062,
+  "actualTriangles": 969,
   "triangleTolerance": 0.0,
   "verifiedWithinBudget": true,
-  "vertexCount": 726,
+  "vertexCount": 688,
   "dimensionsNormalizedBlenderXYZ": [
-    10.656766891479492,
-    8.45902156829834,
-    7.256872653961182
+    9.77663803100586,
+    7.483154296875,
+    4.4732584953308105
   ],
   "origin": {
     "normalizedOriginBlender": [
@@ -20,30 +20,29 @@
     ],
     "pivot": "bottom-center"
   },
-  "districtId": "shujaiya",
+  "districtId": "Shujaiya",
   "category": "family_courtyard",
   "floors": 2,
-  "damageType": "partial_frame",
-  "width": 10.0,
-  "depth": 8.0,
+  "damageType": "grounded_breached_shell_compact_collapsed_slabs_dense_mixed_rubble",
+  "visualReference": "User supplied collapse piles, exposed rebar and destroyed masonry",
   "meshPath": "Resources/Models/ruin_shujaiya.obj",
   "texturePath": "Resources/Models/ruin_shujaiya_albedo.png",
   "fbxPath": "Art/DestroyedFBX/ruin_shujaiya.fbx",
-  "triangleCount": 1062,
+  "triangleCount": 969,
   "bounds": {
     "min": [
-      -5.328383445739746,
-      -4.22951078414917,
+      -4.88831901550293,
+      -3.7415771484375,
       0.0
     ],
     "max": [
-      5.328383445739746,
-      4.22951078414917,
-      7.256872653961182
+      4.88831901550293,
+      3.7415771484375,
+      4.4732584953308105
     ],
-    "width": 10.656766891479492,
-    "height": 7.256872653961182,
-    "depth": 8.45902156829834
+    "width": 9.77663803100586,
+    "height": 4.4732584953308105,
+    "depth": 7.483154296875
   },
   "units": "meters",
   "pivot": "bottom-center",
@@ -56,8 +55,8 @@
   ],
   "uvCoverage": {
     "layer": "UVMap",
-    "loopCount": 3186,
-    "finiteLoopCount": 3186,
+    "loopCount": 2907,
+    "finiteLoopCount": 2907,
     "bounds": {
       "min": [
         0.02525000087916851,
@@ -70,28 +69,28 @@
     }
   },
   "objAudit": {
-    "vertices": 726,
-    "uvCoordinates": 94,
-    "normals": 680,
-    "triangles": 1062
+    "vertices": 688,
+    "uvCoordinates": 80,
+    "normals": 774,
+    "triangles": 969
   },
   "fbxAudit": {
-    "triangles": 1062,
-    "vertices": 726,
+    "triangles": 969,
+    "vertices": 688,
     "bounds": {
       "min": [
-        -5.328383445739746,
-        -4.22951078414917,
+        -4.88831901550293,
+        -3.7415771484375,
         0.0
       ],
       "max": [
-        5.328383445739746,
-        4.22951078414917,
-        7.256872653961182
+        4.88831901550293,
+        3.7415771484375,
+        4.4732584953308105
       ],
-      "width": 10.656766891479492,
-      "height": 7.256872653961182,
-      "depth": 8.45902156829834
+      "width": 9.77663803100586,
+      "height": 4.4732584953308105,
+      "depth": 7.483154296875
     },
     "uvChannels": 1,
     "textures": [

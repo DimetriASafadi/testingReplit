@@ -493,7 +493,7 @@ namespace NewGaza
             if (lineBreak >= 0) shortStatus = shortStatus.Substring(0, lineBreak);
             selectionLabel.SetText(p.name + "\n" + shortStatus + "\n" +
                 N(p.cost) + " عملة · " + Duration(p.durationSeconds) + "\n" +
-                "خرسانة " + p.concreteCost + " · حديد " + p.ironCost);
+                "البناء بالمال فقط — الموارد للبيع");
             ButtonText(selectionButton, "تفاصيل");
         }
 
@@ -681,7 +681,7 @@ namespace NewGaza
             var card = ListCard(definition.name, 398);
             CardLabel(card, definition.description, 58, 62, 17, Muted);
             CardLabel(card, N(definition.cost) + " عملة   ·   " + Duration(definition.durationSeconds) +
-                "\nخرسانة: " + N(definition.concreteCost) + "   ·   حديد: " + N(definition.ironCost), 128, 63, 19, Cream);
+                "\nالبناء بالمال فقط", 128, 63, 19, Cream);
             CardLabel(card, PrerequisiteText(district, definition), 200, 48, 17, Muted);
             var status = CardLabel(card, "", 254, 58, 18, Cream);
             Bind(status, () => ProjectStatus(district, definition) + (canStart &&
@@ -708,7 +708,7 @@ namespace NewGaza
         private void ConfirmProject(int d, ProjectDefinition p)
         {
             Confirm("تأكيد " + p.name,
-                "سيُخصم من الرصيد: " + N(p.cost) + " عملة\nخرسانة: " + p.concreteCost + "   ·   حديد: " + p.ironCost +
+                "سيُخصم من الرصيد: " + N(p.cost) + " عملة — دون استهلاك موارد" +
                 "\nالمدة الحقيقية: " + Duration(p.durationSeconds) + "\n" + PrerequisiteText(d, p) +
                 "\nالرصيد الحالي: " + N(session.State.coins) + "\nلن تُخصم أي تكلفة قبل الضغط على «تأكيد».",
                 () => session.Perform(e => e.StartProject(d, p.id, session.Now)));
@@ -745,7 +745,7 @@ namespace NewGaza
         }
         private bool CanAfford(ProjectDefinition p)
         {
-            return session.State.coins >= p.cost && session.State.stock.concrete >= p.concreteCost && session.State.stock.iron >= p.ironCost;
+            return session.State.coins >= p.cost;
         }
         private string MissingFor(ProjectDefinition p, int d)
         {
@@ -797,9 +797,9 @@ namespace NewGaza
             int d = session.State.selectedDistrict;
             bool imported = session.State.districts[d].clearedLoads >= GameCatalog.Districts[d].rubbleLoads;
             bool placedCampaign = session.State.development != null && session.State.development.requiresPlacedFactory;
-            PageHeading("المواد والتدوير", "المواد محفوظة في المخزن حتى تستخدمها أو تبيعها. احتفظ بالخرسانة والحديد للمشاريع؛ البيع يستهلك كامل النوع المحدد.");
+            PageHeading("المواد والتدوير", "موارد إزالة الركام محفوظة للبيع. المباني والطرق تحتاج المال فقط؛ البيع يستهلك كامل النوع المحدد.");
             var salvage = ListCard(placedCampaign ? "إزالة ركام موقع محدد" : imported ? "عقد تدوير ركام مستورد" : "إزالة الركام المحلي", 306);
-            CardLabel(salvage, placedCampaign ? "اختر موقع الركام على الخريطة. العائد النقدي ثلث سعر الوحدة المرتبطة به، والمدة حسب حجمه وقدرة المعدات."
+            CardLabel(salvage, placedCampaign ? "اختر الركام على الخريطة: المصنع ثم المعدات، خروج وعمل نحو دقيقة وعودة. الموارد تُباع يدويًا، ولا تُصرف عملات تلقائيًا."
                 : imported ? "انتهى الركام المحلي. العقد المستورد ينتج مواد لكنه لا يزيد نسبة إنجاز الحي."
                 : "الإزالة ثم النقل ثم التدوير تلقائياً. كل دفعة محلية مكتملة تزيد تقدم إزالة الركام.", 62, 60, 18, Muted);
             var job = CardLabel(salvage, "", 131, 79, 18, Cream);
@@ -824,8 +824,8 @@ namespace NewGaza
                 Note("الفريق غير مكتمل. اشتر المعدات المطلوبة من «الأسطول» أولاً.", Muted);
                 ListAction("فتح الأسطول", () => OpenPage(Page.Fleet), Teal);
             }
-            ResourceCard("concrete", "الخرسانة", () => session.State.stock.concrete, 20, "أساسية للمياه والمنازل والطريق. لا تبع احتياجات البناء.");
-            ResourceCard("iron", "الحديد", () => session.State.stock.iron, 60, "تحتاجه الشبكات والمشاريع. احتفظ بالكمية المطلوبة.");
+            ResourceCard("concrete", "الخرسانة", () => session.State.stock.concrete, 20, "تُجمع من إزالة الركام وتُباع مقابل المال. لا تُستهلك في البناء.");
+            ResourceCard("iron", "الحديد", () => session.State.stock.iron, 60, "تُجمع من إزالة الركام وتُباع مقابل المال. البناء بالمال فقط.");
             ResourceCard("wood", "الخشب", () => session.State.stock.wood, 35, "يُخزَّن من التدوير ويمكن بيع الفائض.");
             ResourceCard("other", "مواد أخرى", () => session.State.stock.other, 10, "مواد محفوظة من الإنتاج والتدوير.");
             ListAction("مراجعة بيع كل المخزون", ConfirmAllResources, Card);
@@ -857,7 +857,7 @@ namespace NewGaza
             int wood = session.State.stock.wood;
             int other = session.State.stock.other;
             Confirm("بيع كامل المخزون",
-                "ستبيع جميع الخرسانة والحديد والخشب والمواد الأخرى.\nقد يؤخّر ذلك البناء.\nالقيمة الحالية: " + N(StockValue()) +
+                "ستبيع جميع الخرسانة والحديد والخشب والمواد الأخرى.\nالمباني تحتاج المال فقط.\nالقيمة الحالية: " + N(StockValue()) +
                 " عملة\nلا يمكن التراجع بعد التأكيد.", () => session.Perform(e =>
                 {
                     var stock = e.State.stock;
@@ -881,7 +881,7 @@ namespace NewGaza
                 if (session.Economy.Progress(d) >= 1) complete++;
             var card = ListCard("دعم يوم جديد", 360);
             CardLabel(card, "الهدية الحالية:\n" + N(3000 + complete * 1000L) + " عملة\n" +
-                (20 + complete * 5) + " خرسانة · " + (5 + complete * 2) + " حديد · 5 خشب · 3 أخرى\nتكبر الهدية مع عدد الأحياء المكتملة.", 61, 157, 21, Cream);
+                "الهدية عملات فقط؛ الموارد تأتي من إزالة الركام.\nتكبر الهدية مع عدد الأحياء المكتملة.", 61, 157, 21, Cream);
             var timer = CardLabel(card, "", 225, 46, 18, Gold);
             Bind(timer, () => session.Economy.CanClaimDailyGift(session.Now) ? "جاهزة للاستلام الآن" :
                 "الهدية التالية بعد " + TimeLeft(session.State.lastGiftUtc + 86400 - session.Now));

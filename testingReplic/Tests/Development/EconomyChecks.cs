@@ -27,7 +27,7 @@ internal static class EconomyChecks
         var site = rules.Site(siteId);
         long expected = RubbleEconomy.BuildingPrice(site) / 3;
         var yield = RubbleEconomy.Yield(state, site);
-        check(yield.concrete * 20L + yield.iron * 60L + yield.wood * 35L + yield.other * 10L <= expected / 10,
+        check(yield.concrete * 20L + yield.iron * 60L + yield.wood * 35L + yield.other * 10L <= expected,
             "extra reusable materials have capped sale value");
         long balance = state.coins;
         economy.ClearingCrewReady = () => false;
@@ -38,9 +38,10 @@ internal static class EconomyChecks
         economy.ClearingCrewReady = () => true;
         economy.Tick(state.lastSeenUtc);
         economy.Tick(state.lastSeenUtc + RubbleEconomy.TotalSeconds(state, site) + 1);
-        check(site.cleared && state.jobStage == JobStage.Idle && state.coins == balance + expected, "exact one-third cash at completed cycle");
+        check(site.cleared && state.jobStage == JobStage.Idle && state.coins == balance, "completion gives resources, not automatic money");
         economy.Tick(state.lastSeenUtc + 600);
-        check(state.coins == balance + expected, "no repeated payout while idle");
+        check(state.coins == balance, "no automatic payout while idle");
+        check(economy.SellResources("all", state.lastSeenUtc).success && state.coins > balance, "manual resource sale grants money");
         check(!rules.Clear(siteId, rules.Data.buildings[0].id, state.lastSeenUtc).success, "cleaned rubble cannot be farmed repeatedly");
 
         state.coins = 100000;
@@ -60,8 +61,8 @@ internal static class EconomyChecks
         check(economy.BuyEquipment("excavator", state.lastSeenUtc).success && state.equipmentUnits[3].level == 1,
             "new machine does not inherit upgraded peer level");
         long time = RubbleEconomy.ClearingSeconds(state, site);
-        check(RubbleEconomy.ClearingSeconds(state, rules.Site(CityDevelopmentService.SiteId(0, 3))) > time,
-            "larger-value rubble requires proportionately more work");
+        check(time >= 30 && time <= 60,
+            "work lasts one starter minute, with earned equipment improvements");
         foreach (var unit in state.equipmentUnits)
         {
             check(EquipmentEconomy.UpgradeCost(unit) == EquipmentEconomy.Price(unit.kind) / 2, "type-specific original half price");
@@ -103,12 +104,12 @@ internal static class EconomyChecks
         int concreteBefore = overflow.State.stock.concrete;
         overflow.State.coins = long.MaxValue;
         overflow.Tick(overflow.State.jobFinishUtc);
-        check(!next.cleared && overflow.State.jobStage == JobStage.Recycling &&
-            overflow.State.stock.concrete == concreteBefore && overflow.State.coins == long.MaxValue,
-            "overflow waits without giving materials, clearing site or overflowing currency");
+        check(next.cleared && overflow.State.jobStage == JobStage.Idle &&
+            overflow.State.stock.concrete > concreteBefore && overflow.State.coins == long.MaxValue,
+            "full wallet does not block resource delivery or overflow currency");
         overflow.State.coins = 0;
         overflow.Tick(overflow.State.lastSeenUtc);
-        check(next.cleared && overflow.State.coins == RubbleEconomy.Reward(next), "delivery resumes once and pays correct pending reward");
+        check(next.cleared && overflow.State.coins == 0, "completed delivery never grants automatic cash");
         for (int d = 0; d < GameCatalog.Districts.Length; d++)
             foreach (var definition in GameCatalog.Districts[d].projects)
                 for (int level = 1; level <= 5; level++)
@@ -116,7 +117,7 @@ internal static class EconomyChecks
                     var sample = new RubbleSiteState { district = d, projectId = definition.id };
                     state.factoryLevel = level;
                     var stock = RubbleEconomy.Yield(state, sample);
-                    check(stock.concrete * 20L + stock.iron * 60L + stock.wood * 35L + stock.other * 10L <= RubbleEconomy.Reward(sample) / 10,
+                    check(stock.concrete * 20L + stock.iron * 60L + stock.wood * 35L + stock.other * 10L <= RubbleEconomy.Reward(sample),
                         "all map units and factory tiers preserve bounded salvage material value");
                 }
     }

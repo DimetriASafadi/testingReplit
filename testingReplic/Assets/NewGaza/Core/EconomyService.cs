@@ -11,6 +11,7 @@ namespace NewGaza.Core
         private bool roadDefinitionsRegistered;
         public GameState State { get; private set; }
         public Func<bool> ClearingCrewReady { get; set; }
+        public Func<bool> HaulingCrewReady { get; set; }
         public Func<int, string, bool> LegacyLandReady { get; set; }
         public bool CityComplete
         {
@@ -100,6 +101,11 @@ namespace NewGaza.Core
             long effective = Math.Max(now, State.lastSeenUtc);
             EquipmentEconomy.Ensure(State);
             bool waitingForCrew = false;
+            // During live play the actual return, not an arbitrary hauling timer,
+            // determines when processing may finish. Offline saves keep their deadline.
+            if (State.jobStage == JobStage.Hauling && RubbleEconomy.Active(State) != null &&
+                HaulingCrewReady != null && HaulingCrewReady())
+                State.jobFinishUtc = Math.Min(State.jobFinishUtc, effective);
             if (State.jobStage == JobStage.Clearing && State.development != null &&
                 State.development.activeRubbleId != null && !State.development.crewArrived)
             {
@@ -119,13 +125,14 @@ namespace NewGaza.Core
                 }
                 else if (State.jobStage == JobStage.Hauling)
                 {
+                    if (HaulingCrewReady != null && !HaulingCrewReady()) break;
                     State.jobStage = JobStage.Recycling;
                     State.jobFinishUtc = AddTime(boundary, RecyclingSeconds());
                 }
                 else
                 {
                     var site = RubbleEconomy.Active(State);
-                    long reward = RubbleEconomy.Reward(site);
+                    long reward = 0;
                     var yield = RubbleEconomy.Yield(State, site);
                     if (!FitsCoins(reward) || !FitsStock(yield.concrete, yield.iron, yield.wood, yield.other))
                     {
@@ -250,13 +257,14 @@ namespace NewGaza.Core
                 return ActionResult.Fail(State.jobStage == JobStage.Recycling && State.jobFinishUtc <= State.lastSeenUtc
                     ? "اكتمل التدوير وينتظر مساحة في المخزن؛ بع بعض المواد لاستلام الإنتاج"
                     : "هناك عقد إزالة ونقل وتدوير قيد التنفيذ");
-            if (State.factoryLevel == 0 || State.excavators == 0 || State.trucks == 0 || State.bulldozers == 0)
-                return ActionResult.Fail("يلزم مصنع وحفارة وجرافة وشاحنة لإزالة الركام ونقله وتدويره");
+            if (State.factoryLevel == 0)
+                return ActionResult.Fail("ابنِ مصنع إعادة تدوير وأكمل بناءه أولاً");
+            if (State.excavators == 0 || State.trucks == 0 || State.bulldozers == 0)
+                return ActionResult.Fail("اشترِ المعدات اللازمة: حفار وجرافة وشاحنة نقل");
             var site = State.development == null || siteId == null ? null :
                 Array.Find(State.development.rubble, s => s.id == siteId && !s.cleared);
             var output = RubbleEconomy.Yield(State, site);
-            if (!FitsCoins(RubbleEconomy.Reward(site)) ||
-                !FitsStock(output.concrete, output.iron, output.wood, output.other))
+            if (!FitsStock(output.concrete, output.iron, output.wood, output.other))
                 return ActionResult.Fail("المخزن ممتلئ؛ بع بعض المواد أولاً");
             long duration = site != null ? RubbleEconomy.ClearingSeconds(State, site) : ClearingSeconds();
             long total = site != null ? RubbleEconomy.TotalSeconds(State, site) : duration + HaulingSeconds() + RecyclingSeconds();
@@ -314,12 +322,10 @@ namespace NewGaza.Core
                 if (!State.districts[district].projects[prerequisiteIndex].completed)
                     return ActionResult.Fail("أكمل المشروع المطلوب أولاً: " + GameCatalog.Districts[district].projects[prerequisiteIndex].name);
             }
-            if (!CanPay(definition.cost, definition.concreteCost, definition.ironCost))
-                return ActionResult.Fail("الرصيد أو الخرسانة أو الحديد لا يكفي؛ خزّن مواد التدوير أو بع الفائض");
+            if (!CanPay(definition.cost, 0, 0))
+                return ActionResult.Fail("الرصيد لا يكفي؛ بع موارد الركام للحصول على المال");
             if (!CanSchedule(definition.durationSeconds)) return BadTime();
             State.coins -= definition.cost;
-            State.stock.concrete -= definition.concreteCost;
-            State.stock.iron -= definition.ironCost;
             project.startedUtc = State.lastSeenUtc;
             project.finishUtc = State.lastSeenUtc + definition.durationSeconds;
             if (batch) project.lastIncomeUtc = 0;
@@ -340,13 +346,11 @@ namespace NewGaza.Core
             if (!IsBatch(definition)
                 && (State.lastSeenUtc - project.lastIncomeUtc) / definition.incomeSeconds > long.MaxValue / definition.income)
                 return ActionResult.Fail("الدخل المتراكم يتجاوز سعة الرصيد؛ لم يتم جمعه");
-            bool industry = IsIndustry(definition);
-            if (!FitsCoins(amount) || (industry && !FitsStock(80, 30, 20, 10)))
+            if (!FitsCoins(amount))
                 return ActionResult.Fail("الرصيد أو المخزن بلغ الحد الأقصى؛ لم يتم جمع الإنتاج");
             State.coins += amount;
             if (IsBatch(definition))
             {
-                if (industry) AddStock(80, 30, 20, 10);
                 project.startedUtc = 0;
                 project.finishUtc = 0;
                 project.lastIncomeUtc = State.lastSeenUtc;
@@ -357,7 +361,7 @@ namespace NewGaza.Core
                 long periods = (State.lastSeenUtc - project.lastIncomeUtc) / definition.incomeSeconds;
                 project.lastIncomeUtc += periods * definition.incomeSeconds;
             }
-            return ActionResult.Ok(industry ? "تم جمع الدخل والمواد المصنعة؛ يمكنك بدء دفعة جديدة" : "تم جمع " + amount + " عملة");
+            return ActionResult.Ok("تم جمع " + amount + " عملة");
         }
 
         public ActionResult ClaimDistrictReward(int district, long now)
@@ -389,12 +393,9 @@ namespace NewGaza.Core
             for (int i = 0; i < State.districts.Length; i++)
                 if (IsUnlocked(i) && IsComplete(i)) completed++;
             long coins = 3000 + completed * 1000L;
-            int concrete = 20 + completed * 5;
-            int iron = 5 + completed * 2;
-            if (!FitsCoins(coins) || !FitsStock(concrete, iron, 5, 3))
+            if (!FitsCoins(coins))
                 return ActionResult.Fail("الرصيد أو المخزن ممتلئ؛ لم يتم استلام الهدية");
             State.coins += coins;
-            AddStock(concrete, iron, 5, 3);
             State.lastGiftUtc = State.lastSeenUtc;
             return ActionResult.Ok("تم استلام هدية يومية مضمونة من العملات والمواد");
         }

@@ -37,6 +37,12 @@ An exposed concrete frame alone is not enough. Preserve obvious structural failu
 
 **How to apply:** Inspect renders of the actual exported FBX, not only the authoring scene or triangle counts. Allocate the polygon budget so collapsed slabs and ground rubble survive simplification; reduce repetitive clean-frame detail first.
 
+The user wants the city at the beginning of the game to contain only varied destroyed buildings and rubble, not intact buildings or closed cubic building placeholders. Their new references include complete collapse, compact fallen floors, hollow masonry, exposed rebar and breached partial shells.
+
+**Why:** They explicitly said «عندما تبدا اللعبة تكون المباني الموجودة مدمرة ولا يوجد مباني صحيحة المناطق والأحياء عبارة عن مباني مدمرة متنوعة».
+
+**How to apply:** Apply destruction to the broad background building layer as well as selectable sites. Preserve buildings the player earned through reconstruction and do not erase saves to enforce the starting appearance.
+
 ## Reference housing and active construction
 
 The user supplied the housing-reference poster and requested four distinct forms for a building: foundation, construction, finishing, and final. Workers or visible worker animation must accompany active construction and reflect its current step.

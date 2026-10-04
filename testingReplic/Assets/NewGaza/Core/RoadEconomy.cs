@@ -26,8 +26,8 @@ namespace NewGaza.Core
             return new RoadImprovementCost
             {
                 coins = Math.Max(250L, CeilingToLong(8000d * kilometres)),
-                concrete = Math.Max(1, CeilingToInt(12d * kilometres)),
-                iron = Math.Max(1, CeilingToInt(4d * kilometres))
+                concrete = 0,
+                iron = 0
             };
         }
 

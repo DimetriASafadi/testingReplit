@@ -3,14 +3,14 @@
   "key": "ruin_civic",
   "sourceFile": "original procedural geometry (no imported source model)",
   "targetTriangles": 1600,
-  "actualTriangles": 471,
+  "actualTriangles": 487,
   "triangleTolerance": 0.0,
   "verifiedWithinBudget": true,
-  "vertexCount": 332,
+  "vertexCount": 340,
   "dimensionsNormalizedBlenderXYZ": [
-    11.494234085083008,
+    11.52907943725586,
     8.487642288208008,
-    7.003081321716309
+    7.0188093185424805
   ],
   "origin": {
     "normalizedOriginBlender": [
@@ -27,20 +27,20 @@
   "meshPath": "Resources/Models/ruin_civic.obj",
   "texturePath": "Resources/Models/ruin_civic_albedo.png",
   "fbxPath": "Art/DestroyedFBX/ruin_civic.fbx",
-  "triangleCount": 471,
+  "triangleCount": 487,
   "bounds": {
     "min": [
-      -5.747117042541504,
+      -5.76453971862793,
       -4.243821144104004,
       0.0
     ],
     "max": [
-      5.747117042541504,
+      5.76453971862793,
       4.243821144104004,
-      7.003081321716309
+      7.0188093185424805
     ],
-    "width": 11.494234085083008,
-    "height": 7.003081321716309,
+    "width": 11.52907943725586,
+    "height": 7.0188093185424805,
     "depth": 8.487642288208008
   },
   "units": "meters",
@@ -54,8 +54,8 @@
   ],
   "uvCoverage": {
     "layer": "UVMap",
-    "loopCount": 1413,
-    "finiteLoopCount": 1413,
+    "loopCount": 1461,
+    "finiteLoopCount": 1461,
     "bounds": {
       "min": [
         0.02525000087916851,
@@ -68,27 +68,27 @@
     }
   },
   "objAudit": {
-    "vertices": 332,
+    "vertices": 340,
     "uvCoordinates": 81,
-    "normals": 335,
-    "triangles": 471
+    "normals": 410,
+    "triangles": 487
   },
   "fbxAudit": {
-    "triangles": 471,
-    "vertices": 332,
+    "triangles": 487,
+    "vertices": 340,
     "bounds": {
       "min": [
-        -5.747117042541504,
+        -5.76453971862793,
         -4.243821144104004,
         0.0
       ],
       "max": [
-        5.747117042541504,
+        5.76453971862793,
         4.243821144104004,
-        7.003081321716309
+        7.0188093185424805
       ],
-      "width": 11.494234085083008,
-      "height": 7.003081321716309,
+      "width": 11.52907943725586,
+      "height": 7.0188093185424805,
       "depth": 8.487642288208008
     },
     "uvChannels": 1,

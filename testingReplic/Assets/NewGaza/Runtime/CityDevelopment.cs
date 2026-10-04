@@ -56,6 +56,9 @@ namespace NewGaza
             get
             {
                 var building = Rules.Building(Rules.Data.dispatchDepotId);
+                if (building == null)
+                    building = Array.Find(Rules.Data.buildings, candidate => candidate.completed &&
+                        CityBuildingCatalog.Find(candidate.definitionId).category == BuildingCategory.Recycling);
                 return building != null ? DepotPoint(building) : world.CentralDepotPosition;
             }
         }
@@ -82,6 +85,7 @@ namespace NewGaza
             ui.transform.SetParent(transform, false);
             ui.Initialize(this, session);
             session.Economy.ClearingCrewReady = () => world.Fleet.WorkCrewReady;
+            session.Economy.HaulingCrewReady = () => world.Fleet.DepotCrewReady;
             session.Economy.LegacyLandReady = LegacyLandReady;
             session.Changed += Refresh;
             Refresh();
@@ -289,6 +293,10 @@ namespace NewGaza
         {
             var parcel = Parcel(selectedSite);
             if (parcel == null) return;
+            if (session.State.factoryLevel == 0)
+            { session.Notify("ابنِ مصنع إعادة تدوير وأكمل بناءه أولاً"); return; }
+            if (session.State.excavators == 0 || session.State.bulldozers == 0 || session.State.trucks == 0)
+            { session.Notify("اشترِ المعدات اللازمة: حفار وجرافة وشاحنة نقل"); return; }
             string depot = null; float shortest = float.MaxValue;
             Action<string, Vector3> consider = (id, position) =>
             {
@@ -300,9 +308,9 @@ namespace NewGaza
             if (session.State.factoryLevel > 0 && !Rules.Data.dynamicFactoryProvided)
                 consider("central", world.CentralDepotPosition);
             foreach (var building in Rules.Data.buildings)
-                if (building.completed && CityBuildingCatalog.Find(building.definitionId).EquipmentDepot)
+                if (building.completed && CityBuildingCatalog.Find(building.definitionId).category == BuildingCategory.Recycling)
                     consider(building.id, DepotPoint(building));
-            if (depot == null) { session.Notify("ابنِ مصنعًا أو مخزنًا جاهزًا للمعدات أولاً"); return; }
+            if (depot == null) { session.Notify("لا يوجد مصنع إعادة تدوير جاهز يمكن للمعدات الانطلاق منه"); return; }
             string idToClear = selectedSite;
             session.Perform(e =>
             {

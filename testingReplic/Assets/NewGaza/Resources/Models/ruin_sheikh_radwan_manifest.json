@@ -3,14 +3,14 @@
   "key": "ruin_sheikh_radwan",
   "sourceFile": "original procedural geometry (no imported source model)",
   "targetTriangles": 2200,
-  "actualTriangles": 1507,
+  "actualTriangles": 1010,
   "triangleTolerance": 0.0,
   "verifiedWithinBudget": true,
-  "vertexCount": 1014,
+  "vertexCount": 714,
   "dimensionsNormalizedBlenderXYZ": [
-    11.728747367858887,
-    9.52142333984375,
-    10.522202491760254
+    11.326330184936523,
+    8.415353775024414,
+    6.698912620544434
   ],
   "origin": {
     "normalizedOriginBlender": [
@@ -20,30 +20,29 @@
     ],
     "pivot": "bottom-center"
   },
-  "districtId": "sheikh_radwan",
+  "districtId": "Sheikh Radwan",
   "category": "family_block",
   "floors": 3,
-  "damageType": "broken_front",
-  "width": 11.0,
-  "depth": 9.0,
+  "damageType": "grounded_breached_shell_compact_collapsed_slabs_dense_mixed_rubble",
+  "visualReference": "User supplied collapse piles, exposed rebar and destroyed masonry",
   "meshPath": "Resources/Models/ruin_sheikh_radwan.obj",
   "texturePath": "Resources/Models/ruin_sheikh_radwan_albedo.png",
   "fbxPath": "Art/DestroyedFBX/ruin_sheikh_radwan.fbx",
-  "triangleCount": 1507,
+  "triangleCount": 1010,
   "bounds": {
     "min": [
-      -5.864373683929443,
-      -4.760711669921875,
+      -5.663165092468262,
+      -4.207676887512207,
       0.0
     ],
     "max": [
-      5.864373683929443,
-      4.760711669921875,
-      10.522202491760254
+      5.663165092468262,
+      4.207676887512207,
+      6.698912620544434
     ],
-    "width": 11.728747367858887,
-    "height": 10.522202491760254,
-    "depth": 9.52142333984375
+    "width": 11.326330184936523,
+    "height": 6.698912620544434,
+    "depth": 8.415353775024414
   },
   "units": "meters",
   "pivot": "bottom-center",
@@ -56,8 +55,8 @@
   ],
   "uvCoverage": {
     "layer": "UVMap",
-    "loopCount": 4521,
-    "finiteLoopCount": 4521,
+    "loopCount": 3030,
+    "finiteLoopCount": 3030,
     "bounds": {
       "min": [
         0.02525000087916851,
@@ -70,28 +69,28 @@
     }
   },
   "objAudit": {
-    "vertices": 1014,
-    "uvCoordinates": 102,
-    "normals": 845,
-    "triangles": 1507
+    "vertices": 714,
+    "uvCoordinates": 80,
+    "normals": 800,
+    "triangles": 1010
   },
   "fbxAudit": {
-    "triangles": 1507,
-    "vertices": 1014,
+    "triangles": 1010,
+    "vertices": 714,
     "bounds": {
       "min": [
-        -5.864373683929443,
-        -4.760711669921875,
+        -5.663165092468262,
+        -4.207676887512207,
         0.0
       ],
       "max": [
-        5.864373683929443,
-        4.760711669921875,
-        10.522202491760254
+        5.663165092468262,
+        4.207676887512207,
+        6.698912620544434
       ],
-      "width": 11.728747367858887,
-      "height": 10.522202491760254,
-      "depth": 9.52142333984375
+      "width": 11.326330184936523,
+      "height": 6.698912620544434,
+      "depth": 8.415353775024414
     },
     "uvChannels": 1,
     "textures": [

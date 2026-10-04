@@ -9,6 +9,9 @@ namespace NewGaza
     /// </summary>
     public static class CityRuinProfiles
     {
+        public static string[] ContextModelKeys => new[] {
+            "ruin_context_collapse", "ruin_context_shell",
+            "ruin_context_pancake", "ruin_context_masonry" };
         internal sealed class Profile
         {
             internal readonly string districtId;
@@ -36,19 +39,19 @@ namespace NewGaza
 
         private static readonly Profile[] profiles =
         {
-            new Profile("shujaiya", "ruin_shujaiya", .3628f),
-            new Profile("tuffah", "ruin_tuffah", .5137f),
-            new Profile("sheikh-radwan", "ruin_sheikh_radwan", .5261f),
-            new Profile("daraj", "ruin_daraj", .6684f),
-            new Profile("karama", "ruin_karama", .6663f),
-            new Profile("old-city", "ruin_old_city", .5250f),
-            new Profile("nasr", "ruin_nasr", .9770f),
-            new Profile("sabra", "ruin_sabra", .6612f),
-            new Profile("zeitoun", "ruin_zeitoun", .8112f),
-            new Profile("rimal", "ruin_rimal", 1.1069f),
-            new Profile("tel-al-hawa", "ruin_tel_al_hawa", 1.2649f),
-            new Profile("sheikh-ijlin", "ruin_sheikh_ijlin", .9523f),
-            new Profile("rashid", "ruin_rashid", 1.4088f)
+            new Profile("shujaiya", "ruin_shujaiya", .2237f),
+            new Profile("tuffah", "ruin_tuffah", .3367f),
+            new Profile("sheikh-radwan", "ruin_sheikh_radwan", .3349f),
+            new Profile("daraj", "ruin_daraj", .4496f),
+            new Profile("karama", "ruin_karama", .4477f),
+            new Profile("old-city", "ruin_old_city", .3383f),
+            new Profile("nasr", "ruin_nasr", .6745f),
+            new Profile("sabra", "ruin_sabra", .4462f),
+            new Profile("zeitoun", "ruin_zeitoun", .5541f),
+            new Profile("rimal", "ruin_rimal", .7857f),
+            new Profile("tel-al-hawa", "ruin_tel_al_hawa", .8706f),
+            new Profile("sheikh-ijlin", "ruin_sheikh_ijlin", .6714f),
+            new Profile("rashid", "ruin_rashid", .8670f)
         };
 
         private static readonly Dictionary<string, Profile> byDistrict =

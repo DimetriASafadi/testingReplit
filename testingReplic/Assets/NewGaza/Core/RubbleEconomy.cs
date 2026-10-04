@@ -20,13 +20,13 @@ namespace NewGaza.Core
         }
         public static long ClearingSeconds(GameState state, RubbleSiteState site)
         {
-            double size = Math.Max(45, Math.Min(1800, Reward(site) / 25d));
-            double crew = Math.Sqrt(EquipmentEconomy.Capacity(state, "excavator") * EquipmentEconomy.Capacity(state, "bulldozer"));
-            return Math.Max(30, (long)Math.Ceiling(size / crew));
+            double crew = Math.Sqrt(EquipmentEconomy.Capacity(state, "excavator") *
+                EquipmentEconomy.Capacity(state, "bulldozer"));
+            return Math.Max(30, (long)Math.Ceiling(60 / crew)); // One minute with starter equipment, after arrival.
         }
         public static long HaulingSeconds(GameState state) =>
             Math.Max(30, (long)Math.Ceiling(90 / EquipmentEconomy.Capacity(state, "truck")));
-        public static long RecyclingSeconds(GameState state) => Math.Max(45, 120 / Math.Max(1, state.factoryLevel));
+        public static long RecyclingSeconds(GameState state) => 1;
         public static long TotalSeconds(GameState state, RubbleSiteState site) =>
             ClearingSeconds(state, site) + HaulingSeconds(state) + RecyclingSeconds(state);
         public static ResourceStock Yield(GameState state, RubbleSiteState site)
@@ -34,11 +34,12 @@ namespace NewGaza.Core
             int multiplier = state.factoryLevel;
             var stock = new ResourceStock { concrete = 40 * multiplier, iron = 15 * multiplier, wood = 12 * multiplier, other = 8 * multiplier };
             if (site == null) return stock; // existing imported-material contracts keep their semantics, no cash payment
+            // The entire reward is saleable material, never an automatic cash grant.
             long budget = Reward(site) / 10;
-            double ratio = Math.Min(1, budget / (2200d * Math.Max(1, multiplier)));
-            stock.concrete = (int)(stock.concrete * ratio); stock.iron = (int)(stock.iron * ratio);
-            stock.wood = (int)(stock.wood * ratio); stock.other = (int)(stock.other * ratio);
-            if (stock.concrete + stock.iron + stock.wood + stock.other == 0 && budget >= 10) stock.other = 1;
+            stock.concrete = (int)(budget / 5 / 2);
+            stock.iron = (int)(budget / 5 / 6);
+            stock.wood = (int)(budget / 5 / 7) * 2;
+            stock.other = (int)(budget - stock.concrete * 2L - stock.iron * 6L - stock.wood * 7L / 2);
             return stock;
         }
     }

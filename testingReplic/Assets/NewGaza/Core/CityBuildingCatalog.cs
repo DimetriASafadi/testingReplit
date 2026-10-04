@@ -70,7 +70,7 @@ namespace NewGaza.Core
         {
             items.Add(new CityBuildingDefinition { id = id, name = name, category = category,
                 widthMeters = width, depthMeters = depth, floors = floors, cost = cost,
-                concrete = concrete, iron = iron, duration = 60 + floors * 30,
+                concrete = 0, iron = 0, duration = 60 + floors * 30,
                 hourlyIncome = category == BuildingCategory.Equipment || category == BuildingCategory.Recycling ? 0 : Math.Max(100, cost / 12) });
         }
     }

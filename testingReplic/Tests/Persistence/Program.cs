@@ -223,7 +223,7 @@ internal static class Program
         Check(state.jobFinishUtc == deadline && state.jobStage == JobStage.Clearing, "Arrived clearing timer not reset on reopen");
         economy.Tick(deadline + 10000);
         var yield = RubbleEconomy.Yield(state, rules.Site(site));
-        long paid = RubbleEconomy.Reward(rules.Site(site));
+        long paid = 0; // Reload delivers materials, never their sale price automatically.
         Check(state.jobStage == JobStage.Idle && rules.Site(site).cleared &&
             state.stock.concrete == 10000 + yield.concrete && state.stock.iron == 10000 + yield.iron &&
             state.coins == 10000000 + paid, "Offline hauling/recycling credited once");

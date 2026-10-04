@@ -61,8 +61,8 @@ namespace NewGaza.Core
             float depth = (turn == 0 ? definition.depthMeters : definition.widthMeters) / 20f;
             foreach (var building in Data.buildings)
                 if (Overlaps(x, z, width, depth, building)) return ActionResult.Fail("المساحة تتداخل مع مبنى آخر أو موقع بناء");
-            if (State.coins < definition.cost || State.stock.concrete < definition.concrete || State.stock.iron < definition.iron)
-                return ActionResult.Fail("العملات أو الخرسانة أو الحديد غير كافية");
+            if (State.coins < definition.cost)
+                return ActionResult.Fail("العملات غير كافية لبناء المبنى");
             if (now > long.MaxValue - definition.duration) return ActionResult.Fail("وقت الجهاز غير صالح");
             var placed = new PlacedBuildingState { id = Guid.NewGuid().ToString("N"), definitionId = definition.id,
                 district = district, x = x, z = z, quarterTurn = turn, startedUtc = now, finishUtc = now + definition.duration };
@@ -70,8 +70,6 @@ namespace NewGaza.Core
             Array.Copy(Data.buildings, expanded, Data.buildings.Length);
             expanded[expanded.Length - 1] = placed;
             State.coins -= definition.cost;
-            State.stock.concrete -= definition.concrete;
-            State.stock.iron -= definition.iron;
             Data.buildings = expanded;
             return ActionResult.Ok("بدأ بناء " + definition.name + " في الموقع المحدد");
         }
@@ -88,8 +86,8 @@ namespace NewGaza.Core
             if (depotId != "central")
             {
                 var depot = Building(depotId);
-                if (depot == null || !depot.completed || !CityBuildingCatalog.Find(depot.definitionId).EquipmentDepot)
-                    return ActionResult.Fail("لا يوجد مصنع أو مخزن معدات جاهز للانطلاق");
+                if (depot == null || !depot.completed || CityBuildingCatalog.Find(depot.definitionId).category != BuildingCategory.Recycling)
+                    return ActionResult.Fail("ابنِ مصنع إعادة تدوير وأكمل بناءه أولاً");
             }
             else if (State.factoryLevel == 0 || Data.dynamicFactoryProvided)
                 return ActionResult.Fail("المصنع المركزي غير متاح");

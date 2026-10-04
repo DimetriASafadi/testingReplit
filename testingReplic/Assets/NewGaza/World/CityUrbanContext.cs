@@ -337,15 +337,15 @@ namespace NewGaza
                 }
             }
 
+            string[] destroyedContextModels = CityRuinProfiles.ContextModelKeys;
             for (int i = 0; i < affordableCopies; i++)
             {
                 CityBasemapBuilding building = authoredCandidates[i];
                 ChunkKey key = Cell(building.center.x, building.center.z);
                 ContextChunk chunk = GetChunk(chunks, key, geometry);
-                // The model artist's apartment_context asset is a source LOD (<=450 tris).
-                // Placement uses the measured parcel footprint and measured building height.
-                string contextModel = StableHash(building.FeatureId) % 4 == 0
-                    ? "apartment_context" : "ruined_building_context";
+                // Every starting background parcel is destroyed. Original imported
+                // intact models remain available for earned construction, never this layer.
+                string contextModel = destroyedContextModels[StableHash(building.FeatureId) % destroyedContextModels.Length];
                 models.AddTo(chunk.models, contextModel,
                     new Vector3(building.center.x, GroundY, building.center.z),
                     new Vector3(building.size.x, 0f, building.size.z), building.yaw,
@@ -847,12 +847,21 @@ namespace NewGaza
         {
             List<Vector2> outline = mapPointList(building.outline);
             float area = PolygonDoubleArea(outline);
-            AddPolygon(new List<Vector2>(outline), GroundY + building.height,
+            // This is a collapsed ground slab, NOT a complete roof at source height.
+            AddPolygon(new List<Vector2>(outline), GroundY + .025f,
                 material, chunks, geometry, owner);
+            int seed = StableHash(building.FeatureId);
+            float ruinHeight = building.height * (.3f + (seed % 4) * .12f);
             bool counterClockwise = area > 0f;
             for (int i = 0; i < outline.Count; i++)
             {
                 Vector2 a = outline[i], b = outline[(i + 1) % outline.Count];
+                // Omit whole bays, shorten remaining walls and vary their torn upper
+                // edges. Keep true OSM parcel outlines and chunk clipping; no closed boxes.
+                if ((seed + i) % 3 == 0) continue;
+                Vector2 originalA = a;
+                a = Vector2.LerpUnclamped(originalA, b, .06f + ((seed + i) % 4) * .035f);
+                b = Vector2.LerpUnclamped(originalA, b, .72f + ((seed + i) % 3) * .07f);
                 if ((b - a).sqrMagnitude < .00000001f) continue;
                 List<float> cuts = SegmentChunkCuts(a.x, a.y, b.x, b.y);
                 for (int cut = 1; cut < cuts.Count; cut++)
@@ -864,8 +873,10 @@ namespace NewGaza
                     ContextChunk chunk = GetChunk(chunks, key, geometry);
                     Vector3 bottomA = new Vector3(low.x, GroundY, low.y);
                     Vector3 bottomB = new Vector3(high.x, GroundY, high.y);
-                    Vector3 topA = new Vector3(low.x, GroundY + building.height, low.y);
-                    Vector3 topB = new Vector3(high.x, GroundY + building.height, high.y);
+                    float heightA = ruinHeight * (.42f + ((seed + i * 7) % 5) * .12f);
+                    float heightB = ruinHeight * (.37f + ((seed + i * 11) % 6) * .1f);
+                    Vector3 topA = new Vector3(low.x, GroundY + heightA + (heightB - heightA) * t0, low.y);
+                    Vector3 topB = new Vector3(high.x, GroundY + heightA + (heightB - heightA) * t1, high.y);
                     if (counterClockwise)
                     {
                         chunk.AddTriangle(material, bottomA, topA, topB);

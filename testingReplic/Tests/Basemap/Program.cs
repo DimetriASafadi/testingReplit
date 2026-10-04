@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -58,9 +59,9 @@ internal static class Program
             for (int i = 0; i < models.ContextPlacements.Count; i++)
                 Check(models.ContextPlacements[i].footprintIsLocal,
                     "context placement requests oriented local footprint sizing");
-            Check(models.ContextModelKeys.Contains("apartment_context") &&
-                models.ContextModelKeys.Contains("ruined_building_context"),
-                "deterministic intact/ruined context LOD mix");
+            Check(CityRuinProfiles.ContextModelKeys.All(key => models.ContextModelKeys.Contains(key)) &&
+                !models.ContextModelKeys.Contains("apartment_context"),
+                "all four destroyed context LODs reachable; no intact starting background");
             Check(context.EstimatedContextTriangles <= CityUrbanContext.MaxContextTriangles,
                 "700k estimated context triangle budget");
             Check(context.AllContextBuildings.Count == map.buildings.Length - requests.Count * 9,
@@ -373,7 +374,7 @@ internal static class Program
             Check(!modelIds.Contains(volume.sourceBuildingId),
                 "authored LOD building is not duplicated by a footprint volume");
             Check(Math.Abs(volume.height - source.height) < .000001f,
-                "polygon volume uses exact source building height");
+                 "polygon volume retains exact source height as metadata, not as an intact roof");
             Check(volume.outline.Length == source.outline.Length,
                 "polygon volume keeps exact source outline vertex count");
             for (int p = 0; p < source.outline.Length; p++)
@@ -403,7 +404,9 @@ internal static class Program
                 float nz = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
                 if (highY - lowY < .00001f && lowY > -.0899f)
                 {
-                    Check(ny > .000001f, "extruded roof triangles face upward");
+                    Check(ny > .000001f, "collapsed floor triangles face upward");
+                    Check(Math.Abs(highY - (-.09f + .025f)) < .00001f,
+                        "every horizontal building surface is a low collapsed slab; no intact elevated roofs");
                     roofFaces++;
                 }
                 else if (lowY <= -.0899f && highY > lowY + .0001f)
@@ -415,7 +418,7 @@ internal static class Program
             }
         }
         Check(footprintMeshes > 0 && roofFaces > 0 && wallFaces > 0,
-            "static chunk meshes contain real roof and wall faces");
+             "static chunk meshes contain collapsed slabs and broken walls");
         Check(context.EstimatedContextTriangles <= CityUrbanContext.MaxContextTriangles,
             "source extrusion plus affordable LODs stay under triangle ceiling");
     }
