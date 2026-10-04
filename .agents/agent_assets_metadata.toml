@@ -576,3 +576,45 @@ mtime_ms = 1791098704599
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/322a9ba1-3d8e-4782-9045-251795d7bccd/0f2ae7b5-e436-44e9-8215-9bf1e41061c1"
 storage_version_token = "1791098777123393"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "5tGe53YoqnZihXaT6Ltu5"
+uri = "file://exports/fixes/NewGaza-Pointer-Camera-Fix.zip"
+type = "unspecified"
+title = "إصلاح أخطاء مؤشر الكاميرا في Unity"
+description = "حزمة إصلاح فوق المشروع الحالي: تمنع إسقاط قيم inf/-inf والمؤشر خارج النافذة، وتشمل إصلاح تحميل الحفظ السابق. دون ملفات .meta جديدة. اقرأ POINTER-CAMERA-FIX.ar.md، ولا تحذف الحفظ."
+logical_id = "ed7295e9-fdc2-47ff-a809-3d48966e09f5"
+content_hash = "sha256:b050e0513fd7f13794093617f796be192cc76b5a95bb3b32da70397f3c377ead"
+size = 15879
+mtime_ms = 1791099265682
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/ed7295e9-fdc2-47ff-a809-3d48966e09f5/376256e3-4347-496d-8315-084725864edc"
+storage_version_token = "1791099308069929"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "-uSjcRaHXBH5YgQzSlhh_"
+uri = "file://exports/fixes/NewGaza-Responsive-UI-Fix.zip"
+type = "unspecified"
+title = "إصلاح تحجيم واجهة Unity وإغلاق النوافذ"
+description = "تحديث فوق المشروع الحالي: تحجيم موحد للـ Canvas والمنطقة الآمنة، نوافذ أوضح وأزرار إغلاق، ومنع تراكب المتجر والصفحات. يشمل إصلاحات الكاميرا والحفظ السابقة، دون .meta جديدة. دليل RESPONSIVE-UI-FIX.ar.md داخل الحزمة."
+logical_id = "8589dbbf-1dea-42b4-9a98-8c353797b168"
+content_hash = "sha256:a8137ac76e56d366df22c46045c4850d0dac4dd2e1e0c75d0a1418b322c3c92b"
+size = 51794
+mtime_ms = 1791100357096
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/8589dbbf-1dea-42b4-9a98-8c353797b168/2ca05da1-e4d2-4919-9549-4cdafa4fff9a"
+storage_version_token = "1791100444570042"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "2lt9Mf2OCgYSIdvXf2pEU"
+uri = "file://exports/fixes/NewGaza-Faster-Zoom-Update.zip"
+type = "unspecified"
+title = "تحديث سرعة التكبير والتصغير"
+description = "زوم أسرع بعجلة الفأرة وحركة الإصبعين، مع استجابة أسرع للكاميرا وحدود الزوم نفسها. يشمل إصلاحات الواجهة والكاميرا والحفظ السابقة، دون ملفات .meta جديدة."
+logical_id = "a9b893ed-acbc-4f86-88bc-379d703f9613"
+content_hash = "sha256:cf03e66a189b06e0d3e7bd57b1f2745b1887a4ebfe5d9919a2ad194d8a2e2763"
+size = 52650
+mtime_ms = 1791100560292
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/a9b893ed-acbc-4f86-88bc-379d703f9613/38228825-502d-4d37-8ed6-4718c88c9dfd"
+storage_version_token = "1791100694240208"
+content_type = "application/octet-stream"
