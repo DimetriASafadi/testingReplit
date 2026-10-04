@@ -618,3 +618,17 @@ mtime_ms = 1791100560292
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/a9b893ed-acbc-4f86-88bc-379d703f9613/38228825-502d-4d37-8ed6-4718c88c9dfd"
 storage_version_token = "1791100694240208"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "u7LnVLwYUe0U5fR8Frhqb"
+uri = "file://exports/fixes/NewGaza-Development-Save-Fix.zip"
+type = "unspecified"
+title = "تحديث توافق حفظ مواقع البناء"
+description = "يعالج المراجع الاختيارية الفارغة دون حذف التقدم، ويحفظ نسخة أصلية ويضيف تفاصيل لأخطاء التحقق. يشمل إصلاحات الواجهة والزوم السابقة، دون .meta جديدة. ملف الحفظ الأصلي لم يُفحص هنا."
+logical_id = "fd761325-573b-4f54-b262-4c1fa8befb78"
+content_hash = "sha256:0e67ea7a4f71412e39ab7e0fcb95d04bcdc8eba4410fa513b92f9e31f6a2b177"
+size = 59499
+mtime_ms = 1791103153084
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/fd761325-573b-4f54-b262-4c1fa8befb78/f4d2d6da-b407-4b11-b6e6-1604377d7a82"
+storage_version_token = "1791103182005671"
+content_type = "application/octet-stream"
