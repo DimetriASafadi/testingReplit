@@ -371,12 +371,24 @@ namespace NewGaza
 
         public void StartClear()
         {
+            if (!session.Ready) { ClearFeedback("انتظر اكتمال تحميل اللعبة أولاً"); return; }
             var parcel = Parcel(selectedSite);
-            if (parcel == null) return;
+            if (parcel == null) { ClearFeedback("اختر مبنى مهدّمًا على الخريطة أولاً"); return; }
+            if (session.State.jobStage != JobStage.Idle)
+            {
+                // Never restart or overwrite saved work just because another site was selected.
+                if (!string.IsNullOrEmpty(Rules.Data.activeRubbleId))
+                {
+                    selectedSite = Rules.Data.activeRubbleId;
+                    selectedBuilding = null;
+                }
+                ClearFeedback("هناك مهمة جارية؛ انتظر وصول الآليات والإزالة ثم النقل والتدوير. تم عرض الموقع الجاري بدل بدء مهمة أخرى.");
+                return;
+            }
             if (session.State.factoryLevel == 0)
-            { session.Notify("ابنِ مصنع إعادة تدوير وأكمل بناءه أولاً"); return; }
+            { ClearFeedback("ابنِ مصنع إعادة تدوير وأكمل بناءه أولاً"); return; }
             if (session.State.excavators == 0 || session.State.bulldozers == 0 || session.State.trucks == 0)
-            { session.Notify("اشترِ المعدات اللازمة: حفار وجرافة وشاحنة نقل"); return; }
+            { ClearFeedback("اشترِ المعدات اللازمة: حفار وجرافة وشاحنة نقل"); return; }
             string depot = null; float shortest = float.MaxValue;
             Action<string, Vector3> consider = (id, position) =>
             {
@@ -390,14 +402,21 @@ namespace NewGaza
             foreach (var building in Rules.Data.buildings)
                 if (building.completed && CityBuildingCatalog.Find(building.definitionId).category == BuildingCategory.Recycling)
                     consider(building.id, DepotPoint(building));
-            if (depot == null) { session.Notify("لا يوجد مصنع إعادة تدوير جاهز يمكن للمعدات الانطلاق منه"); return; }
+            if (depot == null) { ClearFeedback("لا يوجد مصنع إعادة تدوير جاهز يمكن للمعدات الانطلاق منه"); return; }
             string idToClear = selectedSite;
             session.Perform(e =>
             {
                 var result = Rules.Clear(idToClear, depot, session.Now);
+                ui.ShowWorkFeedback(result.message);
                 if (result.success) world.Fleet.BeginDepotDispatch();
                 return result;
             });
+        }
+
+        private void ClearFeedback(string message)
+        {
+            ui.ShowWorkFeedback(message);
+            session.Notify(message);
         }
 
         public void Collect()

@@ -21,6 +21,12 @@ UI callback contracts need type checks, not syntax checks alone; delegates with 
 
 **How to apply:** Mirror native event delegate types in focused regression contracts; do not infer compatibility from a parameterless callback shape or a passing parser.
 
+Passing economy tests does not establish that a Unity action button responds to input.
+
+**Why:** The user reported that «إزالة الدمار» did nothing despite passing salvage-domain tests; those tests did not exercise the click-to-controller path or overlapping UI layers.
+
+**How to apply:** Exercise original click and dispatch methods rather than copying their logic into tests. Check silent disabled states, visible rejection feedback, and canvas/raycast ordering. Still distinguish this bounded coverage from real Unity pointer-input verification.
+
 Keep source-only delivery possible when the workspace lacks a licensed Editor, but label it unverified; verified delivery must require a fresh real-Editor compilation.
 
 **Why:** This project is authored in an environment without Unity. Requiring Editor access for all source exports would block delivery, while calling a source export verified would repeat the previous missed compiler regressions.

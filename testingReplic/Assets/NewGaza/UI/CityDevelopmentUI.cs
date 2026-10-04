@@ -121,6 +121,8 @@ namespace NewGaza
         private Canvas canvas;
         private CanvasScaler scaler;
         private ArabicLabel actionHeading;
+        private string feedbackSite, workFeedback;
+        private float workFeedbackUntil;
         private bool regionVisible = true;
         private int dismissedClaimDistrict = -1, lastFocus = -2;
         public bool StoreOpen => shop != null && shop.activeInHierarchy;
@@ -157,6 +159,10 @@ namespace NewGaza
             Box(regionButton.transform as RectTransform, 192, 0, 148, 44, true);
             actionPanel = Panel("Local work / building confirmation", safe, true);
             actionPanel.GetComponent<Image>().color = new Color(18f / 255, 61f / 255, 112f / 255, .98f);
+            // Local actions sit above the HUD (100), below the blocking store (200).
+            var actionCanvas = actionPanel.gameObject.AddComponent<Canvas>();
+            actionCanvas.overrideSorting = true; actionCanvas.sortingOrder = 150;
+            actionPanel.gameObject.AddComponent<GraphicRaycaster>();
             actionHeading = Label(actionPanel, "تفاصيل الموقع", 19);
             actionText = Label(actionPanel, "", 15);
             var closeAction = Button(actionPanel, "إغلاق", DismissAction); closeAction.name = "Close work panel";
@@ -332,14 +338,26 @@ namespace NewGaza
             else if (site)
             {
                 var selected = development.Rules.Site(development.SelectedSite);
+                if (selected == null)
+                {
+                    actionText.SetText("لم يعد الموقع المحدد متاحًا؛ اختر مبنى مهدّمًا على الخريطة.");
+                    SetButton(action, "اختر موقعًا"); action.interactable = true;
+                    return;
+                }
                 bool active = development.Rules.Data.activeRubbleId == selected.id;
-                actionText.SetText(selected.cleared ? "أرض نظيفة — اختر مبنى من المتجر وضعه هنا أو على أي مساحة نظيفة مناسبة" :
+                bool busy = session.State.jobStage != JobStage.Idle;
+                string details = selected.cleared ? "أرض نظيفة — اختر مبنى من المتجر وضعه هنا أو على أي مساحة نظيفة مناسبة" :
                     active ? "الآليات في الطريق أو تعمل على الإزالة والنقل والتدوير\n" + StageText(session.State.jobStage) :
+                    busy ? "الآليات مشغولة بموقع آخر — اضغط لعرض المهمة الجارية، ثم انتظر انتهاء النقل والتدوير." :
                     "موارد للبيع بقيمة تقارب " + RubbleEconomy.Reward(selected) + " عملة" +
                     "\nمصنع تدوير ← حفار وجرافة وشاحنة ← وصول عبر الطرق" +
-                    "\nعمل نحو دقيقة بالمعدات الأساسية ثم العودة إلى المصنع. بع الموارد من المخزن لتحصل على المال.");
-                SetButton(action, selected.cleared ? "اختر مبنى" : active ? "قيد التنفيذ" : "إزالة الدمار");
-                action.interactable = selected.cleared || session.State.jobStage == JobStage.Idle;
+                    "\nعمل نحو دقيقة بالمعدات الأساسية ثم العودة إلى المصنع. بع الموارد من المخزن لتحصل على المال.";
+                // Feedback is retained across the controller's per-frame Refresh, not erased immediately.
+                actionText.SetText(feedbackSite == selected.id && !string.IsNullOrEmpty(workFeedback) &&
+                    Time.unscaledTime < workFeedbackUntil && !selected.cleared
+                    ? workFeedback + (busy ? "\n" + StageText(session.State.jobStage) : "") : details);
+                SetButton(action, selected.cleared ? "اختر مبنى" : busy ? "عرض المهمة الجارية" : "إزالة الدمار");
+                action.interactable = true;
             }
             else if (building)
             {
@@ -378,11 +396,19 @@ namespace NewGaza
             if (development.Placing) development.Confirm();
             else if (development.SelectedSite != null)
             {
-                if (development.Rules.Site(development.SelectedSite).cleared) development.BuildOnSelectedLand();
+                if (development.Rules.Site(development.SelectedSite)?.cleared == true) development.BuildOnSelectedLand();
                 else development.StartClear();
             }
             else if (development.SelectedBuilding != null) development.Collect();
             else development.ClaimRegion();
+        }
+
+        internal void ShowWorkFeedback(string message)
+        {
+            feedbackSite = development.SelectedSite;
+            workFeedback = message;
+            workFeedbackUntil = Time.unscaledTime + 8f;
+            Refresh();
         }
 
         private RectTransform Rect(string name, Transform parent)

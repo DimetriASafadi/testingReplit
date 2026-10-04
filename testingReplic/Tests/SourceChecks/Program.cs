@@ -43,6 +43,13 @@ internal static class Program
                 }
             }
             CheckContracts(roots);
+            ClearingClickChecks.Run(roots);
+            string clearingUi = Compact(roots["UI/CityDevelopmentUI.cs"].ToFullString());
+            Require(clearingUi.Contains("actionCanvas.overrideSorting=true;actionCanvas.sortingOrder=150", StringComparison.Ordinal) &&
+                clearingUi.Contains("actionPanel.gameObject.AddComponent<GraphicRaycaster>()", StringComparison.Ordinal) &&
+                clearingUi.Contains("feedbackSite==selected.id&&!string.IsNullOrEmpty(workFeedback)", StringComparison.Ordinal) &&
+                !clearingUi.Contains("action.interactable=selected.cleared||session.State.jobStage==JobStage.Idle", StringComparison.Ordinal),
+                "Local clearing actions must receive HUD-overlaid clicks and retain feedback instead of silently disabling busy work.");
             string workerScaleSource = Compact(roots["World/CityConstructionCrew.cs"].ToString());
             string worldScaleSource = Compact(roots["World/CityWorld.cs"].ToString());
             string modelScaleSource = Compact(roots["World/CityModelLibrary.cs"].ToString());

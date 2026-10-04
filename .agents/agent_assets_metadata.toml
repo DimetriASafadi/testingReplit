@@ -772,3 +772,17 @@ mtime_ms = 1791112890642
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/e2a2866a-7807-400c-9745-9801f94bbfa3/acc878a1-207e-453d-9e4c-91cf4795bd0c"
 storage_version_token = "1791112900259886"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "PAFT5ZIaLP_yc6mOxtKiN"
+uri = "file://exports/fixes/NewGaza-Clear-Rubble-Button-Response-Fix.zip"
+type = "unspecified"
+title = "إصلاح استجابة زر إزالة الدمار"
+description = "حزمة Unity تراكمية: استقبال الضغط فوق HUD، رسائل السبب داخل نافذة العمل، وبدء الإرسال أو عرض المهمة الجارية دون إعادة المؤقت. تشمل التحديثات السابقة وتحافظ على الحفظ، دون ملفات .meta."
+logical_id = "5b440c11-f75b-4dd3-9fcb-3f92d537ac10"
+content_hash = "sha256:9608dd84334d2dcea1b091784fa7e4fed2b1398429302a01b75d2b5e7b1bac15"
+size = 47320806
+mtime_ms = 1791124308775
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/5b440c11-f75b-4dd3-9fcb-3f92d537ac10/3b291354-0576-4b92-a665-3c8e9aa955db"
+storage_version_token = "1791124354819161"
+content_type = "application/octet-stream"
