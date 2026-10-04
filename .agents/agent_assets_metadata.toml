@@ -562,3 +562,17 @@ mtime_ms = 1791048961992
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/0ad047bd-80a2-41d6-a1b2-260f5fd14d29/ea4a1bb2-0ca9-4f51-a174-3f4dcaed8892"
 storage_version_token = "1791049008508422"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "toK9CtUnmv7tlJS14Hkd4"
+uri = "file://exports/fixes/NewGaza-Camera-Save-Fix.zip"
+type = "unspecified"
+title = "إصلاح خطأ Invalid saved camera"
+description = "إصلاح Unity صغير فوق مشروعك الحالي: استبدال ملفين داخل Assets دون حذف الحفظ أو ملفات .meta. يعيد ضبط العرض غير الصالح فقط، ويحفظ الملف الأصلي والتقدم، مع دليل تثبيت عربي."
+logical_id = "322a9ba1-3d8e-4782-9045-251795d7bccd"
+content_hash = "sha256:dc5f67e5d514da92c87e17f7901a274006ed41140d4a71f513e7e78d17efcb54"
+size = 5005
+mtime_ms = 1791098704599
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/322a9ba1-3d8e-4782-9045-251795d7bccd/0f2ae7b5-e436-44e9-8215-9bf1e41061c1"
+storage_version_token = "1791098777123393"
+content_type = "application/octet-stream"
