@@ -32,3 +32,9 @@ writes persistent saves, including on failing runs.
 **How to apply:** Require matching real-Editor/graphics evidence and retain failure
 and timeout logs. Back up saves on the approved machine; a project copy alone does
 not isolate Unity persistentDataPath. Report unavailable Editor runs as NOT RUN.
+
+Ensure custom .NET fixture project definitions are tracked despite Unity's generated-project ignore rules.
+
+**Why:** A configured regression workflow lost its development-test project definition while its source files remained; that project had existed only as an ignored local file.
+
+**How to apply:** Check tracking when creating fixture projects. Preserve Unity's normal generated-file exclusions; explicitly add the custom test project instead of relying on an untracked local build definition.

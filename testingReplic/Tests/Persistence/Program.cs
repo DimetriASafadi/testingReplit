@@ -41,6 +41,8 @@ internal static class Program
             LegacyAndRewards();
             FreshDirectory(root, "recovery");
             Recovery();
+            FreshDirectory(root, "presentation");
+            PresentationRecovery();
             Console.WriteLine("PASS persistence filesystem/domain fixture / " + checks + " assertions.");
             Console.WriteLine("Uses a .NET serializer contract, NOT Unity JsonUtility; Unity Editor/Play Mode/shaders NOT RUN.");
         }
@@ -58,6 +60,7 @@ internal static class Program
         var state = GameCatalog.CreateNew(Now);
         state.coins = 10000000;
         state.stock.concrete = state.stock.iron = 10000;
+        state.development.requiresPlacedFactory = false;
         economy = new EconomyService(state);
         return new CityDevelopmentService(economy);
     }
@@ -122,6 +125,7 @@ internal static class Program
         var rules = Setup(out var economy);
         var state = economy.State;
         state.factoryLevel = state.excavators = state.trucks = state.bulldozers = 1;
+        state.equipmentUnits = null; // Legacy counters are migrated to independent units.
         economy.ClearingCrewReady = () => false;
         string site = CityDevelopmentService.SiteId(0, 0);
         Check(rules.Clear(site, "central", Now).success, "Dispatch to chosen rubble");
@@ -148,13 +152,17 @@ internal static class Program
         economy.Tick(deadline - 1);
         Check(state.jobFinishUtc == deadline && state.jobStage == JobStage.Clearing, "Arrived clearing timer not reset on reopen");
         economy.Tick(deadline + 10000);
+        var yield = RubbleEconomy.Yield(state, rules.Site(site));
+        long paid = RubbleEconomy.Reward(rules.Site(site));
         Check(state.jobStage == JobStage.Idle && rules.Site(site).cleared &&
-            state.stock.concrete == 10040 && state.stock.iron == 10015, "Offline hauling/recycling credited once");
+            state.stock.concrete == 10000 + yield.concrete && state.stock.iron == 10000 + yield.iron &&
+            state.coins == 10000000 + paid, "Offline hauling/recycling credited once");
         GameSaveStore.Save(state);
         state = GameSaveStore.Load(deadline + 10001, out _);
         economy = new EconomyService(state);
         economy.Tick(deadline + 20000);
-        Check(state.stock.concrete == 10040 && state.stock.iron == 10015, "No repeat recycling credit after another reopen");
+        Check(state.stock.concrete == 10000 + yield.concrete && state.stock.iron == 10000 + yield.iron &&
+            state.coins == 10000000 + paid, "No repeat recycling credit after another reopen");
     }
 
     private static void LegacyAndRewards()
@@ -239,9 +247,96 @@ internal static class Program
             File.ReadAllText(GameSaveStore.SavePath + ".bak") == "broken backup", "Unreadable evidence not overwritten");
     }
 
-    private static void WriteEnvelope(GameState state)
+    private static void PresentationRecovery()
+    {
+        var rules = Setup(out var economy);
+        var state = economy.State;
+        Check(rules.Build("small_house", 0, 10, 20, 0, Now, Land).success, "Presentation fixture owns a real building");
+        long balance = state.coins;
+        string id = rules.Data.buildings[0].id;
+        long deadline = rules.Data.buildings[0].finishUtc;
+        // A healthy older backup must NOT replace newer gameplay when only the
+        // optional view is invalid in the primary.
+        GameSaveStore.Save(state);
+        state.playerName = "newer progress";
+        GameSaveStore.Save(state);
+        string oldBackup = File.ReadAllText(GameSaveStore.SavePath + ".bak");
+        state.camera = new CameraSaveState(); // Unity-style materialized absent camera.
+        WriteEnvelope(state);
+        string original = File.ReadAllText(GameSaveStore.SavePath);
+        var loaded = GameSaveStore.Load(Now, out string warning);
+        Check(warning != null && loaded.camera == null && loaded.playerName == "newer progress" &&
+            loaded.coins == balance && loaded.development.buildings[0].id == id &&
+            loaded.development.buildings[0].finishUtc == deadline, "Zero camera recovers newest progress, not older backup");
+        Check(File.ReadAllText(GameSaveStore.SavePath) == original &&
+            File.ReadAllText(GameSaveStore.SavePath + ".presentation-backup") == original &&
+            File.ReadAllText(GameSaveStore.SavePath + ".bak") == oldBackup,
+            "Recovery retains original payload and older backup without writes to progress");
+        loaded = GameSaveStore.Load(Now, out warning);
+        Check(loaded.camera == null && warning != null, "Presentation recovery is repeatable");
+        foreach (var camera in new[] {
+            new CameraSaveState { zoom = -1 }, new CameraSaveState { zoom = 10001 },
+            new CameraSaveState { zoom = 20, x = 1000001 },
+            new CameraSaveState { zoom = 20, yaw = 361 } })
+        {
+            state.camera = camera;
+            WriteEnvelope(state);
+            loaded = GameSaveStore.Load(Now, out warning);
+            Check(loaded.camera == null && warning != null && loaded.coins == balance &&
+                loaded.development.buildings[0].id == id, "Invalid view alone doesn't discard earned progress");
+        }
+        loaded.camera = new CameraSaveState { x = 22, z = -33, zoom = .6f, yaw = 360 };
+        GameSaveStore.Save(loaded);
+        loaded = GameSaveStore.Load(Now, out warning);
+        Check(warning == null && loaded.camera.zoom == .6f && loaded.camera.yaw == 360,
+            "Valid camera restored unchanged without recovery warning");
+        Check(File.ReadAllText(GameSaveStore.SavePath + ".presentation-backup") == original,
+            "Later saves retain first affected original");
+        // Exercise the deserialization difference that normal .NET round trips
+        // miss: an absent optional camera can emerge as a non-null zero object.
+        loaded.camera = null;
+        WriteEnvelope(loaded, true);
+        JsonUtility.MaterializeAbsentCamera = true;
+        try
+        {
+            loaded = GameSaveStore.Load(Now, out warning);
+            Check(loaded.camera == null && warning != null && loaded.coins == balance &&
+                loaded.development.buildings[0].id == id,
+                "Materialized camera from an absent JSON field recovers earned progress");
+        }
+        finally { JsonUtility.MaterializeAbsentCamera = false; }
+        loaded.camera = new CameraSaveState { zoom = 20 };
+        loaded.camera.zoom = float.NaN;
+        Reject(() => GameSaveStore.Save(loaded), "Invalid new camera still rejected on save");
+        loaded.camera = null;
+        loaded.fleet = new FleetSaveState(); // Missing optional poses.
+        WriteEnvelope(loaded);
+        loaded = GameSaveStore.Load(Now, out warning);
+        Check(loaded.fleet == null && warning != null && loaded.coins == balance &&
+            loaded.development.buildings[0].id == id, "Absent fleet poses recover without clearing buildings");
+        // Recovery must not make corrupted GAMEPLAY valid, even when camera is bad.
+        File.Delete(GameSaveStore.SavePath + ".bak");
+        loaded.coins = -1;
+        loaded.camera = new CameraSaveState();
+        WriteEnvelope(loaded);
+        string corrupt = File.ReadAllText(GameSaveStore.SavePath);
+        Reject(() => GameSaveStore.Load(Now, out _), "Gameplay corruption still fails with an invalid camera");
+        Check(File.ReadAllText(GameSaveStore.SavePath) == corrupt, "Invalid gameplay never rewritten as a fresh game");
+        File.Delete(GameSaveStore.SavePath);
+        Reject(() => GameSaveStore.Load(Now, out _), "Orphan presentation evidence never silently starts a fresh campaign");
+    }
+
+    private static void WriteEnvelope(GameState state, bool omitCamera = false)
     {
         string payload = JsonSerializer.Serialize(state, Json);
+        if (omitCamera)
+        {
+            var fields = new System.Collections.Generic.Dictionary<string, JsonElement>();
+            using (var document = JsonDocument.Parse(payload))
+                foreach (var field in document.RootElement.EnumerateObject())
+                    if (field.Name != "camera") fields.Add(field.Name, field.Value.Clone());
+            payload = JsonSerializer.Serialize(fields);
+        }
         string checksum = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(payload)));
         File.WriteAllText(GameSaveStore.SavePath, JsonSerializer.Serialize(new { schema = 1, payload, checksum }));
     }

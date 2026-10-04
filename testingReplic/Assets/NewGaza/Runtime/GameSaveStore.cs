@@ -26,7 +26,7 @@ namespace NewGaza
             Exception failure = null;
             if (File.Exists(SavePath))
             {
-                try { return Read(SavePath); }
+                try { return Read(SavePath, out warning); }
                 catch (Exception exception) { failure = exception; }
             }
             // A validated backup is preferred to an interrupted write. A temporary
@@ -36,34 +36,51 @@ namespace NewGaza
                 if (!File.Exists(recovery)) continue;
                 try
                 {
-                    var restored = Read(recovery);
+                    var restored = Read(recovery, out var presentationWarning);
                     if (File.Exists(SavePath))
                         File.Copy(SavePath, SavePath + ".damaged", true);
                     // Restore the primary as well: the next Save must not rotate
                     // a missing/damaged primary over the only healthy backup.
                     File.Copy(recovery, SavePath, true);
-                    warning = "تم استرجاع النسخة الاحتياطية للحفظ.";
+                    warning = "تم استرجاع النسخة الاحتياطية للحفظ." +
+                        (presentationWarning == null ? "" : "\n" + presentationWarning);
                     return restored;
                 }
                 catch (Exception exception) { failure = exception; }
             }
-            if (failure != null || File.Exists(SavePath + ".damaged"))
+            if (failure != null || File.Exists(SavePath + ".damaged") ||
+                File.Exists(SavePath + ".presentation-backup") ||
+                File.Exists(SavePath + ".bak.presentation-backup") ||
+                File.Exists(SavePath + ".tmp.presentation-backup"))
                 throw new InvalidDataException("Save files are unreadable. Your progress has NOT been reset; files have been preserved.", failure);
             return GameCatalog.CreateNew(now);
         }
 
-        private static GameState Read(string path)
+        private static GameState Read(string path, out string warning)
         {
+            warning = null;
             var envelope = JsonUtility.FromJson<Envelope>(File.ReadAllText(path));
             if (envelope == null || envelope.schema != 1 || string.IsNullOrEmpty(envelope.payload)
                 || envelope.checksum != Hash(envelope.payload))
                 throw new InvalidDataException("Unsupported or damaged save envelope.");
             var state = JsonUtility.FromJson<GameState>(envelope.payload);
+            // Camera/fleet poses are optional presentation, not earned progress.
+            // Normalize only these after verifying the ORIGINAL payload checksum.
+            // Unity may create a zero-zoom camera for an absent legacy field.
+            string presentationWarning = PresentationSaveValidation.RecoverForLoad(state);
             // Verify the original payload checksum above, then validate the frozen old schema
             // before migrating. Failures still propagate through Load's backup recovery.
             state = GameStateMigration.Upgrade(state);
             // Domain validation is authoritative; invalid primary files must also try the backup.
             Validate(state);
+            if (presentationWarning != null)
+            {
+                // Retain raw evidence before any later normal Save rotates files.
+                // Do not overwrite the first original affected save on repeat loads.
+                string original = path + ".presentation-backup";
+                if (!File.Exists(original)) File.Copy(path, original, false);
+                warning = presentationWarning;
+            }
             return state;
         }
 
