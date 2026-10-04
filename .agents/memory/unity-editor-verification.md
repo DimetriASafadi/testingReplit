@@ -15,6 +15,12 @@ Do not infer that an optional JSON header was supplied merely because its deseri
 
 **How to apply:** Preserve the runtime/editor assembly boundary in targeted compilation checks, including actual visibility and signatures. Model obsolete APIs as compiler errors, not warnings to suppress. Keep access limited to the intended editor assembly rather than making all runtime internals public. Minimal API contracts can catch known regressions but are not a substitute for a full compilation against the user's Unity version.
 
+UI callback contracts need type checks, not syntax checks alone; delegates with identical argument lists are not necessarily interchangeable.
+
+**Why:** A source-only check missed a callback conversion error that the user's Unity compiler rejected.
+
+**How to apply:** Mirror native event delegate types in focused regression contracts; do not infer compatibility from a parameterless callback shape or a passing parser.
+
 Keep source-only delivery possible when the workspace lacks a licensed Editor, but label it unverified; verified delivery must require a fresh real-Editor compilation.
 
 **Why:** This project is authored in an environment without Unity. Requiring Editor access for all source exports would block delivery, while calling a source export verified would repeat the previous missed compiler regressions.

@@ -688,3 +688,17 @@ mtime_ms = 1791108024711
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/a84872bd-70ef-4ea7-8160-b0be9ffacc40/1c03ee0f-2a5d-419a-8af9-5593bb39e203"
 storage_version_token = "1791108032321417"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "bAH7QQXHQ6fJiI5t1nmHF"
+uri = "file://exports/fixes/NewGaza-UnityAction-Fix.zip"
+type = "unspecified"
+title = "إصلاح خطأ UnityAction"
+description = "تحديث صغير يحتوي فقط على CityDevelopmentUI.cs المصحح. فك الحزمة داخل مشروع Unity واستبدل الملف. لا يمس الحفظ ولا يضيف ملفات .meta."
+logical_id = "3072910d-3960-4f9b-a757-6e9688967b3b"
+content_hash = "sha256:b6def639f2603b4af63eae12ba9866db56b7674c99e6410462bbf59eb16e7a79"
+size = 6629
+mtime_ms = 1791108205198
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/3072910d-3960-4f9b-a757-6e9688967b3b/651ad405-c204-4492-a94a-319e0577ba9f"
+storage_version_token = "1791108236313007"
+content_type = "application/octet-stream"

@@ -39,7 +39,7 @@ namespace NewGaza
             }
         }
 
-        private void ShowFactoryMarker(string id, Vector3 position, bool completed, Action select)
+        private void ShowFactoryMarker(string id, Vector3 position, bool completed, UnityEngine.Events.UnityAction select)
         {
                 if (!factoryMarkers.TryGetValue(id, out var marker))
                 {

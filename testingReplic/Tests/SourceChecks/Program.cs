@@ -43,6 +43,13 @@ internal static class Program
                 }
             }
             CheckContracts(roots);
+            var factoryUiMethods = roots["UI/CityDevelopmentUI.cs"].DescendantNodes().OfType<MethodDeclarationSyntax>();
+            var factoryMarkerMethod = factoryUiMethods.Single(m => m.Identifier.ValueText == "ShowFactoryMarker");
+            var factoryButtonMethod = factoryUiMethods.Single(m => m.Identifier.ValueText == "Button");
+            Require(factoryMarkerMethod.ParameterList.Parameters.Last().Type?.ToString() ==
+                factoryButtonMethod.ParameterList.Parameters.Last().Type?.ToString() &&
+                factoryButtonMethod.ParameterList.Parameters.Last().Type?.ToString() == "UnityEngine.Events.UnityAction",
+                "Factory marker callbacks must match the native UnityAction button contract, not System.Action.");
             CheckPointerProjection(roots);
             CheckZoomResponse(roots);
             CheckNativeWindowLayout(roots);
