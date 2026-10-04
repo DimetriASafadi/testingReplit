@@ -19,6 +19,9 @@ namespace NewGaza
         private float zoom = 24;
         private float targetZoom = 24;
         private const float Pitch = 53;
+        private const float WheelZoomSensitivity = 0.0045f;
+        private const float PinchZoomExponent = 1.8f;
+        private const float ZoomResponse = 20f;
         private Vector2 start;
         private Vector2 previous;
         private float pressTime;
@@ -168,7 +171,7 @@ namespace NewGaza
                     else if (!beganOnUI && !IsUI(first) && !IsUI(second))
                     {
                         if (span > 20 && lastSpan > 20)
-                            targetZoom = Mathf.Clamp(targetZoom * lastSpan / span, 0.6f, Mathf.Max(125, OverviewZoom()));
+                            targetZoom = Mathf.Clamp(targetZoom * Mathf.Pow(lastSpan / span, PinchZoomExponent), 0.6f, Mathf.Max(125, OverviewZoom()));
                         yaw = Mathf.Repeat(yaw - Mathf.DeltaAngle(lastAngle, angle), 360);
                     }
                     lastSpan = span;
@@ -192,7 +195,7 @@ namespace NewGaza
             if (!CanProjectPointer(position)) { CancelGesture(); return; }
             float scroll = mouse.scroll.ReadValue().y;
             if (ScreenInputValidation.Finite(scroll) && !IsUI(position) && Mathf.Abs(scroll) > 0)
-                targetZoom = Mathf.Clamp(targetZoom * Mathf.Exp(-scroll * 0.0015f), 0.6f, Mathf.Max(125, OverviewZoom()));
+                targetZoom = Mathf.Clamp(targetZoom * Mathf.Exp(-scroll * WheelZoomSensitivity), 0.6f, Mathf.Max(125, OverviewZoom()));
             if (mouse.rightButton.isPressed && !IsUI(position))
             {
                 float delta = mouse.delta.ReadValue().x;
@@ -339,7 +342,8 @@ namespace NewGaza
         {
             float blend = immediate ? 1 : 1 - Mathf.Exp(-8 * Time.unscaledDeltaTime);
             focus = Vector3.Lerp(focus, targetFocus, blend);
-            zoom = Mathf.Lerp(zoom, targetZoom, blend);
+            float zoomBlend = immediate ? 1 : 1 - Mathf.Exp(-ZoomResponse * Time.unscaledDeltaTime);
+            zoom = Mathf.Lerp(zoom, targetZoom, zoomBlend);
             view.orthographicSize = zoom;
             transform.rotation = Quaternion.Euler(Pitch, yaw, 0);
             // Orthographic framing does not depend on camera distance. Stay near the

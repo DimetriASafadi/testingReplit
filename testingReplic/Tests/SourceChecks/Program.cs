@@ -44,6 +44,7 @@ internal static class Program
             }
             CheckContracts(roots);
             CheckPointerProjection(roots);
+            CheckZoomResponse(roots);
             CheckNativeWindowLayout(roots);
             Failures.AddRange(EditorCompilationChecks.Check(sourceRoot));
             CheckSceneBootstrap(sourceRoot, roots);
@@ -565,8 +566,8 @@ internal static class Program
         string cameraSource = camera == null ? "" : Compact(camera.ToString());
         Require(cameraSource.Contains("targetZoom=world.DistrictViewingSize(session.State.selectedDistrict)",
                     StringComparison.Ordinal) &&
-                cameraSource.Contains("Mathf.Clamp(targetZoom*lastSpan/span,0.6f", StringComparison.Ordinal) &&
-                cameraSource.Contains("Mathf.Clamp(targetZoom*Mathf.Exp(-scroll*0.0015f),0.6f",
+                cameraSource.Contains("Mathf.Clamp(targetZoom*Mathf.Pow(lastSpan/span,PinchZoomExponent),0.6f", StringComparison.Ordinal) &&
+                cameraSource.Contains("Mathf.Clamp(targetZoom*Mathf.Exp(-scroll*WheelZoomSensitivity),0.6f",
                     StringComparison.Ordinal),
             "District-scaled camera focus and the 0.6 minimum zoom must remain in the touch and mouse controls.");
 
@@ -2357,6 +2358,41 @@ internal static class Program
 
     private static string Compact(string source) =>
         new string(source.Where(c => !char.IsWhiteSpace(c)).ToArray());
+
+    private static void CheckZoomResponse(Dictionary<string, CompilationUnitSyntax> roots)
+    {
+        var camera = roots["Runtime/CityCamera.cs"];
+        Func<string, double> constant = name =>
+        {
+            var variable = camera.DescendantNodes().OfType<VariableDeclaratorSyntax>()
+                .Single(v => v.Identifier.ValueText == name);
+            if (variable.Initializer?.Value is not LiteralExpressionSyntax literal)
+                throw new InvalidOperationException("Zoom tuning must expose a numeric constant: " + name);
+            return Convert.ToDouble(literal.Token.Value, System.Globalization.CultureInfo.InvariantCulture);
+        };
+        double wheel = constant("WheelZoomSensitivity"), pinch = constant("PinchZoomExponent"),
+            response = constant("ZoomResponse");
+        Require(wheel > .0015 && pinch > 1 && response > 8, "Wheel, pinch and camera convergence must all be faster.");
+        double zoomIn = Math.Exp(-120 * wheel), zoomOut = Math.Exp(120 * wheel);
+        Require(zoomIn > 0 && zoomIn < Math.Exp(-120 * .0015) &&
+            Math.Abs(zoomIn * zoomOut - 1) < .00001, "Wheel zoom stays positive, faster and directionally reversible.");
+        Require(Math.Pow(1 / 1.1, pinch) < 1 / 1.1 &&
+            Math.Abs(Math.Pow(1 / 1.1, pinch) * Math.Pow(1.1, pinch) - 1) < .00001,
+            "Pinch zoom is amplified symmetrically, not biased to one direction.");
+        foreach (int fps in new[] { 30, 60, 120 })
+        {
+            double remaining = 1;
+            for (int frame = 0; frame < fps; frame++) remaining *= Math.Exp(-response / fps);
+            Require(Math.Abs(remaining - Math.Exp(-response)) < .00001,
+                "Zoom response is frame-rate independent at " + fps + " FPS.");
+        }
+        string source = Compact(camera.ToFullString());
+        Require(source.Contains("Mathf.Pow(lastSpan/span,PinchZoomExponent)") &&
+            source.Contains("Mathf.Exp(-scroll*WheelZoomSensitivity)") &&
+            source.Contains("Mathf.Lerp(zoom,targetZoom,zoomBlend)") &&
+            source.Contains("floatblend=immediate?1:1-Mathf.Exp(-8*Time.unscaledDeltaTime)"),
+            "Faster tuning must be wired to input/rendered zoom without accelerating camera panning.");
+    }
 
     private static void CheckNativeWindowLayout(Dictionary<string, CompilationUnitSyntax> roots)
     {

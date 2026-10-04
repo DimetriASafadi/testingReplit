@@ -22,3 +22,9 @@ All native pages, confirmation dialogs and small world panels need distinguishab
 **Why:** The user could not distinguish the game's many windows, reported missing close controls, and saw buttons outside the screen/canvas in Unity.
 
 **How to apply:** Use one scale/coordinate policy for every canvas. Do not mix raw screen pixels and scaled logical dimensions. Coordinate window visibility and input blocking centrally so one window cannot obscure another's close controls.
+
+«واريد زوم التصغير والتكبير اكثر سرعة لانه بطئ جدا حاليا».
+
+**Why:** The user wants faster native camera zoom in both directions.
+
+**How to apply:** Preserve responsive mouse-wheel and two-finger zoom; avoid reintroducing long zoom easing when changing camera controls.
