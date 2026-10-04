@@ -56,7 +56,7 @@ internal static class Program
             VerifyExtrusions(map, context, models, requests);
             VerifyExtent(map);
             Check(models.ContextModelCopies <= CityUrbanContext.MaxAuthoredModelCopies, "authored low-LOD copy cap");
-            Check(models.ContextModelCopies >= 4000, "dense authored destroyed buildings, not merely a raised unused cap");
+            Check(models.ContextModelCopies >= 8000, "eight thousand actual destroyed buildings, not merely a raised unused cap");
             for (int i = 0; i < models.ContextPlacements.Count; i++)
                 Check(models.ContextPlacements[i].footprintIsLocal,
                     "context placement requests oriented local footprint sizing");
@@ -75,6 +75,7 @@ internal static class Program
             Vector3 depot = context.GetDepotPosition(preferredDepot, 1.5f);
             VerifyDepotPosition(map, context, depot, 1.5f);
             string exportPath = SaveProofExport(map, context, models, requests, depot);
+            VerifyBackgroundInteraction(map, context, models, requests);
             Console.WriteLine("Basemap source/math checks passed: " + assertions +
                 " assertions; " + requests.Count + " districts, " + (requests.Count * 9) +
                 " unique plots, " +
@@ -85,6 +86,49 @@ internal static class Program
         {
             Console.Error.WriteLine(error);
             return 1;
+        }
+    }
+
+    private static void VerifyBackgroundInteraction(CityBasemap map, CityUrbanContext original,
+        CityModelLibrary originalModels, IList<CityUrbanDistrictRequest> requests)
+    {
+        var economy = new EconomyService(GameCatalog.CreateNew(1800000000));
+        var rules = new CityDevelopmentService(economy);
+        int primarySites = rules.Data.rubble.Length;
+        var sites = new List<RubbleSiteState>();
+        foreach (var source in original.AllContextBuildings)
+            sites.Add(new RubbleSiteState { id = "background:" + source.sourceBuildingId, background = true,
+                sourceBuildingId = source.sourceBuildingId,
+                district = Array.FindIndex(GameCatalog.Districts, d => d.id == source.districtId),
+                projectId = "housing", x = source.worldPosition.x, z = source.worldPosition.z,
+                width = source.size.x, depth = source.size.z, height = source.height, yaw = source.yaw,
+                buildingPrice = Math.Max(2500, source.levels * 2500L) });
+        rules.RegisterBackgroundSites(sites);
+        Check(rules.Data.rubble.Length == primarySites + original.AllContextBuildings.Count &&
+            original.AllContextBuildings.Count + requests.Count * 9 == map.buildings.Length,
+            "every mapped building has a selectable persistent site, preserving the additional coastal campaign parcels");
+        foreach (var site in sites)
+            Check(RubblePicking.Hit(site, site.x, 20, site.z, 0, -1, 0, out _),
+                "actual sourced rubble can be selected from above " + site.id);
+        string removed = originalModels.ContextPlacements[0].sourceBuildingId;
+        var models = new CityModelLibrary();
+        foreach (var building in map.buildings)
+            models.SourceBuildingByCenter.Add(CityModelLibrary.CenterKey(building.center.x, building.center.z), building.FeatureId);
+        var replacement = CityUrbanContext.Build(map, new CityGeometry(), models, new GameObject("cleared background").transform,
+            new Material(), new Material(), new Material(), new Material(), new Material(), requests,
+            new HashSet<string>(StringComparer.Ordinal) { removed });
+        Check(!models.ContextPlacements.Any(p => p.sourceBuildingId == removed) &&
+            !replacement.ExtrudedBuildingVolumes.Any(p => p.sourceBuildingId == removed),
+            "cleared background building disappears from both authored and fallback geometry");
+        foreach (var request in requests)
+        {
+            var before = original.GetDistrictPlots(request.id, 9);
+            var after = replacement.GetDistrictPlots(request.id, 9);
+            Check(before.Select(p => p.sourceBuildingId).SequenceEqual(after.Select(p => p.sourceBuildingId)),
+                "background removal never reassigns canonical parcels or earned saves");
+            Check(VectorNear(original.GetDepotPosition(request.representativeCenter, 1.5f),
+                replacement.GetDepotPosition(request.representativeCenter, 1.5f)),
+                "background removal does not move existing depots");
         }
     }
 
@@ -386,7 +430,7 @@ internal static class Program
         Check(volumeIds.Count + modelIds.Count + projectIds.Count == map.buildings.Length,
             "source buildings partition into native parcels, authored LODs, and extrusions");
 
-        int roofFaces = 0, wallFaces = 0, footprintMeshes = 0;
+        int rubbleFaces = 0, footprintMeshes = 0;
         for (int i = 0; i < MeshRenderer.Captured.Count; i++)
         {
             MeshRenderer renderer = MeshRenderer.Captured[i];
@@ -403,23 +447,13 @@ internal static class Program
                 float nx = (b.y - a.y) * (c.z - a.z) - (b.z - a.z) * (c.y - a.y);
                 float ny = (b.z - a.z) * (c.x - a.x) - (b.x - a.x) * (c.z - a.z);
                 float nz = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
-                if (highY - lowY < .00001f && lowY > -.0899f)
-                {
-                    Check(ny > .000001f, "collapsed floor triangles face upward");
-                    Check(Math.Abs(highY - (-.09f + .025f)) < .00001f,
-                        "every horizontal building surface is a low collapsed slab; no intact elevated roofs");
-                    roofFaces++;
-                }
-                else if (lowY <= -.0899f && highY > lowY + .0001f)
-                {
-                    Check(Math.Abs(ny) < .0001f && nx * nx + nz * nz > .000000000001f,
-                        "extruded building wall triangle is vertical with a real normal");
-                    wallFaces++;
-                }
+                Check(highY - lowY > .00001f, "every fallback fragment is broken/sloping; no clean flat roof or parcel slab");
+                Check(nx * nx + ny * ny + nz * nz > .0000000000000001f, "rubble fragments have real surface normals");
+                rubbleFaces++;
             }
         }
-        Check(footprintMeshes > 0 && roofFaces > 0 && wallFaces > 0,
-             "static chunk meshes contain collapsed slabs and broken walls");
+        Check(footprintMeshes > 0 && rubbleFaces > 100000,
+             "remaining sourced parcels contain extensive scattered rubble, not large solid cubes");
         Check(context.EstimatedContextTriangles <= CityUrbanContext.MaxContextTriangles,
             "source extrusion plus affordable LODs stay under triangle ceiling");
     }

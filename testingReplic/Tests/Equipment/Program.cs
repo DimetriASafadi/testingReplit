@@ -61,6 +61,7 @@ internal static class Program
                 CapturePose(export, fleet, "baseline-parked", "Idle", 0f, 0f);
 
                 CheckFleetGroundSupportClearance(fleet);
+                CheckTruckAndHumanScale(fleet);
                 SetFleetStage(fleet, JobStage.Clearing, 0);
                 PrepareFleetAtWorkDock(fleet, new Vector3(0f, FixtureGroundY, 10f),
                     new Vector3(0f, FixtureGroundY, 0f));
@@ -85,6 +86,7 @@ internal static class Program
                 motion.HaulCycle = CheckTruckHaulCycle(fleet, export);
                 CheckConfiguredFleetRoadTravel(geometry, baseMaterial);
                 CheckFleetWithoutRoads(geometry, baseMaterial);
+                CheckMissingRouteProgress(fleet);
                 CaptureWorkAnimation(export, fleet);
 
                 ValidateCapturedFleet(export);
@@ -244,6 +246,54 @@ internal static class Program
         Check(!fleet.RouteStatus.Contains("تعذّر"),
             "reachable production fleet reports no unreachable-route warning");
         CheckConfiguredReleaseContact(fleet);
+    }
+
+    private static void CheckTruckAndHumanScale(CityFleet fleet)
+    {
+        var truck = (Transform)GetField(fleet, "truck");
+        float minX = float.PositiveInfinity, minY = minX, minZ = minX;
+        float maxX = float.NegativeInfinity, maxY = maxX, maxZ = maxX;
+        foreach (var filter in truck.gameObject.GetComponentsInChildren<MeshFilter>(true))
+            foreach (var vertex in filter.sharedMesh.vertices)
+            {
+                Vector3 point = filter.transform.TransformPoint(vertex);
+                minX = Math.Min(minX, point.x); minY = Math.Min(minY, point.y); minZ = Math.Min(minZ, point.z);
+                maxX = Math.Max(maxX, point.x); maxY = Math.Max(maxY, point.y); maxZ = Math.Max(maxZ, point.z);
+            }
+        float length = Math.Max(maxX - minX, maxZ - minZ);
+        float height = maxY - minY;
+        float workerHeight = 1.7f / 20;
+        float pileLength = .36f / .921968f; // Production rubble OBJ's measured X/Z proportions.
+        Check(workerHeight < height && workerHeight / .15f < .60f,
+            "1.7m workers must be shorter than the truck and a three-metre storey");
+        Check(pileLength / length >= 1.15f && pileLength / length <= 1.60f,
+            "rubble pile's fitted horizontal length must be slightly larger than actual truck meshes");
+        Console.WriteLine("SIZE COMPARISON actual truck meshes: longest=" + (length * 20).ToString("F2") +
+            "m height=" + (height * 20).ToString("F2") + "m; worker=1.70m; pile=7.20x" +
+            (pileLength * 20).ToString("F2") + "m, maximum height=2.40m; pile/truck length=" +
+            (pileLength / length).ToString("F2"));
+    }
+
+    private static void CheckMissingRouteProgress(CityFleet fleet)
+    {
+        const System.Reflection.BindingFlags flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+        void Set(string name, object value) => typeof(CityFleet).GetField(name, flags).SetValue(fleet, value);
+        var excavator = (Transform)typeof(CityFleet).GetField("excavator", flags).GetValue(fleet);
+        Vector3 start = excavator.localPosition;
+        Vector3 target = start + new Vector3(.2f, 0, 0);
+        Set("excavatorRoadRoute", null); Set("excavatorRoadTarget", target);
+        Set("excavatorOnRoad", true); Set("excavatorDockedAtWork", false);
+        Set("trackedDestinationClearing", true);
+        var advance = typeof(CityFleet).GetMethod("AdvanceTrackedRoadTrip", flags);
+        advance.Invoke(fleet, new object[] { excavator, true, 2f });
+        Check(Vector3.Distance(start, excavator.localPosition) > .04f,
+            "Missing road route must actually move the excavator rather than park forever");
+        Check(!(bool)typeof(CityFleet).GetField("excavatorDockedAtWork", flags).GetValue(fleet),
+            "Direct fallback cannot declare arrival before physical contact");
+        advance.Invoke(fleet, new object[] { excavator, true, 10f });
+        Check(Vector3.Distance(target, excavator.localPosition) < .001f &&
+            (bool)typeof(CityFleet).GetField("excavatorDockedAtWork", flags).GetValue(fleet),
+            "Direct fallback reaches the work site and releases the waiting job");
     }
 
     private static void CheckFleetWithoutRoads(CityGeometry geometry, Material material)

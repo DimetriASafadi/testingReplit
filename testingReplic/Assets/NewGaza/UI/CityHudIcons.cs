@@ -6,11 +6,11 @@ namespace NewGaza.UI
     /// <summary>Small deterministic outline sprites owned by one CityHud instance.</summary>
     public sealed class CityHudIcons : IDisposable
     {
-        public enum Icon { None, Map, Projects, Fleet, Investment, Resources, Gift, Settings, Close }
+        public enum Icon { None, Map, Projects, Fleet, Investment, Resources, Gift, Settings, Close, Recycling }
 
         private const int Size = 48;
-        private readonly Sprite[] sprites = new Sprite[9];
-        private readonly Texture2D[] textures = new Texture2D[9];
+        private readonly Sprite[] sprites = new Sprite[10];
+        private readonly Texture2D[] textures = new Texture2D[10];
         private bool disposed;
 
         public Sprite Get(Icon icon)
@@ -28,6 +28,12 @@ namespace NewGaza.UI
             var pixels = new Color32[Size * Size];
             switch (icon)
             {
+                case Icon.Recycling:
+                    Circle(pixels, 24, 24, 19, 2);
+                    Polyline(pixels, new[] { 13, 19, 21, 33, 27, 33, 23, 38, 21, 33, 19, 28 }, 3);
+                    Polyline(pixels, new[] { 24, 34, 34, 18, 31, 13, 38, 15, 34, 18, 28, 18 }, 3);
+                    Polyline(pixels, new[] { 33, 16, 15, 16, 12, 21, 12, 13, 15, 16, 18, 22 }, 3);
+                    break;
                 case Icon.Map:
                     Line(pixels, 24, 7, 17, 16, 3);
                     Line(pixels, 17, 16, 15, 21, 3);

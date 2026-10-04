@@ -939,9 +939,10 @@ namespace NewGaza
                 }
                 if (roadTripRoute == null)
                 {
-                    roadReassignTravel = false;
-                    truckTripState = toWork ? TruckTripState.ParkedAtDepot :
-                        TruckTripState.ParkedAtWork;
+                    roadReassignTravel = true;
+                    tripRouteLength = Vector3.Distance(tripRoute[0], tripRoute[1]);
+                    tripDistance = tripClock = 0f;
+                    truckTripState = toWork ? TruckTripState.Inbound : TruckTripState.Outbound;
                     truckRouteStatus = "لا يوجد طريق مفيد؛ ستتحرك الشاحنة مباشرةً ببطء إلى الموقع.";
                     return;
                 }
@@ -1133,8 +1134,16 @@ namespace NewGaza
             CityRoadRoute route = roadNetwork.FindEquipmentRoute(start, destination, roadSpeedMultiplier);
             if (route == null)
             {
-                if (excavatorVehicle) excavatorOnRoad = false;
-                else bulldozerOnRoad = false;
+                if (excavatorVehicle)
+                {
+                    excavatorRoadRoute = null; excavatorRoadTarget = destination;
+                    excavatorOnRoad = true;
+                }
+                else
+                {
+                    bulldozerRoadRoute = null; bulldozerRoadTarget = destination;
+                    bulldozerOnRoad = true;
+                }
                 SetTrackedDocked(excavatorVehicle, false);
                 if (excavatorVehicle)
                     excavatorRouteStatus = "لا يوجد طريق مفيد؛ الحفارة تتابع مباشرةً ببطء خارج الطريق.";
@@ -1165,7 +1174,23 @@ namespace NewGaza
         private void AdvanceTrackedRoadTrip(Transform vehicle, bool excavatorVehicle, float dt)
         {
             CityRoadRoute route = excavatorVehicle ? excavatorRoadRoute : bulldozerRoadRoute;
-            if (route == null) return;
+            if (route == null)
+            {
+                Vector3 target = excavatorVehicle ? excavatorRoadTarget : bulldozerRoadTarget;
+                Vector3 directDirection = target - vehicle.localPosition;
+                vehicle.localPosition = Vector3.Lerp(vehicle.localPosition, target,
+                    Mathf.Min(1, .025f * dt / Mathf.Max(.0001f, directDirection.magnitude)));
+                if (directDirection.sqrMagnitude > .001f)
+                    vehicle.localRotation = Quaternion.LookRotation(directDirection, Vector3.up);
+                if (Vector3.Distance(vehicle.localPosition, target) <= .001f)
+                {
+                    vehicle.localPosition = target;
+                    if (excavatorVehicle) excavatorOnRoad = false;
+                    else bulldozerOnRoad = false;
+                    SetTrackedDocked(excavatorVehicle, trackedDestinationClearing);
+                }
+                return;
+            }
             float distance = excavatorVehicle ? excavatorRoadDistance : bulldozerRoadDistance;
             float speed = .10f;
             string roadId = route.RoadIdAtDistance(distance);

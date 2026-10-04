@@ -155,6 +155,10 @@ namespace NewGaza.Core
         public int district;
         public string projectId;
         public bool cleared;
+        public bool background;
+        public string sourceBuildingId;
+        public float x, z, width, depth, yaw, height;
+        public long buildingPrice;
     }
 
     [Serializable]
@@ -165,6 +169,8 @@ namespace NewGaza.Core
         public int district;
         public float x, z;
         public int quarterTurn;
+        public bool hasContinuousRotation;
+        public float rotationDegrees;
         public long startedUtc, finishUtc, lastIncomeUtc;
         public bool completed;
     }

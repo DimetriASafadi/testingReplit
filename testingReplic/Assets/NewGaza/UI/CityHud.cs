@@ -81,12 +81,14 @@ namespace NewGaza
         private Sprite roundedSprite;
         private bool initialized;
         private bool finaleShown;
+        private bool activityCollapsed;
 
         public void Initialize(GameSession gameSession, CityWorld cityWorld, CityCamera camera)
         {
             if (initialized) return;
             if (gameSession == null || gameSession.State == null) throw new ArgumentException("جلسة اللعبة غير جاهزة");
             session = gameSession;
+            activityCollapsed = PlayerPrefs.GetInt("NewGaza.ActivityCollapsed", 0) == 1;
             world = cityWorld;
             cityCamera = camera;
             arabicFont = CityTypography.FontFor(CityTextRole.Body);
@@ -161,6 +163,12 @@ namespace NewGaza
             activityLabel = Label(activity, "", 18, Cream);
             Stretch(activityLabel.rectTransform, 14, 10, 14, 10);
             activityLabel.alignment = TextAnchor.UpperRight;
+            var closeActivity = ActionButton(activity, "×", () =>
+            { activityCollapsed = true; PlayerPrefs.SetInt("NewGaza.ActivityCollapsed", 1); OnChanged(); }, Card);
+            closeActivity.name = "Close activity";
+            var reopenActivity = ActionButton(header, "العمل", () =>
+            { activityCollapsed = false; PlayerPrefs.SetInt("NewGaza.ActivityCollapsed", 0); OnChanged(); }, Teal);
+            reopenActivity.name = "Show activity";
 
             tutorial = Surface("Next useful step", safe, Panel);
             tutorialObject = tutorial.gameObject;
@@ -314,22 +322,26 @@ namespace NewGaza
             if (portrait)
             {
                 Place(balanceLabel.rectTransform, 14, 71, width - 52, 38, true);
-                Place(resourceLabel.rectTransform, 14, 110, width - 52, 28, true);
+                Place(resourceLabel.rectTransform, 14, 110, width - 165, 28, true);
             }
             else
             {
                 Place(balanceLabel.rectTransform, 235, 7, Math.Max(160, width - 565), 43, true);
-                Place(resourceLabel.rectTransform, 235, 52, Math.Max(160, width - 290), 29, true);
+                Place(resourceLabel.rectTransform, 235, 52, Math.Max(160, width - 385), 29, true);
             }
             var strip = header.Find("Neighborhood progress") as RectTransform;
             Place(strip, 14, head - 32, width - 52, 27, true);
             Place(districtLabel.rectTransform, strip.rect.width * 0.44f, 0, strip.rect.width * 0.56f, 26, true);
             Place(strip.Find("Progress track") as RectTransform, 0, 9, strip.rect.width * 0.40f, 8, true);
             Place(activity, 12, head + 24, portrait ? width - 24 : 355, portrait ? 102 : 116, true);
+            Place(activity.Find("Close activity") as RectTransform, 8, 6, 34, 32, true);
+            Stretch(activityLabel.rectTransform, 12, 8, 50, 8);
+            Place(header.Find("Show activity") as RectTransform, width - 118, head - 68, 90, 30, true);
             Place(navigation, 12, 12, width - 24, 92, false);
-            float navWidth = (width - 44) / 5f;
-            for (int i = 0; i < navigation.childCount; i++)
-                Place(navigation.GetChild(i) as RectTransform, 10 + (4 - i) * navWidth, 8, navWidth - 5, 76, false);
+            float navWidth = (width - 44) / navItems.Count;
+            for (int i = 0; i < navItems.Count; i++)
+                Place(navItems[i].button.transform as RectTransform, 10 + (navItems.Count - 1 - i) * navWidth,
+                    8, navWidth - 5, 76, false);
             float tutorialWidth = portrait ? width - 24 : Mathf.Min(420, width * 0.38f);
             Place(tutorial, 12, 108, tutorialWidth, 180, false);
             Place(tutorialLabel.rectTransform, 128, 48, tutorialWidth - 142, 124, true);
@@ -365,8 +377,18 @@ namespace NewGaza
             if (s.jobStage == JobStage.Idle)
                 text.Append("فريق التدوير جاهز\n").Append("الركام المحلي: ").Append(s.districts[d].clearedLoads)
                     .Append(" / ").Append(GameCatalog.Districts[d].rubbleLoads).Append(" دفعات");
-            else text.Append(Stage(s.jobStage)).Append(" · ").Append(TimeLeft(s.jobFinishUtc - session.Now))
-                    .Append("\n").Append(GameCatalog.Districts[s.jobDistrict].name).Append(" · انتقال المراحل تلقائي");
+            else
+            {
+                bool traveling = s.jobStage == JobStage.Clearing && s.development != null &&
+                    !string.IsNullOrEmpty(s.development.activeRubbleId) && !s.development.crewArrived;
+                if (traveling) text.Append("الآليات في الطريق إلى الركام\nيبدأ وقت الإزالة بعد وصول الفريق");
+                else if (s.jobStage == JobStage.Hauling && s.jobFinishUtc <= session.Now)
+                    text.Append("الآليات تعود إلى المصنع\nبانتظار وصول الفريق وتسليم الحمولة");
+                else if (s.jobStage == JobStage.Recycling && s.jobFinishUtc <= session.Now)
+                    text.Append("الحمولة جاهزة؛ المخزن ممتلئ\nبع بعض الموارد لإتمام التسليم");
+                else text.Append(Stage(s.jobStage)).Append(" · ").Append(TimeLeft(s.jobFinishUtc - session.Now));
+                text.Append("\n").Append(GameCatalog.Districts[s.jobDistrict].name);
+            }
             int activeCount = 0;
             long nearest = long.MaxValue;
             for (int i = 0; i < s.districts.Length; i++)
@@ -378,6 +400,7 @@ namespace NewGaza
                     }
             text.Append("\n").Append(activeCount > 0 ? "قيد التنفيذ: " + activeCount + " · أقرب إنجاز " + TimeLeft(nearest - session.Now) : "المشاريع: اختر قطعة للاطلاع قبل البناء");
             activityLabel.SetText(text.ToString());
+            activity.gameObject.SetActive(!activityCollapsed && (s.jobStage != JobStage.Idle || activeCount > 0));
             RefreshTutorial();
             RefreshSelection();
             bool portrait = Screen.height > Screen.width;

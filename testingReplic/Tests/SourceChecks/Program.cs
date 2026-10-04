@@ -43,16 +43,52 @@ internal static class Program
                 }
             }
             CheckContracts(roots);
+            string workerScaleSource = Compact(roots["World/CityConstructionCrew.cs"].ToString());
+            string worldScaleSource = Compact(roots["World/CityWorld.cs"].ToString());
+            string modelScaleSource = Compact(roots["World/CityModelLibrary.cs"].ToString());
+            Require(workerScaleSource.Contains("ModelMetresToCity=1f/20f", StringComparison.Ordinal) &&
+                workerScaleSource.Contains("footprint.x/ModelMetresToCity", StringComparison.Ordinal) &&
+                workerScaleSource.Contains("root.localScale=Vector3.one*ModelMetresToCity", StringComparison.Ordinal),
+                "Native workers must scale model metres to city units without shrinking their world-space plot routes.");
+            Require(worldScaleSource.Contains("0f,.12f,preserveFootprint:true", StringComparison.Ordinal) &&
+                worldScaleSource.Contains("newVector3(.36f,Mathf.Max(.12f,salvageHeight),.40f)", StringComparison.Ordinal) &&
+                modelScaleSource.Contains("newVector3(horizontalScale,verticalScale,horizontalScale)", StringComparison.Ordinal),
+                "Rubble must preserve its larger horizontal footprint with independently limited height and matching tap bounds.");
+            string hudUiSource = Compact(roots["UI/CityHud.cs"].ToString());
+            string regionUiSource = Compact(roots["UI/CityDevelopmentUI.cs"].ToString());
+            string buttonMotionSource = Compact(roots["UI/CityButtonMotion.cs"].ToString());
+            Require(hudUiSource.Contains("(width-44)/navItems.Count", StringComparison.Ordinal) &&
+                hudUiSource.Contains("(navItems.Count-1-i)*navWidth", StringComparison.Ordinal),
+                "Bottom navigation must fit every registered button, including Home, rather than hardcode five columns.");
+            Require(hudUiSource.Contains("NewGaza.ActivityCollapsed", StringComparison.Ordinal) &&
+                hudUiSource.Contains("Closeactivity", StringComparison.Ordinal) &&
+                regionUiSource.Contains("regionVisible=true", StringComparison.Ordinal),
+                "Work status can be dismissed across restart, and the camera-region panel starts visible.");
+            Require(buttonMotionSource.Contains("AddComponent<Outline>()", StringComparison.Ordinal) &&
+                buttonMotionSource.Contains("AddComponent<Shadow>()", StringComparison.Ordinal) &&
+                buttonMotionSource.Contains("IPointerEnterHandler", StringComparison.Ordinal) &&
+                buttonMotionSource.Contains("target=.945f", StringComparison.Ordinal),
+                "Buttons need distinct raised edges, shadows and hover/press response, not text-box styling.");
             var factoryUiMethods = roots["UI/CityDevelopmentUI.cs"].DescendantNodes().OfType<MethodDeclarationSyntax>();
             var factoryMarkerMethod = factoryUiMethods.Single(m => m.Identifier.ValueText == "ShowFactoryMarker");
             var factoryButtonMethod = factoryUiMethods.Single(m => m.Identifier.ValueText == "Button");
-            Require(factoryMarkerMethod.ParameterList.Parameters.Last().Type?.ToString() ==
+            Require(factoryMarkerMethod.ParameterList.Parameters.Single(p => p.Identifier.ValueText == "select").Type?.ToString() ==
                 factoryButtonMethod.ParameterList.Parameters.Last().Type?.ToString() &&
                 factoryButtonMethod.ParameterList.Parameters.Last().Type?.ToString() == "UnityEngine.Events.UnityAction",
                 "Factory marker callbacks must match the native UnityAction button contract, not System.Action.");
+            string markerSource = Compact(factoryMarkerMethod.ToString());
+            string haloSource = Compact(factoryUiMethods.Single(m => m.Identifier.ValueText == "ShowFactoryHalo").ToString());
+            Require(markerSource.Contains("CityHudIcons.Icon.Recycling", StringComparison.Ordinal) &&
+                markerSource.Contains("newVector2(48,48)", StringComparison.Ordinal) &&
+                !markerSource.Contains("SetText(", StringComparison.Ordinal) &&
+                haloSource.Contains("line.loop=true", StringComparison.Ordinal) &&
+                haloSource.Contains("line.useWorldSpace=true", StringComparison.Ordinal) &&
+                haloSource.Contains("line.SetPosition(", StringComparison.Ordinal),
+                "Factories use a compact clickable recycling icon and an actual world-space ground halo, not large text boxes.");
             CheckPointerProjection(roots);
             CheckZoomResponse(roots);
             CheckNativeWindowLayout(roots);
+            Failures.AddRange(PlacementInputCompilationChecks.Check(sourceRoot));
             Failures.AddRange(EditorCompilationChecks.Check(sourceRoot));
             CheckSceneBootstrap(sourceRoot, roots);
             CheckDistrictFog(sourceRoot, roots);
@@ -349,7 +385,8 @@ internal static class Program
             string source = Compact(library.ToString());
             var addTo = library.Members.OfType<MethodDeclarationSyntax>()
                 .FirstOrDefault(method => method.Identifier.ValueText == "AddTo");
-            ParameterSyntax? footprintParameter = addTo?.ParameterList.Parameters.LastOrDefault();
+            ParameterSyntax? footprintParameter = addTo?.ParameterList.Parameters
+                .FirstOrDefault(parameter => parameter.Identifier.ValueText == "footprintIsLocal");
             Require(footprintParameter != null &&
                 Signature(footprintParameter.Type!) == "bool" &&
                 footprintParameter.Identifier.ValueText == "footprintIsLocal" &&
@@ -901,15 +938,10 @@ internal static class Program
             .OrderBy(value => value, StringComparer.Ordinal)
             .ToArray() ?? Array.Empty<string>();
         bool buildsRoofAndExactWindingAwareWalls =
-            extrudeSource.Contains("AddPolygon(newList<Vector2>(outline),GroundY+.025f,material,chunks,geometry,owner)",
-                StringComparison.Ordinal) &&
-            extrudeSource.Contains("List<float>cuts=SegmentChunkCuts(a.x,a.y,b.x,b.y)",
-                StringComparison.Ordinal) &&
-            extrudeSource.Contains("Vector2low=Vector2.LerpUnclamped(a,b,t0)", StringComparison.Ordinal) &&
-            extrudeSource.Contains("Vector2high=Vector2.LerpUnclamped(a,b,t1)", StringComparison.Ordinal) &&
-            actualWallTriangles.SequenceEqual(expectedWallTriangles.OrderBy(value => value,
-                StringComparer.Ordinal), StringComparer.Ordinal) &&
-            extrudeSource.Contains("owner.triangleCount+=2", StringComparison.Ordinal) &&
+            !extrudeSource.Contains("AddPolygon(", StringComparison.Ordinal) &&
+            extrudeSource.Contains("i<16", StringComparison.Ordinal) &&
+            extrudeSource.Contains("PointInsidePolygon(p.x,p.z,building.outline)", StringComparison.Ordinal) &&
+            extrudeSource.Contains("owner.triangleCount+=5", StringComparison.Ordinal) &&
             extrudeSource.Contains("owner.extrudedVolumes.Add(newCityUrbanBuildingVolume(building.FeatureId,building.height,building.outline))",
                 StringComparison.Ordinal);
         var clippedPolygons = context.Members.OfType<MethodDeclarationSyntax>()
@@ -925,7 +957,7 @@ internal static class Program
             Compact(chunkBuild.ToString()).Contains("mesh.SetTriangles(indices[pair.Key],0,true)",
                 StringComparison.Ordinal);
         Require(buildsRoofAndExactWindingAwareWalls && ownsAndCountsGeneratedSurfaces,
-            "Destroyed context must emit low collapsed slabs and winding-aware shortened walls, retain source metadata, count generated triangles, and build owned normaled meshes.");
+            "Destroyed context must emit scattered jagged rubble and broken fragments, retain source metadata, count generated triangles, and build owned normaled meshes; no parcel slabs or intact boxes.");
     }
 
     private static void CheckSourcedUtilitiesAndDepot(TypeDeclarationSyntax context,
@@ -1193,12 +1225,12 @@ internal static class Program
         string[] expectedIcons =
         {
             "None", "Map", "Projects", "Fleet", "Investment", "Resources",
-            "Gift", "Settings", "Close"
+            "Gift", "Settings", "Close", "Recycling"
         };
         Require(iconEnum != null &&
             iconEnum.Members.Select(m => m.Identifier.ValueText)
                 .SequenceEqual(expectedIcons, StringComparer.Ordinal),
-            "CityHudIcons.Icon must contain None and the eight supported HUD icons.");
+            "CityHudIcons.Icon must contain the HUD icons and the recycling-factory symbol.");
         Method(icons, "Get", "Sprite", "Icon");
 
         var dispose = icons.Members.OfType<MethodDeclarationSyntax>()

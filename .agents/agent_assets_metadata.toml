@@ -702,3 +702,73 @@ mtime_ms = 1791108205198
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/3072910d-3960-4f9b-a757-6e9688967b3b/651ad405-c204-4492-a94a-319e0577ba9f"
 storage_version_token = "1791108236313007"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "tmFp3tzeQxfaJQQTLJwod"
+uri = "file://exports/fixes/NewGaza-Interactive-Rubble-Smooth-Rotation.zip"
+type = "unspecified"
+title = "تحديث Unity — إزالة الدمار والتدوير المستمر"
+description = "حزمة محدثة تشمل النقر على مباني الخلفية وإزالتها مع حفظ التقدم، والتدوير السلس أثناء الضغط. تضم الإصلاحات السابقة وتعليمات التثبيت بالعربية، دون ملفات .meta."
+logical_id = "e3395f92-5f76-4a5b-b65d-6bef97d8a12c"
+content_hash = "sha256:41fdd791ba7298f6a430f41db7834071ec13e90cbd5ec29d8e7801bd7e56b6b9"
+size = 47311156
+mtime_ms = 1791110092471
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/e3395f92-5f76-4a5b-b65d-6bef97d8a12c/48a625d3-ffe7-4178-915d-4389d6fa2608"
+storage_version_token = "1791110107550089"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "lyhcyN-EKBbDanxcDq678"
+uri = "file://exports/fixes/NewGaza-Dense-Ruins-No-Cubes-Factory-Icon.zip"
+type = "unspecified"
+title = "دمار كثيف دون المكعبات — وأيقونة مصنع التدوير"
+description = "تحديث Unity تراكمي: 8,000 مجسم دمار موزع على الأحياء، ركام وشظايا بدل الأرضيات الكبيرة الصلبة، وأيقونة تدوير قابلة للضغط مع هالة حول المصنع. يحافظ على الحفظ والإصلاحات السابقة، ودون ملفات .meta."
+logical_id = "7dd17a07-661c-4208-b75f-91b1260af2e6"
+content_hash = "sha256:e59af25a480871e52212fe9f63c875b751265289ecc5ad42730e71ab95b251b2"
+size = 47312982
+mtime_ms = 1791110698575
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/7dd17a07-661c-4208-b75f-91b1260af2e6/3da5386c-f6ed-420e-8839-3a23284a5125"
+storage_version_token = "1791110730529514"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "4c_qrMajU0tZKO_ddDz6O"
+uri = "file://exports/fixes/NewGaza-HUD-Activity-Navigation-Buttons-Fix.zip"
+type = "unspecified"
+title = "إصلاح نافذة العمل والقائمة والأزرار"
+description = "حزمة Unity تراكمية: حالة عمل صحيحة مع إغلاق محفوظ، إظهار اسم الحي، توزيع الأزرار الستة داخل الشاشة، مؤثرات أزرار أوضح وإصلاح انتظار المسار الاحتياطي. تحافظ على الحفظ وتشمل التحديثات السابقة، دون ملفات .meta."
+logical_id = "3766633f-bba3-46f3-85a8-03558d043c1c"
+content_hash = "sha256:59c81a76c46050325941a37b65c2641e58b0883af1c5fa3676d02580196452a2"
+size = 47315160
+mtime_ms = 1791111448098
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/3766633f-bba3-46f3-85a8-03558d043c1c/f0bf80ca-6d5c-4bd4-8057-50375b006b60"
+storage_version_token = "1791111457799284"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "ya3-N_IuZuDxmVqNF3Ioj"
+uri = "file://exports/fixes/NewGaza-Construction-Workers-And-Farmers.zip"
+type = "unspecified"
+title = "تنويع حركة العمال والمزارعين"
+description = "حزمة Unity تراكمية: حمل الحجارة وضرب المطرقة ومشرف بمخطط، ومزارعون للبذر والسقاية والعزق حسب نوع المنشأة. تشمل الإصلاحات السابقة وتحافظ على الحفظ، دون ملفات .meta."
+logical_id = "f7b95ab2-bb2b-4a1e-b48b-583d6effa485"
+content_hash = "sha256:4e42848fca7fef3f82abcfa6d419afe9fd76616bcf982adc1f6c2d96f665ff75"
+size = 47317766
+mtime_ms = 1791112236771
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/f7b95ab2-bb2b-4a1e-b48b-583d6effa485/58840bf4-ece4-4a4b-bebf-5eeda5cb5165"
+storage_version_token = "1791112251653979"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "bzQ-YNHxVupEnZFQAU9G7"
+uri = "file://exports/fixes/NewGaza-Proportional-Workers-Rubble-Scale.zip"
+type = "unspecified"
+title = "تناسُب أحجام العمال والركام والمعدات"
+description = "حزمة Unity تراكمية: العمال نحو 1.7م، كومة الركام الرئيسية أطول من الشاحنة بنحو 31%، وضبط أدوات العمال ومساراتهم وحدود الضغط. تتضمن ملف مقارنة الأحجام وتحافظ على الحفظ، دون ملفات .meta."
+logical_id = "e2a2866a-7807-400c-9745-9801f94bbfa3"
+content_hash = "sha256:7c8035800a56deeec1e3aec83c69180196b19be06827d24f02f6ddd6999c082f"
+size = 47319040
+mtime_ms = 1791112890642
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/e2a2866a-7807-400c-9745-9801f94bbfa3/acc878a1-207e-453d-9e4c-91cf4795bd0c"
+storage_version_token = "1791112900259886"
+content_type = "application/octet-stream"

@@ -7,6 +7,7 @@ namespace NewGaza.Core
         public static long BuildingPrice(RubbleSiteState site)
         {
             if (site == null) return 0;
+            if (site.background) return site.buildingPrice;
             var definition = Array.Find(GameCatalog.Districts[site.district].projects, p => p.id == site.projectId);
             if (definition == null) throw new InvalidOperationException("سعر المبنى المرتبط بالركام غير معروف");
             return definition.cost;

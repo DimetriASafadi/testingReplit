@@ -50,6 +50,10 @@ namespace NewGaza
         private CityModelLibrary modelLibrary;
         private CityBasemap basemap;
         private CityUrbanContext urbanContext;
+        private Transform backgroundRoot;
+        private List<CityUrbanDistrictRequest> backgroundRequests;
+        private Material backgroundOpen, backgroundRoad, backgroundFootprint;
+        private readonly HashSet<string> clearedBackground = new HashSet<string>(StringComparer.Ordinal);
         private Material seaSurfaceMaterial;
         private Transform cityRoot;
         private DistrictView[] districts;
@@ -109,11 +113,12 @@ namespace NewGaza
             for (int i = 0; i < GameCatalog.FinalDistrictIndex; i++)
                 urbanRequests.Add(new CityUrbanDistrictRequest(GameCatalog.Districts[i].id,
                     Point(GameGeography.DistrictPoint(i)), GameCatalog.Districts[i].projects.Length));
-            urbanContext = CityUrbanContext.Build(basemap, geometry, modelLibrary, cityRoot,
-                limestone, geometry.Material("mapped open land", Hex(0x87917C), surface: SurfaceKind.Stone),
-                asphalt, geometry.Material("local weathered asphalt", Hex(0x636663), surface: SurfaceKind.Asphalt),
-                geometry.Material("mapped roof footprints", Hex(0x858780), surface: SurfaceKind.Concrete),
-                urbanRequests);
+            backgroundRequests = urbanRequests;
+            backgroundOpen = geometry.Material("mapped open land", Hex(0x87917C), surface: SurfaceKind.Stone);
+            backgroundRoad = geometry.Material("local weathered asphalt", Hex(0x636663), surface: SurfaceKind.Asphalt);
+            backgroundFootprint = geometry.Material("scattered shattered concrete", Hex(0x766B5B), surface: SurfaceKind.Concrete);
+            clearedBackground.Clear();
+            RebuildBackground();
             roadView = new GameObject("Interactive sourced street surfaces").AddComponent<CityRoadView>();
             roadView.transform.SetParent(cityRoot, false);
             roadView.Initialize(Roads, geometry, cityRoot);
@@ -474,15 +479,14 @@ namespace NewGaza
                 }
                 var salvage = new CityMeshBatch(geometry);
                 float salvageHeight = modelLibrary.AddTo(salvage,"rubble_heap",Vector3.zero,
-                    coast ? new Vector3(2f,0f,1.8f) : new Vector3(.24f,0f,.22f),
-                    0f,coast ? 1.5f : .16f);
+                    new Vector3(.36f,0f,.40f),
+                    0f,.12f,preserveFootprint: true);
                 district.rubble = salvage.Build("Imported rubble heap • clearing progress", district.root,
                     new Vector3(salvagePos.x,0f,salvagePos.z));
                 district.rubble.transform.localRotation = salvageRotation;
                 district.salvageHit = AddHit(district.rubble, i, -2,
                     new Vector3(0f,salvageHeight * .5f,0f),
-                    coast ? new Vector3(2f,Mathf.Max(.8f,salvageHeight),1.8f) :
-                        new Vector3(.24f,Mathf.Max(.12f,salvageHeight),.22f));
+                    new Vector3(.36f,Mathf.Max(.12f,salvageHeight),.40f));
                 var badge = new CityMeshBatch(geometry);
                 badge.Round(yellow, Vector3.zero, new Vector3(1f,.15f,1f));
                 badge.Box(white, new Vector3(-.13f,.1f,0f), new Vector3(.35f,.06f,.11f), -45f);
@@ -644,7 +648,7 @@ namespace NewGaza
                         {
                             Vector3 crewFootprint = new Vector3(plot.size.x * .82f, 0f, plot.size.z * .8f);
                             plot.crew = new CityConstructionCrew(plot.anchor, crewFootprint, geometry,
-                                cream, yellow, teal, yellow, iron);
+                                cream, yellow, teal, yellow, iron, plot.definition.id == "farm");
                         }
                         bool visible = CityConstructionVisuals.ShouldShowCrew(project, session.Now,
                             district.unlocked, view.fogged);
@@ -1556,6 +1560,32 @@ namespace NewGaza
 
         internal CityGeometry DevelopmentGeometry => geometry;
         internal CityBasemap DevelopmentMap => basemap;
+        internal IList<CityUrbanBuildingPresentation> BackgroundBuildings => urbanContext.AllContextBuildings;
+
+        internal void RefreshBackgroundRubble(IEnumerable<RubbleSiteState> sites)
+        {
+            bool changed = false;
+            foreach (var site in sites)
+                if (site.background && site.cleared && clearedBackground.Add(site.sourceBuildingId)) changed = true;
+            if (changed) RebuildBackground();
+        }
+
+        private void RebuildBackground()
+        {
+            var root = new GameObject("Static damaged city background").transform;
+            root.SetParent(cityRoot, false);
+            var replacement = CityUrbanContext.Build(basemap, geometry, modelLibrary, root, limestone,
+                backgroundOpen, asphalt, backgroundRoad, backgroundFootprint, backgroundRequests, clearedBackground);
+            if (backgroundRoot != null)
+            {
+                backgroundRoot.gameObject.SetActive(false);
+                foreach (var filter in backgroundRoot.GetComponentsInChildren<MeshFilter>(true))
+                    if (filter.sharedMesh != null) Destroy(filter.sharedMesh);
+                Destroy(backgroundRoot.gameObject);
+            }
+            backgroundRoot = root;
+            urbanContext = replacement;
+        }
         internal Vector3 CentralDepotPosition => factorySite.transform.position;
         internal Vector3 AggregateRubblePosition(int district) => districts[district].rubble.transform.position;
 

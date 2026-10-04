@@ -11,6 +11,9 @@ namespace NewGaza
     public sealed class CityDevelopmentUI : MonoBehaviour
     {
         private readonly Dictionary<string, RectTransform> factoryMarkers = new Dictionary<string, RectTransform>();
+        private readonly Dictionary<string, LineRenderer> factoryHalos = new Dictionary<string, LineRenderer>();
+        private readonly CityHudIcons factoryIcons = new CityHudIcons();
+        private bool homeVisible;
         private RectTransform factoryMarkerLayer;
 
         private void LateUpdate()
@@ -23,11 +26,13 @@ namespace NewGaza
                 factoryMarkerLayer.SetAsFirstSibling();
             }
             foreach (var marker in factoryMarkers.Values) marker.gameObject.SetActive(false);
+            foreach (var halo in factoryHalos.Values) halo.gameObject.SetActive(false);
+            if (homeVisible) return;
             var state = session.State;
             if (state.factoryLevel > 0 && !state.development.requiresPlacedFactory &&
                 !state.development.dynamicFactoryProvided)
                 ShowFactoryMarker("central", development.CentralFactoryMapPosition + Vector3.up * .5f,
-                    true, () => session.Notify("هذا مصنع إعادة التدوير المركزي المحفوظ من تقدمك السابق."));
+                    true, () => session.Notify("هذا مصنع إعادة التدوير المركزي المحفوظ من تقدمك السابق."), .7f);
             foreach (var building in development.Rules.Data.buildings)
             {
                 var definition = CityBuildingCatalog.Find(building.definitionId);
@@ -35,24 +40,26 @@ namespace NewGaza
                 if (!state.districts[building.district].unlocked) continue;
                 string id = building.id;
                 ShowFactoryMarker(id, new Vector3(building.x, definition.floors * .15f + .25f, building.z),
-                    building.completed, () => development.SelectFactory(id));
+                    building.completed, () => development.SelectFactory(id),
+                    Mathf.Sqrt(definition.widthMeters * definition.widthMeters + definition.depthMeters * definition.depthMeters) / 40f + .05f);
             }
         }
 
-        private void ShowFactoryMarker(string id, Vector3 position, bool completed, UnityEngine.Events.UnityAction select)
+        private void ShowFactoryMarker(string id, Vector3 position, bool completed, UnityEngine.Events.UnityAction select, float radius = .7f)
         {
                 if (!factoryMarkers.TryGetValue(id, out var marker))
                 {
-                    var button = Button(factoryMarkerLayer, "مصنع إعادة التدوير", select);
+                    var button = Button(factoryMarkerLayer, "", select);
+                    button.GetComponent<CityButtonMotion>().SetIconOnly();
                     button.gameObject.name = "Recycling factory map marker " + id;
                     marker = (RectTransform)button.transform;
                     marker.anchorMin = marker.anchorMax = marker.pivot = new Vector2(.5f, .5f);
-                    marker.sizeDelta = new Vector2(214, 56);
-                    button.GetComponent<Image>().color = new Color(.02f, .32f, .23f, .97f);
+                    marker.sizeDelta = new Vector2(48, 48);
+                    button.GetComponent<Image>().sprite = factoryIcons.Get(CityHudIcons.Icon.Recycling);
+                    button.GetComponent<Image>().preserveAspect = true;
                     var outline = button.gameObject.AddComponent<Outline>();
                     outline.effectColor = new Color(.4f, 1f, .7f);
                     outline.effectDistance = new Vector2(2, -2);
-                    button.GetComponentInChildren<ArabicLabel>().fontSize = 19;
                     factoryMarkers.Add(id, marker);
                 }
                 var screen = Camera.main.WorldToViewportPoint(position);
@@ -63,11 +70,48 @@ namespace NewGaza
                 RectTransformUtility.ScreenPointToLocalPointInRectangle(factoryMarkerLayer,
                     new Vector2(screen.x * Screen.width, screen.y * Screen.height), null, out var point);
                 marker.anchoredPosition = new Vector2(
-                    Mathf.Clamp(point.x, factoryMarkerLayer.rect.xMin + 110, factoryMarkerLayer.rect.xMax - 110),
-                    Mathf.Clamp(point.y, factoryMarkerLayer.rect.yMin + 170, factoryMarkerLayer.rect.yMax - 120));
-                marker.GetComponentInChildren<ArabicLabel>().SetText("مصنع إعادة التدوير\n" +
-                    (id == "central" ? "جاهز • مصنع مركزي" :
-                        completed ? "جاهز • اضغط للتحديد" : "قيد البناء • اضغط للتحديد"));
+                    Mathf.Clamp(point.x, factoryMarkerLayer.rect.xMin + 28, factoryMarkerLayer.rect.xMax - 28),
+                    Mathf.Clamp(point.y + Mathf.Sin(Time.unscaledTime * 2) * 3,
+                        factoryMarkerLayer.rect.yMin + 100, factoryMarkerLayer.rect.yMax - 70));
+                marker.GetComponent<Image>().color = completed ? new Color(.25f, 1f, .55f) : new Color(1f, .72f, .15f);
+                ShowFactoryHalo(id, new Vector3(position.x, .018f, position.z), radius, completed);
+        }
+
+        private void ShowFactoryHalo(string id, Vector3 center, float radius, bool completed)
+        {
+            if (!factoryHalos.TryGetValue(id, out var line))
+            {
+                var root = new GameObject("Recycling factory ground halo " + id);
+                root.transform.SetParent(development.transform, false);
+                line = root.AddComponent<LineRenderer>();
+                line.useWorldSpace = true; line.loop = true; line.positionCount = 48;
+                line.sharedMaterial = development.FactoryHighlightMaterial;
+                line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                line.receiveShadows = false;
+                factoryHalos.Add(id, line);
+            }
+            line.gameObject.SetActive(true);
+            line.widthMultiplier = .014f + Mathf.Sin(Time.unscaledTime * 2) * .002f;
+            Color tint = completed ? new Color(.15f, 1f, .5f) : new Color(1f, .7f, .1f);
+            line.startColor = line.endColor = tint;
+            for (int i = 0; i < line.positionCount; i++)
+            {
+                float angle = i * Mathf.PI * 2 / line.positionCount;
+                line.SetPosition(i, center + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius));
+            }
+        }
+
+        private void OnDestroy()
+        {
+            factoryIcons.Dispose();
+            foreach (var halo in factoryHalos.Values)
+                if (halo != null) Destroy(halo.gameObject);
+        }
+
+        private void OnDisable()
+        {
+            foreach (var halo in factoryHalos.Values)
+                if (halo != null) halo.gameObject.SetActive(false);
         }
         private CityDevelopment development;
         private GameSession session;
@@ -77,7 +121,7 @@ namespace NewGaza
         private Canvas canvas;
         private CanvasScaler scaler;
         private ArabicLabel actionHeading;
-        private bool regionVisible;
+        private bool regionVisible = true;
         private int dismissedClaimDistrict = -1, lastFocus = -2;
         public bool StoreOpen => shop != null && shop.activeInHierarchy;
         public bool WorkPanelVisible => actionPanel != null && actionPanel.gameObject.activeInHierarchy;
@@ -117,7 +161,8 @@ namespace NewGaza
             actionText = Label(actionPanel, "", 15);
             var closeAction = Button(actionPanel, "إغلاق", DismissAction); closeAction.name = "Close work panel";
             action = Button(actionPanel, "تأكيد", DoAction);
-            rotate = Button(actionPanel, "تدوير", () => development.Rotate());
+            rotate = Button(actionPanel, "اضغط مطولًا للتدوير", () => { });
+            rotate.gameObject.AddComponent<CityHoldRotateButton>().Development = development;
             dismiss = Button(actionPanel, "إغلاق", DismissAction);
             shopShield = Panel("Store touch shield", safe, true); Stretch(shopShield);
             shopShield.GetComponent<Image>().color = new Color(0, 0, 0, .8f);
@@ -163,11 +208,12 @@ namespace NewGaza
             float safeWidth = safe.rect.width, safeHeight = safe.rect.height;
             bool portrait = safeHeight > safeWidth;
             float width = Mathf.Min(safeWidth - 24, 420);
-            float toolbarTop = portrait ? 308 : 156;
+            float toolbarTop = Mathf.Min(portrait ? 308 : 156, Mathf.Max(72, safeHeight - 280));
             Box(toolbar, 12, toolbarTop, 340, 44, true);
-            Box(titlePanel, 12, toolbarTop + 52, width, 142, true);
+            float regionHeight = Mathf.Clamp(safeHeight - toolbarTop - 52 - 116, 56, 142);
+            Box(titlePanel, 12, toolbarTop + 52, width, regionHeight, true);
             Box(title.rectTransform, 12, 8, width - 110, 32, false);
-            Box(needs.rectTransform, 12, 48, width - 24, 84, false);
+            Box(needs.rectTransform, 12, 48, width - 24, Mathf.Max(0, regionHeight - 56), false);
             Box(titlePanel.Find("Close region") as RectTransform, 8, 8, 84, 36, true);
             actionPanel.anchorMin = new Vector2(.5f, 0); actionPanel.anchorMax = new Vector2(.5f, 0);
             actionPanel.pivot = new Vector2(.5f, 0); actionPanel.anchoredPosition = new Vector2(0, 116);
@@ -314,6 +360,12 @@ namespace NewGaza
 
         internal void SetHomeVisible(bool visible)
         {
+            homeVisible = visible;
+            if (visible)
+            {
+                foreach (var marker in factoryMarkers.Values) marker.gameObject.SetActive(false);
+                foreach (var halo in factoryHalos.Values) halo.gameObject.SetActive(false);
+            }
             GetComponentInChildren<Canvas>(true).gameObject.SetActive(!visible);
             if (!visible) { Resize(); Refresh(); }
         }

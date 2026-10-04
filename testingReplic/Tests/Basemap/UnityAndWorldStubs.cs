@@ -109,6 +109,24 @@ namespace UnityEngine
         public float x, y, z;
         public Vector3(float x, float y, float z) { this.x = x; this.y = y; this.z = z; }
         public static Vector3 zero { get { return new Vector3(); } }
+        public static Vector3 up => new Vector3(0, 1, 0);
+        public static Vector3 operator +(Vector3 a, Vector3 b) => new Vector3(a.x + b.x, a.y + b.y, a.z + b.z);
+        public static Vector3 operator *(Vector3 a, float b) => new Vector3(a.x * b, a.y * b, a.z * b);
+    }
+    public struct Quaternion
+    {
+        private float yaw;
+        public static Quaternion Euler(float x, float y, float z)
+        {
+            if (x != 0 || z != 0) throw new NotSupportedException("Basemap fixture only uses ground-plane yaw");
+            return new Quaternion { yaw = y };
+        }
+        public static Vector3 operator *(Quaternion q, Vector3 p)
+        {
+            double radians = q.yaw * Math.PI / 180;
+            float c = (float)Math.Cos(radians), s = (float)Math.Sin(radians);
+            return new Vector3(p.x * c + p.z * s, p.y, p.z * c - p.x * s);
+        }
     }
     public static class Mathf
     {
@@ -191,14 +209,5 @@ namespace NewGaza
             this.size = size; this.yaw = yaw; this.height = height;
             this.footprintIsLocal = footprintIsLocal;
         }
-    }
-}
-
-namespace NewGaza.Core
-{
-    // GameCatalog only needs this stable lookup while constructing current definitions.
-    internal static class GameStateMigration
-    {
-        internal static int LegacyIndex(string id) { return -1; }
     }
 }

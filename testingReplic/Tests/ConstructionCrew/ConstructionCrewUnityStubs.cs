@@ -163,6 +163,8 @@ namespace UnityEngine
         public readonly Shader shader;
         private Color baseColor = Color.white;
         public Material(Shader shader) { this.shader = shader; }
+        public Material(Material source) { shader = source.shader; baseColor = source.baseColor; }
+        public void SetFloat(string property, float value) { }
         public void SetColor(string property, Color color) { if (property == "_BaseColor") baseColor = color; }
         public Color GetColor(string property) { return property == "_BaseColor" ? baseColor : Color.white; }
     }
@@ -189,6 +191,7 @@ namespace UnityEngine
         public float magnitude { get { return (float)Math.Sqrt(sqrMagnitude); } }
         public Vector3 normalized { get { return this / Math.Max(magnitude, 1e-20f); } }
         public static Vector3 Scale(Vector3 a, Vector3 b) { return new Vector3(a.x * b.x, a.y * b.y, a.z * b.z); }
+        public static Vector3 Lerp(Vector3 a, Vector3 b, float t) { t = Math.Max(0, Math.Min(1, t)); return a + (b - a) * t; }
         public static Vector3 Cross(Vector3 a, Vector3 b) { return new Vector3(a.y*b.z-a.z*b.y,a.z*b.x-a.x*b.z,a.x*b.y-a.y*b.x); }
         public static float Dot(Vector3 a, Vector3 b) { return a.x*b.x + a.y*b.y + a.z*b.z; }
         public static Vector3 operator +(Vector3 a, Vector3 b) { return new Vector3(a.x+b.x,a.y+b.y,a.z+b.z); }
@@ -236,6 +239,7 @@ namespace UnityEngine
         public const float Rad2Deg = 180f / PI;
         public static float Abs(float x) { return Math.Abs(x); }
         public static float Sin(float x) { return (float)Math.Sin(x); }
+        public static float Lerp(float a, float b, float t) { return a + (b - a) * Math.Max(0, Math.Min(1, t)); }
         public static float Cos(float x) { return (float)Math.Cos(x); }
         public static float Atan2(float y,float x) { return (float)Math.Atan2(y,x); }
         public static float Max(float a,float b) { return Math.Max(a,b); }

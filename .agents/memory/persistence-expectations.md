@@ -20,3 +20,9 @@ Unity JSON may round-trip null optional string references as empty strings. Trea
 **Why:** A Unity startup report rejected development data during save migration; the existing validator treated every non-null string, including empty strings, as a real work-site/depot ID. The .NET fixture did not exercise this representation.
 
 **How to apply:** Normalize only explicitly optional zero-length references; keep nonempty unknown IDs, required active-job relationships, timers and progress strict. Preserve raw files and include compatibility archives in the no-new-campaign guard.
+
+يجب تمييز وقت وصول الآليات عن وقت إزالة الركام في الواجهة؛ انتظار الحركة ليس عدّاد عمل متجمّدًا.
+
+**Why:** رأى المستخدم نافذة «إزالة الركام · 00:00:29» تبقى حتى بعد إعادة التشغيل، بينما كانت قاعدة بدء العمل تنتظر وصول الفريق. إعادة بناء الحركة قد تستأنف الانتظار، ولا تعني ضياع التقدم أو إذنًا بإلغاء المهمة.
+
+**How to apply:** اعرض مرحلة السفر صراحة، وابدأ عدّاد الإزالة عند الوصول الفعلي فقط. إخفاء نافذة النشاط يجب ألا يلغي العمل أو يمنح الموارد؛ احتفظ بالمهمة والموقع والتقدم عند استعادة الحفظ.

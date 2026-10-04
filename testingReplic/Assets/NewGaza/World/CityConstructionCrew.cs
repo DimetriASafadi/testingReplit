@@ -4,19 +4,21 @@ using UnityEngine.Rendering;
 
 namespace NewGaza
 {
-    /// <summary>Three articulated tradespeople moving around the outside of a construction plot.</summary>
+    /// <summary>Three distinct, articulated jobs outside a construction plot or agricultural site.</summary>
     internal sealed class CityConstructionCrew : IDisposable
     {
-        private const int MaterialCount = 5;
+        private const int MaterialCount = 8;
         private const int WorkersCount = 3;
+        // Rig vertices are authored in metres; city coordinates are twenty metres per unit.
+        internal const float ModelMetresToCity = 1f / 20f;
         private const int BoxVertexCount = 24;
         private const int SkinBoxesPerWorker = 4;
         private const int VestBoxesPerWorker = 3;
         private const int ClothBoxesPerWorker = 11;
-        private const int HelmetBoxesPerWorker = 1;
+        private const int HelmetBoxesPerWorker = 2;
         private const int ToolBoxesPerWorker = 5;
         private static readonly int[] BoxesPerMaterial = { SkinBoxesPerWorker, VestBoxesPerWorker,
-            ClothBoxesPerWorker, HelmetBoxesPerWorker, ToolBoxesPerWorker };
+            ClothBoxesPerWorker, HelmetBoxesPerWorker, ToolBoxesPerWorker, 4, 1, 8 };
 
         private readonly Transform root;
         private readonly Mesh mesh;
@@ -26,12 +28,14 @@ namespace NewGaza
         private readonly CityConstructionWorkerRig[] workers;
         private readonly float routeWidth;
         private readonly float routeDepth;
+        private readonly bool agricultural;
+        private readonly Material[] ownedMaterials;
         private CityConstructionPhase phase = CityConstructionPhase.Inactive;
         private float elapsed;
         private bool disposed;
 
         internal CityConstructionCrew(Transform parent, Vector3 footprint, CityGeometry geometry,
-            Material skin, Material vest, Material cloth, Material helmet, Material tool)
+            Material skin, Material vest, Material cloth, Material helmet, Material tool, bool agricultural = false)
         {
             if (parent == null) throw new ArgumentNullException(nameof(parent));
             if (geometry == null) throw new ArgumentNullException(nameof(geometry));
@@ -40,23 +44,30 @@ namespace NewGaza
             if (cloth == null) throw new ArgumentNullException(nameof(cloth));
             if (helmet == null) throw new ArgumentNullException(nameof(helmet));
             if (tool == null) throw new ArgumentNullException(nameof(tool));
+            this.agricultural = agricultural;
             if (!IsFinite(footprint.x) || !IsFinite(footprint.z) ||
                 footprint.x <= 0f || footprint.z <= 0f)
                 throw new ArgumentOutOfRangeException(nameof(footprint),
                     "Construction crew footprint dimensions must be finite and positive.");
 
-            routeWidth = Mathf.Max(.8f, footprint.x + .98f);
-            routeDepth = Mathf.Max(.8f, footprint.z + .98f);
+            routeWidth = Mathf.Max(.8f, footprint.x / ModelMetresToCity + .98f);
+            routeDepth = Mathf.Max(.8f, footprint.z / ModelMetresToCity + .98f);
             cubeVertices = geometry.Box.vertices;
             if (cubeVertices == null || cubeVertices.Length != BoxVertexCount)
                 throw new InvalidOperationException("Construction crew requires CityGeometry's 24-vertex hard-edged box.");
             int[] cubeTriangles = geometry.Box.triangles;
             if (cubeTriangles == null || cubeTriangles.Length != 36)
                 throw new InvalidOperationException("Construction crew requires CityGeometry's 36-triangle hard-edged box.");
+            ownedMaterials = new[] {
+                DetailMaterial(tool, "Carried masonry / soil", new Color(.69f, .61f, .45f)),
+                DetailMaterial(tool, "Engineering plan paper", new Color(.97f, .97f, .91f)),
+                DetailMaterial(tool, "Blueprint ink / flowing water", new Color(.20f, .68f, .92f))
+            };
 
             root = new GameObject("City construction crew").transform;
             root.SetParent(parent, false);
             root.localPosition = Vector3.zero;
+            root.localScale = Vector3.one * ModelMetresToCity;
             root.gameObject.SetActive(false);
 
             int totalVertices = 0;
@@ -72,7 +83,7 @@ namespace NewGaza
 
             mesh = new Mesh
             {
-                name = "Three articulated construction workers",
+                name = agricultural ? "Three farmers sowing watering and hoeing" : "Mason hammer worker and site engineer",
                 indexFormat = IndexFormat.UInt16,
                 subMeshCount = MaterialCount
             };
@@ -97,13 +108,14 @@ namespace NewGaza
             renderObject.transform.SetParent(root, false);
             renderObject.AddComponent<MeshFilter>().sharedMesh = mesh;
             MeshRenderer renderer = renderObject.AddComponent<MeshRenderer>();
-            renderer.sharedMaterials = new[] { skin, vest, cloth, helmet, tool };
+            renderer.sharedMaterials = new[] { skin, vest, cloth, helmet, tool,
+                ownedMaterials[0], ownedMaterials[1], ownedMaterials[2] };
             renderer.shadowCastingMode = ShadowCastingMode.Off;
             renderer.receiveShadows = true;
 
             workers = new CityConstructionWorkerRig[WorkersCount];
             for (int worker = 0; worker < WorkersCount; worker++)
-                workers[worker] = new CityConstructionWorkerRig(worker);
+                workers[worker] = new CityConstructionWorkerRig(worker, agricultural);
         }
 
         internal void SetPhase(CityConstructionPhase nextPhase, bool visible)
@@ -139,37 +151,34 @@ namespace NewGaza
 
         private void WritePose()
         {
-            float perimeter = 2f * (routeWidth + routeDepth);
             for (int worker = 0; worker < WorkersCount; worker++)
             {
-                float distance = Mathf.Repeat(elapsed * .31f + perimeter * worker / WorkersCount,
-                    perimeter);
                 Vector3 position;
-                Vector3 direction;
-                if (distance < routeWidth)
+                float yaw;
+                bool walking = false;
+                float cycle = Mathf.Repeat(elapsed, 14f);
+                if (worker == 0)
                 {
-                    position = new Vector3(-routeWidth * .5f + distance, 0f, -routeDepth * .5f);
-                    direction = Vector3.right;
+                    // Collect, carry, put down, then return empty. No endless perimeter patrol.
+                    float travel = cycle < 2 ? 0 : cycle < 7 ? (cycle - 2) / 5 :
+                        cycle < 9 ? 1 : 1 - (cycle - 9) / 5;
+                    position = new Vector3(-routeWidth * .5f, 0f,
+                        Mathf.Lerp(-routeDepth * .3f, routeDepth * .3f, travel));
+                    yaw = cycle < 9 ? 0 : 180;
+                    walking = cycle >= 2 && cycle < 7 || cycle >= 9;
                 }
-                else if ((distance -= routeWidth) < routeDepth)
+                else if (worker == 1)
                 {
-                    position = new Vector3(routeWidth * .5f, 0f, -routeDepth * .5f + distance);
-                    direction = Vector3.forward;
-                }
-                else if ((distance -= routeDepth) < routeWidth)
-                {
-                    position = new Vector3(routeWidth * .5f - distance, 0f, routeDepth * .5f);
-                    direction = Vector3.left;
+                    position = new Vector3(routeWidth * .5f, 0f, -routeDepth * .2f);
+                    yaw = -90; // Face the actual work, with feet planted during hammering/watering.
                 }
                 else
                 {
-                    distance -= routeWidth;
-                    position = new Vector3(-routeWidth * .5f, 0f, routeDepth * .5f - distance);
-                    direction = Vector3.back;
+                    position = new Vector3(routeWidth * .1f, 0f, -routeDepth * .5f);
+                    yaw = 0;
                 }
-                float yaw = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
                 workers[worker].Write(materialVertices, cubeVertices, worker,
-                    position, yaw, elapsed, phase);
+                    position, yaw, elapsed, phase, walking);
             }
 
             int vertexOffset = 0;
@@ -189,12 +198,22 @@ namespace NewGaza
             return !float.IsNaN(value) && !float.IsInfinity(value);
         }
 
+        private static Material DetailMaterial(Material source, string name, Color color)
+        {
+            var material = new Material(source) { name = name };
+            material.SetColor("_BaseColor", color);
+            material.SetColor("_Color", color);
+            material.SetFloat("_Metallic", 0f);
+            return material;
+        }
+
         public void Dispose()
         {
             if (disposed) return;
             disposed = true;
             if (root != null) UnityEngine.Object.Destroy(root.gameObject);
             if (mesh != null) UnityEngine.Object.Destroy(mesh);
+            for (int i = 0; i < ownedMaterials.Length; i++) UnityEngine.Object.Destroy(ownedMaterials[i]);
         }
     }
 }

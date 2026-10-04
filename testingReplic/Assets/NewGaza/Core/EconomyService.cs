@@ -110,10 +110,13 @@ namespace NewGaza.Core
                 State.development.activeRubbleId != null && !State.development.crewArrived)
             {
                 waitingForCrew = ClearingCrewReady == null || !ClearingCrewReady();
-                if (!waitingForCrew) State.development.crewArrived = true;
+                if (!waitingForCrew)
+                {
+                    State.development.crewArrived = true;
+                    State.jobFinishUtc = AddTime(effective, ClearingSeconds());
+                }
                 // Clearing has its own full duration AFTER physical arrival. The flag
                 // survives reload, so subsequent offline hauling/recycling is not lost.
-                State.jobFinishUtc = AddTime(effective, ClearingSeconds());
             }
             while (!waitingForCrew && State.jobStage != JobStage.Idle && State.jobFinishUtc <= effective)
             {

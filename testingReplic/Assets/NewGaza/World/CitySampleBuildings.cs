@@ -43,7 +43,7 @@ namespace NewGaza
                     var root = new GameObject("Placed • " + definition.name);
                     root.transform.SetParent(parent, false);
                     root.transform.position = new Vector3(building.x, 0, building.z);
-                    root.transform.rotation = Quaternion.Euler(0, building.quarterTurn * 90, 0);
+                    root.transform.rotation = Quaternion.Euler(0, CityDevelopmentService.BuildingYaw(building), 0);
                     var hit = root.AddComponent<BoxCollider>();
                     hit.center = new Vector3(0, .06f, 0);
                     hit.size = new Vector3(definition.widthMeters / 20f, .12f, definition.depthMeters / 20f);
@@ -76,7 +76,8 @@ namespace NewGaza
                     if (view.crew == null)
                         view.crew = new CityConstructionCrew(view.root.transform,
                             new Vector3(definition.widthMeters / 20f, 0, definition.depthMeters / 20f),
-                            geometry, white, yellow, grass, yellow, steel);
+                            geometry, white, definition.category == BuildingCategory.Agricultural ? soil : yellow,
+                            grass, yellow, steel, definition.category == BuildingCategory.Agricultural);
                     view.crew.SetPhase(phase == 1 ? CityConstructionPhase.Foundation :
                         phase == 2 ? CityConstructionPhase.Frame : CityConstructionPhase.Finishing,
                         state.districts[building.district].unlocked);
@@ -203,15 +204,18 @@ namespace NewGaza
                 -bounds.min.y, root.transform.parent.position.z - bounds.center.z);
         }
 
-        internal GameObject Preview(CityBuildingDefinition definition, Vector3 position, int turn, bool valid)
+        internal GameObject Preview(CityBuildingDefinition definition, Vector3 position, float turn, bool valid)
         {
-            var batch = new CityMeshBatch(geometry);
-            var material = valid ? grass : roof;
-            float width = definition.widthMeters / 20f, depth = definition.depthMeters / 20f;
-            batch.Box(material, new Vector3(0, .018f, 0), new Vector3(width, .018f, depth));
-            batch.Box(material, new Vector3(0, .13f, -depth * .5f), new Vector3(width, .24f, .02f));
-            var result = batch.Build(valid ? "Valid build footprint" : "Blocked build footprint", parent, position);
-            result.transform.rotation = Quaternion.Euler(0, turn * 90, 0);
+            var result = MakeSample(definition, 4, parent);
+            result.name = valid ? "Valid building preview" : "Blocked building preview";
+            result.transform.position = position;
+            foreach (var renderer in result.GetComponentsInChildren<MeshRenderer>())
+            {
+                var materials = renderer.sharedMaterials;
+                for (int i = 0; i < materials.Length; i++) materials[i] = valid ? grass : roof;
+                renderer.sharedMaterials = materials;
+            }
+            result.transform.rotation = Quaternion.Euler(0, turn, 0);
             return result;
         }
 

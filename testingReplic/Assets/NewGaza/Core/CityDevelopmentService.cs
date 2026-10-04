@@ -41,10 +41,41 @@ namespace NewGaza.Core
             GameCatalog.Districts[district].id + "/" + GameCatalog.Districts[district].projects[plot].id;
 
         public RubbleSiteState Site(string id) => Array.Find(Data.rubble, s => s.id == id);
+        public void RegisterBackgroundSites(IEnumerable<RubbleSiteState> sites)
+        {
+            var existing = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var site in Data.rubble) existing.Add(site.id);
+            var result = new List<RubbleSiteState>(Data.rubble);
+            foreach (var site in sites)
+                if (existing.Add(site.id)) result.Add(site);
+            var previous = Data.rubble;
+            Data.rubble = result.ToArray();
+            try { Validate(State); }
+            catch { Data.rubble = previous; throw; }
+        }
+
+        public static float BuildingYaw(PlacedBuildingState building) =>
+            building.hasContinuousRotation ? building.rotationDegrees : building.quarterTurn * 90f;
+
+        public static void Footprint(CityBuildingDefinition definition, float degrees, out float width, out float depth)
+        {
+            double radians = degrees * Math.PI / 180;
+            double cosine = Math.Abs(Math.Cos(radians)), sine = Math.Abs(Math.Sin(radians));
+            width = (float)((definition.widthMeters * cosine + definition.depthMeters * sine) / 20);
+            depth = (float)((definition.depthMeters * cosine + definition.widthMeters * sine) / 20);
+        }
         public PlacedBuildingState Building(string id) => Array.Find(Data.buildings, b => b.id == id);
 
         public ActionResult Build(string definitionId, int district, float x, float z, int turn,
             long now, Func<CityBuildingDefinition, int, float, float, int, string> validateLand)
+        {
+            if (turn != 0 && turn != 1) return ActionResult.Fail("موقع المبنى غير صالح");
+            return BuildRotated(definitionId, district, x, z, turn * 90f, now,
+                validateLand == null ? null : (definition, region, px, pz, yaw) => validateLand(definition, region, px, pz, turn));
+        }
+
+        public ActionResult BuildRotated(string definitionId, int district, float x, float z, float yaw,
+            long now, Func<CityBuildingDefinition, int, float, float, float, string> validateLand)
         {
             if (now < State.lastSeenUtc || now < 0) return ActionResult.Fail("وقت الجهاز غير صالح");
             economy.Tick(now);
@@ -52,20 +83,20 @@ namespace NewGaza.Core
             if (definition == null) return ActionResult.Fail("المبنى غير معروف");
             if (district < 0 || district >= State.districts.Length || !State.districts[district].unlocked)
                 return ActionResult.Fail("البناء مسموح داخل الأحياء المفتوحة فقط");
-            if (!Finite(x) || !Finite(z) || (turn != 0 && turn != 1)) return ActionResult.Fail("موقع المبنى غير صالح");
+            if (!Finite(x) || !Finite(z) || !Finite(yaw) || yaw < 0 || yaw >= 360) return ActionResult.Fail("موقع المبنى غير صالح");
             if (Data.buildings.Length >= MaximumBuildings) return ActionResult.Fail("وصلت إلى سعة المدينة");
             if (validateLand == null) return ActionResult.Fail("لم تُحمّل بيانات الأرض");
-            string blocked = validateLand(definition, district, x, z, turn);
+            string blocked = validateLand(definition, district, x, z, yaw);
             if (!string.IsNullOrEmpty(blocked)) return ActionResult.Fail(blocked);
-            float width = (turn == 0 ? definition.widthMeters : definition.depthMeters) / 20f;
-            float depth = (turn == 0 ? definition.depthMeters : definition.widthMeters) / 20f;
+            Footprint(definition, yaw, out float width, out float depth);
             foreach (var building in Data.buildings)
                 if (Overlaps(x, z, width, depth, building)) return ActionResult.Fail("المساحة تتداخل مع مبنى آخر أو موقع بناء");
             if (State.coins < definition.cost)
                 return ActionResult.Fail("العملات غير كافية لبناء المبنى");
             if (now > long.MaxValue - definition.duration) return ActionResult.Fail("وقت الجهاز غير صالح");
             var placed = new PlacedBuildingState { id = Guid.NewGuid().ToString("N"), definitionId = definition.id,
-                district = district, x = x, z = z, quarterTurn = turn, startedUtc = now, finishUtc = now + definition.duration };
+                district = district, x = x, z = z, quarterTurn = yaw == 90 ? 1 : 0,
+                hasContinuousRotation = true, rotationDegrees = yaw, startedUtc = now, finishUtc = now + definition.duration };
             var expanded = new PlacedBuildingState[Data.buildings.Length + 1];
             Array.Copy(Data.buildings, expanded, Data.buildings.Length);
             expanded[expanded.Length - 1] = placed;
@@ -199,7 +230,7 @@ namespace NewGaza.Core
             if (state.districts[district].rewardClaimed) return 1;
             int sites = 0, cleared = 0;
             foreach (var site in state.development.rubble)
-                if (site.district == district) { sites++; if (site.cleared) cleared++; }
+                if (!site.background && site.district == district) { sites++; if (site.cleared) cleared++; }
             int[] needs = Needs(district), supplied = Supplied(state, district);
             int total = 0, met = 0;
             for (int n = 0; n < needs.Length; n++) { total += needs[n]; met += Math.Min(needs[n], supplied[n]); }
@@ -209,7 +240,7 @@ namespace NewGaza.Core
         public static bool Complete(GameState state, int district)
         {
             if (state.development == null || !state.development.initialized) return false;
-            foreach (var site in state.development.rubble) if (site.district == district && !site.cleared) return false;
+            foreach (var site in state.development.rubble) if (!site.background && site.district == district && !site.cleared) return false;
             var needs = Needs(district); var supplied = Supplied(state, district);
             for (int n = 0; n < needs.Length; n++) if (supplied[n] < needs[n]) return false;
             return true;
@@ -218,8 +249,7 @@ namespace NewGaza.Core
         public static bool Overlaps(float x, float z, float width, float depth, PlacedBuildingState building)
         {
             var definition = CityBuildingCatalog.Find(building.definitionId);
-            float bw = (building.quarterTurn == 0 ? definition.widthMeters : definition.depthMeters) / 20f;
-            float bd = (building.quarterTurn == 0 ? definition.depthMeters : definition.widthMeters) / 20f;
+            Footprint(definition, BuildingYaw(building), out float bw, out float bd);
             return Math.Abs(x - building.x) < (width + bw) * .5f + .03f &&
                 Math.Abs(z - building.z) < (depth + bd) * .5f + .03f;
         }
@@ -239,14 +269,19 @@ namespace NewGaza.Core
             }
             int expected = 0;
             foreach (var district in GameCatalog.Districts) expected += district.projects.Length;
-            if (data.rubble.Length != expected)
+            if (Array.FindAll(data.rubble, s => s != null && !s.background).Length != expected || data.rubble.Length > expected + 12000)
                 throw new InvalidOperationException(error + " [rubble count=" + data.rubble.Length + ", expected=" + expected + "]");
             var ids = new HashSet<string>(StringComparer.Ordinal);
             foreach (var site in data.rubble)
             {
                 if (site == null || site.district < 0 || site.district >= state.districts.Length ||
                     Array.Find(GameCatalog.Districts[site.district].projects, p => p.id == site.projectId) == null ||
-                    site.id != GameCatalog.Districts[site.district].id + "/" + site.projectId || !ids.Add(site.id) ||
+                    (site.background ? string.IsNullOrEmpty(site.sourceBuildingId) || site.id != "background:" + site.sourceBuildingId ||
+                        !Finite(site.x) || !Finite(site.z) || Math.Abs(site.x) > 10000 || Math.Abs(site.z) > 10000 ||
+                        !Finite(site.width) || !Finite(site.depth) || site.width <= 0 || site.depth <= 0 ||
+                        site.width > 100 || site.depth > 100 || !Finite(site.yaw) || !Finite(site.height) || site.height <= 0 ||
+                        site.height > 100 || site.buildingPrice <= 0 || site.buildingPrice > 10000000 :
+                        site.id != GameCatalog.Districts[site.district].id + "/" + site.projectId) || !ids.Add(site.id) ||
                     (site.cleared && !state.districts[site.district].unlocked))
                     throw new InvalidOperationException(error + " [invalid rubble identity/district: " + (site?.id ?? "null") + "]");
             }
@@ -258,6 +293,7 @@ namespace NewGaza.Core
                     building.district < 0 || building.district >= state.districts.Length || !state.districts[building.district].unlocked ||
                     !Finite(building.x) || !Finite(building.z) || Math.Abs(building.x) > 10000 || Math.Abs(building.z) > 10000 ||
                     (building.quarterTurn != 0 && building.quarterTurn != 1) || building.startedUtc < 0 ||
+                    (building.hasContinuousRotation && (!Finite(building.rotationDegrees) || building.rotationDegrees < 0 || building.rotationDegrees >= 360)) ||
                     building.startedUtc > state.lastSeenUtc || building.finishUtc <= building.startedUtc ||
                     building.finishUtc - building.startedUtc != definition.duration ||
                     (building.completed && (building.finishUtc > state.lastSeenUtc || building.lastIncomeUtc < building.finishUtc || building.lastIncomeUtc > state.lastSeenUtc)) ||
@@ -287,8 +323,7 @@ namespace NewGaza.Core
             for (int i = 0; i < buildings.Length; i++)
             {
                 var definition = CityBuildingCatalog.Find(buildings[i].definitionId);
-                widths[i] = (buildings[i].quarterTurn == 0 ? definition.widthMeters : definition.depthMeters) / 20f;
-                depths[i] = (buildings[i].quarterTurn == 0 ? definition.depthMeters : definition.widthMeters) / 20f;
+                Footprint(definition, BuildingYaw(buildings[i]), out widths[i], out depths[i]);
             }
             for (int i = 0; i < buildings.Length; i++)
                 for (int j = i + 1; j < buildings.Length; j++)

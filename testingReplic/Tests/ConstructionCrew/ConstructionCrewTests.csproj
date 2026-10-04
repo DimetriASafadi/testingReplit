@@ -14,6 +14,7 @@
     <Compile Include="../../Assets/NewGaza/World/CityConstructionVisuals.cs" Link="World/CityConstructionVisuals.cs" />
     <Compile Include="../../Assets/NewGaza/World/CityConstructionCrew.cs" Link="World/CityConstructionCrew.cs" />
     <Compile Include="../../Assets/NewGaza/World/CityConstructionWorkerRig.cs" Link="World/CityConstructionWorkerRig.cs" />
+    <Compile Include="../../Assets/NewGaza/World/CityConstructionWorkerTasks.cs" Link="World/CityConstructionWorkerTasks.cs" />
     <Compile Include="ConstructionCrewChecks.cs" />
     <Compile Include="Program.cs" />
   </ItemGroup>

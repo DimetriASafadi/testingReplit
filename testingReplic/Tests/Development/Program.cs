@@ -40,6 +40,7 @@ internal static class Program
         FeedbackEvents();
         EconomyChecks.Run(Check);
         SalvageScenarioChecks.Run(Check);
+        InteractiveRubbleChecks.Run(Check);
         Console.WriteLine("PASS free-build development / " + assertions + " assertions");
         Console.WriteLine("Domain only: no Unity editor, physics, UI, shader, or device rendering was run.");
     }
@@ -191,7 +192,9 @@ internal static class Program
         economy.ClearingCrewReady = () => false;
         Check(service.Clear(site, "central", Now).success, "selected ruin dispatch");
         Check(!service.Clear(CityDevelopmentService.SiteId(0, 1), "central", Now).success, "one pooled fleet contract");
+        long dispatchDeadline = state.jobFinishUtc;
         economy.Tick(Now + 10000);
+        Check(state.jobFinishUtc == dispatchDeadline, "travel does not continuously restart the displayed work timer");
         Check(!service.Site(site).cleared && state.jobStage == JobStage.Clearing && !service.Data.crewArrived, "travel cannot clear remotely");
         Check(state.stock.concrete == 10000, "no resources before arrival");
         economy.ClearingCrewReady = () => true;

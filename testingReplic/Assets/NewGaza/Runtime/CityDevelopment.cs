@@ -30,17 +30,21 @@ namespace NewGaza
         private GameObject ghost;
         private Vector3 preview;
         private bool hasPreview;
-        private int turn;
+        private float turn;
+        private float nextRotationValidation;
+        private bool ghostValid;
         private string selectedSite, selectedBuilding;
         public CityDevelopmentService Rules { get; private set; }
         public bool Placing => chosen != null;
         public int FocusDistrict { get; private set; }
         public string PlacementProblem { get; private set; }
         public CityBuildingDefinition Chosen => chosen;
-        public int Rotation => turn;
+        public float Rotation => turn;
         public string SelectedSite => selectedSite;
         public string SelectedBuilding => selectedBuilding;
         public Vector3 CentralFactoryMapPosition => world.CentralDepotPosition;
+        internal Material FactoryHighlightMaterial => world.DevelopmentGeometry.Material(
+            "recycling factory halo", new Color(.1f, 1f, .45f), emission: 1.2f);
 
         public Vector3 WorkPosition
         {
@@ -67,7 +71,7 @@ namespace NewGaza
         private static Vector3 DepotPoint(PlacedBuildingState building)
         {
             var definition = CityBuildingCatalog.Find(building.definitionId);
-            return new Vector3(building.x, 0, building.z) + Quaternion.Euler(0, building.quarterTurn * 90, 0) *
+            return new Vector3(building.x, 0, building.z) + Quaternion.Euler(0, CityDevelopmentService.BuildingYaw(building), 0) *
                 new Vector3(0, 0, definition.depthMeters / 40f + .18f);
         }
 
@@ -76,6 +80,17 @@ namespace NewGaza
             session = game; world = city; cameraControl = camera;
             Rules = new CityDevelopmentService(session.Economy);
             parcels = world.DevelopmentParcels();
+            var backgroundSites = new List<RubbleSiteState>();
+            foreach (var source in world.BackgroundBuildings)
+            {
+                int district = Array.FindIndex(GameCatalog.Districts, d => d.id == source.districtId);
+                backgroundSites.Add(new RubbleSiteState { id = "background:" + source.sourceBuildingId,
+                    background = true, sourceBuildingId = source.sourceBuildingId, district = district,
+                    projectId = "housing", x = source.worldPosition.x, z = source.worldPosition.z,
+                    width = source.size.x, depth = source.size.z, height = source.height, yaw = source.yaw,
+                    buildingPrice = Math.Max(2500, source.levels * 2500L) });
+            }
+            Rules.RegisterBackgroundSites(backgroundSites);
             foreach (var parcel in parcels)
                 if (parcel.sourceBuildingId != null) replacedSources.Add(parcel.sourceBuildingId);
             regions = new GameObject("Translucent geographic region cells").AddComponent<CityRegionOverlay>();
@@ -94,14 +109,13 @@ namespace NewGaza
             for (int i = 0; i < Rules.Data.buildings.Length; i++)
             {
                 var saved = Rules.Data.buildings[i];
-                string unsafeLand = ValidateLand(CityBuildingCatalog.Find(saved.definitionId), saved.district,
-                    saved.x, saved.z, saved.quarterTurn);
+                string unsafeLand = ValidateLandAtAngle(CityBuildingCatalog.Find(saved.definitionId), saved.district,
+                    saved.x, saved.z, CityDevelopmentService.BuildingYaw(saved));
                 if (unsafeLand != null) throw new InvalidOperationException("الموقع المحفوظ غير صالح: " + unsafeLand + "؛ لم يُحذف الحفظ");
                 for (int j = i + 1; j < Rules.Data.buildings.Length; j++)
                 {
                     var a = Rules.Data.buildings[i]; var def = CityBuildingCatalog.Find(a.definitionId);
-                    float width = (a.quarterTurn == 0 ? def.widthMeters : def.depthMeters) / 20f;
-                    float depth = (a.quarterTurn == 0 ? def.depthMeters : def.widthMeters) / 20f;
+                    CityDevelopmentService.Footprint(def, CityDevelopmentService.BuildingYaw(a), out float width, out float depth);
                     if (CityDevelopmentService.Overlaps(a.x, a.z, width, depth, Rules.Data.buildings[j]))
                         throw new InvalidOperationException("تداخل في مواقع المباني المحفوظة؛ لم يتم حذف الحفظ");
                 }
@@ -113,6 +127,11 @@ namespace NewGaza
         {
             if (id == null) return null;
             foreach (var parcel in parcels) if (parcel.id == id) return parcel;
+            var site = Rules.Site(id);
+            if (site != null && site.background)
+                return new CityDevelopmentParcel { id = site.id, sourceBuildingId = site.sourceBuildingId,
+                    district = site.district, plot = -1, position = new Vector3(site.x, 0, site.z),
+                    width = site.width, depth = site.depth };
             return null;
         }
 
@@ -150,6 +169,9 @@ namespace NewGaza
         {
             if (Rules == null) return;
             buildings.Refresh(Rules.Data.buildings, session.Now, session.State);
+            foreach (var site in Rules.Data.rubble)
+                if (site.background && site.cleared) replacedSources.Add(site.sourceBuildingId);
+            world.RefreshBackgroundRubble(Rules.Data.rubble);
             foreach (var parcel in parcels)
             {
                 var project = session.Economy.FindProject(parcel.district, Rules.Site(parcel.id).projectId);
@@ -218,32 +240,52 @@ namespace NewGaza
 
         public void Rotate()
         {
-            if (chosen == null) return;
-            turn = 1 - turn; UpdatePreview();
+            RotateBy(90);
+            FinishRotation();
         }
 
-        private void UpdatePreview()
+        public void RotateBy(float degrees)
         {
-            PlacementProblem = ValidateLand(chosen, DistrictAt(preview), preview.x, preview.z, turn);
+            if (chosen == null || float.IsNaN(degrees) || float.IsInfinity(degrees)) return;
+            turn = Mathf.Repeat(turn + degrees, 360);
+            if (ghost != null) ghost.transform.rotation = Quaternion.Euler(0, turn, 0);
+            if (Time.unscaledTime >= nextRotationValidation)
+            {
+                nextRotationValidation = Time.unscaledTime + .12f;
+                UpdatePreview(false);
+            }
+        }
+
+        public void FinishRotation() { if (chosen != null) UpdatePreview(false); }
+
+        private void UpdatePreview(bool rebuild = true)
+        {
+            PlacementProblem = ValidateLandAtAngle(chosen, DistrictAt(preview), preview.x, preview.z, turn);
+            CityDevelopmentService.Footprint(chosen, turn, out float width, out float depth);
             if (string.IsNullOrEmpty(PlacementProblem))
                 foreach (var building in Rules.Data.buildings)
                     if (CityDevelopmentService.Overlaps(preview.x, preview.z,
-                        (turn == 0 ? chosen.widthMeters : chosen.depthMeters) / 20f,
-                        (turn == 0 ? chosen.depthMeters : chosen.widthMeters) / 20f, building))
+                        width, depth, building))
                     { PlacementProblem = "المساحة تتداخل مع مبنى أو مشروع آخر"; break; }
-            if (ghost != null) { ghost.SetActive(false); buildings.ReleasePreview(ghost); ghost = null; }
-            ghost = buildings.Preview(chosen, preview, turn, string.IsNullOrEmpty(PlacementProblem));
+            bool valid = string.IsNullOrEmpty(PlacementProblem);
+            if (rebuild || ghost == null || valid != ghostValid)
+            {
+                if (ghost != null) { ghost.SetActive(false); buildings.ReleasePreview(ghost); }
+                ghost = buildings.Preview(chosen, preview, turn, valid);
+                ghostValid = valid;
+            }
             ui.Refresh();
         }
 
         public void Confirm()
         {
             if (chosen == null || !hasPreview) return;
+            FinishRotation();
             var definition = chosen; int district = DistrictAt(preview);
             bool built = false;
             session.Perform(e =>
             {
-                var result = Rules.Build(definition.id, district, preview.x, preview.z, turn, session.Now, ValidateLand);
+                var result = Rules.BuildRotated(definition.id, district, preview.x, preview.z, turn, session.Now, ValidateLandAtAngle);
                 built = result.success;
                 return result;
             });
@@ -290,15 +332,40 @@ namespace NewGaza
 
         public bool TryPick(Ray ray)
         {
-            if (!Physics.Raycast(ray, out var hit, 1600)) return false;
-            foreach (var building in Rules.Data.buildings)
-                if (buildings.OwnsHit(building.id, hit.collider.transform))
+            if (Physics.Raycast(ray, out var hit, 1600))
+            {
+                foreach (var building in Rules.Data.buildings)
+                    if (buildings.OwnsHit(building.id, hit.collider.transform))
                 {
-                    if (!session.State.districts[building.district].unlocked) return true;
+                    if (!session.State.districts[building.district].unlocked)
+                    { session.Notify("الحي مقفل؛ أكمل الحي السابق أولاً"); return true; }
                     Cancel(); selectedSite = null; selectedBuilding = building.id;
                     session.SelectPlot(-1); ui.Refresh();
                     return true;
                 }
+                var selectable = hit.collider.GetComponentInParent<CitySelectable>();
+                if (selectable != null && selectable.plotIndex >= 0)
+                {
+                    if (!session.State.districts[selectable.districtIndex].unlocked)
+                    { session.Notify("الحي مقفل؛ أكمل الحي السابق أولاً"); return true; }
+                    if (SelectParcel(selectable.districtIndex, selectable.plotIndex)) return true;
+                    return false; // A completed legacy plot belongs to its existing UI, not a background behind it.
+                }
+            }
+            RubbleSiteState picked = null;
+            float nearest = 1600;
+            foreach (var site in Rules.Data.rubble)
+                if (site.background && RubblePicking.Hit(site, ray.origin.x, ray.origin.y, ray.origin.z,
+                    ray.direction.x, ray.direction.y, ray.direction.z, out float distance) && distance < nearest)
+                { nearest = distance; picked = site; }
+            if (picked != null)
+            {
+                if (!session.State.districts[picked.district].unlocked)
+                { session.Notify("الحي مقفل؛ أكمل الحي السابق واستلم مكافأته أولاً"); return true; }
+                Cancel(); selectedBuilding = null; selectedSite = picked.id;
+                session.SelectPlot(-1); ui.Refresh();
+                return true;
+            }
             return false;
         }
 
@@ -354,12 +421,14 @@ namespace NewGaza
         }
 
         internal string ValidateLand(CityBuildingDefinition definition, int district, float x, float z, int rotation)
+            => ValidateLandAtAngle(definition, district, x, z, rotation * 90f);
+
+        private string ValidateLandAtAngle(CityBuildingDefinition definition, int district, float x, float z, float rotation)
         {
             if (definition == null || district < 0 || district >= session.State.districts.Length)
                 return "اختر أرضًا داخل المدينة، بعيدًا عن البحر";
             if (!session.State.districts[district].unlocked) return "الحي مقفل؛ أكمل الحي السابق واستلم مكافأته";
-            float width = (rotation == 0 ? definition.widthMeters : definition.depthMeters) / 20f;
-            float depth = (rotation == 0 ? definition.depthMeters : definition.widthMeters) / 20f;
+            CityDevelopmentService.Footprint(definition, rotation, out float width, out float depth);
             // Dense road sampling includes the entire footprint, not just its centre.
             int nx = Mathf.CeilToInt(width / .08f), nz = Mathf.CeilToInt(depth / .08f);
             for (int i = 0; i <= nx; i++)

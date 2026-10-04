@@ -65,7 +65,8 @@ namespace NewGaza
         /// maxHeight is an absolute world-space cap, not a fraction or multiplier of the parcel.
         /// </summary>
         internal float AddTo(CityMeshBatch batch, string key, Vector3 position,
-            Vector3 availableFootprint, float yaw, float maxHeight, bool footprintIsLocal = false)
+            Vector3 availableFootprint, float yaw, float maxHeight, bool footprintIsLocal = false,
+            bool preserveFootprint = false)
         {
             if (batch == null) throw new ArgumentNullException(nameof(batch));
             if (!models.TryGetValue(key, out ImportedModel model))
@@ -84,13 +85,15 @@ namespace NewGaza
                 cosine * bounds.size.x + sine * bounds.size.z;
             float rotatedDepth = footprintIsLocal ? bounds.size.z :
                 sine * bounds.size.x + cosine * bounds.size.z;
-            float scale = Mathf.Min(availableFootprint.x / rotatedWidth,
-                availableFootprint.z / rotatedDepth, maxHeight / bounds.size.y);
-            float height = bounds.size.y * scale;
+            float horizontalScale = Mathf.Min(availableFootprint.x / rotatedWidth,
+                availableFootprint.z / rotatedDepth);
+            float verticalScale = Mathf.Min(horizontalScale, maxHeight / bounds.size.y);
+            if (!preserveFootprint) horizontalScale = verticalScale;
+            float height = bounds.size.y * verticalScale;
 
             Matrix4x4 placement = Matrix4x4.TRS(position, Quaternion.Euler(0f, yaw, 0f),
                 Vector3.one) *
-                Matrix4x4.Scale(Vector3.one * scale) *
+                Matrix4x4.Scale(new Vector3(horizontalScale, verticalScale, horizontalScale)) *
                 Matrix4x4.Translate(new Vector3(-bounds.center.x, -bounds.min.y, -bounds.center.z));
             for (int i = 0; i < model.meshes.Length; i++)
                 batch.Add(model.meshes[i], model.material, placement * model.childTransforms[i]);

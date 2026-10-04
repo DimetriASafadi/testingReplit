@@ -11,9 +11,9 @@ namespace NewGaza
     internal sealed class CityUrbanContext
     {
         internal const int ChunkSize = 40; // ~800m chunks at the source's 50 units/km scale.
-        internal const int MaxAuthoredModelCopies = 4800;
+        internal const int MaxAuthoredModelCopies = 8000;
         internal const int MaxSourceLodTriangles = 450;
-        internal const int MaxContextTriangles = 2500000;
+        internal const int MaxContextTriangles = 4200000;
         private const float GroundY = -.09f;
         private readonly Dictionary<string, CityUrbanDistrictPresentation> districts =
             new Dictionary<string, CityUrbanDistrictPresentation>(StringComparer.Ordinal);
@@ -257,7 +257,7 @@ namespace NewGaza
         internal static CityUrbanContext Build(CityBasemap map, CityGeometry geometry,
             CityModelLibrary models, Transform parent, Material urbanGround, Material openGround,
             Material majorRoad, Material localRoad, Material buildingFootprints,
-            IList<CityUrbanDistrictRequest> requests)
+            IList<CityUrbanDistrictRequest> requests, ISet<string> clearedBackground = null)
         {
             if (map == null) throw new ArgumentNullException(nameof(map));
             if (geometry == null) throw new ArgumentNullException(nameof(geometry));
@@ -300,6 +300,8 @@ namespace NewGaza
                 CityUrbanBuildingPresentation presentation = MakeBuildingPresentation(building,
                     requests[districtIndex].id, false);
                 result.allContext.Add(presentation);
+                if (clearedBackground != null && clearedBackground.Contains(building.FeatureId))
+                    renderable.RemoveAt(renderable.Count - 1);
                 List<CityUrbanBuildingPresentation> districtCandidates =
                     result.candidates[requests[districtIndex].id];
                 districtCandidates.Add(presentation);
@@ -315,9 +317,15 @@ namespace NewGaza
                 reservedOutlineTriangles += EstimateExtrudedBuildingTriangles(renderable[i]);
             if (result.triangleCount + reservedOutlineTriangles > MaxContextTriangles)
                 throw new InvalidOperationException("Actual OSM building volumes exceed the bounded context triangle budget.");
-            int affordableCopies = Math.Min(authoredCandidates.Count,
-                (MaxContextTriangles - result.triangleCount - reservedOutlineTriangles) /
-                    MaxSourceLodTriangles);
+            int affordableCopies = 0;
+            int reservedTotal = result.triangleCount + reservedOutlineTriangles;
+            foreach (var candidate in authoredCandidates)
+            {
+                int extra = MaxSourceLodTriangles - EstimateExtrudedBuildingTriangles(candidate);
+                if (reservedTotal + extra > MaxContextTriangles) break;
+                reservedTotal += extra;
+                affordableCopies++;
+            }
             var authoredIds = new HashSet<string>(StringComparer.Ordinal);
             for (int i = 0; i < affordableCopies; i++)
                 authoredIds.Add(authoredCandidates[i].FeatureId);
@@ -811,24 +819,9 @@ namespace NewGaza
 
         private static int EstimateExtrudedBuildingTriangles(CityBasemapBuilding building)
         {
-            List<Vector2> polygon = mapPointList(building.outline);
-            int result = 0;
-            float signedArea = PolygonDoubleArea(polygon);
-            if (Mathf.Abs(signedArea) >= .00002f)
-            {
-                var roof = new List<Vector2>(polygon);
-                List<int> triangles = Triangulate(roof);
-                for (int t = 0; t < triangles.Count; t += 3)
-                    result += CountClippedTriangleTriangles(roof[triangles[t]],
-                        roof[triangles[t + 1]], roof[triangles[t + 2]]);
-            }
-            for (int i = 0; i < polygon.Count; i++)
-            {
-                Vector2 a = polygon[i], b = polygon[(i + 1) % polygon.Count];
-                if ((b - a).sqrMagnitude < .00000001f) continue;
-                result += 2 * SegmentChunkCuts(a.x, a.y, b.x, b.y).Count - 2;
-            }
-            return result;
+            // 16 jagged mounds, 16 broken concrete shards and four torn wall fragments.
+            // Reserve before LOD selection; no source-sized slab or intact box is drawn.
+            return 120;
         }
 
         private static int CountClippedTriangleTriangles(Vector2 a, Vector2 b, Vector2 c)
@@ -851,48 +844,38 @@ namespace NewGaza
         private static void AddExtrudedBuilding(CityBasemapBuilding building, Material material,
             Dictionary<ChunkKey, ContextChunk> chunks, CityGeometry geometry, CityUrbanContext owner)
         {
-            List<Vector2> outline = mapPointList(building.outline);
-            float area = PolygonDoubleArea(outline);
-            // This is a collapsed ground slab, NOT a complete roof at source height.
-            AddPolygon(new List<Vector2>(outline), GroundY + .025f,
-                material, chunks, geometry, owner);
             int seed = StableHash(building.FeatureId);
-            float ruinHeight = building.height * (.3f + (seed % 4) * .12f);
-            bool counterClockwise = area > 0f;
-            for (int i = 0; i < outline.Count; i++)
+            Quaternion rotation = Quaternion.Euler(0, building.yaw, 0);
+            Vector3 center = new Vector3(building.center.x, GroundY, building.center.z);
+            for (int i = 0; i < 16; i++)
             {
-                Vector2 a = outline[i], b = outline[(i + 1) % outline.Count];
-                // Omit whole bays, shorten remaining walls and vary their torn upper
-                // edges. Keep true OSM parcel outlines and chunk clipping; no closed boxes.
-                if ((seed + i) % 3 == 0) continue;
-                Vector2 originalA = a;
-                a = Vector2.LerpUnclamped(originalA, b, .06f + ((seed + i) % 4) * .035f);
-                b = Vector2.LerpUnclamped(originalA, b, .72f + ((seed + i) % 3) * .07f);
-                if ((b - a).sqrMagnitude < .00000001f) continue;
-                List<float> cuts = SegmentChunkCuts(a.x, a.y, b.x, b.y);
-                for (int cut = 1; cut < cuts.Count; cut++)
+                float jitter = ((seed % 17 + i * 7) % 17 - 8) * .006f;
+                Vector3 local = new Vector3(((i % 4 + .5f) / 4 - .5f + jitter) * building.size.x,
+                    0, ((i / 4 + .5f) / 4 - .5f - jitter) * building.size.z);
+                Vector3 p = center + rotation * local;
+                if (!PointInsidePolygon(p.x, p.z, building.outline)) continue;
+                float hx = building.size.x * (.075f + ((seed + i) % 4) * .012f);
+                float hz = building.size.z * (.07f + ((seed + i * 3) % 5) * .009f);
+                float height = Mathf.Min(building.height * .55f, Mathf.Max(.018f, (hx + hz) * .55f));
+                Vector3 a = p + rotation * new Vector3(-hx, 0, -hz);
+                Vector3 b = p + rotation * new Vector3(hx, .003f, -hz);
+                Vector3 c = p + rotation * new Vector3(hx * .8f, 0, hz);
+                Vector3 d = p + rotation * new Vector3(-hx, .002f, hz * .7f);
+                Vector3 peak = p + rotation * new Vector3(hx * .2f, height, -hz * .16f);
+                ContextChunk chunk = GetChunk(chunks, Cell(p.x, p.z), geometry);
+                chunk.AddTriangle(material, a, peak, b);
+                chunk.AddTriangle(material, b, peak, c);
+                chunk.AddTriangle(material, c, peak, d);
+                chunk.AddTriangle(material, d, peak, a);
+                // Small sloping broken floor fragments, never a parcel-sized roof.
+                chunk.AddTriangle(material, a + Vector3.up * height * .35f,
+                    d + Vector3.up * height * .5f, p + Vector3.up * height * .2f);
+                owner.triangleCount += 5;
+                if (i % 4 == seed % 4)
                 {
-                    float t0 = cuts[cut - 1], t1 = cuts[cut];
-                    Vector2 low = Vector2.LerpUnclamped(a, b, t0);
-                    Vector2 high = Vector2.LerpUnclamped(a, b, t1);
-                    ChunkKey key = Cell((low.x + high.x) * .5f, (low.y + high.y) * .5f);
-                    ContextChunk chunk = GetChunk(chunks, key, geometry);
-                    Vector3 bottomA = new Vector3(low.x, GroundY, low.y);
-                    Vector3 bottomB = new Vector3(high.x, GroundY, high.y);
-                    float heightA = ruinHeight * (.42f + ((seed + i * 7) % 5) * .12f);
-                    float heightB = ruinHeight * (.37f + ((seed + i * 11) % 6) * .1f);
-                    Vector3 topA = new Vector3(low.x, GroundY + heightA + (heightB - heightA) * t0, low.y);
-                    Vector3 topB = new Vector3(high.x, GroundY + heightA + (heightB - heightA) * t1, high.y);
-                    if (counterClockwise)
-                    {
-                        chunk.AddTriangle(material, bottomA, topA, topB);
-                        chunk.AddTriangle(material, bottomA, topB, bottomB);
-                    }
-                    else
-                    {
-                        chunk.AddTriangle(material, bottomA, bottomB, topB);
-                        chunk.AddTriangle(material, bottomA, topB, topA);
-                    }
+                    Vector3 top = p + rotation * new Vector3(hx * .3f, height * 1.5f, hz * .2f);
+                    chunk.AddTriangle(material, a, top, p);
+                    chunk.AddTriangle(material, p, top, a);
                     owner.triangleCount += 2;
                 }
             }

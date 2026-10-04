@@ -6,7 +6,7 @@ using UnityEngine;
 
 internal static class ConstructionCrewChecks
 {
-    private const int ExpectedVertices = 1728;
+    private const int ExpectedVertices = 2736;
     private const int FramesPerPhase = 12;
     private static int assertions;
 
@@ -14,6 +14,7 @@ internal static class ConstructionCrewChecks
     {
         assertions = 0;
         VerifyActualCrewActor();
+        VerifyTaskRoles();
         WritePoseFixture();
         return assertions;
     }
@@ -33,14 +34,18 @@ internal static class ConstructionCrewChecks
             var crew = new CityConstructionCrew(parent.transform, footprint, geometry,
                 skin, vest, cloth, helmet, tool);
             Transform root = parent.transform.GetChild(0);
+            Check(Math.Abs(root.localScale.x - .05f) < .00001f &&
+                Math.Abs(root.localScale.y - .05f) < .00001f &&
+                Math.Abs(root.localScale.z - .05f) < .00001f,
+                "workers and farming tools use the city's twenty-metres-per-unit scale, not building-sized humans");
             Check(!root.gameObject.activeSelf, "new crew begins hidden in the inactive phase");
 
             Mesh mesh = FindCrewMesh(root);
             MeshRenderer renderer = root.GetChild(0).GetComponent<MeshRenderer>();
             Check(mesh.vertices.Length == ExpectedVertices && mesh.vertices.Length < 3000,
                 "the actual crew update path maintains a fixed sub-3000 vertex buffer");
-            Check(mesh.subMeshCount == 5 && renderer.sharedMaterials.Length == 5,
-                "one crew renderer retains the five supplied human/tool materials");
+            Check(mesh.subMeshCount == 8 && renderer.sharedMaterials.Length == 8,
+                "crew retains the supplied human/tool materials plus distinguishable stone, paper and blue details");
             for (int i = 0; i < inputMaterials.Length; i++)
                 Check(renderer.sharedMaterials[i] == inputMaterials[i],
                     "crew renderer references caller-owned material " + i);
@@ -110,6 +115,96 @@ internal static class ConstructionCrewChecks
         }
     }
 
+    private static void VerifyTaskRoles()
+    {
+        using (var geometry = new CityGeometry())
+        {
+            Material skin = MakeMaterial("role skin", new Color(.67f, .49f, .37f));
+            Material clothing = MakeMaterial("role clothes", new Color(.22f, .45f, .26f));
+            for (int farming = 0; farming < 2; farming++)
+            {
+                var parent = new GameObject("Role-specific crew");
+                var footprint = new Vector3(2, 0, 2);
+                var crew = new CityConstructionCrew(parent.transform, footprint, geometry,
+                    skin, clothing, clothing, clothing, clothing, farming == 1);
+                var root = parent.transform.GetChild(0);
+                var mesh = FindCrewMesh(root);
+                crew.SetPhase(CityConstructionPhase.Frame, true);
+                var first = Copy(mesh.vertices);
+                crew.Update(.31f);
+                var next = Copy(mesh.vertices);
+                const int toolOffset = 20 * 3 * 24;
+                const int masonryOffset = toolOffset + 5 * 3 * 24;
+                const int paperOffset = masonryOffset + 4 * 3 * 24;
+                const int waterOffset = paperOffset + 3 * 24;
+                for (int worker = 1; worker < 3; worker++)
+                {
+                    int boot = 7 * 3 * 24 + (worker * 11 + 5) * 24;
+                    for (int vertex = 0; vertex < 24; vertex++)
+                        Check(SamePoint(first[boot + vertex], next[boot + vertex]),
+                            "stationary task workers keep their feet planted rather than circle the building");
+                }
+                if (farming == 0)
+                {
+                    Check(Center(next, toolOffset + 6 * 24).y > Center(first, toolOffset + 6 * 24).y + .1f,
+                        "hammer worker actually lifts and strikes");
+                    Check(Center(next, paperOffset + 2 * 24).y > .9f,
+                        "engineer has a held white paper plan");
+                    Check(!SamePoint(Center(first, 11 * 24), Center(next, 11 * 24)),
+                        "engineer's pointing hand changes while the plan stays held");
+                    crew.Update(3);
+                    var loaded = Copy(mesh.vertices);
+                    Check(!SamePoint(Center(first, 5 * 24 + 7 * 3 * 24),
+                        Center(loaded, 5 * 24 + 7 * 3 * 24)), "stone carrier travels during the loaded leg");
+                    crew.Update(7);
+                    Check(Span(mesh.vertices, masonryOffset, 24) < .01f,
+                        "carrier returns without the masonry load");
+                }
+                else
+                {
+                    Check(!SamePoint(Center(first, masonryOffset + 24), Center(next, masonryOffset + 24)),
+                        "farmer scatters separate moving seeds from the hand");
+                    Check(!SamePoint(Center(first, waterOffset + 8 * 24), Center(next, waterOffset + 8 * 24)),
+                        "watering can has a moving visible water stream");
+                    Check(MinY(next, toolOffset + 11 * 24, 24) <= .015f,
+                        "hoe blade reaches the soil while cultivating");
+                    Check(Span(next, paperOffset + 2 * 24, 24) < .01f,
+                        "agricultural sites do not show construction plans instead of farming tools");
+                    for (int frame = 0; frame < 35; frame++)
+                    {
+                        crew.Update(.17f);
+                        CheckPose(mesh, footprint, "agricultural pose");
+                        CheckGroundFeet(mesh, "agricultural pose");
+                        CheckTriangleIntegrity(mesh, "agricultural pose");
+                    }
+                }
+                crew.SetPhase(CityConstructionPhase.Complete, true);
+                Check(!root.gameObject.activeSelf, "both kinds of crew disappear on completion");
+                var owned = root.GetChild(0).GetComponent<MeshRenderer>().sharedMaterials;
+                crew.Dispose();
+                for (int material = 5; material < 8; material++)
+                    Check(owned[material].destroyed, "crew releases its own detail materials");
+                UnityEngine.Object.Destroy(parent);
+            }
+            UnityEngine.Object.Destroy(skin);
+            UnityEngine.Object.Destroy(clothing);
+        }
+    }
+
+    private static Vector3 Center(Vector3[] vertices, int offset)
+    {
+        Vector3 point = Vector3.zero;
+        for (int vertex = 0; vertex < 24; vertex++) point += vertices[offset + vertex];
+        return point * (1f / 24);
+    }
+    private static bool SamePoint(Vector3 a, Vector3 b) => (a - b).sqrMagnitude < 1e-9f;
+    private static float Span(Vector3[] vertices, int offset, int count)
+    {
+        Vector3 center = Center(vertices, offset); float maximum = 0;
+        for (int i = 0; i < count; i++) maximum = Math.Max(maximum, (vertices[offset + i] - center).magnitude);
+        return maximum;
+    }
+
     private static PhaseSnapshot CapturePhase(CityConstructionCrew crew, Mesh mesh,
         MeshRenderer renderer, Vector3 footprint, CityConstructionPhase phase)
     {
@@ -168,18 +263,21 @@ internal static class ConstructionCrewChecks
             int offset = group == 0 ? 0 : group == 1 ? vestOffset :
                 group == 2 ? clothOffset : helmetOffset;
             int length = group == 0 ? skinLength : group == 1 ? 3 * 3 * 24 :
-                group == 2 ? clothLength : 3 * 24;
+                 group == 2 ? clothLength : 6 * 24;
             for (int i = offset; i < offset + length; i++)
             {
                 Vector3 point = vertices[i];
                 humanTop = Math.Max(humanTop, point.y);
-                bool insidePlot = Math.Abs(point.x) < footprint.x * .5f - .0001f &&
-                    Math.Abs(point.z) < footprint.z * .5f - .0001f;
+                bool insidePlot = Math.Abs(point.x) < footprint.x / CityConstructionCrew.ModelMetresToCity * .5f - .0001f &&
+                    Math.Abs(point.z) < footprint.z / CityConstructionCrew.ModelMetresToCity * .5f - .0001f;
                 Check(!insidePlot, label + " human/helmet vertices stay outside the plot footprint");
             }
         }
         Check(humanTop > 1.69f && humanTop < 1.76f,
             label + " hardhat/head silhouette measures approximately 1.7 physical metres");
+        float worldHeight = humanTop * CityConstructionCrew.ModelMetresToCity;
+        Check(worldHeight >= .084f && worldHeight <= .088f && worldHeight / .15f < .60f,
+            label + " worker height is about 1.7m and less than sixty percent of a three-metre building storey");
     }
 
     private static void CheckGroundFeet(Mesh mesh, string label)
@@ -203,21 +301,10 @@ internal static class ConstructionCrewChecks
     private static void CheckGroundTool(Mesh mesh, CityConstructionPhase phase)
     {
         Vector3[] vertices = mesh.vertices;
-        if (phase == CityConstructionPhase.Foundation)
-        {
-            int blade = (4 + 3 + 11 + 1) * 3 * 24 + 1 * 24;
-            float lowest = MinY(vertices, blade, 24);
-            Check(lowest >= -.00001f && lowest <= .03f,
-                "foundation shovel blade reaches near-ground contact");
-        }
-        else if (phase == CityConstructionPhase.Finishing)
-        {
-            int toolOffset = (4 + 3 + 11 + 1) * 3 * 24;
-            int broomHead = toolOffset + (5 + 1) * 24;
-            float lowest = MinY(vertices, broomHead, 24);
-            Check(lowest >= -.00001f && lowest <= .015f,
-                "finishing broom bristles reach ground contact");
-        }
+        int toolOffset = (4 + 3 + 11 + 2) * 3 * 24;
+        float legBase = MinY(vertices, toolOffset + (5 + 3) * 24, 24);
+        Check(legBase >= -.00001f && legBase <= .01f,
+            phase + " hammer worker's workbench stands on the ground");
     }
 
     private static void CheckTriangleIntegrity(Mesh mesh, string label)
