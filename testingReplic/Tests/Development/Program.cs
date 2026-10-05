@@ -29,6 +29,10 @@ internal static class Program
     private static string Land(CityBuildingDefinition definition, int district, float x, float z, int turn) => null;
     private static void Main()
     {
+        var upgradedCrew = GameCatalog.CreateNew(Now);
+        upgradedCrew.excavators = upgradedCrew.bulldozers = 12;
+        Check(RubbleEconomy.ClearingSeconds(upgradedCrew, null) == 60,
+            "Building work lasts exactly one minute even with upgraded or multiple machines.");
         Catalog();
         PerformancePresentationChecks.Run(Check);
         ActiveWorkPresentationChecks.Run(Check);

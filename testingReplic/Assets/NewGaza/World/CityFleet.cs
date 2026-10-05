@@ -330,9 +330,9 @@ namespace NewGaza
             if (roadsConfigured && !trackedDestinationInitialized)
             {
                 SetPose(excavator, depot + VehicleOffset(
-                    new Vector3(0f, depotExcavatorRootOffsetModel, 0f)), Vector3.zero);
+                    new Vector3(0f, depotExcavatorRootOffsetModel, 5.8f)), Vector3.zero);
                 SetPose(bulldozer, depot + VehicleOffset(
-                    new Vector3(0f, depotDozerRootOffsetModel, 0f)), Vector3.zero);
+                    new Vector3(0f, depotDozerRootOffsetModel, -5.1f)), Vector3.zero);
                 trackedDestinationInitialized = true;
                 trackedDestinationClearing = false;
             }
@@ -852,9 +852,8 @@ namespace NewGaza
             roadTripRoute = roadsConfigured
                 ? roadNetwork.FindEquipmentRoute(tripRoute[0], tripRoute[1], roadSpeedMultiplier)
                 : null;
-            tripRouteLength = roadsConfigured
-                ? (roadTripRoute == null ? 0f : roadTripRoute.Length)
-                : Vector3.Distance(tripRoute[0], tripRoute[1]);
+            tripRouteLength = roadTripRoute != null
+                ? roadTripRoute.Length : Vector3.Distance(tripRoute[0], tripRoute[1]);
             if (roadsConfigured)
                 truckRouteStatus = "ستسلك الشاحنة الطريق المفيد ثم تتابع مباشرةً خارج الطريق إلى الهدف.";
         }
@@ -912,6 +911,9 @@ namespace NewGaza
 
         private void BeginTruckReassignment(bool toWork)
         {
+            // This plan consumes the queued destination change. Leaving it set
+            // makes arrival repeatedly start another zero-length turn/trip.
+            pendingRouteRebuild = false;
             truckReassignToWork = toWork;
             if (roadsConfigured)
             {
@@ -989,7 +991,6 @@ namespace NewGaza
             if (roadsConfigured && roadTripRoute == null)
             {
                 truckRouteStatus = "لا يوجد طريق مفيد؛ الشاحنة تتحرك مباشرةً ببطء إلى المستودع.";
-                return;
             }
             tripDistance = 0f;
             tripClock = 0f;
@@ -1005,9 +1006,7 @@ namespace NewGaza
         {
             if (roadsConfigured && roadTripRoute == null)
             {
-                truckTripState = TruckTripState.ParkedAtDepot;
                 truckRouteStatus = "لا يوجد طريق مفيد؛ الشاحنة تتحرك مباشرةً ببطء إلى موقع العمل.";
-                return;
             }
             tripDistance = 0f;
             tripClock = 0f;
@@ -1097,10 +1096,10 @@ namespace NewGaza
                 ? depot + VehicleOffset(new Vector3(.3f,EquipmentMotion.WorkRootHeightModel,5.6f))
                 : jobCenter + VehicleOffset(new Vector3(0f,EquipmentMotion.WorkRootHeightModel,0f));
             Vector3 excavatorTarget = clearing ? work :
-                depot + VehicleOffset(new Vector3(0f,depotExcavatorRootOffsetModel,0f));
+                depot + VehicleOffset(new Vector3(0f,depotExcavatorRootOffsetModel,5.8f));
             Vector3 dozerTarget = clearing
                 ? work + VehicleOffset(new Vector3(1.55f,dozerWorkRootOffsetModel,-.48f))
-                : depot + VehicleOffset(new Vector3(0f,depotDozerRootOffsetModel,0f));
+                : depot + VehicleOffset(new Vector3(0f,depotDozerRootOffsetModel,-5.1f));
             bool destinationChanged = !trackedDestinationInitialized ||
                 trackedDestinationClearing != clearing ||
                 Vector3.Distance(lastExcavatorRoadTarget, excavatorTarget) > .01f ||
@@ -1255,6 +1254,11 @@ namespace NewGaza
                         if (roadReassignTravel)
                         {
                             roadReassignTravel = false;
+                            if (pendingRouteRebuild)
+                            {
+                                BeginTruckReassignment(stage == JobStage.Clearing);
+                                break;
+                            }
                             CreateRoute();
                         }
                         BeginTruckTurn(true);
@@ -1324,6 +1328,11 @@ namespace NewGaza
                         if (roadReassignTravel)
                         {
                             roadReassignTravel = false;
+                            if (pendingRouteRebuild)
+                            {
+                                BeginTruckReassignment(stage == JobStage.Clearing);
+                                break;
+                            }
                             CreateRoute();
                         }
                         BeginTruckTurn(false);

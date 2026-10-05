@@ -42,6 +42,12 @@ internal static class Program
         try
         {
             bool skipExport = args.Contains("--no-export", StringComparer.Ordinal);
+            Console.WriteLine("PASS equipment work cycle: " + EquipmentWorkCycleChecks.Run() +
+                " assertions (native API fixture; no Unity execution or exports).");
+            if (args.Contains("--work-cycle-only", StringComparer.Ordinal))
+            {
+                return 0;
+            }
             Console.WriteLine("PASS equipment dust: " + EquipmentDustChecks.Run() + " assertions.");
             Console.WriteLine("PASS equipment steering: " + EquipmentTrackSteeringChecks.Run() + " assertions.");
             MotionMetrics motion = CheckMotionContracts();

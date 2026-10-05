@@ -26,11 +26,13 @@
     <Compile Include="EquipmentDustChecks.cs" />
     <Compile Include="EquipmentTrackSteeringChecks.cs" />
     <Compile Include="EquipmentPersistenceChecks.cs" />
+    <Compile Include="EquipmentWorkCycleChecks.cs" />
     <Compile Include="UnityStubs.cs" />
     <Compile Include="Program.cs" />
     <None Include="../../Assets/NewGaza/Resources/GazaBasemap.json" Link="GazaBasemap.json"
           CopyToOutputDirectory="PreserveNewest" />
     <None Include="../../../exports/models/Gaza-City-Production-Placement.json"
+          Condition="Exists('../../../exports/models/Gaza-City-Production-Placement.json')"
           Link="Gaza-City-Production-Placement.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

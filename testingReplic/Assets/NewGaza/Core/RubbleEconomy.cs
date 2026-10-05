@@ -21,9 +21,9 @@ namespace NewGaza.Core
         }
         public static long ClearingSeconds(GameState state, RubbleSiteState site)
         {
-            double crew = Math.Sqrt(EquipmentEconomy.Capacity(state, "excavator") *
-                EquipmentEconomy.Capacity(state, "bulldozer"));
-            return Math.Max(30, (long)Math.Ceiling(60 / crew)); // One minute with starter equipment, after arrival.
+            // Work lasts one full minute after actual crew arrival, regardless
+            // of owned/upgraded capacity. Travel is a separate phase.
+            return 60;
         }
         public static long HaulingSeconds(GameState state) =>
             Math.Max(30, (long)Math.Ceiling(90 / EquipmentEconomy.Capacity(state, "truck")));
