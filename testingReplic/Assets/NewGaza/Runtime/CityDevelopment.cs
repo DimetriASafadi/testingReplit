@@ -43,7 +43,15 @@ namespace NewGaza
         public string SelectedSite => selectedSite;
         public string SelectedBuilding => selectedBuilding;
         public Vector3 CentralFactoryMapPosition => world.CentralDepotPosition;
-        internal CityFleet ActiveFleet => world.Fleet;
+        internal CityFleet ActiveFleet => world.FleetForSite(selectedSite);
+        internal int VisibleFleetCount => world.FleetCount;
+        internal CityFleet VisibleFleet(int index) => world.FleetAt(index);
+        internal Vector3 SiteWorkPoint(string id) => Parcel(id)?.position ?? WorkPosition;
+        internal Vector3 SiteDepotPoint(string id)
+        {
+            var building = Rules.Building(id);
+            return building != null ? DepotPoint(building) : DepotPosition;
+        }
         internal Material FactoryHighlightMaterial => world.DevelopmentGeometry.Material(
             "recycling factory halo", new Color(.1f, 1f, .45f), emission: 1.2f);
 
@@ -103,6 +111,8 @@ namespace NewGaza
             ui.Initialize(this, session);
             session.Economy.ClearingCrewReady = () => world.Fleet.WorkCrewReady;
             session.Economy.HaulingCrewReady = () => world.Fleet.DepotCrewReady;
+            session.Economy.SiteCrewReady = job => world.FleetForJob(job)?.WorkCrewReady == true;
+            session.Economy.SiteDepotReady = job => world.FleetForJob(job)?.DepotCrewReady == true;
             session.Economy.LegacyLandReady = LegacyLandReady;
             session.Changed += Refresh;
             Refresh();
@@ -383,17 +393,17 @@ namespace NewGaza
             if (!session.Ready) { ClearFeedback("انتظر اكتمال تحميل اللعبة أولاً"); return; }
             var parcel = Parcel(selectedSite);
             if (parcel == null) { ClearFeedback("اختر مبنى مهدّمًا على الخريطة أولاً"); return; }
-            if (session.State.jobStage != JobStage.Idle)
-            {
-                // Never restart or overwrite saved work just because another site was selected.
-                FocusActiveWork();
-                ClearFeedback("هناك مهمة جارية؛ انتظر وصول الآليات والإزالة ثم النقل والتدوير. تم عرض الموقع الجاري بدل بدء مهمة أخرى.");
-                return;
-            }
             if (session.State.factoryLevel == 0)
             { ClearFeedback("ابنِ مصنع إعادة تدوير وأكمل بناءه أولاً"); return; }
             if (session.State.excavators == 0 || session.State.bulldozers == 0 || session.State.trucks == 0)
             { ClearFeedback("اشترِ المعدات اللازمة: حفار وجرافة وشاحنة نقل"); return; }
+            if (RubbleDispatches.ForSite(session.State, selectedSite) != null ||
+                RubbleDispatches.AvailableTeams(session.State) == 0)
+            {
+                FocusActiveWork(selectedSite);
+                ClearFeedback("هذا الفريق مشغول؛ يمكن إرسال فريق زائد إلى موقع آخر، وتعود إتاحة الفريق الحالي بعد وصوله للمصنع.");
+                return;
+            }
             string depot = null; float shortest = float.MaxValue;
             Action<string, Vector3> consider = (id, position) =>
             {
@@ -413,7 +423,6 @@ namespace NewGaza
             {
                 var result = Rules.Clear(idToClear, depot, session.Now);
                 ui.ShowWorkFeedback(result.message);
-                if (result.success) world.Fleet.BeginDepotDispatch();
                 return result;
             });
         }
@@ -424,8 +433,21 @@ namespace NewGaza
             session.Notify(message);
         }
 
-        public void FocusActiveWork()
+        public void FocusActiveWork(string siteId = null)
         {
+            var dispatch = RubbleDispatches.ForSite(session.State, siteId ?? selectedSite);
+            if (dispatch == null && RubbleDispatches.Jobs(session.State).Length > 0)
+                dispatch = RubbleDispatches.Jobs(session.State)[0];
+            if (dispatch != null)
+            {
+                Cancel(); ui.CloseStore();
+                var target = Parcel(dispatch.siteId);
+                selectedSite = dispatch.siteId; selectedBuilding = null;
+                FocusDistrict = Rules.Site(dispatch.siteId).district;
+                session.SelectPlot(-1);
+                cameraControl.FocusWorkSite(SiteWorkPoint(dispatch.siteId), target?.width ?? .4f, target?.depth ?? .4f);
+                ui.ShowActiveWorkLocation(); return;
+            }
             if (session.State.jobStage == JobStage.Idle)
             { session.Notify("لا توجد مهمة إزالة دمار جارية الآن"); return; }
             Cancel();
@@ -445,6 +467,7 @@ namespace NewGaza
             if (item == null) return false;
             if (item.kind == CityActivityKind.Rubble)
             {
+                if (item.siteId != null) { point = SiteWorkPoint(item.siteId); return true; }
                 if (session.State.jobStage == JobStage.Idle) return false;
                 point = WorkPosition; return true;
             }
@@ -456,7 +479,7 @@ namespace NewGaza
 
         public void FocusActivity(CityActivityItem item)
         {
-            if (item != null && item.kind == CityActivityKind.Rubble) { FocusActiveWork(); return; }
+            if (item != null && item.kind == CityActivityKind.Rubble) { FocusActiveWork(item.siteId); return; }
             if (!TryGetActivityPosition(item, out var point))
             { session.Notify("لم يعد لهذا الحدث موقع متاح؛ افتح الأحداث لتحديث القائمة"); return; }
             if (!string.IsNullOrEmpty(item.buildingId))
@@ -475,7 +498,7 @@ namespace NewGaza
 
         public void FocusMachine(int index)
         {
-            if (!world.Fleet.TryGetMachineAudioState(index, out var point, out _, out _, out _))
+            if (!ActiveFleet.TryGetMachineAudioState(index, out var point, out _, out _, out _))
             { session.Notify("هذه الآلية غير موجودة الآن على الخريطة"); return; }
             ClearSelection(); ui.CloseStore();
             cameraControl.FocusWorkSite(point, .6f, .6f);
@@ -575,6 +598,12 @@ namespace NewGaza
             if (session != null) session.Changed -= Refresh;
             buildings?.Dispose();
             if (session != null && session.Economy != null) session.Economy.ClearingCrewReady = null;
+            if (session != null && session.Economy != null)
+            {
+                session.Economy.HaulingCrewReady = null;
+                session.Economy.SiteCrewReady = null;
+                session.Economy.SiteDepotReady = null;
+            }
             if (session != null && session.Economy != null) session.Economy.LegacyLandReady = null;
         }
     }

@@ -47,7 +47,7 @@ internal static class Program
             {
                 foreach (string failure in Failures) Console.Error.WriteLine(failure);
                 if (Failures.Count == 0)
-                    Console.WriteLine("PASS: HUD activity visibility compiles and passes all 16 visibility cases.");
+                    Console.WriteLine("PASS: HUD activity visibility compiles and passes all 32 visibility cases, including parallel crews.");
                 return Failures.Count == 0 ? 0 : 1;
             }
             CheckContracts(roots);
@@ -81,12 +81,13 @@ internal static class Program
                 saveCheckpoint.Contains("if(Ready)SaveCheckpoint(true)", StringComparison.Ordinal) &&
                 asyncStore.Contains("GameStateSnapshot.Capture(liveState)", StringComparison.Ordinal),
                 "Zoom/autosaves must snapshot off-thread work, while suspension/quit flush the latest state.");
-            Require(fleetMarkers.Contains("fleet.TryGetMachineAudioState(index,outvarworldPosition", StringComparison.Ordinal) &&
+            Require(fleetMarkers.Contains("fleet.TryGetMachineAudioState(index%3,outvarworldPosition", StringComparison.Ordinal) &&
+                fleetMarkers.Contains("development.VisibleFleet(index/3)", StringComparison.Ordinal) &&
                 fleetMarkers.Contains("FleetMarkerPresentation.Opacity(mapCamera.orthographicSize)", StringComparison.Ordinal) &&
                 fleetMarkers.Contains("image.raycastTarget=false", StringComparison.Ordinal) &&
                 fleetMarkers.Contains("CityHudIcons.Icon.Excavator", StringComparison.Ordinal) &&
                 fleetMarkers.Contains("CityHudIcons.Icon.Bulldozer", StringComparison.Ordinal),
-                "Machine markers must track actual active fleet transforms, fade with zoom, distinguish roles and never block map clicks.");
+                "Machine markers must track every independent fleet's actual transforms, fade with zoom, distinguish roles and never block map clicks.");
             string clearingUi = Compact(roots["UI/CityDevelopmentUI.cs"].ToFullString());
             Require(clearingUi.Contains("actionCanvas.overrideSorting=true;actionCanvas.sortingOrder=150", StringComparison.Ordinal) &&
                 clearingUi.Contains("actionPanel.gameObject.AddComponent<GraphicRaycaster>()", StringComparison.Ordinal) &&

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace NewGaza.Core
 {
-    public sealed class EconomyService
+    public sealed partial class EconomyService
     {
         private const long DaySeconds = 86400;
         private const int MaximumFleet = 1000;
@@ -100,6 +100,9 @@ namespace NewGaza.Core
             ValidateState();
             long effective = Math.Max(now, State.lastSeenUtc);
             EquipmentEconomy.Ensure(State);
+            TickRubbleDispatches(effective);
+            if (State.jobStage == JobStage.Hauling || State.jobStage == JobStage.Recycling)
+                RubbleDispatches.CleanSite(State, RubbleEconomy.Active(State));
             bool waitingForCrew = false;
             // During live play the actual return, not an arbitrary hauling timer,
             // determines when processing may finish. Offline saves keep their deadline.
@@ -123,6 +126,7 @@ namespace NewGaza.Core
                 long boundary = State.jobFinishUtc;
                 if (State.jobStage == JobStage.Clearing)
                 {
+                    RubbleDispatches.CleanSite(State, RubbleEconomy.Active(State));
                     State.jobStage = JobStage.Hauling;
                     State.jobFinishUtc = AddTime(boundary, HaulingSeconds());
                 }
@@ -147,7 +151,7 @@ namespace NewGaza.Core
                     AddStock(yield.concrete, yield.iron, yield.wood, yield.other);
                     State.coins += reward;
                     var district = State.districts[State.jobDistrict];
-                    if (district.clearedLoads < GameCatalog.Districts[State.jobDistrict].rubbleLoads)
+                    if (site == null && district.clearedLoads < GameCatalog.Districts[State.jobDistrict].rubbleLoads)
                         district.clearedLoads++;
                     CityDevelopmentService.CompleteSalvage(State);
                     State.jobStage = JobStage.Idle;
@@ -240,7 +244,7 @@ namespace NewGaza.Core
             var unit = Array.Find(State.equipmentUnits, u => u.id == unitId);
             if (unit == null) return ActionResult.Fail("المعدة غير موجودة");
             if (unit.level >= 4) return ActionResult.Fail("اكتملت الترقيات الثلاث لهذه الآلة");
-            if (State.jobStage != JobStage.Idle) return ActionResult.Fail("انتظر انتهاء العقد قبل ترقية المعدات");
+            if (RubbleDispatches.Busy(State, unitId)) return ActionResult.Fail("انتظر وصول هذه الآلة إلى المصنع قبل ترقيتها");
             long cost = EquipmentEconomy.UpgradeCost(unit);
             if (!CanPay(cost, 0, 0)) return ActionResult.Fail("الرصيد لا يكفي لترقية المعدات");
             State.coins -= cost;
@@ -260,6 +264,8 @@ namespace NewGaza.Core
                 return ActionResult.Fail(State.jobStage == JobStage.Recycling && State.jobFinishUtc <= State.lastSeenUtc
                     ? "اكتمل التدوير وينتظر مساحة في المخزن؛ بع بعض المواد لاستلام الإنتاج"
                     : "هناك عقد إزالة ونقل وتدوير قيد التنفيذ");
+            if (Array.Exists(RubbleDispatches.Jobs(State), j => j.stage != JobStage.Recycling))
+                return ActionResult.Fail("استخدم اختيار مبنى مهدّم لإرسال فريق مستقل؛ توجد فرق محجوزة على الخريطة");
             if (State.factoryLevel == 0)
                 return ActionResult.Fail("ابنِ مصنع إعادة تدوير وأكمل بناءه أولاً");
             if (State.excavators == 0 || State.trucks == 0 || State.bulldozers == 0)

@@ -17,7 +17,7 @@ internal static class ClearingClickChecks
                 .Where(method => names.Contains(method.Identifier.ValueText))
                 .Select(method => method.ToFullString()));
         string bridge = Harness.Replace("CONTROLLER_METHODS", Methods("Runtime/CityDevelopment.cs",
-            "StartClear", "Parcel", "ClearFeedback", "FocusActiveWork", "FocusActivity", "FocusMachine", "TryGetActivityPosition"))
+             "StartClear", "Parcel", "ClearFeedback", "FocusActiveWork", "FocusActivity", "FocusMachine", "TryGetActivityPosition", "SiteWorkPoint"))
             .Replace("CAMERA_METHODS", Methods("Runtime/CityCamera.cs", "FocusWorkSite", "FocusDistrictView"))
             .Replace("UI_METHODS", Methods("UI/CityDevelopmentUI.cs", "DoAction", "ShowWorkFeedback"));
         var trees = roots.Where(pair => pair.Key.StartsWith("Core/", StringComparison.Ordinal))
@@ -90,10 +90,11 @@ public sealed class CityDevelopment {
  public CityDevelopmentUI ui; public string selectedSite,selectedBuilding;
  public int FocusDistrict; public FixtureCamera cameraControl=new FixtureCamera();
  public Vector3 WorkPosition=>Parcel(Rules.Data.activeRubbleId)?.position ?? new Vector3(0,0,0);
+ public FixtureFleet ActiveFleet=>world.Fleet;
  public void Cancel() { }
  public void ClearSelection() { selectedSite=selectedBuilding=null; }
  public CityDevelopmentParcel[] parcels=Array.Empty<CityDevelopmentParcel>();
- public CityDevelopmentParcel ParcelForTest()=>Parcel(Rules.Data.activeRubbleId);
+ public CityDevelopmentParcel ParcelForTest()=>Parcel(selectedSite);
  public string SelectedSite=>selectedSite; public string SelectedBuilding=>selectedBuilding;
  public bool Placing=>false; public void Confirm() { throw new Exception(""unexpected placement""); }
  public void BuildOnSelectedLand() { builtOnCleanLand=true; } public bool builtOnCleanLand;
@@ -136,36 +137,37 @@ public static class ClickScenarios {
   foreach(var kind in new[]{""excavator"",""bulldozer"",""truck""})
    Check(c.session.Economy.BuyEquipment(kind,c.session.Now).success,""buy actual equipment"");
   c.ui.Click();
-  Check(c.world.Fleet.dispatches==1 && c.session.saves==1,""real UI click starts and saves one dispatch"");
-  Check(c.Rules.Data.activeRubbleId==""background:click"" && c.session.State.jobStage==JobStage.Clearing &&
-   !c.Rules.Data.crewArrived,""selected background site becomes a traveling active job"");
-  Check(c.ui.workFeedback.Contains(""انطلقت"") && c.ui.feedbackSite==c.selectedSite,""success visible in clicked site panel"");
-  long finish=c.session.State.jobFinishUtc, coins=c.session.State.coins;
+   Check(c.Rules.Data.dispatches.Length==1 && c.session.saves==1,""real UI click starts and saves one dispatch"");
+   var job=c.Rules.Data.dispatches[0];
+   Check(job.siteId==""background:click"" && job.stage==JobStage.Clearing &&
+    !job.crewArrived,""selected background site becomes a traveling active job"");
+   Check(c.ui.workFeedback.Contains(""فريق مستقل"") && c.ui.feedbackSite==c.selectedSite,""success visible in clicked site panel"");
+   long finish=job.finishUtc, coins=c.session.State.coins;
   c.ui.Click();
-  Check(c.world.Fleet.dispatches==1 && c.session.State.jobFinishUtc==finish,""same-site repeat never resets dispatch or timer"");
+   Check(c.Rules.Data.dispatches.Length==1 && job.finishUtc==finish,""same-site repeat never resets dispatch or timer"");
   c.selectedSite=""background:other""; c.ui.Click();
-  Check(c.selectedSite==""background:click"" && c.Rules.Data.activeRubbleId==c.selectedSite &&
-   c.world.Fleet.dispatches==1 && c.session.State.coins==coins,""busy click shows saved active job without replacing it"");
+   Check(c.selectedSite==""background:click"" && job.siteId==c.selectedSite &&
+    c.Rules.Data.dispatches.Length==1 && c.session.State.coins==coins,""busy click shows saved active job without replacing it"");
   var active=c.ParcelForTest();
   Check(c.cameraControl.targetFocus.x==active.position.x && c.cameraControl.targetFocus.z==active.position.z &&
    c.cameraControl.targetZoom>=.9f && c.cameraControl.targetZoom<10 &&
    c.cameraControl.saveViewAt==Time.unscaledTime+.25f,""actual busy-click camera method focuses active site, close zoom and saved view"");
   foreach(var stage in new[]{JobStage.Clearing,JobStage.Hauling,JobStage.Recycling}) {
-   c.session.State.jobStage=stage; c.selectedSite=""background:other""; c.FocusActiveWork();
-   Check(c.selectedSite==""background:click"" && c.session.State.jobStage==stage &&
-    c.session.State.jobFinishUtc==finish && c.session.State.coins==coins && c.world.Fleet.dispatches==1,
+    job.stage=stage; c.selectedSite=""background:other""; c.FocusActiveWork();
+    Check(c.selectedSite==""background:click"" && job.stage==stage &&
+     job.finishUtc==finish && c.session.State.coins==coins && c.session.saves==1,
     ""locate button across phases never spends money, restarts timer or dispatches new work"");
   }
-  c.session.State.jobStage=JobStage.Idle; c.FocusActiveWork();
-  Check(c.session.message.Contains(""لا توجد"") && c.world.Fleet.dispatches==1,""idle locator reports no active work without dispatching"");
+   c.Rules.Data.dispatches=Array.Empty<RubbleDispatchState>(); c.FocusActiveWork();
+   Check(c.session.message.Contains(""لا توجد"") && c.session.saves==1,""idle locator reports no active work without dispatching"");
   c.FocusActivity(new CityActivityItem {kind=CityActivityKind.ProjectConstruction,projectId=""known"",district=0});
   Check(c.cameraControl.targetFocus.x==70 && c.cameraControl.targetFocus.z==80 &&
-   c.session.State.coins==coins && c.world.Fleet.dispatches==1,""unified event locator uses native project anchor without spending or dispatching"");
+    c.session.State.coins==coins && c.session.saves==1,""unified event locator uses native project anchor without spending or dispatching"");
   c.FocusActivity(new CityActivityItem {kind=CityActivityKind.ProjectConstruction,projectId=""missing"",district=0});
   Check(c.session.message.Contains(""لم يعد""),""expired project event reports unavailable instead of jumping to false coordinates"");
   c.FocusMachine(1);
   Check(c.cameraControl.targetFocus.x==91 && c.cameraControl.targetFocus.z==60 &&
-   c.session.State.coins==coins && c.world.Fleet.dispatches==1,""machine locator uses current machine transform and never restarts work"");
+    c.session.State.coins==coins && c.session.saves==1,""machine locator uses current machine transform and never restarts work"");
   c.world.Fleet.active=false;c.FocusMachine(1);
   Check(c.session.message.Contains(""غير موجودة""),""inactive machine cannot create a phantom location"");
   c.FocusActivity(new CityActivityItem {kind=CityActivityKind.DistrictReward,district=2});
@@ -183,7 +185,7 @@ public static class ClickScenarios {
   foreach(var kind in new[]{""excavator"",""bulldozer"",""truck""})
    Check(c.session.Economy.BuyEquipment(kind,c.session.Now).success,""equip player-placed depot"");
   c.ui.Click();
-  Check(c.world.Fleet.dispatches==1 && c.Rules.Data.dispatchDepotId==factory.id,""actual click dispatches from player factory, not unavailable central depot"");
+   Check(c.Rules.Data.dispatches.Length==1 && c.Rules.Data.dispatches[0].depotId==factory.id,""actual click dispatches from player factory, not unavailable central depot"");
   Console.WriteLine(""PASS production clearing click/dispatch methods: ""+checks+"" assertions (bounded Unity/road/UI fixture)."");
  }
 }}";

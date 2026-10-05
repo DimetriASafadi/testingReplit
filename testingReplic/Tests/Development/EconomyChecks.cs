@@ -36,6 +36,7 @@ internal static class EconomyChecks
         economy.Tick(state.lastSeenUtc + 600);
         check(state.coins == balance && !site.cleared, "travel/wait time does not award money before completion");
         economy.ClearingCrewReady = () => true;
+        economy.HaulingCrewReady = () => true;
         economy.Tick(state.lastSeenUtc);
         economy.Tick(state.lastSeenUtc + RubbleEconomy.TotalSeconds(state, site) + 1);
         check(site.cleared && state.jobStage == JobStage.Idle && state.coins == balance, "completion gives resources, not automatic money");
@@ -96,14 +97,17 @@ internal static class EconomyChecks
         var overflow = new EconomyService(JsonSerializer.Deserialize<GameState>(json, options));
         var pending = new CityDevelopmentService(overflow);
         overflow.ClearingCrewReady = () => true;
+        overflow.HaulingCrewReady = () => true;
         var next = pending.Site(CityDevelopmentService.SiteId(0, 1));
         check(pending.Clear(next.id, pending.Data.buildings[0].id, overflow.State.lastSeenUtc).success, "second authentic contract");
         overflow.Tick(overflow.State.lastSeenUtc);
-        overflow.Tick(overflow.State.jobFinishUtc);
-        overflow.Tick(overflow.State.jobFinishUtc);
+        long finish = pending.Data.dispatches[0].finishUtc;
+        overflow.HaulingCrewReady = () => false;
+        overflow.Tick(finish);
         int concreteBefore = overflow.State.stock.concrete;
         overflow.State.coins = long.MaxValue;
-        overflow.Tick(overflow.State.jobFinishUtc);
+        overflow.HaulingCrewReady = () => true;
+        overflow.Tick(finish);
         check(next.cleared && overflow.State.jobStage == JobStage.Idle &&
             overflow.State.stock.concrete > concreteBefore && overflow.State.coins == long.MaxValue,
             "full wallet does not block resource delivery or overflow currency");

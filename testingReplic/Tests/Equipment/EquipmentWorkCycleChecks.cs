@@ -19,6 +19,7 @@ internal static class EquipmentWorkCycleChecks
             var material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
             CheckCycle(geometry, material, roads, false);
             CheckCycle(geometry, material, roads, true);
+            assertions += EquipmentTeamsAndCornersChecks.Run(geometry, material, roads);
             UnityEngine.Object.Destroy(material);
         }
         return assertions;

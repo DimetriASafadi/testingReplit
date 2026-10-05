@@ -137,6 +137,18 @@ namespace NewGaza.Core
         public string activeRubbleId;
         public string dispatchDepotId;
         public bool crewArrived;
+        public RubbleDispatchState[] dispatches = new RubbleDispatchState[0];
+    }
+
+    [Serializable]
+    public partial class RubbleDispatchState
+    {
+        public string id, siteId, depotId, excavatorId, truckId, bulldozerId;
+        public int slot;
+        public JobStage stage = JobStage.Clearing;
+        public bool crewArrived;
+        public long startedUtc, finishUtc;
+        public FleetSaveState fleet;
     }
 
     [Serializable]

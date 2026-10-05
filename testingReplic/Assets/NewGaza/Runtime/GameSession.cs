@@ -79,9 +79,12 @@ namespace NewGaza
                 Development = new GameObject("Free building and local rubble work").AddComponent<CityDevelopment>();
                 Development.transform.SetParent(transform, false);
                 Development.Initialize(this, world, cityCamera);
+                world.Refresh();
+                world.RestoreFleets(State);
+                // Restore real roots BEFORE asking whether a saved crew is home.
+                // Freshly built parked models are not proof of physical return.
                 Economy.Tick(Now);
                 world.Refresh();
-                world.Fleet.RestoreSave(State);
                 Audio = new GameObject("Camera-focused city soundscape").AddComponent<CityAudio>();
                 Audio.transform.SetParent(transform, false);
                 Audio.Initialize(this, world, cityCamera, cam);
@@ -136,11 +139,12 @@ namespace NewGaza
                 var stage = State.jobStage;
                 bool arrived = State.development != null && State.development.crewArrived;
                 int completed = CompletedBuildingCount();
+                string dispatches = DispatchKey();
                 Economy.Tick(Now);
                 Changed?.Invoke();
                 if (stage != State.jobStage ||
                     arrived != (State.development != null && State.development.crewArrived) ||
-                    completed != CompletedBuildingCount())
+                    completed != CompletedBuildingCount() || dispatches != DispatchKey())
                     Save();
             }
             if (Time.unscaledTime >= nextSave)
@@ -163,6 +167,13 @@ namespace NewGaza
             }
             else Audio?.PlayFailure();
             Notify(result.message);
+        }
+        private string DispatchKey()
+        {
+            var key = new System.Text.StringBuilder();
+            foreach (var job in RubbleDispatches.Jobs(State))
+                key.Append(job.id).Append('|').Append(job.stage).Append('|').Append(job.crewArrived).Append('|').Append(job.finishUtc);
+            return key.ToString();
         }
 
         public void ChooseDistrict(int index)
@@ -236,7 +247,7 @@ namespace NewGaza
                 // Record wall-clock advancement before any lifecycle checkpoint.
                 Economy.Tick(Now);
                 if (cityCamera != null) cityCamera.CaptureSave();
-                if (world != null && world.Fleet != null) world.Fleet.CaptureSave(State);
+                if (world != null && world.Fleet != null) world.CaptureFleets(State);
                 GameSaveStore.Enqueue(State);
                 if (flush) GameSaveStore.FlushPending();
                 nextSave = Time.unscaledTime + 5;

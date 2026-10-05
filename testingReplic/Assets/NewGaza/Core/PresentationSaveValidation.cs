@@ -10,7 +10,10 @@ namespace NewGaza.Core
             var camera = state.camera;
             if (camera != null && !CameraValid(camera))
                 throw new InvalidOperationException("Invalid saved camera.");
-            var fleet = state.fleet;
+            ValidateFleet(state.fleet);
+        }
+        public static void ValidateFleet(FleetSaveState fleet)
+        {
             if (fleet == null) return;
             if (fleet.district < 0 || fleet.district >= GameCatalog.Districts.Length ||
                 fleet.stage < JobStage.Idle || fleet.stage > JobStage.Recycling)

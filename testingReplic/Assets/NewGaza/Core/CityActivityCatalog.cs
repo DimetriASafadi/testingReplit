@@ -6,7 +6,7 @@ namespace NewGaza.Core
     public enum CityActivityKind { Rubble, Construction, Income, ProjectConstruction, ProjectIncome, DistrictReward }
     public sealed class CityActivityItem
     {
-        public string key, title, status, buildingId, projectId;
+        public string key, title, status, buildingId, projectId, siteId;
         public CityActivityKind kind;
         public int district;
         public long finishUtc;
@@ -21,6 +21,15 @@ namespace NewGaza.Core
         {
             var items = new List<CityActivityItem>();
             if (state == null) return items;
+            foreach (var job in RubbleDispatches.Jobs(state))
+            {
+                var site = Array.Find(state.development.rubble, s => s.id == job.siteId);
+                items.Add(new CityActivityItem {
+                    key = "rubble:" + job.id, kind = CityActivityKind.Rubble, siteId = job.siteId,
+                    district = site.district, title = "فريق إزالة الدمار " + (job.slot + 1),
+                    status = RubbleDispatches.Status(job), finishUtc = job.crewArrived ? job.finishUtc : 0
+                });
+            }
             if (state.jobStage != JobStage.Idle)
                 items.Add(new CityActivityItem { key = "active-rubble", kind = CityActivityKind.Rubble,
                     district = state.jobDistrict, title = "مهمة إزالة الدمار",

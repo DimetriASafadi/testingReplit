@@ -202,16 +202,25 @@ namespace NewGaza
 
             Vector3 focus = cityCamera.AudioFocus;
             float zoom = CityAudioMix.SanitizeZoom(cityCamera.AudioZoom);
-            CityFleet fleet = world.Fleet;
             float attenuationSum = 0f;
             float nearestDistance = CityAudioMix.MaximumSourceDistance;
 
             for (int i = 0; i < machines.Length; i++)
             {
                 MachineState machine = machines[i];
-                machine.Active = fleet != null && fleet.TryGetMachineAudioState(i,
-                    out machine.Position, out machine.Load, out machine.Movement,
-                    out machine.Hydraulics);
+                machine.Active = false;
+                float best = -1f;
+                for (int slot = 0; slot < world.FleetCount; slot++)
+                {
+                    var fleet = world.FleetAt(slot);
+                    if (!fleet.TryGetMachineAudioState(i, out var point, out var load, out var movement, out var hydraulics))
+                        continue;
+                    float distance = CityAudioMix.HorizontalDistance(focus.x, focus.z, point.x, point.z);
+                    float score = CityAudioMix.FocusAttenuation(distance, zoom) * (.2f + load + movement);
+                    if (score <= best) continue;
+                    best = score; machine.Active = true;
+                    machine.Position = point; machine.Load = load; machine.Movement = movement; machine.Hydraulics = hydraulics;
+                }
                 if (machine.Active && IsFinite(machine.Position))
                 {
                     machine.Distance = CityAudioMix.HorizontalDistance(focus.x, focus.z,

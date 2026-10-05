@@ -12,6 +12,13 @@ namespace NewGaza
     /// </summary>
     public sealed class CityWorld : MonoBehaviour
     {
+        private CityFleetTeams fleetTeams;
+        internal CityFleet FleetForJob(RubbleDispatchState job) => fleetTeams?.ForJob(job);
+        internal CityFleet FleetForSite(string id) => fleetTeams?.ForSite(id) ?? fleet;
+        internal int FleetCount => fleetTeams?.Count ?? 1;
+        internal CityFleet FleetAt(int index) => fleetTeams != null ? fleetTeams.At(index) : fleet;
+        internal void CaptureFleets(GameState state) => fleetTeams?.Capture(state);
+        internal void RestoreFleets(GameState state) => fleetTeams?.Restore(state);
         private const float CityGroundY = -.09f;
 
         private sealed class PlotView
@@ -135,6 +142,16 @@ namespace NewGaza
                 string roadId = Roads.RoadIdUnder(point);
                 return roadId != null && RoadEconomy.GetLevel(session.State, roadId) == 2;
             });
+            fleetTeams = new GameObject("Independent salvage teams").AddComponent<CityFleetTeams>();
+            fleetTeams.transform.SetParent(cityRoot, false);
+            fleetTeams.Initialize(fleet, geometry, yellow, glass, dark, iron, teal, rubble, Roads,
+                id => RoadEconomy.SpeedMultiplier(RoadEconomy.GetLevel(session.State, id)),
+                point => {
+                    string id = Roads.RoadIdUnder(point);
+                    return id != null && RoadEconomy.GetLevel(session.State, id) == 2;
+                },
+                id => session.Development.SiteWorkPoint(id),
+                id => session.Development.SiteDepotPoint(id));
             session.Changed += Refresh;
             session.PlotSelected += SetSelectedPlot;
             selectedDistrict = -1;
@@ -671,10 +688,11 @@ namespace NewGaza
             ProjectState coastalRoad = FindProject(state.districts[districts.Length - 1],"road");
             completedCoastRoad.SetActive((coastalRoad != null && coastalRoad.completed) ||
                 state.districts[districts.Length - 1].rewardClaimed);
-            fleet.Refresh(state,
-                session.Development != null ? session.Development.WorkPosition :
-                    districts[Mathf.Clamp(state.jobDistrict,0,districts.Length - 1)].rubble.transform.position,
-                session.Development != null ? session.Development.DepotPosition : factorySite.transform.position);
+            if (session.Development != null && session.Development.Rules != null)
+                fleetTeams.Refresh(state, session.Development.WorkPosition, session.Development.DepotPosition);
+            else
+                fleet.Refresh(state, districts[Mathf.Clamp(state.jobDistrict,0,districts.Length - 1)].rubble.transform.position,
+                    factorySite.transform.position);
             factorySite.SetActive(state.development == null ||
                 (!state.development.requiresPlacedFactory && !state.development.dynamicFactoryProvided));
         }

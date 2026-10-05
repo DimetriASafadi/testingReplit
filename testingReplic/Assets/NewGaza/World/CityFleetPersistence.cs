@@ -43,6 +43,21 @@ namespace NewGaza
             hasTruckWorldSpeedSample = false;
             SnapshotMotion();
         }
+        internal void RestoreReturnWithoutSnapshot()
+        {
+            // A missing optional pose is not evidence that a reserved crew is
+            // safely home. Conservatively return from its last known work site.
+            excavator.localPosition = jobCenter + VehicleOffset(
+                new Vector3(0, EquipmentMotion.WorkRootHeightModel, 0));
+            bulldozer.localPosition = excavator.localPosition +
+                VehicleOffset(new Vector3(1.55f, dozerWorkRootOffsetModel, -.48f));
+            truck.localPosition = tripRoute[0];
+            lastExcavatorRoadTarget = excavator.localPosition + Vector3.up * 10;
+            lastBulldozerRoadTarget = bulldozer.localPosition + Vector3.up * 10;
+            excavatorOnRoad = bulldozerOnRoad = false;
+            excavatorDockedAtWork = bulldozerDockedAtWork = false;
+            BeginTruckReassignment(false);
+        }
 
         private static VehicleSaveState Capture(Transform root)
         {

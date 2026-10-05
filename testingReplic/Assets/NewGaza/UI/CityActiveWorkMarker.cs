@@ -19,7 +19,10 @@ namespace NewGaza
         private void UpdateActiveWorkMarker(Camera mapCamera)
         {
             var state = session.State;
-            bool hasWork = state.jobStage != JobStage.Idle;
+            var jobs = RubbleDispatches.Jobs(state);
+            var job = RubbleDispatches.ForSite(state, development.SelectedSite);
+            if (job == null && jobs.Length > 0) job = jobs[0];
+            bool hasWork = job != null || state.jobStage != JobStage.Idle;
             if (!hasWork || homeVisible || StoreOpen || (session.Hud != null && session.Hud.BlockingWindowVisible))
             {
                 if (activeWorkMarker != null && activeWorkMarker.gameObject.activeSelf)
@@ -27,12 +30,14 @@ namespace NewGaza
                 if (!hasWork) { markerWorkId = null; markerWorkDistrict = -1; }
                 return;
             }
-            string id = state.development?.activeRubbleId;
-            if (markerWorkDistrict != state.jobDistrict || markerWorkId != id)
+            string id = job?.siteId ?? state.development?.activeRubbleId;
+            int district = job != null ? development.Rules.Site(id).district : state.jobDistrict;
+            JobStage stage = job?.stage ?? state.jobStage;
+            if (markerWorkDistrict != district || markerWorkId != id)
             {
                 // Work-site geometry is stationary: avoid searching thousands of sites every frame.
-                markerWorkPosition = development.WorkPosition;
-                markerWorkDistrict = state.jobDistrict; markerWorkId = id;
+                markerWorkPosition = job != null ? development.SiteWorkPoint(id) : development.WorkPosition;
+                markerWorkDistrict = district; markerWorkId = id;
             }
             Vector3 screen = mapCamera.WorldToViewportPoint(markerWorkPosition + Vector3.up * .10f);
             if (screen.z <= 0 || screen.x < 0 || screen.x > 1 || screen.y < 0 || screen.y > 1)
@@ -47,11 +52,11 @@ namespace NewGaza
             RectTransformUtility.ScreenPointToLocalPointInRectangle(activeWorkMarkerLayer,
                 new Vector2(screen.x * Screen.width, screen.y * Screen.height), null, out var point);
             activeWorkMarker.anchoredPosition = point + new Vector2(0, 68);
-            activeWorkMarkerImage.sprite = factoryIcons.Get(state.jobStage == JobStage.Clearing ?
-                CityHudIcons.Icon.Excavator : state.jobStage == JobStage.Hauling ?
+            activeWorkMarkerImage.sprite = factoryIcons.Get(stage == JobStage.Clearing ?
+                CityHudIcons.Icon.Excavator : stage == JobStage.Hauling ?
                 CityHudIcons.Icon.Fleet : CityHudIcons.Icon.Recycling);
             activeWorkMarkerImage.color = new Color(1f, .80f, .18f, 1f);
-            string status = ActiveWorkPresentation.Status(state, session.Now);
+            string status = job != null ? RubbleDispatches.Status(job) : ActiveWorkPresentation.Status(state, session.Now);
             if (markerWorkStatus != status)
             {
                 markerWorkStatus = status;

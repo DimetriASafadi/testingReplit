@@ -119,9 +119,9 @@ internal static class Program
         string id = rules.Data.rubble[0].id;
         Check(rules.Clear(id, "central", Now).success, "Valid active job for reference checks");
         Check(DevelopmentSaveCompatibility.NormalizeForLoad(active) == null &&
-            active.development.activeRubbleId == id && active.development.dispatchDepotId == "central",
+            active.development.dispatches[0].siteId == id && active.development.dispatches[0].depotId == "central",
             "Valid active work references untouched");
-        active.development.dispatchDepotId = "";
+        active.development.dispatches[0].depotId = "";
         DevelopmentSaveCompatibility.NormalizeForLoad(active);
         Reject(() => GameSaveStore.Validate(active), "Active work missing required depot still rejected");
         var crew = GameCatalog.CreateNew(Now);
@@ -216,29 +216,37 @@ internal static class Program
         economy.ClearingCrewReady = () => false;
         string site = CityDevelopmentService.SiteId(0, 0);
         Check(rules.Clear(site, "central", Now).success, "Dispatch to chosen rubble");
-        state.fleet = Fleet(state);
+        var job = state.development.dispatches[0];
+        job.fleet = Fleet(state);
+        job.fleet.rubbleId = site; job.fleet.depotId = "central";
         GameSaveStore.Save(state);
         state = GameSaveStore.Load(Now + 10000, out _);
         economy = new EconomyService(state);
         rules = new CityDevelopmentService(economy);
         economy.ClearingCrewReady = () => false;
         economy.Tick(Now + 10000);
-        Check(!rules.Site(site).cleared && !state.development.crewArrived &&
-            state.stock.concrete == 10000 && state.development.dispatchDepotId == "central" &&
-            state.fleet.rubbleId == site, "Travel reopen retains target/depot and gives no remote clearance");
+        job = state.development.dispatches[0];
+        Check(!rules.Site(site).cleared && !job.crewArrived &&
+            state.stock.concrete == 10000 && job.depotId == "central" &&
+            job.fleet.rubbleId == site, "Travel reopen retains target/depot and gives no remote clearance");
         economy.ClearingCrewReady = () => true;
         economy.Tick(Now + 10001);
-        long deadline = state.jobFinishUtc;
-        Check(state.development.crewArrived && deadline > state.lastSeenUtc, "Arrival starts full duration");
-        state.fleet = Fleet(state);
+        long deadline = job.finishUtc;
+        Check(job.crewArrived && deadline > state.lastSeenUtc, "Arrival starts full duration");
         GameSaveStore.Save(state);
         state = GameSaveStore.Load(deadline - 1, out _);
         economy = new EconomyService(state);
         rules = new CityDevelopmentService(economy);
         economy.ClearingCrewReady = () => false;
         economy.Tick(deadline - 1);
-        Check(state.jobFinishUtc == deadline && state.jobStage == JobStage.Clearing, "Arrived clearing timer not reset on reopen");
+        job = state.development.dispatches[0];
+        Check(job.finishUtc == deadline && job.stage == JobStage.Clearing, "Arrived clearing timer not reset on reopen");
         economy.Tick(deadline + 10000);
+        Check(rules.Site(site).cleared && job.stage == JobStage.Hauling &&
+            RubbleDispatches.AvailableTeams(state) == 0 && state.stock.concrete == 10000,
+            "Offline work clears land but cannot fake physical return or unlock machines");
+        economy.SiteDepotReady = _ => true;
+        economy.Tick(state.lastSeenUtc);
         var yield = RubbleEconomy.Yield(state, rules.Site(site));
         long paid = 0; // Reload delivers materials, never their sale price automatically.
         Check(state.jobStage == JobStage.Idle && rules.Site(site).cleared &&

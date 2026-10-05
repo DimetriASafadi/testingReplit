@@ -12,6 +12,8 @@
     <Compile Include="../../Assets/NewGaza/Core/GameGeography.cs" Link="Core/GameGeography.cs" />
     <Compile Include="../../Assets/NewGaza/Core/RoadEconomy.cs" Link="Core/RoadEconomy.cs" />
     <Compile Include="../../Assets/NewGaza/World/CityFleet.cs" Link="World/CityFleet.cs" />
+    <Compile Include="../../Assets/NewGaza/World/CityFleetSteering.cs" Link="World/CityFleetSteering.cs" />
+    <Compile Include="../../Assets/NewGaza/World/CityFleetTeams.cs" Link="World/CityFleetTeams.cs" />
     <Compile Include="../../Assets/NewGaza/World/CityFleetPersistence.cs" Link="World/CityFleetPersistence.cs" />
     <Compile Include="../../Assets/NewGaza/World/CityFleetAppearance.cs" Link="World/CityFleetAppearance.cs" />
     <Compile Include="../../Assets/NewGaza/World/CityBasemap.cs" Link="World/CityBasemap.cs" />
@@ -27,6 +29,7 @@
     <Compile Include="EquipmentTrackSteeringChecks.cs" />
     <Compile Include="EquipmentPersistenceChecks.cs" />
     <Compile Include="EquipmentWorkCycleChecks.cs" />
+    <Compile Include="EquipmentTeamsAndCornersChecks.cs" />
     <Compile Include="UnityStubs.cs" />
     <Compile Include="Program.cs" />
     <None Include="../../Assets/NewGaza/Resources/GazaBasemap.json" Link="GazaBasemap.json"

@@ -37,23 +37,24 @@ internal static class SalvageScenarioChecks
         economy.HaulingCrewReady = () => returned;
         long coins = state.coins;
         check(rules.Clear(siteId, depot, state.lastSeenUtc).success, "dispatch from recycling factory");
+        var job = rules.Data.dispatches[0];
         economy.Tick(state.lastSeenUtc + 1000);
-        check(!rules.Data.crewArrived && state.jobStage == JobStage.Clearing && state.stock.concrete == 0, "travel does not count as site work");
+        check(!job.crewArrived && job.stage == JobStage.Clearing && state.stock.concrete == 0, "travel does not count as site work");
         arrived = true;
         economy.Tick(state.lastSeenUtc);
-        long finish = state.jobFinishUtc;
+        long finish = job.finishUtc;
         check(finish - state.lastSeenUtc == 60, "starter crew works a full minute after arrival");
         economy.Tick(finish - 1);
-        check(state.jobStage == JobStage.Clearing, "no early departure");
+        check(job.stage == JobStage.Clearing, "no early departure");
         economy.Tick(finish);
-        check(state.jobStage == JobStage.Hauling, "all machines enter return phase");
+        check(job.stage == JobStage.Hauling && rules.Site(siteId).cleared, "clean land before all machines return");
         economy.Tick(finish + 1000);
-        check(state.jobStage == JobStage.Hauling && state.stock.concrete == 0 && state.coins == coins, "return gate blocks resources and automatic cash");
+        check(job.stage == JobStage.Hauling && state.stock.concrete == 0 && state.coins == coins, "return gate blocks resources and automatic cash");
         check(!rules.Clear(CityDevelopmentService.SiteId(0, 1), depot, state.lastSeenUtc).success, "cannot redispatch while returning");
         var options = new JsonSerializerOptions { IncludeFields = true };
         var restored = new EconomyService(JsonSerializer.Deserialize<GameState>(JsonSerializer.Serialize(state, options), options));
-        check(restored.State.development.dispatchDepotId == depot &&
-            restored.State.development.activeRubbleId == siteId, "return target and source survive save reload");
+        check(restored.State.development.dispatches[0].depotId == depot &&
+            restored.State.development.dispatches[0].siteId == siteId, "return target and source survive save reload");
         returned = true;
         economy.Tick(state.lastSeenUtc + 2);
         check(rules.Site(siteId).cleared && state.jobStage == JobStage.Idle, "return completes exactly the selected site");

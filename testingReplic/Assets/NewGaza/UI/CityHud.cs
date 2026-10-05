@@ -378,7 +378,17 @@ namespace NewGaza
             districtLabel.SetText(GameCatalog.Districts[d].name + "   ·   " + Percent(session.Economy.Progress(d)) + " إنجاز");
             CityProgressMotion.Set(districtFill, session.Economy.Progress(d), d);
             var text = new StringBuilder();
-            if (s.jobStage == JobStage.Idle)
+            if (RubbleDispatches.Jobs(s).Length > 0)
+            {
+                text.Append("فرق متاحة: ").Append(RubbleDispatches.AvailableTeams(s));
+                foreach (var job in RubbleDispatches.Jobs(s))
+                {
+                    text.Append("\nفريق ").Append(job.slot + 1).Append(": ").Append(RubbleDispatches.Status(job));
+                    if (job.stage == JobStage.Clearing && job.crewArrived)
+                        text.Append(" · ").Append(TimeLeft(job.finishUtc - session.Now));
+                }
+            }
+            else if (s.jobStage == JobStage.Idle)
                 text.Append("فريق التدوير جاهز\n").Append("الركام المحلي: ").Append(s.districts[d].clearedLoads)
                     .Append(" / ").Append(GameCatalog.Districts[d].rubbleLoads).Append(" دفعات");
             else
@@ -403,7 +413,8 @@ namespace NewGaza
             header.Find("Show activity").GetComponentInChildren<ArabicLabel>().SetText(
                 "الأحداث");
             activity.gameObject.SetActive(!activityCollapsed &&
-                (s.jobStage != JobStage.Idle || liveConstructionCount > 0 || liveReadyCount > 0));
+                (s.jobStage != JobStage.Idle || RubbleDispatches.Jobs(s).Length > 0 ||
+                    liveConstructionCount > 0 || liveReadyCount > 0));
             RefreshTutorial();
             RefreshSelection();
             bool portrait = Screen.height > Screen.width;
@@ -1154,6 +1165,8 @@ namespace NewGaza
             var key = new StringBuilder(1024);
             foreach (var unit in s.equipmentUnits)
                 key.Append('|').Append(unit.id).Append(':').Append(unit.level);
+            foreach (var job in RubbleDispatches.Jobs(s))
+                key.Append('|').Append(job.id).Append(':').Append(job.stage).Append(':').Append(job.crewArrived).Append(':').Append(job.finishUtc);
             key.Append(s.selectedDistrict).Append('|').Append(s.coins).Append('|').Append(s.factoryLevel).Append('|')
                 .Append(s.excavators).Append('|').Append(s.trucks).Append('|').Append(s.bulldozers).Append('|').Append(s.equipmentLevel)
                 .Append('|').Append(s.stock.concrete).Append('|').Append(s.stock.iron).Append('|').Append(s.stock.wood).Append('|')

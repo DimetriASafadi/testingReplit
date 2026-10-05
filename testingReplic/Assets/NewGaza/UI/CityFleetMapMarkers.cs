@@ -7,21 +7,29 @@ namespace NewGaza
 {
     public sealed partial class CityDevelopmentUI
     {
-        private readonly RectTransform[] fleetMarkers = new RectTransform[3];
-        private readonly Image[] fleetMarkerImages = new Image[3];
-        private readonly ArabicLabel[] fleetMarkerLabels = new ArabicLabel[3];
-        private readonly float[] fleetMarkerOpacity = new float[3];
+        private RectTransform[] fleetMarkers = new RectTransform[3];
+        private Image[] fleetMarkerImages = new Image[3];
+        private ArabicLabel[] fleetMarkerLabels = new ArabicLabel[3];
+        private float[] fleetMarkerOpacity = new float[3];
         private RectTransform fleetMarkerLayer;
 
         private void UpdateFleetMarkers(Camera mapCamera)
         {
-            var fleet = development.ActiveFleet;
+            int count = development.VisibleFleetCount * 3;
+            if (fleetMarkers.Length < count)
+            {
+                System.Array.Resize(ref fleetMarkers, count);
+                System.Array.Resize(ref fleetMarkerImages, count);
+                System.Array.Resize(ref fleetMarkerLabels, count);
+                System.Array.Resize(ref fleetMarkerOpacity, count);
+            }
             bool hidden = homeVisible || StoreOpen || (session.Hud != null && session.Hud.BlockingWindowVisible);
             float targetAlpha = FleetMarkerPresentation.Opacity(mapCamera.orthographicSize);
-            for (int index = 0; index < 3; index++)
+            for (int index = 0; index < count; index++)
             {
+                var fleet = development.VisibleFleet(index / 3);
                 if (hidden || fleet == null ||
-                    !fleet.TryGetMachineAudioState(index, out var worldPosition, out _, out _, out _))
+                    !fleet.TryGetMachineAudioState(index % 3, out var worldPosition, out _, out _, out _))
                 {
                     if (fleetMarkers[index] != null && fleetMarkers[index].gameObject.activeSelf)
                         fleetMarkers[index].gameObject.SetActive(false);
@@ -59,14 +67,15 @@ namespace NewGaza
                 fleetMarkerLayer = Rect("Actual fleet positions / fading overhead markers", transform);
                 Stretch(fleetMarkerLayer); fleetMarkerLayer.SetAsFirstSibling();
             }
-            string name = index == 0 ? "حفارة" : index == 1 ? "شاحنة" : "جرافة";
+            int kind = index % 3;
+            string name = (kind == 0 ? "حفارة" : kind == 1 ? "شاحنة" : "جرافة") + " " + (index / 3 + 1);
             var marker = Rect("Fleet marker " + name, fleetMarkerLayer);
             marker.anchorMin = marker.anchorMax = marker.pivot = new Vector2(.5f, .5f);
             marker.sizeDelta = new Vector2(44, 44);
             var image = marker.gameObject.AddComponent<Image>();
             image.raycastTarget = false;
-            image.sprite = factoryIcons.Get(index == 0 ? CityHudIcons.Icon.Excavator :
-                index == 1 ? CityHudIcons.Icon.Fleet : CityHudIcons.Icon.Bulldozer);
+            image.sprite = factoryIcons.Get(kind == 0 ? CityHudIcons.Icon.Excavator :
+                kind == 1 ? CityHudIcons.Icon.Fleet : CityHudIcons.Icon.Bulldozer);
             var label = Label(marker, name, 12);
             label.alignment = TextAnchor.MiddleCenter;
             Box(label.rectTransform, -14, 44, 72, 22, false);

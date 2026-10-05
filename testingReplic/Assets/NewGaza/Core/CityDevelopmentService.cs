@@ -122,13 +122,7 @@ namespace NewGaza.Core
             }
             else if (State.factoryLevel == 0 || Data.dynamicFactoryProvided)
                 return ActionResult.Fail("المصنع المركزي غير متاح");
-            var result = economy.StartSalvage(site.district, now, siteId);
-            if (!result.success) return result;
-            Data.activeRubbleId = siteId;
-            Data.dispatchDepotId = depotId;
-            Data.crewArrived = false;
-            State.jobFinishUtc = State.lastSeenUtc + RubbleEconomy.ClearingSeconds(State, site);
-            return ActionResult.Ok("انطلقت الآليات إلى المبنى المهدّم عبر الشوارع؛ تبدأ الإزالة بعد وصولها");
+            return RubbleDispatches.Start(State, site, depotId);
         }
 
         public ActionResult Collect(string buildingId, long now)
@@ -263,7 +257,8 @@ namespace NewGaza.Core
                 throw new InvalidOperationException(error + " [development schema/arrays: schema=" + data.schema + "]");
             if (!data.initialized)
             {
-                if (data.buildings.Length != 0 || data.rubble.Length != 0 || data.activeRubbleId != null || data.dispatchDepotId != null)
+                if (data.buildings.Length != 0 || data.rubble.Length != 0 || data.activeRubbleId != null || data.dispatchDepotId != null ||
+                    (data.dispatches != null && data.dispatches.Length != 0))
                     throw new InvalidOperationException(error + " [uninitialized development contains progress/references]");
                 return;
             }
@@ -303,10 +298,12 @@ namespace NewGaza.Core
             if (data.activeRubbleId != null)
             {
                 var site = Array.Find(data.rubble, s => s.id == data.activeRubbleId);
-                if (site == null || site.cleared || site.district != state.jobDistrict || state.jobStage == JobStage.Idle || data.dispatchDepotId == null)
+                if (site == null || (site.cleared && state.jobStage == JobStage.Clearing) ||
+                    site.district != state.jobDistrict || state.jobStage == JobStage.Idle || data.dispatchDepotId == null)
                     throw new InvalidOperationException(error + " [activeRubbleId=" + data.activeRubbleId + ", stage=" + state.jobStage + "]");
             }
             else if (data.crewArrived) throw new InvalidOperationException(error + " [crewArrived without active rubble]");
+            RubbleDispatches.Validate(state);
             if (data.dispatchDepotId != null && data.dispatchDepotId != "central")
             {
                 var depot = Array.Find(data.buildings, b => b.id == data.dispatchDepotId);

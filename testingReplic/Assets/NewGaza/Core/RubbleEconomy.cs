@@ -17,7 +17,7 @@ namespace NewGaza.Core
         {
             var data = state.development;
             if (data == null || !data.initialized || data.activeRubbleId == null) return null;
-            return Array.Find(data.rubble, site => site.id == data.activeRubbleId && !site.cleared);
+            return Array.Find(data.rubble, site => site.id == data.activeRubbleId);
         }
         public static long ClearingSeconds(GameState state, RubbleSiteState site)
         {

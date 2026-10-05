@@ -385,19 +385,22 @@ namespace NewGaza
                     SetButton(action, "اختر موقعًا"); action.interactable = true;
                     return;
                 }
-                bool active = development.Rules.Data.activeRubbleId == selected.id;
-                bool busy = session.State.jobStage != JobStage.Idle;
+                var dispatch = RubbleDispatches.ForSite(session.State, selected.id);
+                bool active = dispatch != null || development.Rules.Data.activeRubbleId == selected.id;
+                bool busy = RubbleDispatches.AvailableTeams(session.State) == 0;
                 string details = selected.cleared ? "أرض نظيفة — اختر مبنى من المتجر وضعه هنا أو على أي مساحة نظيفة مناسبة" :
-                    active ? "الآليات في الطريق أو تعمل على الإزالة والنقل والتدوير\n" + StageText(session.State.jobStage) :
-                    busy ? "الآليات مشغولة بموقع آخر — اضغط لعرض المهمة الجارية، ثم انتظر انتهاء النقل والتدوير." :
+                    active ? (dispatch != null ? RubbleDispatches.Status(dispatch) : StageText(session.State.jobStage)) :
+                    busy ? "لا يوجد فريق متاح — انتظر عودة حفارة وجرافة وشاحنة إلى المصنع، أو اشترِ فريقًا إضافيًا." :
                     "موارد للبيع بقيمة تقارب " + RubbleEconomy.Reward(selected) + " عملة" +
                     "\nمصنع تدوير ← حفار وجرافة وشاحنة ← وصول عبر الطرق" +
-                    "\nعمل نحو دقيقة بالمعدات الأساسية ثم العودة إلى المصنع. بع الموارد من المخزن لتحصل على المال.";
+                    "\nدقيقة عمل كاملة ثم تصبح الأرض نظيفة. تبقى الآليات محجوزة حتى عودتها إلى المصنع." +
+                    "\nفرق متاحة: " + RubbleDispatches.AvailableTeams(session.State);
                 // Feedback is retained across the controller's per-frame Refresh, not erased immediately.
                 actionText.SetText(feedbackSite == selected.id && !string.IsNullOrEmpty(workFeedback) &&
                     Time.unscaledTime < workFeedbackUntil && !selected.cleared
-                    ? workFeedback + (busy ? "\n" + StageText(session.State.jobStage) : "") : details);
-                SetButton(action, selected.cleared ? "اختر مبنى" : busy ? "عرض المهمة الجارية" : "إزالة الدمار");
+                    ? workFeedback : details);
+                SetButton(action, selected.cleared ? "اختر مبنى" : active ? "عرض الفريق الجاري" :
+                    busy ? "عرض الفرق المشغولة" : "إرسال فريق لإزالة الدمار");
                 action.interactable = true;
             }
             else if (building)

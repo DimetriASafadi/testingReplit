@@ -25,6 +25,13 @@ namespace NewGaza.Core
                 copy.development = state.development.CopyRecord();
                 copy.development.rubble = ArrayCopy(state.development.rubble, item => item?.CopyRecord());
                 copy.development.buildings = ArrayCopy(state.development.buildings, item => item?.CopyRecord());
+                copy.development.dispatches = ArrayCopy(state.development.dispatches, item =>
+                {
+                    if (item == null) return null;
+                    var job = item.CopyRecord();
+                    job.fleet = FleetCopy(item.fleet);
+                    return job;
+                });
             }
             if (state.fleet != null)
             {
@@ -43,7 +50,17 @@ namespace NewGaza.Core
             for (int i = 0; i < source.Length; i++) result[i] = copy(source[i]);
             return result;
         }
+        private static FleetSaveState FleetCopy(FleetSaveState fleet)
+        {
+            if (fleet == null) return null;
+            var copy = fleet.CopyRecord();
+            copy.excavator = fleet.excavator?.CopyRecord();
+            copy.truck = fleet.truck?.CopyRecord();
+            copy.bulldozer = fleet.bulldozer?.CopyRecord();
+            return copy;
+        }
     }
+    public partial class RubbleDispatchState { internal RubbleDispatchState CopyRecord() => (RubbleDispatchState)MemberwiseClone(); }
     public partial class GameState { internal GameState CopyRecord() => (GameState)MemberwiseClone(); }
     public partial class ResourceStock { internal ResourceStock CopyRecord() => (ResourceStock)MemberwiseClone(); }
     public partial class DistrictState { internal DistrictState CopyRecord() => (DistrictState)MemberwiseClone(); }

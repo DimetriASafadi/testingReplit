@@ -695,6 +695,7 @@ namespace NewGaza
 
         public Vector3 PositionAtDistance(float distance)
         {
+            if (TryCorner(distance, out var corner, out _)) return corner;
             int edge;
             float t;
             GetEdgeAtDistance(distance, out edge, out t);
@@ -703,6 +704,7 @@ namespace NewGaza
 
         public Vector3 DirectionAtDistance(float distance)
         {
+            if (TryCorner(distance, out _, out var tangent)) return tangent.normalized;
             int edge;
             float t;
             GetEdgeAtDistance(distance, out edge, out t);
@@ -716,6 +718,44 @@ namespace NewGaza
             float t;
             GetEdgeAtDistance(distance, out edge, out t);
             return RoadIds[edge];
+        }
+
+        // Round only a short, bounded region of each source-road junction. Keep
+        // endpoints, road IDs and the original distance clock for live upgrades.
+        private bool TryCorner(float distance, out Vector3 position, out Vector3 tangent)
+        {
+            position = tangent = Vector3.zero;
+            float vertexDistance = 0f;
+            for (int i = 1; i < Points.Length - 1; i++)
+            {
+                Vector3 incoming = Points[i] - Points[i - 1], outgoing = Points[i + 1] - Points[i];
+                vertexDistance += incoming.magnitude;
+                float radius = Mathf.Min(.12f, Mathf.Min(incoming.magnitude, outgoing.magnitude) * .35f);
+                if (radius < .00001f || distance < vertexDistance - radius || distance > vertexDistance + radius) continue;
+                float t = Mathf.Clamp01((distance - vertexDistance + radius) / (2f * radius));
+                Vector3 a = Points[i] - incoming.normalized * radius;
+                Vector3 b = Points[i], c = Points[i] + outgoing.normalized * radius;
+                position = a * ((1f - t) * (1f - t)) + b * (2f * t * (1f - t)) + c * (t * t);
+                tangent = (b - a) * (1f - t) + (c - b) * t;
+                return tangent.sqrMagnitude > .000001f;
+            }
+            return false;
+        }
+        public float TurnSpeedLimit(float distance, float degreesPerSecond)
+        {
+            float at = 0f;
+            for (int i = 1; i < Points.Length - 1; i++)
+            {
+                Vector3 incoming = Points[i] - Points[i - 1], outgoing = Points[i + 1] - Points[i];
+                at += incoming.magnitude;
+                float radius = Mathf.Min(.12f, Mathf.Min(incoming.magnitude, outgoing.magnitude) * .35f);
+                if (radius <= .00001f || distance < at - radius || distance > at + radius) continue;
+                double dot = Math.Max(-.99999d, Math.Min(1d, Vector3.Dot(incoming.normalized, outgoing.normalized)));
+                double tangentHalfAngle = Math.Sqrt((1d - dot) / (1d + dot));
+                if (tangentHalfAngle < .00001d) return float.MaxValue;
+                return Mathf.Max(.005f, (float)(radius * degreesPerSecond * Math.PI / 180d / tangentHalfAngle));
+            }
+            return float.MaxValue;
         }
 
         public int EdgeAtDistance(float distance)

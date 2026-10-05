@@ -30,6 +30,10 @@ internal static class HudActivityVisibilityChecks
             .Single(e => e.Identifier.ValueText == "JobStage");
         string source = jobStage.ToFullString() + @"
 class State { public JobStage jobStage; }
+static class RubbleDispatches {
+    public static object[] Jobs(State state) { return new object[DispatchCount]; }
+    public static int DispatchCount;
+}
 class GameObject {
     public bool Active;
     public void SetActive(bool value) { Active = value; }
@@ -38,7 +42,8 @@ class Activity { public GameObject gameObject = new GameObject(); }
 public class HudProbe {
 " + string.Join("\n", declarations) + @"
     private Activity activity = new Activity();
-    public bool Evaluate(bool collapsed, int stage, int construction, int ready) {
+    public bool Evaluate(bool collapsed, int stage, int construction, int ready, int dispatches) {
+        RubbleDispatches.DispatchCount = dispatches;
         activityCollapsed = collapsed;
         liveConstructionCount = construction;
         liveReadyCount = ready;
@@ -67,9 +72,10 @@ public class HudProbe {
         foreach (int stage in new[] { idle, working })
         foreach (int construction in new[] { 0, 1 })
         foreach (int ready in new[] { 0, 1 })
+        foreach (int dispatches in new[] { 0, 2 })
         {
-            bool expected = !collapsed && (stage != idle || construction > 0 || ready > 0);
-            bool actual = (bool)evaluate.Invoke(instance, new object[] { collapsed, stage, construction, ready })!;
+            bool expected = !collapsed && (stage != idle || construction > 0 || ready > 0 || dispatches > 0);
+            bool actual = (bool)evaluate.Invoke(instance, new object[] { collapsed, stage, construction, ready, dispatches })!;
             if (actual != expected)
                 errors.Add($"HUD visibility mismatch: collapsed={collapsed}, stage={stage}, construction={construction}, ready={ready}.");
         }

@@ -26,3 +26,15 @@ Queued route rebuilds must be consumed when the latest destination is planned; r
 **Why:** A stale queued rebuild can repeatedly restart zero-length truck trips and dock turns, preventing crew readiness indefinitely.
 
 **How to apply:** Include a mid-trip destination-change regression that advances the production movement clock until all vehicles really dock, work, unload and remain parked.
+
+«الحفارات يتنقلون عبر الطريق رااائع»؛ المستخدم أكّد أن الوصول عبر الطرق يعمل، ثم طلب انعطافًا ناعمًا وواقعيًا لكل الآليات.
+
+**Why:** تصحيح التوجيه البصري لا يبرر استبدال مسارات الطرق الناجحة بحركة مباشرة جديدة.
+
+**How to apply:** حافظ على الشوارع والوجهات الفعلية ومعرّفات ترقيات الطرق؛ نعّم المنعطفات وقلّل السرعة حسب انحنائها، مع حد تدريجي للدوران بدل تغيير الاتجاه دفعة واحدة.
+
+كل موقع دمار يحتاج حفارة وجرافة وشاحنة واحدة. الفرق الزائدة تعمل بالتوازي؛ يصبح الموقع نظيفًا وقابلًا للبناء بعد العمل، لكن الفريق نفسه لا يُعاد استخدامه قبل الوصول للمصنع.
+
+**Why:** طلب المستخدم فصل إزالة الدمار الفورية عن حجز المعدات خلال العودة، وإرسال المعدات الزائدة لموقع آخر.
+
+**How to apply:** احفظ حجز هويات الآليات لكل موقع ومواضع كل فريق، واستعد المواضع قبل فحص الوصول؛ زمن الإغلاق وحده لا يثبت عودة الفريق فعليًا.
