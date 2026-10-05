@@ -20,7 +20,7 @@ internal static class Program
     {
         try
         {
-            string sourceRoot = FindSources(args);
+            string sourceRoot = FindSources(args.Where(a => a != "--hud-activity-visibility").ToArray());
             var files = Directory.GetFiles(sourceRoot, "*.cs", SearchOption.AllDirectories);
             Array.Sort(files, StringComparer.Ordinal);
             Require(files.Length > 0, "No NewGaza C# files found in " + sourceRoot);
@@ -41,6 +41,14 @@ internal static class Program
                         Failures.Add((editor ? "editor" : "player") + " " + relative + ": " + diagnostic);
                     if (!editor) roots.Add(relative, (CompilationUnitSyntax)tree.GetRoot());
                 }
+            }
+            Failures.AddRange(HudActivityVisibilityChecks.Run(roots));
+            if (args.Contains("--hud-activity-visibility", StringComparer.Ordinal))
+            {
+                foreach (string failure in Failures) Console.Error.WriteLine(failure);
+                if (Failures.Count == 0)
+                    Console.WriteLine("PASS: HUD activity visibility compiles and passes all 16 visibility cases.");
+                return Failures.Count == 0 ? 0 : 1;
             }
             CheckContracts(roots);
             ClearingClickChecks.Run(roots);

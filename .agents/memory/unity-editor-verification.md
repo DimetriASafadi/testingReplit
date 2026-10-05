@@ -15,11 +15,11 @@ Do not infer that an optional JSON header was supplied merely because its deseri
 
 **How to apply:** Preserve the runtime/editor assembly boundary in targeted compilation checks, including actual visibility and signatures. Model obsolete APIs as compiler errors, not warnings to suppress. Keep access limited to the intended editor assembly rather than making all runtime internals public. Minimal API contracts can catch known regressions but are not a substitute for a full compilation against the user's Unity version.
 
-UI callback contracts need type checks, not syntax checks alone; delegates with identical argument lists are not necessarily interchangeable.
+UI refactors need semantic checks, not syntax checks alone; callback compatibility and identifier scope are both compiler concerns.
 
-**Why:** A source-only check missed a callback conversion error that the user's Unity compiler rejected.
+**Why:** Syntax-only checks missed both a callback conversion error and a stale local-variable reference after activity counting moved into a partial-class helper. The user's Unity compiler rejected them.
 
-**How to apply:** Mirror native event delegate types in focused regression contracts; do not infer compatibility from a parameterless callback shape or a passing parser.
+**How to apply:** Mirror native event delegate types and actual partial-class field declarations in focused regression contracts. Compile the real changed expressions and include a negative control for the reported error; do not infer compatibility or scope correctness from a passing parser.
 
 Passing economy tests does not establish that a Unity action button responds to input.
 

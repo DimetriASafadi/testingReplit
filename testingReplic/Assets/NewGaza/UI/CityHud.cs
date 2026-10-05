@@ -402,7 +402,8 @@ namespace NewGaza
             activityLabel.SetText(text.ToString());
             header.Find("Show activity").GetComponentInChildren<ArabicLabel>().SetText(
                 "الأحداث");
-            activity.gameObject.SetActive(!activityCollapsed && (s.jobStage != JobStage.Idle || activeCount > 0));
+            activity.gameObject.SetActive(!activityCollapsed &&
+                (s.jobStage != JobStage.Idle || liveConstructionCount > 0 || liveReadyCount > 0));
             RefreshTutorial();
             RefreshSelection();
             bool portrait = Screen.height > Screen.width;
