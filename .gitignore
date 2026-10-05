@@ -21,3 +21,22 @@ __pycache__/
 
 # Generated full-source deliveries stay local; GitHub carries source changes.
 /exports/fixes/*.zip
+
+# Generated exports and uploaded source/reference files are not repository deliverables.
+/exports/
+/attached_assets/
+**/bin/
+**/obj/
+
+# Heavy Unity art stays local on the user's PC, not in source-control deliveries.
+/testingReplic/Assets/**/*.fbx
+/testingReplic/Assets/**/*.obj
+/testingReplic/Assets/**/*.png
+/testingReplic/Assets/**/*.jpg
+/testingReplic/Assets/**/*.jpeg
+/testingReplic/Assets/**/*.wav
+/testingReplic/Assets/**/*.mp3
+/testingReplic/Assets/**/*.ogg
+/testingReplic/Assets/**/*.ttf
+/testingReplic/Assets/**/*.otf
+/testingReplic/Assets/**/*.blend
