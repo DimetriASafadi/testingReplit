@@ -25,4 +25,10 @@ Large binary archives can exceed GitHub's blob API request-body limit before rea
 
 **Why:** A roughly 45 MB source ZIP was rejected with HTTP 422 “input was too large” while earlier smaller source archives uploaded successfully. Base64 further enlarges the request body.
 
-**How to apply:** Inventory newly introduced blobs before API delivery, including archives captured by automatic checkpoints before ignore rules were added. Exclude oversized generated downloads from source-only delivery commits; preserve their local files and the original unpublished checkpoint under a backup ref. Never truncate assets, reduce art quality or rewrite already-published history.
+**How to apply:** Inventory newly introduced blobs before API delivery, including archives captured by automatic checkpoints before ignore rules were added. Exclude oversized generated downloads from source-only delivery commits; preserve local files and, outside approved full-history cleanups, the original unpublished checkpoint under a backup ref. Never truncate assets, reduce art quality or rewrite already-published history without explicit approval.
+
+Repository cleanup can require filtering every local ref, not just the current branch.
+
+**Why:** Automatic checkpoints, old task branches, reflogs and ledger refs can all retain large generated archives after they disappear from `main`; ordinary compression does not remove that history.
+
+**How to apply:** Only with explicit history-rewrite approval, filter the unwanted paths in an isolated mirror, verify the retained source against the working snapshot, then publish the verified branch with an expected-old-head guard. Preserve runtime files by installing the filtered repository without a hard working-tree reset. Do not claim GitHub has physically reclaimed unreachable objects; that is provider-controlled.
