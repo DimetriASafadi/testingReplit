@@ -23,6 +23,7 @@ __pycache__/
 
 # Generated exports and uploaded source/reference files are not repository deliverables.
 /exports/
+**/exports/
 /attached_assets/
 **/bin/
 **/obj/
