@@ -14,3 +14,4 @@
 - [Economy and onboarding](economic-balance-and-onboarding.md) — rubble pays one-third of its building price; start with placed recycler and equipment, then build on clean land.
 - [Persistence expectations](persistence-expectations.md) — المستخدم يريد استعادة التقدم والحركة ومؤقتات وقت النظام؛ اختبار Unity على جهازه لا يوقف تنفيذ الحفظ.
 - [Destroyed city density](destroyed-city-density.md) — المستخدم يريد خريطة مليئة بالمباني المدمرة؛ تحقق من العدد الفعلي وتوزيعه، لا من رفع الحد فقط.
+- [Native save performance](native-save-performance.md) — camera checkpoints use detached background snapshots; actual fleet markers fade at close zoom.

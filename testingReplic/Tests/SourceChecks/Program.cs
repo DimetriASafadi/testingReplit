@@ -44,6 +44,41 @@ internal static class Program
             }
             CheckContracts(roots);
             ClearingClickChecks.Run(roots);
+            ButtonContentChecks.Run(roots);
+            string saveCheckpoint = Compact(roots["Runtime/GameSession.cs"].ToFullString());
+            string asyncStore = Compact(roots["Runtime/GameSaveStoreAsync.cs"].ToFullString());
+            string fleetMarkers = Compact(roots["UI/CityFleetMapMarkers.cs"].ToFullString());
+            string workMarker = Compact(roots["UI/CityActiveWorkMarker.cs"].ToFullString());
+            string workHud = Compact(roots["UI/CityHud.cs"].ToFullString());
+            string activitiesUi = Compact(roots["UI/CityHudActivities.cs"].ToFullString());
+            Require(workHud.Contains("OpenActivities()", StringComparison.Ordinal) &&
+                activitiesUi.Contains("session.Development?.FocusActivity(captured)", StringComparison.Ordinal) &&
+                workMarker.Contains("development.WorkPosition", StringComparison.Ordinal) &&
+                workMarker.Contains("state.jobStage!=JobStage.Idle", StringComparison.Ordinal) &&
+                workMarker.Contains("ActiveWorkPresentation.Status(state,session.Now)", StringComparison.Ordinal) &&
+                workMarker.Contains("activeWorkMarkerImage.raycastTarget=false", StringComparison.Ordinal) &&
+                workMarker.Contains("markerWorkId!=id", StringComparison.Ordinal),
+                "Active work must have a persistent HUD locator and an actual-site phase marker that disappears when idle and caches stationary geometry.");
+            string eventMap = Compact(roots["UI/CityEventMapMarkers.cs"].ToFullString());
+            Require(activitiesUi.Contains("CityActivityCatalog.Collect(session.State,session.Now)", StringComparison.Ordinal) &&
+                activitiesUi.Contains("session.Development.FocusMachine(capturedIndex)", StringComparison.Ordinal) &&
+                eventMap.Contains("Time.unscaledTime+1", StringComparison.Ordinal) &&
+                eventMap.Contains("Mathf.Clamp", StringComparison.Ordinal) &&
+                eventMap.Contains("FleetMarkerPresentation.Opacity(mapCamera.orthographicSize)", StringComparison.Ordinal) &&
+                workMarker.Contains("FleetMarkerPresentation.Opacity(mapCamera.orthographicSize)", StringComparison.Ordinal),
+                "Unified live activities must locate events and actual machines, cache map scans, cluster markers and fade both events and work sites at close zoom.");
+            Require(saveCheckpoint.Contains("GameSaveStore.Enqueue(State)", StringComparison.Ordinal) &&
+                saveCheckpoint.Contains("SaveCheckpoint(paused)", StringComparison.Ordinal) &&
+                saveCheckpoint.Contains("SaveCheckpoint(!focused)", StringComparison.Ordinal) &&
+                saveCheckpoint.Contains("if(Ready)SaveCheckpoint(true)", StringComparison.Ordinal) &&
+                asyncStore.Contains("GameStateSnapshot.Capture(liveState)", StringComparison.Ordinal),
+                "Zoom/autosaves must snapshot off-thread work, while suspension/quit flush the latest state.");
+            Require(fleetMarkers.Contains("fleet.TryGetMachineAudioState(index,outvarworldPosition", StringComparison.Ordinal) &&
+                fleetMarkers.Contains("FleetMarkerPresentation.Opacity(mapCamera.orthographicSize)", StringComparison.Ordinal) &&
+                fleetMarkers.Contains("image.raycastTarget=false", StringComparison.Ordinal) &&
+                fleetMarkers.Contains("CityHudIcons.Icon.Excavator", StringComparison.Ordinal) &&
+                fleetMarkers.Contains("CityHudIcons.Icon.Bulldozer", StringComparison.Ordinal),
+                "Machine markers must track actual active fleet transforms, fade with zoom, distinguish roles and never block map clicks.");
             string clearingUi = Compact(roots["UI/CityDevelopmentUI.cs"].ToFullString());
             Require(clearingUi.Contains("actionCanvas.overrideSorting=true;actionCanvas.sortingOrder=150", StringComparison.Ordinal) &&
                 clearingUi.Contains("actionPanel.gameObject.AddComponent<GraphicRaycaster>()", StringComparison.Ordinal) &&
@@ -74,7 +109,7 @@ internal static class Program
             Require(buttonMotionSource.Contains("AddComponent<Outline>()", StringComparison.Ordinal) &&
                 buttonMotionSource.Contains("AddComponent<Shadow>()", StringComparison.Ordinal) &&
                 buttonMotionSource.Contains("IPointerEnterHandler", StringComparison.Ordinal) &&
-                buttonMotionSource.Contains("target=.945f", StringComparison.Ordinal),
+                buttonMotionSource.Contains("target=.975f", StringComparison.Ordinal),
                 "Buttons need distinct raised edges, shadows and hover/press response, not text-box styling.");
             var factoryUiMethods = roots["UI/CityDevelopmentUI.cs"].DescendantNodes().OfType<MethodDeclarationSyntax>();
             var factoryMarkerMethod = factoryUiMethods.Single(m => m.Identifier.ValueText == "ShowFactoryMarker");
@@ -1232,7 +1267,7 @@ internal static class Program
         string[] expectedIcons =
         {
             "None", "Map", "Projects", "Fleet", "Investment", "Resources",
-            "Gift", "Settings", "Close", "Recycling"
+            "Gift", "Settings", "Close", "Recycling", "Excavator", "Bulldozer"
         };
         Require(iconEnum != null &&
             iconEnum.Members.Select(m => m.Identifier.ValueText)
@@ -1568,10 +1603,13 @@ internal static class Program
         var save = session?.Members.OfType<MethodDeclarationSyntax>()
             .FirstOrDefault(method => method.Identifier.ValueText == "Save");
         string saveSource = save == null ? "" : Compact(save.ToString());
+        string checkpointSource = session == null ? "" : Compact(string.Join("\n", session.Members.OfType<MethodDeclarationSyntax>()
+            .Where(method => method.Identifier.ValueText == "SaveCheckpoint" ||
+                method.Identifier.ValueText == "ReportSaveFailure").Select(method => method.ToString())));
         Require(performSource.Contains("Audio?.PlayConfirmation()", StringComparison.Ordinal) &&
             performSource.Contains("Audio?.PlayFailure()", StringComparison.Ordinal) &&
-            saveSource.Contains("SaveError=", StringComparison.Ordinal) &&
-            saveSource.Contains("Audio?.PlayFailure()", StringComparison.Ordinal),
+            (saveSource + checkpointSource).Contains("SaveError=", StringComparison.Ordinal) &&
+            (saveSource + checkpointSource).Contains("Audio?.PlayFailure()", StringComparison.Ordinal),
             "Successful native actions must confirm, failed actions and caught save errors must play the failure cue.");
 
         string importerPath = Path.Combine(sourceRoot, "Editor", "CityAudioImportSettings.cs");

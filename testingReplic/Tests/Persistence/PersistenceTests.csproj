@@ -9,5 +9,6 @@
   <ItemGroup>
     <Compile Include="../../Assets/NewGaza/Core/*.cs" Link="Core/%(Filename)%(Extension)" />
     <Compile Include="../../Assets/NewGaza/Runtime/GameSaveStore.cs" Link="GameSaveStore.cs" />
+    <Compile Include="../../Assets/NewGaza/Runtime/GameSaveStoreAsync.cs" Link="GameSaveStoreAsync.cs" />
   </ItemGroup>
 </Project>

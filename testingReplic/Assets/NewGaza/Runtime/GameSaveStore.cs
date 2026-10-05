@@ -8,7 +8,7 @@ using UnityEngine;
 namespace NewGaza
 {
     /// <summary>Local, checksummed saves. A corrupt save is never replaced with a fresh game.</summary>
-    public static class GameSaveStore
+    public static partial class GameSaveStore
     {
         [Serializable]
         private class Envelope
@@ -24,6 +24,7 @@ namespace NewGaza
         // so Load cannot resurrect the previous city from .bak or .tmp.
         public static string ArchiveAndClear()
         {
+            FlushPending();
             string folder = Application.persistentDataPath;
             string archive = Path.Combine(folder, "ResetBackups", DateTime.UtcNow.ToString("yyyyMMdd-HHmmss-fffffff"));
             Directory.CreateDirectory(archive);
@@ -138,11 +139,17 @@ namespace NewGaza
 
         public static void Save(GameState state)
         {
+            FlushPending();
+            SaveAt(state, SavePath);
+        }
+
+        private static void SaveAt(GameState state, string path)
+        {
             Validate(state);
-            Directory.CreateDirectory(Application.persistentDataPath);
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
             var payload = JsonUtility.ToJson(state);
             var envelope = new Envelope { payload = payload, checksum = Hash(payload) };
-            string temporary = SavePath + ".tmp";
+            string temporary = path + ".tmp";
             // Flush bytes before the atomic replace, rather than relying on quit
             // or a buffered writer completing after mobile suspension.
             using (var file = new FileStream(temporary, FileMode.Create, FileAccess.Write, FileShare.None))
@@ -154,10 +161,10 @@ namespace NewGaza
                 }
                 file.Flush(true);
             }
-            if (File.Exists(SavePath))
-                File.Replace(temporary, SavePath, SavePath + ".bak");
+            if (File.Exists(path))
+                File.Replace(temporary, path, path + ".bak");
             else
-                File.Move(temporary, SavePath);
+                File.Move(temporary, path);
         }
 
         private static string Hash(string text)

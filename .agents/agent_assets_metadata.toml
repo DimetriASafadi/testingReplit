@@ -786,3 +786,59 @@ mtime_ms = 1791124308775
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/5b440c11-f75b-4dd3-9fcb-3f92d537ac10/3b291354-0576-4b92-a665-3c8e9aa955db"
 storage_version_token = "1791124354819161"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "LEvda8T8fIQ2ezkdYGjk6"
+uri = "file://exports/fixes/NewGaza-Zoom-Performance-And-Fleet-Markers.zip"
+type = "unspecified"
+title = "تخفيف تقطيع الزوم وأيقونات مواقع الآليات"
+description = "حزمة Unity تراكمية: حفظ متسلسل في الخلفية بدل تعطيل إطار اللعبة، وتخفيف تحديثات الواجهة، وأيقونات فعلية للحفارة والشاحنة والجرافة تتلاشى عند الاقتراب. تحافظ على الحفظ وتشمل الإصلاحات السابقة، دون .meta."
+logical_id = "bdb89957-6e7c-4c24-856c-0da458f70017"
+content_hash = "sha256:22c4c1633c246795bc9aa19b94e2690eca19dfdd8a5f216fc4215d7cac2496f9"
+size = 47327102
+mtime_ms = 1791126578435
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/bdb89957-6e7c-4c24-856c-0da458f70017/6b33e666-98b6-4016-9a0c-11ae42b3f855"
+storage_version_token = "1791126610159877"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "73wUZyX3EGEVUraMdTIC0"
+uri = "file://exports/fixes/NewGaza-Active-Work-Locator.zip"
+type = "unspecified"
+title = "زر موقع العمل وعلامة حالة إزالة الدمار"
+description = "حزمة Unity تراكمية: زر ينقل الكاميرا ويزوّم على المهمة الجارية، وعلامة فوق الموقع تعرض مرحلة العمل. تشمل إصلاحات الزوم وأيقونات الآليات السابقة، وتحافظ على التقدم دون ملفات .meta."
+logical_id = "955f1da3-bd5b-4e35-88d9-3eaf713d62bd"
+content_hash = "sha256:228a52a0d3d9222e622addb64357f535fee91fea3753a53b4760658768077c5b"
+size = 47330688
+mtime_ms = 1791127136983
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/955f1da3-bd5b-4e35-88d9-3eaf713d62bd/88b23d48-0e8e-489d-999f-accc55bcc548"
+storage_version_token = "1791127145344602"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "tEyPBAdh_dpw5NUBqiibw"
+uri = "file://exports/fixes/NewGaza-UI-Centered-Content-Polish.zip"
+type = "unspecified"
+title = "تحديث محاذاة ومسافات وثيم الواجهة"
+description = "حزمة Unity تراكمية: نصوص أزرار في المنتصف، حشو داخلي ومقاسات متوازنة، ترتيب مناسب للأيقونات، وتنسيق موحّد للقوائم والمتجر والبناء بألوانك وخطوطك الحالية. تشمل الإصلاحات السابقة ودون ملفات .meta."
+logical_id = "7fcf4c77-023b-4b3e-a934-066082ad4821"
+content_hash = "sha256:c10587e544b7ee6fb727216be517eee2753199e6ea4b5a9ba25ec60ffa355cc5"
+size = 47334646
+mtime_ms = 1791127923510
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/7fcf4c77-023b-4b3e-a934-066082ad4821/d82e7aff-4337-4a64-ba36-26defebb70cc"
+storage_version_token = "1791127962439911"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "Epb_4g8cBBWuKvlWAg0de"
+uri = "file://exports/fixes/NewGaza-Live-Activities-UX.zip"
+type = "unspecified"
+title = "واجهة الأحداث ومواقع العمل — تحديث تراكمي"
+description = "زر «ما يحدث الآن» في الرئيسية و«الأحداث» على الخريطة، انتقال إلى مواقع العمل والبناء والدخل والمكافآت والآليات، وعلامات تظهر من بعيد وتتلاشى عند الاقتراب. تشمل تحسينات الواجهة السابقة ودون ملفات .meta. نجحت الفحوص المتاحة؛ لم يتم تشغيل العرض داخل Unity أو هاتف."
+logical_id = "c130d267-3bb2-451e-802e-625ebeebcb41"
+content_hash = "sha256:0b69724f8cd80ea272dbd051cf543e6d7f2bc11346e84a3cd2dfd3ba80731cd5"
+size = 47342613
+mtime_ms = 1791181956171
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/c130d267-3bb2-451e-802e-625ebeebcb41/906b84a1-5ddc-4762-b50d-76448170e32f"
+storage_version_token = "1791181978612298"
+content_type = "application/octet-stream"

@@ -30,6 +30,10 @@ internal static class Program
     private static void Main()
     {
         Catalog();
+        PerformancePresentationChecks.Run(Check);
+        ActiveWorkPresentationChecks.Run(Check);
+        ButtonContentMetricsChecks.Run(Check);
+        CityActivityCatalogChecks.Run(Check);
         ScreenInputChecks.Run(Check);
         InterfaceViewportChecks.Run(Check);
         PlacementAndTimers();

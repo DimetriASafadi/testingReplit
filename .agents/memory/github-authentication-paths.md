@@ -25,4 +25,4 @@ Large binary archives can exceed GitHub's blob API request-body limit before rea
 
 **Why:** A roughly 45 MB source ZIP was rejected with HTTP 422 “input was too large” while earlier smaller source archives uploaded successfully. Base64 further enlarges the request body.
 
-**How to apply:** Keep the complete user-downloadable archive intact. Mirror large archives as verified binary parts and supply a SHA-256-checked joiner. Never truncate assets, reduce art quality or claim the branch advanced after the provider rejected a blob. If replacing a rejected unpublished commit, leave the already-published branch/history intact.
+**How to apply:** Inventory newly introduced blobs before API delivery, including archives captured by automatic checkpoints before ignore rules were added. Exclude oversized generated downloads from source-only delivery commits; preserve their local files and the original unpublished checkpoint under a backup ref. Never truncate assets, reduce art quality or rewrite already-published history.

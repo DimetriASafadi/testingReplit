@@ -18,3 +18,6 @@ __pycache__/
 /exports/uploaded-equipment-inspection/source-components.blend*
 /exports/uploaded-equipment-inspection/component-*
 /exports/uploaded-equipment-inspection/construction_vehicle_3d_model_*.png
+
+# Generated full-source deliveries stay local; GitHub carries source changes.
+/exports/fixes/*.zip

@@ -1558,6 +1558,16 @@ namespace NewGaza
             return transform.TransformPoint(districts[Mathf.Clamp(index,0,districts.Length - 1)].center);
         }
 
+        internal bool TryGetProjectPosition(int district, string projectId, out Vector3 position)
+        {
+            position = Vector3.zero;
+            if (districts == null || district < 0 || district >= districts.Length) return false;
+            foreach (var plot in districts[district].plots)
+                if (plot != null && plot.definition.id == projectId)
+                { position = plot.anchor.position; return true; }
+            return false;
+        }
+
         internal CityGeometry DevelopmentGeometry => geometry;
         internal CityBasemap DevelopmentMap => basemap;
         internal IList<CityUrbanBuildingPresentation> BackgroundBuildings => urbanContext.AllContextBuildings;

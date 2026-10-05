@@ -82,6 +82,18 @@ namespace NewGaza
             targetFocus = CityCentre(); targetZoom = OverviewZoom(); finaleUntil = 0;
             saveViewAt = Time.unscaledTime + .25f;
         }
+        public void FocusWorkSite(Vector3 point, float width, float depth)
+        {
+            targetFocus = point;
+            targetZoom = ActiveWorkPresentation.ViewingSize(width, depth, view.aspect);
+            finaleUntil = 0;
+            saveViewAt = Time.unscaledTime + .25f;
+        }
+        public void FocusDistrictView(Vector3 point, int district)
+        {
+            targetFocus = point; targetZoom = world.DistrictViewingSize(district);
+            finaleUntil = 0; saveViewAt = Time.unscaledTime + .25f;
+        }
         public void PlayFinale()
         {
             if (!session.Economy.CityComplete)

@@ -34,7 +34,7 @@ namespace NewGaza.Core
     }
 
     [Serializable]
-    public class ProjectState
+    public partial class ProjectState
     {
         public string id;
         public long startedUtc;
@@ -44,7 +44,7 @@ namespace NewGaza.Core
     }
 
     [Serializable]
-    public class DistrictState
+    public partial class DistrictState
     {
         public string id;
         // Only v1 migration may preserve access across newly inserted, unclaimed districts.
@@ -56,7 +56,7 @@ namespace NewGaza.Core
     }
 
     [Serializable]
-    public class ResourceStock
+    public partial class ResourceStock
     {
         public int concrete;
         public int iron;
@@ -65,7 +65,7 @@ namespace NewGaza.Core
     }
 
     [Serializable]
-    public class RoadSegmentState
+    public partial class RoadSegmentState
     {
         public string id;
         public int level;
@@ -95,7 +95,7 @@ namespace NewGaza.Core
     }
 
     [Serializable]
-    public class GameState
+    public partial class GameState
     {
         public int version = 2;
         public string playerName = "بنّاء المدينة";
@@ -125,7 +125,7 @@ namespace NewGaza.Core
 
     // Optional additive module: older v1/v2 saves keep their IDs, dates and rewards.
     [Serializable]
-    public class CityDevelopmentState
+    public partial class CityDevelopmentState
     {
         public int schema = 1;
         public bool initialized;
@@ -140,7 +140,7 @@ namespace NewGaza.Core
     }
 
     [Serializable]
-    public class EquipmentUnitState
+    public partial class EquipmentUnitState
     {
         public string id, kind;
         public long purchasePrice;
@@ -149,7 +149,7 @@ namespace NewGaza.Core
     }
 
     [Serializable]
-    public class RubbleSiteState
+    public partial class RubbleSiteState
     {
         public string id;
         public int district;
@@ -162,7 +162,7 @@ namespace NewGaza.Core
     }
 
     [Serializable]
-    public class PlacedBuildingState
+    public partial class PlacedBuildingState
     {
         public string id;
         public string definitionId;
@@ -176,19 +176,19 @@ namespace NewGaza.Core
     }
 
     [Serializable]
-    public class CameraSaveState
+    public partial class CameraSaveState
     {
         public float x, z, zoom, yaw;
     }
 
     [Serializable]
-    public class VehicleSaveState
+    public partial class VehicleSaveState
     {
         public float x, y, z, yaw;
     }
 
     [Serializable]
-    public class FleetSaveState
+    public partial class FleetSaveState
     {
         public int district;
         public JobStage stage;

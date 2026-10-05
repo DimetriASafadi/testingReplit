@@ -29,6 +29,7 @@ namespace NewGaza
         private ArabicLabel mainMenuLogo;
         private ArabicLabel mainMenuPlayer;
         private ArabicLabel mainMenuJob;
+        private Button mainMenuActivities;
         private ArabicLabel mainMenuDistrictName;
         private ArabicLabel mainMenuDistrictProgress;
         private ArabicLabel mainMenuDistrictRubric;
@@ -349,7 +350,13 @@ namespace NewGaza
             Place(mainMenuHero, centerWidth * 0.06f, portrait ? 100 : 138, centerWidth * 0.88f, portrait ? 60 : 84, true);
             Place(mainMenuHero.Find("Reconstruction icon") as RectTransform, 14, 14, portrait ? 48 : 58, portrait ? 48 : 58, true);
             Place(mainMenuHero.Find("Arabic label") as RectTransform, portrait ? 68 : 84, 4, centerWidth * 0.88f - (portrait ? 78 : 94), portrait ? 52 : 76, true);
-            Place(mainMenuJob.rectTransform, 8, portrait ? 166 : 232, centerWidth - 16, 50, true);
+            Place(mainMenuJob.rectTransform, 8, portrait ? 166 : 232, centerWidth - 172, 50, true);
+            if (mainMenuActivities == null)
+            {
+                mainMenuActivities = ActionButton(mainMenuCenter, "ما يحدث الآن", OpenActivities, Teal);
+                mainMenuActivities.name = "Live activities";
+            }
+            Place(mainMenuActivities.transform as RectTransform, centerWidth - 160, portrait ? 168 : 234, 152, 44, true);
 
             Place(mainMenuDistrict.Find("Arabic label") as RectTransform, 14, 12, districtWidth - 28, 24, true);
             Place(mainMenuDistrictName.rectTransform, 14, 38, districtWidth - 28, 36, true);

@@ -34,6 +34,8 @@ internal static class Program
         {
             Application.persistentDataPath = root;
             Directory.CreateDirectory(root);
+            AsyncSaveChecks.Run(Check);
+            FreshDirectory(root, "base");
             BuildingsAndTimers();
             FreshDirectory(root, "travel");
             TravelAndArrival();

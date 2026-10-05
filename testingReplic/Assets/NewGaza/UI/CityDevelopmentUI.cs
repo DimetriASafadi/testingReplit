@@ -8,10 +8,13 @@ using UnityEngine.UI;
 
 namespace NewGaza
 {
-    public sealed class CityDevelopmentUI : MonoBehaviour
+    public sealed partial class CityDevelopmentUI : MonoBehaviour
     {
         private readonly Dictionary<string, RectTransform> factoryMarkers = new Dictionary<string, RectTransform>();
         private readonly Dictionary<string, LineRenderer> factoryHalos = new Dictionary<string, LineRenderer>();
+        private readonly HashSet<string> visibleFactories = new HashSet<string>();
+        private readonly Dictionary<string, Vector3> factoryHaloCenters = new Dictionary<string, Vector3>();
+        private readonly Dictionary<string, float> factoryHaloRadii = new Dictionary<string, float>();
         private readonly CityHudIcons factoryIcons = new CityHudIcons();
         private bool homeVisible;
         private RectTransform factoryMarkerLayer;
@@ -19,15 +22,22 @@ namespace NewGaza
         private void LateUpdate()
         {
             if (development == null || Camera.main == null) return;
+            UpdateFleetMarkers(Camera.main);
+            UpdateActiveWorkMarker(Camera.main);
+            UpdateEventMarkers(Camera.main);
             if (factoryMarkerLayer == null)
             {
                 factoryMarkerLayer = Rect("Recycling factories on map", transform);
                 Stretch(factoryMarkerLayer);
                 factoryMarkerLayer.SetAsFirstSibling();
             }
-            foreach (var marker in factoryMarkers.Values) marker.gameObject.SetActive(false);
-            foreach (var halo in factoryHalos.Values) halo.gameObject.SetActive(false);
-            if (homeVisible) return;
+            visibleFactories.Clear();
+            if (homeVisible)
+            {
+                foreach (var marker in factoryMarkers.Values) marker.gameObject.SetActive(false);
+                foreach (var halo in factoryHalos.Values) halo.gameObject.SetActive(false);
+                return;
+            }
             var state = session.State;
             if (state.factoryLevel > 0 && !state.development.requiresPlacedFactory &&
                 !state.development.dynamicFactoryProvided)
@@ -43,10 +53,15 @@ namespace NewGaza
                     building.completed, () => development.SelectFactory(id),
                     Mathf.Sqrt(definition.widthMeters * definition.widthMeters + definition.depthMeters * definition.depthMeters) / 40f + .05f);
             }
+            foreach (var marker in factoryMarkers)
+                if (!visibleFactories.Contains(marker.Key) && marker.Value.gameObject.activeSelf) marker.Value.gameObject.SetActive(false);
+            foreach (var halo in factoryHalos)
+                if (!visibleFactories.Contains(halo.Key) && halo.Value.gameObject.activeSelf) halo.Value.gameObject.SetActive(false);
         }
 
         private void ShowFactoryMarker(string id, Vector3 position, bool completed, UnityEngine.Events.UnityAction select, float radius = .7f)
         {
+                visibleFactories.Add(id);
                 if (!factoryMarkers.TryGetValue(id, out var marker))
                 {
                     var button = Button(factoryMarkerLayer, "", select);
@@ -63,7 +78,8 @@ namespace NewGaza
                     factoryMarkers.Add(id, marker);
                 }
                 var screen = Camera.main.WorldToViewportPoint(position);
-                bool visible = !development.Placing && screen.z > 0 && screen.x >= 0 && screen.x <= 1 &&
+                float opacity = FleetMarkerPresentation.Opacity(Camera.main.orthographicSize);
+                bool visible = opacity > .005f && !development.Placing && screen.z > 0 && screen.x >= 0 && screen.x <= 1 &&
                     screen.y >= 0 && screen.y <= 1;
                 marker.gameObject.SetActive(visible);
                 if (!visible) return;
@@ -73,7 +89,9 @@ namespace NewGaza
                     Mathf.Clamp(point.x, factoryMarkerLayer.rect.xMin + 28, factoryMarkerLayer.rect.xMax - 28),
                     Mathf.Clamp(point.y + Mathf.Sin(Time.unscaledTime * 2) * 3,
                         factoryMarkerLayer.rect.yMin + 100, factoryMarkerLayer.rect.yMax - 70));
-                marker.GetComponent<Image>().color = completed ? new Color(.25f, 1f, .55f) : new Color(1f, .72f, .15f);
+                marker.GetComponent<Image>().color = completed ? new Color(.25f, 1f, .55f, opacity) : new Color(1f, .72f, .15f, opacity);
+                var fadeOutline = marker.GetComponent<Outline>();
+                if (fadeOutline != null) fadeOutline.effectColor = new Color(.4f, 1f, .7f, opacity);
                 ShowFactoryHalo(id, new Vector3(position.x, .018f, position.z), radius, completed);
         }
 
@@ -94,6 +112,9 @@ namespace NewGaza
             line.widthMultiplier = .014f + Mathf.Sin(Time.unscaledTime * 2) * .002f;
             Color tint = completed ? new Color(.15f, 1f, .5f) : new Color(1f, .7f, .1f);
             line.startColor = line.endColor = tint;
+            if (factoryHaloCenters.TryGetValue(id, out var previousCenter) && previousCenter == center &&
+                factoryHaloRadii.TryGetValue(id, out float previousRadius) && previousRadius == radius) return;
+            factoryHaloCenters[id] = center; factoryHaloRadii[id] = radius;
             for (int i = 0; i < line.positionCount; i++)
             {
                 float angle = i * Mathf.PI * 2 / line.positionCount;
@@ -195,7 +216,8 @@ namespace NewGaza
             shopContent.anchorMin = new Vector2(0, 1); shopContent.anchorMax = new Vector2(1, 1);
             shopContent.pivot = new Vector2(.5f, 1); shopContent.sizeDelta = Vector2.zero;
             var layout = shopContent.gameObject.AddComponent<VerticalLayoutGroup>();
-            layout.spacing = 8; layout.childControlHeight = true; layout.childControlWidth = true;
+            layout.padding = new RectOffset(8, 8, 8, 16);
+            layout.spacing = 12; layout.childControlHeight = true; layout.childControlWidth = true;
             layout.childForceExpandHeight = false;
             shopContent.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
             scroll.content = shopContent; shop.SetActive(false);
@@ -205,6 +227,18 @@ namespace NewGaza
         private void Update()
         {
             if (lastWidth != Screen.width || lastHeight != Screen.height || lastSafe != Screen.safeArea) Resize();
+        }
+
+        private void Start()
+        {
+            // The HUD owns the existing rounded sprite. Reuse it rather than allocate another atlas.
+            if (session.Hud == null || session.Hud.SurfaceSprite == null) return;
+            foreach (var image in GetComponentsInChildren<Image>(true))
+            {
+                if (image.sprite != null || image.gameObject == shopShield.gameObject) continue;
+                image.sprite = session.Hud.SurfaceSprite;
+                image.type = Image.Type.Sliced;
+            }
         }
 
         private void Resize()
@@ -218,9 +252,9 @@ namespace NewGaza
             Box(toolbar, 12, toolbarTop, 340, 44, true);
             float regionHeight = Mathf.Clamp(safeHeight - toolbarTop - 52 - 116, 56, 142);
             Box(titlePanel, 12, toolbarTop + 52, width, regionHeight, true);
-            Box(title.rectTransform, 12, 8, width - 110, 32, false);
-            Box(needs.rectTransform, 12, 48, width - 24, Mathf.Max(0, regionHeight - 56), false);
-            Box(titlePanel.Find("Close region") as RectTransform, 8, 8, 84, 36, true);
+            Box(title.rectTransform, 16, 12, width - 132, 36, false);
+            Box(needs.rectTransform, 16, 64, width - 32, Mathf.Max(0, regionHeight - 76), false);
+            Box(titlePanel.Find("Close region") as RectTransform, 12, 12, 88, 44, true);
             actionPanel.anchorMin = new Vector2(.5f, 0); actionPanel.anchorMax = new Vector2(.5f, 0);
             actionPanel.pivot = new Vector2(.5f, 0); actionPanel.anchoredPosition = new Vector2(0, 116);
             actionPanel.sizeDelta = new Vector2(Mathf.Min(safeWidth - 24, 620), 212);
@@ -236,9 +270,9 @@ namespace NewGaza
             Box(categoryText.rectTransform, 12, 103, shopPanel.sizeDelta.x - 206, 32, false);
             categoryText.alignment = TextAnchor.UpperLeft;
             float actionWidth = actionPanel.sizeDelta.x;
-            Box(actionHeading.rectTransform, 12, 8, actionWidth - 112, 32, false);
-            Box(actionPanel.Find("Close work panel") as RectTransform, 8, 8, 84, 36, true);
-            Box(actionText.rectTransform, 12, 48, actionWidth - 24, 96, false);
+            Box(actionHeading.rectTransform, 16, 12, actionWidth - 132, 36, false);
+            Box(actionPanel.Find("Close work panel") as RectTransform, 12, 12, 88, 44, true);
+            Box(actionText.rectTransform, 16, 64, actionWidth - 32, 76, false);
             float buttonWidth = (actionPanel.sizeDelta.x - 32) / 3;
             Box(action.transform as RectTransform, 8, 152, buttonWidth, 44, false);
             Box(rotate.transform as RectTransform, 16 + buttonWidth, 152, buttonWidth, 44, false);
@@ -257,6 +291,13 @@ namespace NewGaza
             bool wasOpen = StoreOpen;
             shop.SetActive(false);
             if (wasOpen && session.Hud != null) session.Hud.EndStoreWindow();
+            Refresh();
+        }
+
+        internal void ShowActiveWorkLocation()
+        {
+            // Keep the central map annotation readable instead of covering it with district needs.
+            regionVisible = false;
             Refresh();
         }
 
@@ -287,10 +328,10 @@ namespace NewGaza
                         development.ChooseBuilding(captured.id);
                         if (target.HasValue) development.PreviewAt(target.Value);
                     });
-                row.gameObject.AddComponent<LayoutElement>().preferredHeight = 106;
+                row.gameObject.AddComponent<LayoutElement>().preferredHeight = 120;
                 var text = row.GetComponentInChildren<ArabicLabel>(); CityTypography.Apply(text, CityTextRole.Small);
-                text.alignment = TextAnchor.MiddleRight;
-                text.rectTransform.offsetMin = new Vector2(12, 4); text.rectTransform.offsetMax = new Vector2(-12, -4);
+                text.alignment = TextAnchor.MiddleCenter;
+                text.rectTransform.offsetMin = new Vector2(20, 12); text.rectTransform.offsetMax = new Vector2(-20, -12);
             }
             shopContent.anchoredPosition = Vector2.zero;
         }
@@ -420,6 +461,8 @@ namespace NewGaza
         private RectTransform Panel(string name, Transform parent, bool block)
         {
             var rect = Rect(name, parent); var image = rect.gameObject.AddComponent<Image>();
+            if (session.Hud != null && session.Hud.SurfaceSprite != null)
+            { image.sprite = session.Hud.SurfaceSprite; image.type = Image.Type.Sliced; }
             image.color = panel; image.raycastTarget = block; return rect;
         }
 
@@ -435,10 +478,14 @@ namespace NewGaza
         private Button Button(Transform parent, string text, UnityEngine.Events.UnityAction callback)
         {
             var rect = Rect(text, parent); var image = rect.gameObject.AddComponent<Image>(); image.color = teal;
+            if (session.Hud != null && session.Hud.SurfaceSprite != null)
+            { image.sprite = session.Hud.SurfaceSprite; image.type = Image.Type.Sliced; }
             var button = rect.gameObject.AddComponent<Button>(); button.targetGraphic = image;
             rect.gameObject.AddComponent<CityButtonMotion>();
             button.onClick.AddListener(callback);
-            var label = Label(rect, text, 15); Stretch(label.rectTransform); label.alignment = TextAnchor.MiddleCenter;
+            var label = Label(rect, text, 15); Stretch(label.rectTransform);
+            label.rectTransform.offsetMin = new Vector2(16, 8); label.rectTransform.offsetMax = new Vector2(-16, -8);
+            label.alignment = TextAnchor.MiddleCenter;
             CityTypography.Apply(label, CityTextRole.Button);
             return button;
         }

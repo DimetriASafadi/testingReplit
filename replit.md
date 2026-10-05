@@ -7,6 +7,7 @@
 - Gameplay is peaceful reconstruction, not combat: rubble → recycling → resources → revenue → infrastructure/projects → 100% neighborhood reward → next neighborhood → Al Rashid finale.
 - Runtime-generated world; use the Unity menu `New Gaza/Open game scene`, then Play. The setup menu applies mobile settings and Input System configuration. See `testingReplic/README.ar.md`.
 - Unity editor is not installed in this workspace. Never equate source/domain checks with a Unity compilation, play-mode run, device performance test, or store-ready build.
+- The user always tests this project in Unity on their PC. Never try to run Unity here.
 - Domain checks: `dotnet run --project testingReplic/Tests/Domain/DomainTests.csproj --configuration Release`.
 - Free construction/site clearance guide: `testingReplic/FREE-BUILD.ar.md`; checks: `dotnet run --project testingReplic/Tests/Development/DevelopmentTests.csproj --configuration Release`.
 - Typography guide: `testingReplic/TYPOGRAPHY.ar.md`; Cairo headings, uploaded Tajawal body/buttons and Roboto Latin/numbers are bundled Unicode faces. Generate with `uv run python tools/build_ui_fonts.py`.
@@ -15,4 +16,4 @@
 - No paid ad simulation, no fabricated reward callbacks. Real rewarded ads, native sharing/video capture, cloud saves, and store signing are not configured.
 - Geography now uses cited representative district locations and generalized OSM coastline/Rashid route; see `testingReplic/GEOGRAPHY.md`. The twelve user-approved districts (including Daraj and Nasr) unlock east-to-west from Shujaiya, then final Rashid. Preserve real north/south positions; illustrative project tiles are NOT official boundaries or a surveyed street/building map.
 - Keep access haze as collider-free, localized per-district mesh geometry with a shared fog material; Rashid should use separated project-plot patches, not a city-wide/coast-wide veil. Fog only districts whose saved state is locked: never hide accessible unfinished buildings or gate visibility on session readiness. Keep global distance fog disabled and preserve existing city mesh batching; do not add per-building fog objects.
-- GitHub delivery: the user wants to pull this project's work regularly from GitHub. After verified, user-requested changes, commit and push to the existing `origin`/`main` when authorized. Never force-push or upload secrets; if access fails, explicitly report that the upload is still pending.
+- GitHub delivery: commit and push requested changes to the existing `origin`/`main`; the user pulls and tests on their PC. Do not keep sending new versions with full files or create full-source ZIP deliveries unless asked. Never force-push or upload secrets; if access fails, explicitly report that the upload is still pending.

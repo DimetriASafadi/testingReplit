@@ -127,6 +127,8 @@ namespace NewGaza
 
         private void Update()
         {
+            var saveFailure = GameSaveStore.TakeSaveFailure();
+            if (saveFailure != null) ReportSaveFailure(saveFailure);
             if (!Ready) return;
             if (Time.unscaledTime >= nextTick)
             {
@@ -223,25 +225,35 @@ namespace NewGaza
 
         public void Save()
         {
+            SaveCheckpoint(false);
+        }
+
+        private void SaveCheckpoint(bool flush)
+        {
             if (State == null) return;
             try
             {
                 // Record wall-clock advancement before any lifecycle checkpoint.
                 Economy.Tick(Now);
-                if (world != null) world.Refresh();
                 if (cityCamera != null) cityCamera.CaptureSave();
                 if (world != null && world.Fleet != null) world.Fleet.CaptureSave(State);
-                GameSaveStore.Save(State);
+                GameSaveStore.Enqueue(State);
+                if (flush) GameSaveStore.FlushPending();
                 nextSave = Time.unscaledTime + 5;
                 SaveError = null;
             }
             catch (Exception e)
             {
-                SaveError = "تعذّر حفظ التقدم. تحقق من مساحة التخزين.";
-                Debug.LogError("New Gaza save failed: " + e.Message);
-                Audio?.PlayFailure();
-                Notify(SaveError);
+                ReportSaveFailure(e);
             }
+        }
+
+        private void ReportSaveFailure(Exception error)
+        {
+            SaveError = "تعذّر حفظ التقدم. تحقق من مساحة التخزين.";
+            Debug.LogError("New Gaza save failed: " + error.Message);
+            Audio?.PlayFailure();
+            Notify(SaveError);
         }
 
         private int CompletedBuildingCount()
@@ -256,20 +268,20 @@ namespace NewGaza
         private void OnApplicationPause(bool paused)
         {
             if (!Ready) return;
-            Save();
+            SaveCheckpoint(paused);
             if (!paused) Changed?.Invoke();
         }
         private void OnApplicationFocus(bool focused)
         {
             if (!Ready) return;
-            Save();
+            SaveCheckpoint(!focused);
             if (focused) Changed?.Invoke();
         }
-        private void OnApplicationQuit() { if (Ready) Save(); }
+        private void OnApplicationQuit() { if (Ready) SaveCheckpoint(true); }
         private void OnDisable()
         {
             // Checkpoint before teardown, while the live world/view can still be captured.
-            if (Ready && Instance == this) Save();
+            if (Ready && Instance == this) SaveCheckpoint(true);
         }
         private void OnDestroy()
         {

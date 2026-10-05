@@ -15,7 +15,7 @@ namespace NewGaza
     /// <summary>Native, session-owned Arabic mobile interface. No scene prefab or web view is required.</summary>
     public sealed partial class CityHud : MonoBehaviour
     {
-        private enum Page { None, Map, Projects, Fleet, Investments, Resources, Gift, Settings, Finale, Road }
+        private enum Page { None, Map, Projects, Fleet, Investments, Resources, Gift, Settings, Finale, Road, Activities }
         private sealed class Binding
         {
             public ArabicLabel label;
@@ -79,6 +79,7 @@ namespace NewGaza
         private int previousWidth, previousHeight;
         private Action pendingConfirmation;
         private Sprite roundedSprite;
+        internal Sprite SurfaceSprite => roundedSprite;
         private bool initialized;
         private bool finaleShown;
         private bool activityCollapsed;
@@ -167,7 +168,10 @@ namespace NewGaza
             { activityCollapsed = true; PlayerPrefs.SetInt("NewGaza.ActivityCollapsed", 1); OnChanged(); }, Card);
             closeActivity.name = "Close activity";
             var reopenActivity = ActionButton(header, "العمل", () =>
-            { activityCollapsed = false; PlayerPrefs.SetInt("NewGaza.ActivityCollapsed", 0); OnChanged(); }, Teal);
+            {
+                activityCollapsed = false; PlayerPrefs.SetInt("NewGaza.ActivityCollapsed", 0);
+                OpenActivities(); OnChanged();
+            }, Teal, CityHudIcons.Icon.Map, 12);
             reopenActivity.name = "Show activity";
 
             tutorial = Surface("Next useful step", safe, Panel);
@@ -334,9 +338,9 @@ namespace NewGaza
             Place(districtLabel.rectTransform, strip.rect.width * 0.44f, 0, strip.rect.width * 0.56f, 26, true);
             Place(strip.Find("Progress track") as RectTransform, 0, 9, strip.rect.width * 0.40f, 8, true);
             Place(activity, 12, head + 24, portrait ? width - 24 : 355, portrait ? 102 : 116, true);
-            Place(activity.Find("Close activity") as RectTransform, 8, 6, 34, 32, true);
-            Stretch(activityLabel.rectTransform, 12, 8, 50, 8);
-            Place(header.Find("Show activity") as RectTransform, width - 118, head - 68, 90, 30, true);
+            Place(activity.Find("Close activity") as RectTransform, 12, 10, 40, 40, true);
+            Stretch(activityLabel.rectTransform, 64, 12, 16, 12);
+            Place(header.Find("Show activity") as RectTransform, width - 126, head - 72, 96, 40, true);
             Place(navigation, 12, 12, width - 24, 92, false);
             float navWidth = (width - 44) / navItems.Count;
             for (int i = 0; i < navItems.Count; i++)
@@ -389,17 +393,15 @@ namespace NewGaza
                 else text.Append(Stage(s.jobStage)).Append(" · ").Append(TimeLeft(s.jobFinishUtc - session.Now));
                 text.Append("\n").Append(GameCatalog.Districts[s.jobDistrict].name);
             }
-            int activeCount = 0;
-            long nearest = long.MaxValue;
-            for (int i = 0; i < s.districts.Length; i++)
-                foreach (var p in s.districts[i].projects)
-                    if (p.finishUtc > session.Now)
-                    {
-                        activeCount++;
-                        nearest = Math.Min(nearest, p.finishUtc);
-                    }
-            text.Append("\n").Append(activeCount > 0 ? "قيد التنفيذ: " + activeCount + " · أقرب إنجاز " + TimeLeft(nearest - session.Now) : "المشاريع: اختر قطعة للاطلاع قبل البناء");
+            RefreshActivitySummary();
+            text.Append("\n").Append(liveConstructionCount > 0 ?
+                "قيد البناء: " + liveConstructionCount + (nearestConstructionUtc > session.Now ?
+                    " · أقرب إنجاز " + TimeLeft(nearestConstructionUtc - session.Now) : "") :
+                "لا يوجد بناء جارٍ");
+            if (liveReadyCount > 0) text.Append(" · أحداث جاهزة: ").Append(liveReadyCount);
             activityLabel.SetText(text.ToString());
+            header.Find("Show activity").GetComponentInChildren<ArabicLabel>().SetText(
+                "الأحداث");
             activity.gameObject.SetActive(!activityCollapsed && (s.jobStage != JobStage.Idle || activeCount > 0));
             RefreshTutorial();
             RefreshSelection();
@@ -575,7 +577,7 @@ namespace NewGaza
             modalContent.anchoredPosition = Vector2.zero;
             modalContent.sizeDelta = Vector2.zero;
             var layout = modalContent.gameObject.AddComponent<VerticalLayoutGroup>();
-            layout.padding = new RectOffset(2, 2, 2, 16);
+            layout.padding = new RectOffset(8, 8, 8, 20);
             layout.spacing = 12;
             layout.childControlWidth = true;
             layout.childControlHeight = true;
@@ -626,6 +628,7 @@ namespace NewGaza
                 case Page.Settings: BuildSettings(); break;
                 case Page.Finale: BuildFinale(); break;
                 case Page.Road: BuildRoad(); break;
+                case Page.Activities: BuildActivities(); break;
             }
             RefreshBindings();
             Canvas.ForceUpdateCanvases();
@@ -1167,6 +1170,11 @@ namespace NewGaza
             if (s.roadSegments != null)
                 foreach (var road in s.roadSegments)
                     key.Append('|').Append(road.id).Append(':').Append(road.level);
+            if (page == Page.Activities && s.development != null)
+                foreach (var building in s.development.buildings)
+                    key.Append("|event:").Append(building.id).Append(':').Append(building.completed)
+                        .Append(':').Append(building.finishUtc > session.Now)
+                        .Append(':').Append(CityDevelopmentService.PendingIncome(building, session.Now) > 0);
             return key.ToString();
         }
 
@@ -1286,7 +1294,7 @@ namespace NewGaza
             CityTypography.Apply(label, CityTextRole.Button);
             if (icon == CityHudIcons.Icon.None)
             {
-                Stretch(label.rectTransform, 7, 2, 7, 2);
+                Stretch(label.rectTransform, 16, 8, 16, 8);
             }
             else
             {

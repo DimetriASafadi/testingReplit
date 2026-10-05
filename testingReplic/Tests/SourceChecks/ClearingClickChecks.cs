@@ -17,7 +17,8 @@ internal static class ClearingClickChecks
                 .Where(method => names.Contains(method.Identifier.ValueText))
                 .Select(method => method.ToFullString()));
         string bridge = Harness.Replace("CONTROLLER_METHODS", Methods("Runtime/CityDevelopment.cs",
-            "StartClear", "Parcel", "ClearFeedback"))
+            "StartClear", "Parcel", "ClearFeedback", "FocusActiveWork", "FocusActivity", "FocusMachine", "TryGetActivityPosition"))
+            .Replace("CAMERA_METHODS", Methods("Runtime/CityCamera.cs", "FocusWorkSite", "FocusDistrictView"))
             .Replace("UI_METHODS", Methods("UI/CityDevelopmentUI.cs", "DoAction", "ShowWorkFeedback"));
         var trees = roots.Where(pair => pair.Key.StartsWith("Core/", StringComparison.Ordinal))
             .Select(pair => pair.Value.SyntaxTree).Concat(new[] {
@@ -41,7 +42,17 @@ using System;
 using NewGaza.Core;
 namespace NewGaza {
 public static class Time { public static float unscaledTime; }
-public struct Vector3 { public float x,y,z; public Vector3(float a,float b,float c) { x=a;y=b;z=c; } }
+public struct Vector3 {
+ public float x,y,z;public Vector3(float a,float b,float c) { x=a;y=b;z=c; }
+ public static Vector3 zero=>new Vector3(0,0,0);
+}
+public sealed class FixtureView { public float aspect=.5f; }
+public sealed class FixtureCamera {
+ public Vector3 targetFocus; public float targetZoom,finaleUntil,saveViewAt;
+ private FixtureView view=new FixtureView();
+ private FixtureWorld world=new FixtureWorld();
+ CAMERA_METHODS
+}
 public sealed class CityDevelopmentParcel {
  public string id,sourceBuildingId; public int district,plot; public Vector3 position; public float width,depth;
 }
@@ -49,15 +60,26 @@ public sealed class FixtureRoute { public bool IsReachable=true; public float Le
 public sealed class FixtureRoads {
  public FixtureRoute FindEquipmentRoute(Vector3 from,Vector3 to,Func<string,float> speed) => new FixtureRoute();
 }
-public sealed class FixtureFleet { public int dispatches; public void BeginDepotDispatch() { dispatches++; } }
+public sealed class FixtureFleet {
+ public int dispatches;public bool active=true;public void BeginDepotDispatch() { dispatches++; }
+ public bool TryGetMachineAudioState(int index,out Vector3 point,out float load,out float movement,out float hydraulics) {
+  point=new Vector3(90+index,0,60);load=movement=hydraulics=0;return active;
+ }
+}
 public sealed class FixtureWorld {
  public FixtureRoads Roads=new FixtureRoads(); public FixtureFleet Fleet=new FixtureFleet();
  public Vector3 CentralDepotPosition=new Vector3(0,0,0);
+ public Vector3 DistrictPosition(int index)=>new Vector3(100+index,0,100);
+ public float DistrictViewingSize(int index)=>20+index;
+ public bool TryGetProjectPosition(int index,string id,out Vector3 point) {
+  point=new Vector3(70+index,0,80);return id==""known"";
+ }
 }
 public sealed class FixtureSession {
  public bool Ready=true; public EconomyService Economy; public long Now; public string message;
  public int saves; public GameState State => Economy.State;
  public void Notify(string text) { message=text; }
+ public void SelectPlot(int index) { }
  public void Perform(Func<EconomyService,ActionResult> action) {
   if(!Ready) return; Economy.Tick(Now); var result=action(Economy);
   if(result.success) saves++; Notify(result.message);
@@ -66,7 +88,12 @@ public sealed class FixtureSession {
 public sealed class CityDevelopment {
  public FixtureSession session; public CityDevelopmentService Rules; public FixtureWorld world=new FixtureWorld();
  public CityDevelopmentUI ui; public string selectedSite,selectedBuilding;
+ public int FocusDistrict; public FixtureCamera cameraControl=new FixtureCamera();
+ public Vector3 WorkPosition=>Parcel(Rules.Data.activeRubbleId)?.position ?? new Vector3(0,0,0);
+ public void Cancel() { }
+ public void ClearSelection() { selectedSite=selectedBuilding=null; }
  public CityDevelopmentParcel[] parcels=Array.Empty<CityDevelopmentParcel>();
+ public CityDevelopmentParcel ParcelForTest()=>Parcel(Rules.Data.activeRubbleId);
  public string SelectedSite=>selectedSite; public string SelectedBuilding=>selectedBuilding;
  public bool Placing=>false; public void Confirm() { throw new Exception(""unexpected placement""); }
  public void BuildOnSelectedLand() { builtOnCleanLand=true; } public bool builtOnCleanLand;
@@ -78,6 +105,8 @@ public sealed class CityDevelopment {
 public sealed class CityDevelopmentUI {
  public CityDevelopment development; public string feedbackSite,workFeedback; public int refreshes; private float workFeedbackUntil;
  public void Refresh() { refreshes++; } public void Click() { DoAction(); }
+ public void CloseStore() { }
+ public void ShowActiveWorkLocation() { refreshes++; }
  UI_METHODS
 }
 public static class ClickScenarios {
@@ -117,6 +146,31 @@ public static class ClickScenarios {
   c.selectedSite=""background:other""; c.ui.Click();
   Check(c.selectedSite==""background:click"" && c.Rules.Data.activeRubbleId==c.selectedSite &&
    c.world.Fleet.dispatches==1 && c.session.State.coins==coins,""busy click shows saved active job without replacing it"");
+  var active=c.ParcelForTest();
+  Check(c.cameraControl.targetFocus.x==active.position.x && c.cameraControl.targetFocus.z==active.position.z &&
+   c.cameraControl.targetZoom>=.9f && c.cameraControl.targetZoom<10 &&
+   c.cameraControl.saveViewAt==Time.unscaledTime+.25f,""actual busy-click camera method focuses active site, close zoom and saved view"");
+  foreach(var stage in new[]{JobStage.Clearing,JobStage.Hauling,JobStage.Recycling}) {
+   c.session.State.jobStage=stage; c.selectedSite=""background:other""; c.FocusActiveWork();
+   Check(c.selectedSite==""background:click"" && c.session.State.jobStage==stage &&
+    c.session.State.jobFinishUtc==finish && c.session.State.coins==coins && c.world.Fleet.dispatches==1,
+    ""locate button across phases never spends money, restarts timer or dispatches new work"");
+  }
+  c.session.State.jobStage=JobStage.Idle; c.FocusActiveWork();
+  Check(c.session.message.Contains(""لا توجد"") && c.world.Fleet.dispatches==1,""idle locator reports no active work without dispatching"");
+  c.FocusActivity(new CityActivityItem {kind=CityActivityKind.ProjectConstruction,projectId=""known"",district=0});
+  Check(c.cameraControl.targetFocus.x==70 && c.cameraControl.targetFocus.z==80 &&
+   c.session.State.coins==coins && c.world.Fleet.dispatches==1,""unified event locator uses native project anchor without spending or dispatching"");
+  c.FocusActivity(new CityActivityItem {kind=CityActivityKind.ProjectConstruction,projectId=""missing"",district=0});
+  Check(c.session.message.Contains(""لم يعد""),""expired project event reports unavailable instead of jumping to false coordinates"");
+  c.FocusMachine(1);
+  Check(c.cameraControl.targetFocus.x==91 && c.cameraControl.targetFocus.z==60 &&
+   c.session.State.coins==coins && c.world.Fleet.dispatches==1,""machine locator uses current machine transform and never restarts work"");
+  c.world.Fleet.active=false;c.FocusMachine(1);
+  Check(c.session.message.Contains(""غير موجودة""),""inactive machine cannot create a phantom location"");
+  c.FocusActivity(new CityActivityItem {kind=CityActivityKind.DistrictReward,district=2});
+  Check(c.cameraControl.targetFocus.x==102 && c.cameraControl.targetZoom==22 &&
+   c.session.State.selectedDistrict==0,""reward locator fits correct district without granting access or changing selected progression"");
   c=Setup(); c.selectedSite=""missing""; c.ui.Click();
   Check(c.ui.workFeedback.Contains(""اختر"") && c.world.Fleet.dispatches==0,""unknown site is not silent or null dereference"");
   c=Setup(); c.session.Ready=false; c.ui.Click();

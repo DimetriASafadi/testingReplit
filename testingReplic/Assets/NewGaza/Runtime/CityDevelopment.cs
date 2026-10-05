@@ -43,6 +43,7 @@ namespace NewGaza
         public string SelectedSite => selectedSite;
         public string SelectedBuilding => selectedBuilding;
         public Vector3 CentralFactoryMapPosition => world.CentralDepotPosition;
+        internal CityFleet ActiveFleet => world.Fleet;
         internal Material FactoryHighlightMaterial => world.DevelopmentGeometry.Material(
             "recycling factory halo", new Color(.1f, 1f, .45f), emission: 1.2f);
 
@@ -161,9 +162,17 @@ namespace NewGaza
                 hovered = DistrictAt(ground);
             }
             regions.Highlight(FocusDistrict, hovered);
-            ui.Refresh();
+            if (Time.unscaledTime >= nextInformationRefresh || lastInformationDistrict != FocusDistrict)
+            {
+                nextInformationRefresh = Time.unscaledTime + .25f;
+                lastInformationDistrict = FocusDistrict;
+                ui.Refresh();
+            }
             buildings.Animate();
         }
+
+        private float nextInformationRefresh;
+        private int lastInformationDistrict = -2;
 
         private void Refresh()
         {
@@ -377,11 +386,7 @@ namespace NewGaza
             if (session.State.jobStage != JobStage.Idle)
             {
                 // Never restart or overwrite saved work just because another site was selected.
-                if (!string.IsNullOrEmpty(Rules.Data.activeRubbleId))
-                {
-                    selectedSite = Rules.Data.activeRubbleId;
-                    selectedBuilding = null;
-                }
+                FocusActiveWork();
                 ClearFeedback("هناك مهمة جارية؛ انتظر وصول الآليات والإزالة ثم النقل والتدوير. تم عرض الموقع الجاري بدل بدء مهمة أخرى.");
                 return;
             }
@@ -417,6 +422,64 @@ namespace NewGaza
         {
             ui.ShowWorkFeedback(message);
             session.Notify(message);
+        }
+
+        public void FocusActiveWork()
+        {
+            if (session.State.jobStage == JobStage.Idle)
+            { session.Notify("لا توجد مهمة إزالة دمار جارية الآن"); return; }
+            Cancel();
+            ui.CloseStore();
+            var parcel = Parcel(Rules.Data.activeRubbleId);
+            selectedSite = parcel?.id;
+            selectedBuilding = null;
+            FocusDistrict = session.State.jobDistrict;
+            session.SelectPlot(-1);
+            cameraControl.FocusWorkSite(WorkPosition, parcel?.width ?? .4f, parcel?.depth ?? .4f);
+            ui.ShowActiveWorkLocation();
+        }
+
+        internal bool TryGetActivityPosition(CityActivityItem item, out Vector3 point)
+        {
+            point = Vector3.zero;
+            if (item == null) return false;
+            if (item.kind == CityActivityKind.Rubble)
+            {
+                if (session.State.jobStage == JobStage.Idle) return false;
+                point = WorkPosition; return true;
+            }
+            if (item.hasCoordinates) { point = new Vector3(item.x, 0, item.z); return true; }
+            if (!string.IsNullOrEmpty(item.projectId))
+                return world.TryGetProjectPosition(item.district, item.projectId, out point);
+            point = world.DistrictPosition(item.district); return true;
+        }
+
+        public void FocusActivity(CityActivityItem item)
+        {
+            if (item != null && item.kind == CityActivityKind.Rubble) { FocusActiveWork(); return; }
+            if (!TryGetActivityPosition(item, out var point))
+            { session.Notify("لم يعد لهذا الحدث موقع متاح؛ افتح الأحداث لتحديث القائمة"); return; }
+            if (!string.IsNullOrEmpty(item.buildingId))
+            {
+                var building = Rules.Building(item.buildingId);
+                if (building == null) { session.Notify("لم يعد المبنى متاحًا"); return; }
+                point = new Vector3(building.x, 0, building.z);
+            }
+            Cancel(); ui.CloseStore();
+            selectedSite = null; selectedBuilding = item.buildingId;
+            FocusDistrict = item.district; session.SelectPlot(-1);
+            if (item.kind == CityActivityKind.DistrictReward) cameraControl.FocusDistrictView(point, item.district);
+            else cameraControl.FocusWorkSite(point, item.width, item.depth);
+            ui.ShowActiveWorkLocation();
+        }
+
+        public void FocusMachine(int index)
+        {
+            if (!world.Fleet.TryGetMachineAudioState(index, out var point, out _, out _, out _))
+            { session.Notify("هذه الآلية غير موجودة الآن على الخريطة"); return; }
+            ClearSelection(); ui.CloseStore();
+            cameraControl.FocusWorkSite(point, .6f, .6f);
+            ui.ShowActiveWorkLocation();
         }
 
         public void Collect()
