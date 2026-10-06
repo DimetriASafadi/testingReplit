@@ -954,3 +954,17 @@ mtime_ms = 1791296590358
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/ae32faf4-fb1b-4e9d-859d-e763b5c3434c/103aa0d7-64ad-4711-b376-10b71991d4e5"
 storage_version_token = "1791296611608841"
 content_type = "image/png"
+
+[[outputs]]
+id = "0AtMu1eDoPD69gboa6Txh"
+uri = "file://attached_assets/generated_images/gaza_2d_rebuilt_neighborhood.png"
+type = "image"
+title = "تصوّر حيّ غزة بعد اكتمال البناء"
+description = "مبانٍ سكنية مكتملة ومتنوعة بأسلوب لعبة مدن ثنائية الأبعاد، مع أسطح مسطحة وخزانات مياه وشرفات وأحياء قريبة من الساحل. رسم تصوري، وليس صورة من اللعبة أو مرجعًا معماريًا موثقًا."
+logical_id = "d127741b-9748-44d4-82b8-3b243a6a0b67"
+content_hash = "sha256:7e9fb66fb02abd5ed8ede5720cb290df5310795062aa3ff5ccb7ff6b0b502cee"
+size = 2530201
+mtime_ms = 1791296723138
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/d127741b-9748-44d4-82b8-3b243a6a0b67/613e7976-4999-44dd-bba7-7e3a83c662a4"
+storage_version_token = "1791296745136586"
+content_type = "image/png"
