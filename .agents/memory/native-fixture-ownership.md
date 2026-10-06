@@ -20,3 +20,9 @@ Evaluate tiny surface-triangle orientation using local, translated coordinates a
 **Why:** At geographic city coordinates, global single-precision area products cancelled for thin crack markings, producing downward-facing triangles that a small origin-centered sample did not reveal.
 
 **How to apply:** Include the full sourced map in winding checks, not just a synthetic road near the origin. Inspect emitted triangles rather than relying on a polygon-wide area sign.
+
+Parked-track fixtures must wait for heading as well as position to settle.
+
+**Why:** A crawler can have zero translation while its smooth heading is still turning; differential track-chain motion during that turn is correct, not idle creep.
+
+**How to apply:** Check settled rotation before comparing stationary shoe vertices. Do not use a fixed short wait as proof that the complete chassis pose has stopped.

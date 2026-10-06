@@ -16,6 +16,7 @@
     <Compile Include="../../Assets/NewGaza/World/CityFleetTeams.cs" Link="World/CityFleetTeams.cs" />
     <Compile Include="../../Assets/NewGaza/World/CityFleetPersistence.cs" Link="World/CityFleetPersistence.cs" />
     <Compile Include="../../Assets/NewGaza/World/CityFleetAppearance.cs" Link="World/CityFleetAppearance.cs" />
+    <Compile Include="../../Assets/NewGaza/World/MeshyExcavatorVisuals.cs" Link="World/MeshyExcavatorVisuals.cs" />
     <Compile Include="../../Assets/NewGaza/World/CityBasemap.cs" Link="World/CityBasemap.cs" />
     <Compile Include="../../Assets/NewGaza/World/CityRoadNetwork.cs" Link="World/CityRoadNetwork.cs" />
     <Compile Include="../../Assets/NewGaza/World/CityGeometry.cs" Link="World/CityGeometry.cs" />
@@ -30,10 +31,16 @@
     <Compile Include="EquipmentPersistenceChecks.cs" />
     <Compile Include="EquipmentWorkCycleChecks.cs" />
     <Compile Include="EquipmentTeamsAndCornersChecks.cs" />
+    <Compile Include="MeshyExcavatorChecks.cs" />
     <Compile Include="UnityStubs.cs" />
     <Compile Include="Program.cs" />
     <None Include="../../Assets/NewGaza/Resources/GazaBasemap.json" Link="GazaBasemap.json"
           CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../Assets/NewGaza/Resources/Equipment/ExcavatorAppearance.json"
+          Link="Equipment/ExcavatorAppearance.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../Assets/NewGaza/Resources/Equipment/MeshyExcavator.bytes"
+          Condition="Exists('../../Assets/NewGaza/Resources/Equipment/MeshyExcavator.bytes')"
+          Link="Equipment/MeshyExcavator.bytes" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../../../exports/models/Gaza-City-Production-Placement.json"
           Condition="Exists('../../../exports/models/Gaza-City-Production-Placement.json')"
           Link="Gaza-City-Production-Placement.json" CopyToOutputDirectory="PreserveNewest" />

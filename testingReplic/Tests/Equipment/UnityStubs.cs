@@ -284,12 +284,18 @@ namespace UnityEngine
     {
         private static readonly Shader LitShader = new Shader { name = "Universal Render Pipeline/Lit" };
         public static string RootDirectory;
+        public static readonly Dictionary<string, TextAsset> TextOverrides = new Dictionary<string, TextAsset>();
         public static T Load<T>(string path) where T : class
         {
+            if (typeof(T) == typeof(TextAsset) && TextOverrides.TryGetValue(path, out TextAsset overridden))
+                return overridden as T;
             if (typeof(T) == typeof(Material) && path == "NewGazaLit")
                 return new Material(LitShader) as T;
             if (typeof(T) == typeof(TextAsset) && !string.IsNullOrEmpty(RootDirectory))
             {
+                string binary = Path.Combine(RootDirectory,
+                    path.Replace('/', Path.DirectorySeparatorChar) + ".bytes");
+                if (File.Exists(binary)) return new TextAsset(File.ReadAllBytes(binary)) as T;
                 string file = Path.Combine(RootDirectory,
                     path.Replace('/', Path.DirectorySeparatorChar) + ".json");
                 if (File.Exists(file)) return new TextAsset(File.ReadAllText(file)) as T;
@@ -301,7 +307,9 @@ namespace UnityEngine
     public sealed class TextAsset : Object
     {
         public readonly string text;
-        public TextAsset(string value) { text = value; }
+        public readonly byte[] bytes;
+        public TextAsset(string value) { text = value; bytes = System.Text.Encoding.UTF8.GetBytes(value); }
+        public TextAsset(byte[] value) { bytes = value; text = System.Text.Encoding.UTF8.GetString(value); }
     }
 
     public static class JsonUtility

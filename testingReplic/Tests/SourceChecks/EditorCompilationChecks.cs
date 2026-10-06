@@ -126,7 +126,10 @@ namespace UnityEditor
     public static class AssetDatabase
     {
         public static string GetAssetPath(UnityEngine.TextAsset asset) => """";
+        public static void Refresh() {}
     }
+    [AttributeUsage(AttributeTargets.Method)]
+    public sealed class MenuItem : Attribute { public MenuItem(string name) {} }
     public enum AudioSampleRateSetting { OverrideSampleRate }
     public enum AudioCompressionFormat { Vorbis }
     public struct AudioImporterSampleSettings
@@ -175,7 +178,10 @@ internal static class EditorContractProbe
                 CSharpSyntaxTree.ParseText(File.ReadAllText(
                     Path.Combine(sourceRoot, "Editor/NewGazaBasemapGate.cs"))),
                 CSharpSyntaxTree.ParseText(File.ReadAllText(
-                    Path.Combine(sourceRoot, "Editor/CityAudioImportSettings.cs")))
+                    Path.Combine(sourceRoot, "Editor/CityAudioImportSettings.cs"))),
+                CSharpSyntaxTree.ParseText(File.ReadAllText(
+                    Path.Combine(sourceRoot, "Editor/ExcavatorAppearanceMenu.cs")),
+                    new CSharpParseOptions(preprocessorSymbols: new[] { "UNITY_EDITOR" }))
             }, references.Cast<MetadataReference>().Append(
                 MetadataReference.CreateFromImage(runtimeImage.ToArray())),
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));

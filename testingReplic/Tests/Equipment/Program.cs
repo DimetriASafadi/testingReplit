@@ -42,6 +42,11 @@ internal static class Program
         try
         {
             bool skipExport = args.Contains("--no-export", StringComparer.Ordinal);
+            Resources.RootDirectory = AppContext.BaseDirectory;
+            if (args.Contains("--original", StringComparer.Ordinal))
+                Resources.TextOverrides["Equipment/ExcavatorAppearance"] = new TextAsset("{\"model\":\"original\"}");
+            Console.WriteLine("PASS Meshy excavator replacement: " + MeshyExcavatorChecks.Run() + " assertions.");
+            if (args.Contains("--meshy-only", StringComparer.Ordinal)) return 0;
             Console.WriteLine("PASS equipment work cycle: " + EquipmentWorkCycleChecks.Run() +
                 " assertions (native API fixture; no Unity execution or exports).");
             if (args.Contains("--work-cycle-only", StringComparer.Ordinal))
@@ -1024,6 +1029,17 @@ internal static class Program
         const int settleFrames = 24;
         for (int frame = 0; frame < settleFrames; frame++)
             UpdateFleet(fleet, .05f);
+        // Smooth heading can still turn a parked chassis after translation has
+        // stopped. Turning correctly advances the differential track chains.
+        // Test true stationary TRS, not the obsolete fixed 1.2-second wait.
+        Quaternion depotHeading = Quaternion.Euler(0f,180f,0f);
+        for (int frame = 0; frame < 160 &&
+            (Quaternion.Angle(((Transform)GetField(fleet,"excavator")).localRotation,depotHeading) > .01f ||
+             Quaternion.Angle(((Transform)GetField(fleet,"bulldozer")).localRotation,depotHeading) > .01f); frame++)
+            UpdateFleet(fleet,.05f);
+        Check(Quaternion.Angle(((Transform)GetField(fleet,"excavator")).localRotation,depotHeading) <= .01f &&
+            Quaternion.Angle(((Transform)GetField(fleet,"bulldozer")).localRotation,depotHeading) <= .01f,
+            "Stationary track checks must wait for both crawler headings to settle.");
         var records = new List<TrackMotionMetrics>();
         int travelStep = 0;
         foreach (string machineKind in new[] { "excavator", "bulldozer" })
@@ -1643,7 +1659,7 @@ internal static class Program
             Mesh = filter == null || filter.sharedMesh == null ? null : Mesh(output, filter.sharedMesh),
             Material = renderer == null || renderer.sharedMaterial == null
                 ? null : Material(output, renderer.sharedMaterial),
-            Active = current.gameObject.activeInHierarchy
+            Active = current.gameObject.activeInHierarchy && (renderer == null || renderer.enabled)
         };
         target.Add(node);
         for (int i = 0; i < current.childCount; i++)

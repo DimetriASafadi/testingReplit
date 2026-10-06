@@ -435,6 +435,19 @@ namespace NewGaza
 
         private void BuildExcavator()
         {
+            // Preserve the original complete rig for exact rollback and unchanged IK,
+            // routing, persistence, hydraulic anchors and payload behavior.
+            BuildOriginalExcavator();
+            if (MeshyExcavatorVisuals.IsSelected())
+            {
+                MeshyExcavatorVisuals.Attach(geometry,
+                    new[] { excavator, turret, boom, stick, bucket }, bucketPayload);
+                excavator.gameObject.name = "Meshy tracked excavator • retained native motion rig";
+            }
+        }
+
+        private void BuildOriginalExcavator()
+        {
             excavator = VehicleRoot("Compact tracked excavator • ochre diesel");
             var undercarriage = new CityMeshBatch(geometry);
             undercarriage.Box(excavatorYellow, new Vector3(0f, .47f, 0f), new Vector3(1.06f, .18f, 1.42f));
