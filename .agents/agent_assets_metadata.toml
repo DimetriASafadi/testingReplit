@@ -968,3 +968,17 @@ mtime_ms = 1791296723138
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/d127741b-9748-44d4-82b8-3b243a6a0b67/613e7976-4999-44dd-bba7-7e3a83c662a4"
 storage_version_token = "1791296745136586"
 content_type = "image/png"
+
+[[outputs]]
+id = "UjW_H4_OmSDakTOFz2wkI"
+uri = "file://attached_assets/generated_images/gaza_2d_damaged_rubble_neighborhood.png"
+type = "image"
+title = "تصوّر حيّ متضرر ومليء بالركام بأسلوب 2D"
+description = "رسم تصوري لحيّ تظهر فيه مبانٍ بأضرار متفاوتة وأكوام ركام، مع حفار وشاحنة لإزالة الأنقاض. مشهد للعبة، وليس صورة وثائقية أو لقطة فعلية منها."
+logical_id = "3b2b7a45-ee42-4cda-a5c0-c574c3699177"
+content_hash = "sha256:eafb3a2c6fcff5a05b39c91b609c7a7233009fbf27b5ca4484575a0ed21ef403"
+size = 2878359
+mtime_ms = 1791296824982
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/3b2b7a45-ee42-4cda-a5c0-c574c3699177/17ad309f-0758-40c1-b568-3791d508784b"
+storage_version_token = "1791296840764685"
+content_type = "image/png"
