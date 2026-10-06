@@ -875,14 +875,14 @@ content_type = "image/png"
 id = "q4_KbeJZYepvKXbMgG_bv"
 uri = "file://exports/Meshy-Excavator-Game-Art.zip"
 type = "unspecified"
-title = "Meshy excavator — Unity game art"
-description = "Extract into your Unity project root after updating the source. Contains the new runtime mesh and installation instructions, without .meta files. The original excavator remains available."
+title = "حزمة حفار Meshy للعبة"
+description = "حزمة المجسم التي يحتاجها خيار Use Meshy excavator. فك الضغط في جذر مشروع Unity، بجانب Assets وليس داخله. تم فحص الحزمة ومطابقة ملف المجسم؛ لا تحتوي على ملفات .meta."
 logical_id = "d7d08fc3-2899-403d-953f-68cbf5940e99"
 content_hash = "sha256:b63f0bb8dcf579ef1a9dbd744002ba3321e608401d90d2a0309e8938e3779c7f"
 size = 644856
 mtime_ms = 1791277873228
-storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/d7d08fc3-2899-403d-953f-68cbf5940e99/b2cf52fe-2918-4468-b902-b8d1b541e119"
-storage_version_token = "1791278019107888"
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/d7d08fc3-2899-403d-953f-68cbf5940e99/5d557845-a72e-43cc-8292-7e20c3ec20bc"
+storage_version_token = "1791293210422078"
 content_type = "application/octet-stream"
 
 [[outputs]]
