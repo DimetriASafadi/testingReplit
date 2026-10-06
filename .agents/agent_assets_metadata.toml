@@ -996,3 +996,17 @@ mtime_ms = 1791296931558
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/a8d75fee-ee86-4ce9-a115-4872c7bd893d/ebbb4bf8-df54-4d3c-bc66-9c8682b18a3c"
 storage_version_token = "1791297018215072"
 content_type = "image/png"
+
+[[outputs]]
+id = "tzbxtGUhGLpC-prkImcq0"
+uri = "file://attached_assets/generated_images/gaza_2d_fully_destroyed_game_map.png"
+type = "image"
+title = "حيّ كامل مدمر بمنظور لعبة 2D"
+description = "صورة تصورية لخريطة حيّ مدمر بالكامل من زاوية لعب علوية مائلة، مع أنقاض كثيفة وشوارع ومعدات إزالة الركام وواجهة لعب مبسطة. ليست لقطة من اللعبة الحالية."
+logical_id = "5160a6ba-dbb3-4707-9449-ad1f497006a7"
+content_hash = "sha256:f082cafe526934852db6a3372f0902e633b5bf2b8f1d7ebb583b9fe3e8922b1c"
+size = 3010450
+mtime_ms = 1791297191109
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/5160a6ba-dbb3-4707-9449-ad1f497006a7/0ea7999c-e34e-44fe-96e0-4a516158f927"
+storage_version_token = "1791297216005855"
+content_type = "image/png"
