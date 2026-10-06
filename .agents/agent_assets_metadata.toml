@@ -940,3 +940,17 @@ mtime_ms = 1791293328630
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/661d33e9-44cd-41a1-abfc-b08f98601c46/8d42d8d7-6e97-4b0a-a74e-19da53d0c1cb"
 storage_version_token = "1791293337710183"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "KZ-nLRvUvHPqwFUtLjchu"
+uri = "file://attached_assets/generated_images/gaza_2d_game_concept.png"
+type = "image"
+title = "تصوّر تقريبي للعبة غزة بأسلوب 2D"
+description = "رسم تصوري لواجهة لعبة بناء مدن ثنائية الأبعاد: مبانٍ مستوحاة من عمارة غزة، أسطح وخزانات مياه، حطام، شوارع ومعدات. هذه صورة مولّدة لتوضيح الاتجاه الفني؛ ليست لقطة من اللعبة أو نموذجًا نهائيًا."
+logical_id = "ae32faf4-fb1b-4e9d-859d-e763b5c3434c"
+content_hash = "sha256:2a8ba3c88e877b0009743b5ac52a7fc50bb3c2f725f19f2c73fbaafc56c09a49"
+size = 2707289
+mtime_ms = 1791296590358
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/ae32faf4-fb1b-4e9d-859d-e763b5c3434c/103aa0d7-64ad-4711-b376-10b71991d4e5"
+storage_version_token = "1791296611608841"
+content_type = "image/png"
