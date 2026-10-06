@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Collections.Generic;
 using NewGaza.Core;
 using UnityEngine;
@@ -29,6 +30,8 @@ namespace NewGaza
         private readonly List<Material> ownedMaterials = new List<Material>();
         private readonly List<Texture2D> ownedTextures = new List<Texture2D>();
         private Transform excavator, turret, boom, stick, bucket;
+        private bool fleetInitialized;
+        internal string ExcavatorAppearanceWarning { get; private set; }
         private Transform bulldozer, blade, truck, truckBed, cargo, bucketPayload;
         private Transform[] wheels;
         private Transform[] cargoPieces;
@@ -149,6 +152,8 @@ namespace NewGaza
         internal void Initialize(CityGeometry source, Material construction, Material windows, Material tires,
             Material exposedSteel, Material paintSource, Material stone)
         {
+            fleetInitialized = false;
+            ExcavatorAppearanceWarning = null;
             geometry = source;
             paint = Finish(paintSource, "weathered construction yellow enamel", new Color(.92f, .63f, .055f),
                 .15f, .28f, 17);
@@ -180,6 +185,7 @@ namespace NewGaza
             previousExcavatorJoints = new Quaternion[4];
             excavatorJoints = new[] { turret, boom, stick, bucket };
             SnapshotMotion();
+            fleetInitialized = true;
         }
 
         /// <summary>Configures the production sourced street graph exactly once.</summary>
@@ -440,9 +446,21 @@ namespace NewGaza
             BuildOriginalExcavator();
             if (MeshyExcavatorVisuals.IsSelected())
             {
-                MeshyExcavatorVisuals.Attach(geometry,
-                    new[] { excavator, turret, boom, stick, bucket }, bucketPayload);
-                excavator.gameObject.name = "Meshy tracked excavator • retained native motion rig";
+                try
+                {
+                    MeshyExcavatorVisuals.Attach(geometry,
+                        new[] { excavator, turret, boom, stick, bucket }, bucketPayload);
+                    excavator.gameObject.name = "Meshy tracked excavator • retained native motion rig";
+                }
+                catch (Exception error) when (error is InvalidOperationException ||
+                    error is IOException || error is InvalidDataException)
+                {
+                    // Asset validation occurs before the original renderers are hidden.
+                    // Keep this complete rig and continue constructing truck/dozer.
+                    ExcavatorAppearanceWarning = "Meshy excavator could not be loaded; using the original " +
+                        "excavator for this session. " + error.Message;
+                    Debug.LogWarning(ExcavatorAppearanceWarning);
+                }
             }
         }
 
@@ -1399,7 +1417,9 @@ namespace NewGaza
 
         private void Update()
         {
-            if (geometry == null) return;
+            // geometry is assigned BEFORE assets and all three machines are built.
+            // An initialization exception must not start updating a partial fleet.
+            if (!fleetInitialized || geometry == null) return;
             float dt = Time.deltaTime;
             transitionClock += dt;
             float transition = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(transitionClock / 1.15f));

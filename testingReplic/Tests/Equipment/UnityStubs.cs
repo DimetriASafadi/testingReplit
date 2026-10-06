@@ -37,6 +37,10 @@ namespace UnityEngine
     }
 
     public class MonoBehaviour : Component { }
+    public static class Debug
+    {
+        public static void LogWarning(object message) { Console.WriteLine("WARNING: " + message); }
+    }
 
     public sealed class GameObject : Object
     {

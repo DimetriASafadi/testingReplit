@@ -14,9 +14,11 @@ files in `Art/EquipmentFBX` are also untouched.
 4. Open Unity, allow it to import the files and generate its own `.meta` files.
 5. Select **New Gaza / Equipment / Use Meshy excavator**, then restart Play mode.
 
-The source setting initially selects `meshy`. If the art file is missing, the
-game reports a clear installation error rather than silently showing the old
-model. The `.bytes` file contains the actual prepared Meshy vertices, normals
+The source setting initially selects `meshy`. If the art file is missing or
+unreadable, the game warns in the Console and uses the original excavator for
+that session, so truck/cargo initialization still completes. Install the art
+package and restart Play mode to retry the selected Meshy model. The `.bytes`
+file contains the actual prepared Meshy vertices, normals
 and UVs, split into seven physical parts / ten material meshes. It is not an
 image, placeholder, or replacement for gameplay logic.
 

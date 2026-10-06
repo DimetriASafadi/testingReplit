@@ -80,10 +80,27 @@ internal static class MeshyExcavatorChecks
             Resources.TextOverrides[Setting] = new TextAsset("{\"model\":\"meshy\"}");
             Resources.TextOverrides[MeshyExcavatorVisuals.ResourcePath] = null;
             using (var geometry = new CityGeometry())
-                Throws<InvalidOperationException>(() => Make(geometry), "Missing selected asset fails explicitly.");
+                CheckFallback(geometry,"Missing asset");
             Resources.TextOverrides[MeshyExcavatorVisuals.ResourcePath] = new TextAsset(new byte[] { 1,2,3,4,5,6,7,8 });
             using (var geometry = new CityGeometry())
-                Throws<InvalidDataException>(() => Make(geometry), "Corrupt asset fails explicitly.");
+                CheckFallback(geometry,"Corrupt asset");
+            // Exercise failed initialization too: malformed preference remains an
+            // explicit error, but Unity's next frame must not update half-built rigs.
+            Resources.TextOverrides[Setting] = new TextAsset("{\"model\":\"unknown\"}");
+            using (var geometry = new CityGeometry())
+            {
+                var partial = new GameObject("Failed initialization fixture").AddComponent<CityFleet>();
+                var material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+                Throws<InvalidOperationException>(() =>
+                    partial.Initialize(geometry,material,material,material,material,material,material),
+                    "Invalid model setting reports the primary initialization error.");
+                Require(Field(partial,"cargo") == null,"Fixture reproduces the reported missing cargo.");
+                Tick(partial);
+                Require(true,"Update safely stops after initialization failed.");
+            }
+            Tick(new GameObject("Uninitialized component fixture").AddComponent<CityFleet>());
+            Require(true,"Update before Initialize safely stops.");
+            Resources.TextOverrides[Setting] = new TextAsset("{\"model\":\"meshy\"}");
             Resources.TextOverrides.Remove(MeshyExcavatorVisuals.ResourcePath);
             using (var geometry = new CityGeometry())
             {
@@ -115,6 +132,20 @@ internal static class MeshyExcavatorChecks
         for (; node != null; node = node.parent) if (node == target) return true;
         return false;
     }
+    private static void CheckFallback(CityGeometry geometry,string reason)
+    {
+        CityFleet fleet = Make(geometry);
+        Require(Meshy(Field(fleet,"excavator")).Length == 0,reason + ": original excavator retained.");
+        Require(!string.IsNullOrEmpty(fleet.ExcavatorAppearanceWarning),reason + ": actionable warning retained.");
+        Require(Field(fleet,"truck") != null && Field(fleet,"cargo") != null && Field(fleet,"bulldozer") != null,
+            reason + ": truck cargo and bulldozer still finish initialization.");
+        Require(Field(fleet,"excavator").gameObject.GetComponentsInChildren<MeshRenderer>(true).All(r=>r.enabled),
+            reason + ": original renderers remain enabled.");
+        Tick(fleet);
+        Require(true,reason + ": next frame runs without null references.");
+    }
+    private static void Tick(CityFleet fleet) =>
+        typeof(CityFleet).GetMethod("Update",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(fleet,null);
     private static void Require(bool valid,string message)
     {
         assertions++;
