@@ -870,3 +870,31 @@ mtime_ms = 1791276591709
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/036dfeb7-9223-4583-bcbc-d9f77e76ad25/bd7d1c9c-f32e-4dfc-87e7-312f940bf0e4"
 storage_version_token = "1791276713037551"
 content_type = "image/png"
+
+[[outputs]]
+id = "q4_KbeJZYepvKXbMgG_bv"
+uri = "file://exports/Meshy-Excavator-Game-Art.zip"
+type = "unspecified"
+title = "Meshy excavator — Unity game art"
+description = "Extract into your Unity project root after updating the source. Contains the new runtime mesh and installation instructions, without .meta files. The original excavator remains available."
+logical_id = "d7d08fc3-2899-403d-953f-68cbf5940e99"
+content_hash = "sha256:b63f0bb8dcf579ef1a9dbd744002ba3321e608401d90d2a0309e8938e3779c7f"
+size = 644856
+mtime_ms = 1791277873228
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/d7d08fc3-2899-403d-953f-68cbf5940e99/b2cf52fe-2918-4468-b902-b8d1b541e119"
+storage_version_token = "1791278019107888"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "Un1Zjb-z_3yz_xVmcUFX_"
+uri = "file://exports/meshy_excavator/Meshy-Game-Retarget-Offline.png"
+type = "image"
+title = "New excavator — offline parked-pose preview"
+description = "CPU-rendered review of the Meshy surfaces fitted to the existing game joints. Not a Unity screenshot or device-performance result."
+logical_id = "58ffa1fe-6434-44f5-a5d2-562d1c1623d3"
+content_hash = "sha256:212e91241cecd70402b88d62a4450fcee642ccc514a8e72d1b449e918b0e956d"
+size = 1053492
+mtime_ms = 1791277714769
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/58ffa1fe-6434-44f5-a5d2-562d1c1623d3/5893806d-01ae-45b9-afd6-fd5c6620aadb"
+storage_version_token = "1791278020516287"
+content_type = "image/png"
