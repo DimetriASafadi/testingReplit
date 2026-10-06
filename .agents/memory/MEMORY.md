@@ -10,6 +10,7 @@
 - [Native fixture ownership](native-fixture-ownership.md) — model hierarchy destruction; separate selection from static caches and test thin triangles at real geographic coordinates.
 - [Regional building art direction](regional-building-art-direction.md) — user wants family housing in the east, progressing to taller urban and tourist buildings toward the west.
 - [Ground art direction](ground-art-direction.md) — user wants semi-realistic earth, coastal sand and regional ground detail, not a uniformly yellow floor.
+- [2D visual direction](2d-visual-direction.md) — user confirmed the fully destroyed isometric game-map concept as the approximate direction for future work.
 - [Unity editor verification](unity-editor-verification.md) — single-assembly fixtures miss editor access errors; compile editor contracts separately and check obsolete Unity APIs.
 - [UI reference scope](ui-reference-scope.md) — references guide appearance; omit unsupported content and bind menu values/actions to real gameplay.
 - [Economy and onboarding](economic-balance-and-onboarding.md) — rubble pays one-third of its building price; start with placed recycler and equipment, then build on clean land.
