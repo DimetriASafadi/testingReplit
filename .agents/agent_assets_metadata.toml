@@ -982,3 +982,17 @@ mtime_ms = 1791296824982
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/3b2b7a45-ee42-4cda-a5c0-c574c3699177/17ad309f-0758-40c1-b568-3791d508784b"
 storage_version_token = "1791296840764685"
 content_type = "image/png"
+
+[[outputs]]
+id = "qBd6tJUEWvkd0ibKShRFk"
+uri = "file://attached_assets/generated_images/gaza_realistic_total_destruction.png"
+type = "image"
+title = "تصوّر واقعي لحيّ شديد الدمار"
+description = "صورة مولّدة بأسلوب فوتوغرافي تُظهر مباني خرسانية مهدمة وركامًا كثيفًا، مستوحاة من السمات العمرانية لغزة. ليست صورة حقيقية من غزة ولا توثيقًا لموقع محدد."
+logical_id = "a8d75fee-ee86-4ce9-a115-4872c7bd893d"
+content_hash = "sha256:61727a17da56ff1bdf1a6600ed40d70ee491cd27293970b52776d831a9cd453b"
+size = 2438608
+mtime_ms = 1791296931558
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/a8d75fee-ee86-4ce9-a115-4872c7bd893d/ebbb4bf8-df54-4d3c-bc66-9c8682b18a3c"
+storage_version_token = "1791297018215072"
+content_type = "image/png"
