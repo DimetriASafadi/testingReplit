@@ -842,3 +842,31 @@ mtime_ms = 1791181956171
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/c130d267-3bb2-451e-802e-625ebeebcb41/906b84a1-5ddc-4762-b50d-76448170e32f"
 storage_version_token = "1791181978612298"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "KKzdFjy1tmgHbyo7JZmzq"
+uri = "file://exports/Meshy_Excavator_MobileSplit.zip"
+type = "unspecified"
+title = "Separated excavator — FBX + Blender package"
+description = "Standalone review asset with seven parts, editable pivots, 19,500 triangles, solid-color materials, previews and instructions. No .meta files; the existing game asset is unchanged."
+logical_id = "fcd02639-cc1c-4388-b038-269cb741d242"
+content_hash = "sha256:c34025f2139f5f34d1850a721503b68c25aca260d4b3fce0c6789a49cb11ec85"
+size = 3723950
+mtime_ms = 1791276681777
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/fcd02639-cc1c-4388-b038-269cb741d242/70a65d7e-c9ef-4bd2-bd5e-bcf96908cae7"
+storage_version_token = "1791276711546848"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "f3BiIEnlthVwEnTVaSAqm"
+uri = "file://exports/meshy_excavator/fbx_roundtrip_preview.png"
+type = "image"
+title = "Prepared excavator preview"
+description = "Offline CPU render of the exported FBX after re-import. Replacement solid colors; not the original Meshy textures or a Unity/device screenshot."
+logical_id = "036dfeb7-9223-4583-bcbc-d9f77e76ad25"
+content_hash = "sha256:139df7400532f3cf24f6eb3d51cbd2fb3cf14f3c3917eb914a9d596005e821f9"
+size = 1003847
+mtime_ms = 1791276591709
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/036dfeb7-9223-4583-bcbc-d9f77e76ad25/bd7d1c9c-f32e-4dfc-87e7-312f940bf0e4"
+storage_version_token = "1791276713037551"
+content_type = "image/png"
