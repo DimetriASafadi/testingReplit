@@ -73,6 +73,8 @@ namespace UnityEngine
 {
     public struct Vector3 { public float x, y, z; }
     public enum AudioClipLoadType { DecompressOnLoad }
+    public enum TextureWrapMode { Repeat }
+    public enum FilterMode { Trilinear }
     public class TextAsset { public string text; }
     public static class Resources { public static T Load<T>(string path) where T : class => null; }
     public static class JsonUtility
@@ -154,6 +156,28 @@ namespace UnityEditor
         protected string assetPath;
         protected object assetImporter;
     }
+    public enum TextureImporterType { Default }
+    public enum TextureImporterAlphaSource { None }
+    public enum TextureImporterCompression { Compressed }
+    public enum TextureImporterFormat { ETC2_RGB4, ASTC_6x6 }
+    public class TextureImporterPlatformSettings
+    {
+        public string name;
+        public bool overridden;
+        public int maxTextureSize, compressionQuality;
+        public TextureImporterFormat format;
+    }
+    public class TextureImporter
+    {
+        public TextureImporterType textureType;
+        public bool sRGBTexture, isReadable, mipmapEnabled;
+        public TextureImporterAlphaSource alphaSource;
+        public TextureWrapMode wrapMode;
+        public FilterMode filterMode;
+        public int anisoLevel, maxTextureSize;
+        public TextureImporterCompression textureCompression;
+        public void SetPlatformTextureSettings(TextureImporterPlatformSettings settings) {}
+    }
 }
 internal static class EditorContractProbe
 {
@@ -181,7 +205,9 @@ internal static class EditorContractProbe
                     Path.Combine(sourceRoot, "Editor/CityAudioImportSettings.cs"))),
                 CSharpSyntaxTree.ParseText(File.ReadAllText(
                     Path.Combine(sourceRoot, "Editor/ExcavatorAppearanceMenu.cs")),
-                    new CSharpParseOptions(preprocessorSymbols: new[] { "UNITY_EDITOR" }))
+                    new CSharpParseOptions(preprocessorSymbols: new[] { "UNITY_EDITOR" })),
+                CSharpSyntaxTree.ParseText(File.ReadAllText(
+                    Path.Combine(sourceRoot, "Editor/CityGroundTextureImportSettings.cs")))
             }, references.Cast<MetadataReference>().Append(
                 MetadataReference.CreateFromImage(runtimeImage.ToArray())),
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));

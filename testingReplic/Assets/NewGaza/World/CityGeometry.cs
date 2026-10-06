@@ -68,6 +68,42 @@ namespace NewGaza
             return material;
         }
 
+        /// <summary>World-space ground mapping: one authored tile spans eight real metres.</summary>
+        internal Material GroundMaterial(string key, string textureName, Color fallback,
+            float unitsPerKilometre = 50f)
+        {
+            if (unitsPerKilometre <= 0f || float.IsNaN(unitsPerKilometre) ||
+                float.IsInfinity(unitsPerKilometre))
+                throw new ArgumentOutOfRangeException(nameof(unitsPerKilometre));
+            key = "ground • " + key;
+            if (materials.TryGetValue(key, out Material existing)) return existing;
+            string path = "Ground/" + textureName;
+            Texture2D albedo = Resources.Load<Texture2D>(path);
+            Shader groundShader = Resources.Load<Shader>("NewGazaGround");
+            if (albedo == null || groundShader == null)
+            {
+                Debug.LogWarning("New Gaza ground art is not installed: Resources/" + path +
+                    " or Resources/NewGazaGround. Keeping the existing ground material. " +
+                    "Install the ground texture package and restart Play mode.");
+                return Material(key, fallback, surface: SurfaceKind.Stone);
+            }
+            // Import settings own compression/mipmaps; Repeat is also enforced at
+            // runtime so a manually imported image cannot clamp across the city.
+            albedo.wrapMode = TextureWrapMode.Repeat;
+            var material = new Material(groundShader)
+            {
+                name = "New Gaza • " + key,
+                enableInstancing = true
+            };
+            material.SetTexture("_BaseMap", albedo);
+            material.SetColor("_BaseColor", Color.white);
+            material.SetFloat("_WorldScale", 1000f / (8f * unitsPerKilometre));
+            material.SetFloat("_CoarseBlend", .18f);
+            material.SetFloat("_MacroStrength", .12f);
+            materials.Add(key, material);
+            return material;
+        }
+
         internal Mesh Own(Mesh mesh)
         {
             owned.Add(mesh);

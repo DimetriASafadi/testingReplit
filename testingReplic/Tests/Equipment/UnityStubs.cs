@@ -289,8 +289,10 @@ namespace UnityEngine
         private static readonly Shader LitShader = new Shader { name = "Universal Render Pipeline/Lit" };
         public static string RootDirectory;
         public static readonly Dictionary<string, TextAsset> TextOverrides = new Dictionary<string, TextAsset>();
+        public static readonly Dictionary<string, Object> AssetOverrides = new Dictionary<string, Object>();
         public static T Load<T>(string path) where T : class
         {
+            if (AssetOverrides.TryGetValue(path, out Object asset)) return asset as T;
             if (typeof(T) == typeof(TextAsset) && TextOverrides.TryGetValue(path, out TextAsset overridden))
                 return overridden as T;
             if (typeof(T) == typeof(Material) && path == "NewGazaLit")

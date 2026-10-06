@@ -81,6 +81,7 @@ namespace NewGaza
         private int factoryLevel = -1;
         private bool finale;
         private Material sand, limestone, cream, terracotta, teal, glass, asphalt, sidewalk;
+        private Material urbanGround;
         private Material dark, iron, rubble, leaf, grass, yellow, white, water, sea, foam;
         private Material concrete, brick, windowFrame, rebarRust, waterTank, waterTankLight, patina;
         private Material[] districtColors;
@@ -121,7 +122,8 @@ namespace NewGaza
                 urbanRequests.Add(new CityUrbanDistrictRequest(GameCatalog.Districts[i].id,
                     Point(GameGeography.DistrictPoint(i)), GameCatalog.Districts[i].projects.Length));
             backgroundRequests = urbanRequests;
-            backgroundOpen = geometry.Material("mapped open land", Hex(0x87917C), surface: SurfaceKind.Stone);
+            backgroundOpen = geometry.GroundMaterial("mapped dry open land", "DryGround_Albedo",
+                Hex(0x87917C), basemap.EffectiveUnitsPerKilometre);
             backgroundRoad = geometry.Material("local weathered asphalt", Hex(0x636663), surface: SurfaceKind.Asphalt);
             backgroundFootprint = geometry.Material("scattered shattered concrete", Hex(0x766B5B), surface: SurfaceKind.Concrete);
             clearedBackground.Clear();
@@ -164,8 +166,11 @@ namespace NewGaza
         private void MakePalette()
         {
             if (seaSurfaceMaterial != null) Destroy(seaSurfaceMaterial);
-            sand = geometry.Material("coastal beach sand only", Hex(0xC7C0AB), surface: SurfaceKind.Stone);
+            sand = geometry.GroundMaterial("coastal beach sand only", "CoastalSand_Albedo",
+                Hex(0xC7C0AB), basemap.EffectiveUnitsPerKilometre);
             limestone = geometry.Material("neutral urban ground", Hex(0xADADA6), surface: SurfaceKind.Concrete);
+            urbanGround = geometry.GroundMaterial("textured urban ground", "UrbanGround_Albedo",
+                Hex(0xADADA6), basemap.EffectiveUnitsPerKilometre);
             cream = geometry.Material("aged off-white plaster", Hex(0xDED6C7), surface: SurfaceKind.Plaster);
             terracotta = geometry.Material("muted brick and terracotta", Hex(0x986E5B));
             teal = geometry.Material("muted utility teal", Hex(0x557675));
@@ -275,7 +280,7 @@ namespace NewGaza
                 AddQuad(landscape, sand, a + new Vector3(0f,-.10f,0f),
                     b + new Vector3(0f,-.10f,0f), b + new Vector3(2f,CityGroundY,0f),
                     a + new Vector3(2f,CityGroundY,0f));
-                AddQuad(landscape, limestone, a + new Vector3(2f,CityGroundY,0f),
+                AddQuad(landscape, urbanGround, a + new Vector3(2f,CityGroundY,0f),
                     b + new Vector3(2f,CityGroundY,0f), new Vector3(east,CityGroundY,b.z),
                     new Vector3(east,CityGroundY,a.z));
                 landscape.Beam(foam, a + new Vector3(0f,-.115f,0f),
@@ -754,7 +759,7 @@ namespace NewGaza
             // Keep ground works only where a cleared/construction/infrastructure site needs them.
             if ((stage == 1 && !housing) || (stage == 2 && !housing) ||
                 (stage == 3 && !housing))
-                batch.Box(stage == 3 ? sidewalk : sand, new Vector3(0f,.04f,0f), footprint);
+                batch.Box(stage == 3 ? sidewalk : urbanGround, new Vector3(0f,.04f,0f), footprint);
             float modelHeight = 0f;
             if (stage == -2) { /* Clean, empty land: no preselected housing foundation. */ }
             else if (stage == 0)
@@ -1602,7 +1607,7 @@ namespace NewGaza
         {
             var root = new GameObject("Static damaged city background").transform;
             root.SetParent(cityRoot, false);
-            var replacement = CityUrbanContext.Build(basemap, geometry, modelLibrary, root, limestone,
+            var replacement = CityUrbanContext.Build(basemap, geometry, modelLibrary, root, urbanGround,
                 backgroundOpen, asphalt, backgroundRoad, backgroundFootprint, backgroundRequests, clearedBackground);
             if (backgroundRoot != null)
             {
