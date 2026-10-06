@@ -926,3 +926,17 @@ mtime_ms = 1791279757197
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/9a73ca9c-da11-41f1-aae9-684cbc252e5e/6503d03e-3dd6-4534-8881-078d091346d7"
 storage_version_token = "1791279903202343"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "akAjFMD7RPVy988dPInX3"
+uri = "file://exports/MeshyExcavator-Required-File.zip"
+type = "unspecified"
+title = "ملف مجسّم الحفار الناقص فقط"
+description = "يحتوي على MeshyExcavator.bytes وحده. فك ضغطه مباشرة داخل Assets/NewGaza/Resources/Equipment، في المجلد الظاهر في صورتك. لا يحتوي على ملفات .meta."
+logical_id = "661d33e9-44cd-41a1-abfc-b08f98601c46"
+content_hash = "sha256:9a807197c2ea964954cb5d0184da79e19169afe1fe06381b3ee833d70c7b7ac1"
+size = 642774
+mtime_ms = 1791293328630
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/661d33e9-44cd-41a1-abfc-b08f98601c46/8d42d8d7-6e97-4b0a-a74e-19da53d0c1cb"
+storage_version_token = "1791293337710183"
+content_type = "application/octet-stream"
