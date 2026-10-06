@@ -898,3 +898,31 @@ mtime_ms = 1791277714769
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/58ffa1fe-6434-44f5-a5d2-562d1c1623d3/5893806d-01ae-45b9-afd6-fd5c6620aadb"
 storage_version_token = "1791278020516287"
 content_type = "image/png"
+
+[[outputs]]
+id = "XNCzXwSvLN2QVOmtmKzqt"
+uri = "file://exports/NewGaza-Ground-Art.zip"
+type = "unspecified"
+title = "خامات الأرض والرمال للعبة"
+description = "ثلاث خامات شبه واقعية بدقة 1024×1024 مع دليل تركيبها في Unity. فك الضغط في جذر مشروع Unity بعد تحديث الكود. لا تحتوي الحزمة على ملفات .meta."
+logical_id = "8a2a67fb-e7f5-432a-b9be-e046140cece5"
+content_hash = "sha256:32beb634ffa86a2af8af4e41165054da5cd400e47ab9ae6025786bbee6634c54"
+size = 6992592
+mtime_ms = 1791279757441
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/8a2a67fb-e7f5-432a-b9be-e046140cece5/4520e701-dd65-4b80-a086-bd28cdc26f35"
+storage_version_token = "1791279901656535"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "LMCCQRLOeuZF5znCe7gQK"
+uri = "file://exports/ground/Ground-Texture-Review.jpg"
+type = "image"
+title = "معاينة خامات الأرض والتكرار"
+description = "أرض حضرية حجرية، رمال ساحلية، وتربة بغطاء نباتي جاف. الصف السفلي يعرض تكرار كل خامة 4×4؛ هذه معاينة صور وليست لقطة من Unity."
+logical_id = "9a73ca9c-da11-41f1-aae9-684cbc252e5e"
+content_hash = "sha256:8e4419db87c677aba65a134c326c9ba9a8fb25432041a3ffa9d0dc4cc5cde988"
+size = 529155
+mtime_ms = 1791279757197
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/9a73ca9c-da11-41f1-aae9-684cbc252e5e/6503d03e-3dd6-4534-8881-078d091346d7"
+storage_version_token = "1791279903202343"
+content_type = "image/jpeg"
