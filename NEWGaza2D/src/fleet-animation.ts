@@ -4,6 +4,7 @@ import type { EquipmentKind, GameState, Unit } from './model';
 import { U } from './art';
 import { convoyMotion, gateDemand, workDock } from './fleet-motion';
 import { DepotDoors } from './depot-door';
+import { machineryDepth } from './machinery-depth';
 
 type Pt = [number, number];
 type Pose = { tip: number[]; worldTip: number[] };
@@ -63,8 +64,9 @@ export class FleetAnimation {
   }
   private pose(a: Actor, unit: Unit, first: string, second: string, blend: number, pos: Pt) {
     const [x, y] = iso(pos);
-    a.a.setFrame(first).setAlpha(1 - blend).setPosition(x, y).setDepth(y + .4);
-    a.b.setFrame(second).setAlpha(blend).setPosition(x, y).setDepth(y + .401);
+    const depth = machineryDepth(unit.kind, a.heading, y, META.size, META.ortho, SCALE);
+    a.a.setFrame(first).setAlpha(1 - blend).setPosition(x, y).setDepth(depth);
+    a.b.setFrame(second).setAlpha(blend).setPosition(x, y).setDepth(depth + .001);
     const p = META.frames[first].tip, q = META.frames[second].tip;
     a.tip = [x + ((p[0] + (q[0] - p[0]) * blend) - META.foot[0]) * SCALE,
       y + ((p[1] + (q[1] - p[1]) * blend) - META.foot[1]) * SCALE];

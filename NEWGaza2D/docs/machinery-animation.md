@@ -14,6 +14,11 @@ sprites; players do not download or render 3D models.
   from the rendered bucket lip; the tipper discharges at its rendered rear outlet.
 - Curb positions keep chassis off the ruined building footprint. Trucks can back
   into loading positions. Adjacent heading/pose interpolation avoids snap turns.
+- Moving chassis sort by their rear ground-contact envelope rather than their
+  centre. Dimensions, current heading, atlas projection and rendered scale determine
+  that envelope on every pose; crossfaded headings share a continuous envelope.
+  A turning tail therefore goes behind a facade immediately, instead of painting
+  over its roof until the vehicle centre has travelled past the sorting boundary.
 - Foreground buildings temporarily fade only when their opaque pixels hide an
   active machine or tool. Depth order and real road positions remain unchanged.
 - The city uses the original 2:1 projection and logical plot positions. Houses,
