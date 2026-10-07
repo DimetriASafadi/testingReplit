@@ -31,3 +31,11 @@ export const rect = (x0: number, y0: number, x1: number, y1: number): Pt[] => [[
 export function blob(cx: number, cy: number, rx: number, ry: number, r: () => number, n = 9): Pt[] {
   const pts: Pt[] = []; for (let i = 0; i < n; i++) { const a = (i / n) * Math.PI * 2; const k = 0.7 + r() * 0.5; pts.push([cx + Math.cos(a) * rx * k, cy + Math.sin(a) * ry * k]); } return pts;
 }
+/** rounded-corner logical polygon (curbs, sidewalks, lot bases) */
+export function roundRect(x0: number, y0: number, x1: number, y1: number, r: number, n = 5): Pt[] {
+  const pts: Pt[] = []; const cs: [number, number, number][] = [[x1 - r, y0 + r, -90], [x1 - r, y1 - r, 0], [x0 + r, y1 - r, 90], [x0 + r, y0 + r, 180]];
+  for (const [cx, cy, a0] of cs) for (let i = 0; i <= n; i++) { const a = (a0 + (90 * i) / n) * Math.PI / 180; pts.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]); }
+  return pts;
+}
+/** deterministic seeded rng, stable per district/plot */
+export function seeded(n: number) { let s = (n | 0) % 233280 || 1; return () => { s = (s * 9301 + 49297) % 233280; return s / 233280; }; }

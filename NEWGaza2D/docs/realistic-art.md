@@ -11,3 +11,12 @@
 - Vehicles still procedural; art.ts building draw code unused.
 - Generated front/rear variants are distinct renders rather than rotations of a single 3D model; very fine architectural details can differ between views.
 - This is original game art inspired by local buildings, not surveyed documentation or a pixel-perfect reproduction of the reference.
+
+## Environment cohesion
+- The rendering target is comfortable, semi-realistic **game illustration**, not a photograph or isolated cutout collage.
+- `tools/harmonize_art.py` matches black/highlight ranges, saturation and fine texture across terrain and all building renders without changing alpha footprints. Local baselines are ignored. Run normally for deterministic reprocessing; after replacing/packing ungraded source sprites, use `--refresh-baseline` to update the authoring baseline.
+- `tools/pack_environment.py` crops twelve original AI-generated, transparent ground/curb/rubble decals. `src/environment-art.ts` keeps their ground anchors consistent.
+- Lot skirts combine fine earth, rubble and ground decals with a feathered alpha mask. Ruined skirts disappear upon clearing; clean/construction/completed sites use their own lighter surroundings. Road centres remain open rather than being covered by opaque rubble patches.
+- Rounded block corners, broken curbs, quiet cleared-land markings, smaller contact shadows and a continuous earth/coast surface replace hard square pads and the bounded land diamond.
+- Smaller visual footprints and capped tall-remnant scale preserve street space. Gameplay coordinates, plot selection, timers and saves are unchanged.
+- Browser art fixtures reset their own wall-clock timestamp: a previous accelerated regression run must not silently complete the visual construction fixtures.

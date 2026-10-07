@@ -31,4 +31,10 @@ for (const [key, m] of Object.entries(manifest)) {
 assert(bytes < 3 * 1024 * 1024, 'Runtime sprite payload exceeds the art budget');
 for (const ground of ['earth', 'sand', 'asphalt', 'gravel', 'water'])
   assert(statSync(root + `public/art/realistic/ground-${ground}.jpg`).size > 1000);
+const environment = JSON.parse(read('src/environment-manifest.json'));
+assert.equal(Object.keys(environment).length, 12);
+for (const [id, m] of Object.entries(environment)) {
+  assert(m.w <= 240 && m.h > 0 && m.ay > 0 && m.ay < 1, `Invalid environment decal: ${id}`);
+  assert(statSync(root + `public/art/realistic/environment-${id}.webp`).size > 1000);
+}
 console.log(`${ids.length} unique front/rear pairs, ${Object.keys(manifest).length} valid sprites, ${(bytes / 1048576).toFixed(2)} MiB sprite payload, all ground materials present.`);

@@ -22,6 +22,7 @@ try {
   assert(original?.version === 1);
   const clean = structuredClone(original);
   clean.currentDistrict = clean.districts[0].id;
+  clean.lastSeen = Date.now(); // Remove the disposable regression clock's future timestamp.
   clean.districts[0].camera = { x: 0, y: 450, zoom: 0.8 };
   clean.jobs = [];
   for (const p of clean.districts[0].plots) {

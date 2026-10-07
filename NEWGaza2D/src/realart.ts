@@ -6,8 +6,9 @@ export interface SprMeta { w: number; h: number; ay: number }
 export const SPR = manifest as Record<string, SprMeta>;
 export const SPRITE_KEYS = Object.keys(SPR);
 export const GROUND_KEYS = ['earth', 'sand', 'asphalt', 'gravel', 'water'] as const;
-export const sprUrl = (k: string) => `${import.meta.env.BASE_URL}art/realistic/s/${k}.webp`;
-export const groundUrl = (k: string) => `${import.meta.env.BASE_URL}art/realistic/ground-${k}.jpg`;
+const ART_VERSION = 'coastal-painted';
+export const sprUrl = (k: string) => `${import.meta.env.BASE_URL}art/realistic/s/${k}.webp?v=${ART_VERSION}`;
+export const groundUrl = (k: string) => `${import.meta.env.BASE_URL}art/realistic/ground-${k}.jpg?v=${ART_VERSION}`;
 
 const KEY: Record<string, string> = {
   work: 'work', equipment_store: 'equip', recycling: 'recycling', glass: 'glass', cement: 'cement', steel: 'steel', asphalt: 'asphalt', food_factory: 'food_factory', water_treatment: 'water',
