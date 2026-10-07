@@ -1,6 +1,6 @@
 ---
 name: 2D visual direction
-description: User confirmed the fully destroyed isometric game-map concept as the approximate direction for future work.
+description: Approved 2D game viewpoint and the user's request to absorb visual references before implementation.
 ---
 
 المستخدم أكد نيته أن تصبح اللعبة تقريبًا مثل صورة الحي المدمر بالكامل بمنظور لعبة 2D، وقال: «جهز نفسك عشان راح نعمل اللعبة تقريبا هكذا ان شاء الله».
@@ -10,3 +10,9 @@ The approved approximate visual reference is `attached_assets/generated_images/g
 **Why:** The user explicitly confirmed this reference after correcting the photographic viewpoint to a whole-neighborhood 2D game viewpoint.
 
 **How to apply:** Use this as the visual direction when the user requests implementation. This statement expresses future intent, not authorization to start converting the existing game immediately.
+
+يريد المستخدم تزويدنا بالمراجع قبل بدء العمل: «اريدك تأخذ تغذية بصرية كافية لمعرفة الطقس والوان ومظهر المباني طبعا مع الابداع من طرفك».
+
+**Why:** المستخدم يريد أن يستند تصميم النسخة الجديدة إلى تغذية بصرية يرسلها، مع مساحة للإبداع، لا أن يبدأ التنفيذ أثناء جمع المراجع.
+
+**How to apply:** راجع المراجع المرسلة واجمع اتجاهها البصري قبل التنفيذ. تعامل مع الرسومات التصورية كمرجع فني، لا كتوثيق دقيق لعمارة غزة أو كإذن تلقائي بإضافة كل المحتوى الظاهر فيها إلى منطق اللعبة.
