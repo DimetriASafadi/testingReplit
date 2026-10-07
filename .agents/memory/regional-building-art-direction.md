@@ -66,3 +66,9 @@ The user supplied the housing-reference poster and requested four distinct forms
 **Why:** The user wants the city to visibly develop during building work, not jump from one generic construction frame to a complete building.
 
 **How to apply:** Use warm Gaza-inspired stone/plaster, balconies, rooftop details, and the reference's varied residential silhouettes. Bind the forms and worker activity to actual project progress; preserve neighborhood identity and existing saved progress.
+
+قطعة الأرض مساحة بناء، وليست الحجم الإلزامي للمبنى. المنزل الصغير يشغل جزءًا منها، وتُستغل المساحة الباقية بساحة وممر وأشجار أو أكسسوارات مناسبة؛ العمارة السكنية الكبيرة يمكن أن تملأ معظم القطعة.
+
+**Why:** المستخدم اعترض على كِبر المنزل الصغير بالنسبة لمربع الأرض، وقارن المرجع الذي يستغل الفراغ حول المباني بحدائق وساحات.
+
+**How to apply:** ميّز بصمة المباني الصغيرة عن الكبيرة، وأبقِ ساحة القطعة كاملة ومرئية. استخدم البصمة نفسها في الاتجاهين ومراحل الإنشاء، ولا تصغّر التحديد أو مساحة اللعب مع تصغير الرسم.

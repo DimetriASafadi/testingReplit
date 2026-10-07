@@ -2,6 +2,7 @@ import { BUILDINGS, DISTRICTS, EQUIPMENT, building, projects } from './catalog';
 import type { Action, DistrictState, EquipmentKind, GameAPI, GameState, Job, Plot } from './model';
 import { validateSave } from './save';
 import { factoryWindows, nextFactorySlot } from './fleet-motion';
+import { cityLayout, INITIAL_EMPTY } from './city-layout';
 
 export const SAVE_KEY = 'newgaza2d-save-v1';
 export function newGame(now = Date.now()): GameState {
@@ -12,9 +13,9 @@ export function newGame(now = Date.now()): GameState {
     districts: DISTRICTS.map((d, index) => ({
       id: d.id, unlocked: index === 0, claimed: false, camera: null,
       projects: projects(index === 12).map(p => ({ id: p.id, status: 'idle', startedAt: 0, endsAt: 0, incomeAt: 0 })),
-      plots: Array.from({ length: 64 }, (_, i) => ({
-        id: i, x: (i % 8) * 2, y: Math.floor(i / 8) * 2,
-        status: [0, 1, 8, 9, 15, 48, 55, 56, 57, 62, 63].includes(i) ? 'empty' : 'rubble',
+      plots: cityLayout(d.id).cells.map(({ id: i, x, y }) => ({
+        id: i, x, y, layoutId: d.id,
+        status: INITIAL_EMPTY.includes(i) ? 'empty' : 'rubble',
         buildingId: homes[(i * 7 + index * 3) % homes.length].id,
         orientation: (i % 2) as 0 | 1, startedAt: 0, endsAt: 0, incomeAt: 0,
       })),
@@ -27,7 +28,21 @@ export function jobPhase(job: Job, now = Date.now()): 'travel' | 'work' | 'retur
 }
 export function districtProgress(d: DistrictState): number {
   const rubbleLeft = d.plots.filter(p => p.status === 'rubble').length;
-  return Math.round(((53 - rubbleLeft) + d.projects.filter(p => p.status === 'complete').length) / 62 * 100);
+  const initialRubble = d.plots.length - INITIAL_EMPTY.length;
+  return Math.max(0, Math.min(100, Math.round(((initialRubble - rubbleLeft) + d.projects.filter(p => p.status === 'complete').length) / (initialRubble + d.projects.length) * 100)));
+}
+/** Expand valid legacy saves by plot identity, retaining all earned access and jobs. */
+export function expandCitySave(state: GameState): void {
+  const needsExpansion = (d: DistrictState) => d.plots.length === 64 ||
+    d.plots.some((p,i) => { const cell = cityLayout(d.id).cells[i]; return p.x !== cell.x || p.y !== cell.y; });
+  if (!state.districts.some(needsExpansion)) return;
+  const fresh = newGame(state.lastSeen);
+  for (const [index, d] of state.districts.entries()) {
+    if (!needsExpansion(d)) continue;
+    d.plots = fresh.districts[index].plots.map(p => p.id < d.plots.length
+      ? { ...d.plots[p.id], x: p.x, y: p.y, layoutId: d.id } : p);
+    d.camera = null;
+  }
 }
 export function rubbleYield(price: number) {
   const budget = Math.floor(Math.floor(price / 3) / 10);
@@ -44,7 +59,7 @@ export class GameStore implements GameAPI {
     let raw: string | null;
     try { raw = storage.getItem(SAVE_KEY) } catch { throw new Error('تعذر قراءة الحفظ المحلي. اسمح بتخزين بيانات الموقع ثم أعد المحاولة.') }
     if (raw !== null) {
-      try { const parsed: unknown = JSON.parse(raw); validateSave(parsed); this.state = parsed }
+      try { const parsed: unknown = JSON.parse(raw); validateSave(parsed); expandCitySave(parsed); validateSave(parsed); this.state = parsed }
       catch { throw new Error('تعذر التحقق من ملف الحفظ. لم نحذفه أو نستبدله؛ نزّل نسخة منه قبل اختيار بداية جديدة.') }
     } else this.state = newGame(now);
     this.tick(now);
@@ -52,6 +67,19 @@ export class GameStore implements GameAPI {
   }
   subscribe(fn: () => void) { this.listeners.add(fn); return () => { this.listeners.delete(fn) } }
   exportSave() { return JSON.stringify(this.state, null, 2) }
+  reset(now = Date.now()) {
+    ensure(Number.isSafeInteger(now) && now >= 0, 'وقت الجهاز غير صالح');
+    const fresh = newGame(now);
+    validateSave(fresh);
+    // Commit before changing live state; old timers then also see the fresh save.
+    try { this.storage.setItem(SAVE_KEY, JSON.stringify(fresh)); }
+    catch {
+      this.storageError = 'تعذرت إعادة ضبط الحفظ. لم نغيّر تقدمك؛ تحقق من مساحة التخزين.';
+      this.notify(); return false;
+    }
+    this.state = fresh; this.storageError = null; this.savedAt = now;
+    this.notify(); return true;
+  }
   private notify() { for (const fn of this.listeners) fn() }
   private persist() {
     try {

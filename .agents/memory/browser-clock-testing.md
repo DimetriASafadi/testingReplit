@@ -14,3 +14,9 @@ CDP reload acknowledgement does not guarantee replacement of the old window. A r
 **Why:** A factory-motion check observed the old scene, then attempted to inspect the replacement while its artwork was still loading.
 
 **How to apply:** Wait for the document generation to change, then artwork loading and the new scene's readiness, before inspecting motion or capturing a screenshot.
+
+For hand-advanced Phaser visual fixtures, freeze the engine's cached scene-update callback as well as application synchronization; replacing the scene instance's update method alone is insufficient.
+
+**Why:** Phaser retains its update callback. Live ticks can overwrite manually selected future poses after data assertions pass, leaving screenshots that show a different state.
+
+**How to apply:** Control both update paths inside the isolated fixture and inspect the captured image, not just actor coordinates; restore the original save and reload afterward.

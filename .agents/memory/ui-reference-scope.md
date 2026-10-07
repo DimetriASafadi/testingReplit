@@ -3,6 +3,12 @@ name: UI reference scope
 description: How to use the user's menu reference without inventing unsupported gameplay.
 ---
 
+نوافذ اللعبة التي يفتحها المستخدم يجب أن تبقى ظاهرة وثابتة أثناء تحديث العناصر والعدّادات، مع إغلاق صريح. يريد الأزرار والتصنيفات واضحة أمامه، دون البحث عنها داخل التمرير.
+
+**Why:** المستخدم كرر طلب ثبات النوافذ وسهولة الوصول إلى الخيارات، خصوصًا على الهواتف.
+
+**How to apply:** افصل الإغلاق والإجراءات الرئيسية والتنقل عن المحتوى المتحرك. استخدم صفحات قصيرة وأقسامًا واضحة للقوائم الطويلة بدل دفن الخيارات في التمرير، وحافظ على النافذة والتركيز خلال التحديث.
+
 «اذا كان هناك محتوى زائد او ليس موجود في لوجيك اللعبة فلا تأخذه».
 
 «الصورة فقط لتستوحي الشكل والخلفية ونظام الرئيسية كيف يبدو».
@@ -10,6 +16,12 @@ description: How to use the user's menu reference without inventing unsupported 
 **Why:** The user supplied a menu description and reference image for appearance, while explicitly excluding content that is not supported by this game's logic.
 
 **How to apply:** Treat the description/image as visual references, not permission to invent resources, player progression, social features, purchase grants, or sale actions. Bind menus and progress to authoritative game state and preserve existing district access and saves.
+
+«اريد ان تكون الواجهة مريحة بالنسبة للهواتف ومتناسبة وتظهر كل شيئ براحة مباني تصنيفات وما يحدث».
+
+**Why:** The user could only find the initial building category and wants the entire real catalog, categories and ongoing activities discoverable on phones.
+
+**How to apply:** Keep phone browsing and confirmation understandable without multiple competing scrollers. Preserve reading position and focus during live timer updates. Verify actual touch hit targets, not only rectangles inside the viewport: clipped panels and informational overlays can still block actions. Update dialog state synchronously when closing; an asynchronous native close event can race with the live renderer and leave a reopened window blocking the game.
 
 «يجب ألا تكون المؤثرات مبالغًا فيها أو تؤثر في سرعة اللعبة».
 

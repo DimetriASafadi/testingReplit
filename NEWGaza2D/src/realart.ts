@@ -2,11 +2,11 @@
 import manifest from './realistic-manifest.json';
 import { building } from './catalog';
 
-export interface SprMeta { w: number; h: number; ay: number }
+export interface SprMeta { w: number; h: number; ay: number; ground?: { w: number; h: number } }
 export const SPR = manifest as Record<string, SprMeta>;
 export const SPRITE_KEYS = Object.keys(SPR);
 export const GROUND_KEYS = ['earth', 'sand', 'asphalt', 'gravel', 'water'] as const;
-const ART_VERSION = 'coastal-painted';
+const ART_VERSION = 'coherent-lots-sun-20261008';
 export const sprUrl = (k: string) => `${import.meta.env.BASE_URL}art/realistic/s/${k}.webp?v=${ART_VERSION}`;
 export const groundUrl = (k: string) => `${import.meta.env.BASE_URL}art/realistic/ground-${k}.jpg?v=${ART_VERSION}`;
 

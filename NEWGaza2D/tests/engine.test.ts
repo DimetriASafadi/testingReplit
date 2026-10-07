@@ -16,6 +16,34 @@ function setup() {
   store.dispatch({ type:'enter', districtId:'shujaiya' });
   return { storage, store };
 }
+
+test('reset commits a valid fresh save and later ticks cannot restore old progress', () => {
+  const { storage, store } = setup();
+  const previous = store.state;
+  const now = previous.lastSeen + 1000;
+  assert.equal(store.reset(now), true);
+  assert.notEqual(store.state, previous);
+  assert.equal(store.state.currentDistrict, null);
+  assert.equal(store.state.jobs.length, 0);
+  assert.equal(store.state.coins, newGame(now).coins);
+  store.tick(now + 3000);
+  const restored = new GameStore(storage, now + 4000);
+  assert.equal(restored.state.currentDistrict, null);
+  assert.equal(restored.state.coins, newGame(now).coins);
+  restored.dispatch({ type: 'enter', districtId: 'shujaiya' });
+  assert.equal(restored.state.districts[0].plots.length, 144);
+  validateSave(JSON.parse(storage.getItem(SAVE_KEY)!));
+});
+
+test('failed reset preserves both the live progress and its stored copy', () => {
+  const { storage, store } = setup();
+  const state = store.state, raw = storage.getItem(SAVE_KEY);
+  storage.setItem = () => { throw new Error('Quota exceeded'); };
+  assert.equal(store.reset(state.lastSeen + 1000), false);
+  assert.equal(store.state, state);
+  assert.equal(storage.getItem(SAVE_KEY), raw);
+  assert.match(store.storageError!, /لم نغيّر تقدمك/);
+});
 function ready() {
   const result = setup(), { store } = result;
   store.dispatch({ type:'place', plotId:0, buildingId:'recycling', orientation:0 });
@@ -75,7 +103,8 @@ test('fresh campaign: million once, thirteen districts, dense ruins, no placed r
   assert.equal(state.coins,1000000);
   assert.equal(state.districts.length,13);
   assert.equal(state.districts.filter(d=>d.unlocked).length,1);
-  assert.equal(state.districts[0].plots.filter(p=>p.status==='rubble').length,53);
+  assert.equal(state.districts[0].plots.length,144);
+  assert.equal(state.districts[0].plots.filter(p=>p.status==='rubble').length,133);
   assert.equal(state.units.length,0);
 });
 test('factory onboarding, clean land, money-only prices, two orientations and reload', () => {

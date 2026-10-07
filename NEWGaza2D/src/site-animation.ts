@@ -5,6 +5,7 @@ import { SPR, builtKey } from './realart';
 import { builtScale } from './art-scale';
 import { WK_FOOT, WK_FRAMES, WK_H, WK_W, drawWorker, type WorkerRole } from './workers';
 import { isFarmDef, constructionStageFor, farmLattice } from './construction-art';
+import { createWorkerRoute, sampleWorkerRoute, type WorkerRoute } from './construction-worker-motion';
 
 /**
  * Integration (CityScene):
@@ -22,6 +23,7 @@ interface PV {
   kind: string; workers: Lv[]; crops: Phaser.GameObjects.Image[]; trees: Phaser.GameObjects.Image[]; animals: Phaser.GameObjects.Image[];
   crane?: Phaser.GameObjects.Graphics; load?: Phaser.GameObjects.Graphics; ground?: Phaser.GameObjects.Graphics;
   drops: Drop[]; pulses: Pulse[]; lastDrop: number; nextPulse: number;
+  workerRoutes?: WorkerRoute[]; routeKey?: string;
 }
 interface Patch { id: number; canvas: HTMLCanvasElement; w: number; h: number; ox: number; oy: number; cells: number[][] }
 const TREE_KIND = ['citrus', 'olive', 'palms', 'protective_trees', 'ornamental_trees'];
@@ -166,7 +168,10 @@ export class SiteAnimation {
   private setVis(v: PV, on: boolean) { [v.crane, v.load, v.ground].forEach(g => g?.setVisible(on)); v.workers.forEach(w => w.w.setVisible(on)); [...v.crops, ...v.trees, ...v.animals].forEach(c => c.setVisible(on)); }
 
   private place(l: Lv, pos: Pt, role: WorkerRole, frame: number, dir: number, i: number) {
-    const q = this.iso(pos[0], pos[1]); l.w.setTexture(this.wTex(role, i, frame)).setPosition(q.x, q.y).setFlipX(dir < 0).setDepth(q.y + 2); return q;
+    const q = this.iso(pos[0], pos[1]), key = this.wTex(role, i, frame);
+    if (l.w.texture.key !== key) l.w.setTexture(key);
+    if (l.w.depth !== q.y + 2) l.w.setDepth(q.y + 2);
+    l.w.setPosition(q.x, q.y).setFlipX(dir < 0); return q;
   }
 
   /** non-farm: crane + crew, everything inside the 1.4-unit lot */
@@ -176,7 +181,15 @@ export class SiteAnimation {
     const tall = def.floors >= 3 && stageK < 7;
     const T = 16, ct = ((now / 1000 + p.id * 1.37) % T);
     const K = this.artK(p);
-    const pileL: Pt = [cx - 0.5 * K, cy + 0.55 * K], siteL: Pt = front ? [cx + 0.5 * K, cy + 0.62 * K] : [cx + 0.62 * K, cy + 0.5 * K];
+    const key = builtKey(p.buildingId, p.orientation), unitX = Math.abs(this.iso(1, 0).x - this.iso(0, 0).x);
+    const radius = Math.max(.34, Math.min(.65, SPR[key].w * builtScale(key, this.sc) / (4 * unitX) + .06));
+    const routeKey = `${key}:${radius}`;
+    if (v.routeKey !== routeKey) {
+      v.workerRoutes = v.workers.map((_, i) => createWorkerRoute(radius, p.orientation, i));
+      v.routeKey = routeKey;
+    }
+    const pileL: Pt = front ? [cx - radius, cy + radius] : [cx + radius, cy - radius];
+    const siteL: Pt = front ? [cx + .35 * radius, cy + radius] : [cx + radius, cy + .35 * radius];
     const pp = this.iso(pileL[0], pileL[1]), sp = this.iso(siteL[0], siteL[1]);
     if (!v.ground) v.ground = this.scene.add.graphics();
     const gr = v.ground; gr.clear(); gr.setDepth(Math.max(pp.y, sp.y) + 0.5);
@@ -215,18 +228,12 @@ export class SiteAnimation {
       }
       if (ct > 10.8 && ct < 10.95) this.puff({ x: sp.x, y: sp.y });
     }
-    // crew picks blocks from the delivered stack/pile, carries to the working face and lays them with the forearm tool
+    // Separate lanes and phases: collect blocks, visit four faces, work, and return around the perimeter.
     v.workers.forEach((l, i) => {
-      const t = ((now + i * 3300 + p.id * 911) % 14000) / 1000;
-      const face: Pt = front ? [cx + (0.2 + i * 0.16) * K, cy + 0.68 * K] : [cx + 0.68 * K, cy + (0.2 + i * 0.16) * K];
-      const pOff: Pt = [pileL[0] + (0.25 + i * 0.1) * K, pileL[1] - 0.1 * K];
-      const dirOf = (a: Pt, b: Pt) => Math.sign((b[0] - a[0]) - (b[1] - a[1])) || 1;
-      let pos: Pt, role: WorkerRole = 'walk', frame = 0, dir = 1;
-      if (t < 4.2) { pos = lerp(pOff, face, t / 4.2); role = 'carry'; frame = Math.floor(t * 1.9 * WK_FRAMES) % WK_FRAMES; dir = dirOf(pOff, face); }
-      else if (t < 9.2) { pos = face; role = 'hammer'; frame = Math.floor(now / 110 + i * 3) % WK_FRAMES; dir = front ? -1 : 1; if (frame === 2 && l.last !== 2) this.puff(this.iso(pos[0], pos[1])); }
-      else if (t < 13.2) { pos = lerp(face, pOff, (t - 9.2) / 4); frame = Math.floor(t * 1.9 * WK_FRAMES) % WK_FRAMES; dir = dirOf(face, pOff); }
-      else { pos = pOff; dir = 1; }
-      l.last = frame; this.place(l, pos, role, frame, dir, i);
+      const pose = sampleWorkerRoute(v.workerRoutes![i], now - p.startedAt, p.id, i);
+      const pos: Pt = [cx + pose.x, cy + pose.y];
+      if (pose.role === 'hammer' && pose.frame === 2 && l.last !== 2) this.puff(this.iso(pos[0], pos[1]));
+      l.last = pose.frame; this.place(l, pos, pose.role, pose.frame, pose.dir, i);
     });
   }
 

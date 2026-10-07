@@ -1010,3 +1010,73 @@ mtime_ms = 1791297191109
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/5160a6ba-dbb3-4707-9449-ad1f497006a7/0ea7999c-e34e-44fe-96e0-4a516158f927"
 storage_version_token = "1791297216005855"
 content_type = "image/png"
+
+[[outputs]]
+id = "MAMMV1BZvV7FXTKSPmpmt"
+uri = "file://NEWGaza2D/public/audio/complete.mp3"
+type = "audio"
+title = "sound_effect"
+description = "Generated sound effect: A short refined warm rewarding game completion sound: delicate wooden percussion followed by a gentle bright bell chord, uplifting but understated, original city rebuilding ga…"
+
+[[outputs]]
+id = "HT27XhD8fpWg3_VZFxND7"
+uri = "file://NEWGaza2D/public/audio/excavator.mp3"
+type = "audio"
+title = "sound_effect"
+description = "Generated sound effect: Seamless isolated sound loop of a modern excavator diesel engine idling and gently revving, with subtle hydraulic pump whine. Professional clean game foley, warm realistic mac…"
+
+[[outputs]]
+id = "1JKEQBA_MrqhGialSOygZ"
+uri = "file://NEWGaza2D/public/audio/bulldozer.mp3"
+type = "audio"
+title = "sound_effect"
+description = "Generated sound effect: Seamless isolated loop of a heavy tracked bulldozer crawling slowly, low diesel rumble and restrained metallic caterpillar track clatter. Clean realistic game foley, no speech…"
+
+[[outputs]]
+id = "LjN4-E8PGU5aSHbycooUf"
+uri = "file://NEWGaza2D/public/audio/farm.mp3"
+type = "audio"
+title = "sound_effect"
+description = "Generated sound effect: Seamless loop of a peaceful Mediterranean garden and farm: soft leaf rustle, sparse small songbirds and gentle outdoor breeze. Natural realistic understated ambience, no voice…"
+
+[[outputs]]
+id = "Ji10eJ-9cjV1HbDQHBxNu"
+uri = "file://NEWGaza2D/public/audio/construction.mp3"
+type = "audio"
+title = "sound_effect"
+description = "Generated sound effect: Seamless loop of a small building construction site: varied gentle hammer taps, hand tools, concrete mixing and occasional light metal scaffold clink. Warm realistic sound, no…"
+
+[[outputs]]
+id = "KP9vIK-vk7fk641S8U7rL"
+uri = "file://NEWGaza2D/public/audio/neighborhood.mp3"
+type = "audio"
+title = "sound_effect"
+description = "Generated sound effect: Seamless loop of a quiet restored Mediterranean residential neighborhood: distant soft traffic, light breeze, a few small birds and a faint household outdoor ambience, no inte…"
+
+[[outputs]]
+id = "5ACMIGRJFn-zCdJCQrP3t"
+uri = "file://NEWGaza2D/public/audio/rubble.mp3"
+type = "audio"
+title = "sound_effect"
+description = "Generated sound effect: Seamless loop of excavator earthwork: gravel and concrete rubble shifting, a bucket scraping gently and dropping small stones into a steel tipper bed, restrained realistic imp…"
+
+[[outputs]]
+id = "-Zk_kQDHve6CPZAFT2yem"
+uri = "file://NEWGaza2D/public/audio/truck.mp3"
+type = "audio"
+title = "sound_effect"
+description = "Generated sound effect: Seamless isolated loop of a loaded tipper truck diesel engine moving slowly on a neighborhood road, steady soft engine and tire texture. Clean realistic game sound, no horn, n…"
+
+[[outputs]]
+id = "b52frtnnQ4b1Hy3VBvysP"
+uri = "file://NEWGaza2D/public/audio/coast.mp3"
+type = "audio"
+title = "sound_effect"
+description = "Generated sound effect: Seamless loop of soft Mediterranean waves lapping a sandy beach, gentle breeze and a sparse distant gull. Calm realistic ambience for a city rebuilding game, no music, no voic…"
+
+[[outputs]]
+id = "y7MCJlKt96H3BbPYCU8vd"
+uri = "file://NEWGaza2D/public/audio/industry.mp3"
+type = "audio"
+title = "sound_effect"
+description = "Generated sound effect: Seamless loop of a working recycling and light industrial factory: smooth motor conveyor hum, softly rattling material sorting and subtle machinery. Clean restrained city buil…"

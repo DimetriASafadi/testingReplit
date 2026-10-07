@@ -8,10 +8,15 @@ import { machineryDepth } from './machinery-depth';
 
 type Pt = [number, number];
 type Pose = { tip: number[]; worldTip: number[] };
-type Manifest = { size: number; ortho: number; foot: number[]; revision: string;
-  clips: Record<string, string[]>; frames: Record<string, Pose> };
+type Manifest = { headings: number; size: number; ortho: number; foot: number[]; revision: string;
+  clips: Record<string, string[]>; frames: Record<string, Pose>;
+  phases: Record<string, Record<string, unknown>> };
 const META: Manifest = metadata;
 const SCALE = .66, CYCLE = 7200;
+/** Named work-cycle phase window [from, to] (fractions of the 7.2 s cycle) baked by pack_drawn_machinery.py. */
+const phaseOf = (kind: string, name: string) => META.phases[kind][name] as [number, number];
+const inPhase = (kind: string, name: string, p: number) => { const [a, b] = phaseOf(kind, name); return p >= a && p < b; };
+const smoothstep = (a: number, b: number, p: number) => { const t = clamp((p - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
 const iso = (p: Pt): Pt => [(p[0] - p[1]) * U, (p[0] + p[1]) * U / 2];
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
 const turnDelta = (a: number, b: number) => Math.atan2(Math.sin(b - a), Math.cos(b - a));
@@ -21,7 +26,7 @@ export function preloadMachinery(scene: Phaser.Scene) {
     scene.load.atlas('machine:' + kind, `${import.meta.env.BASE_URL}art/machinery/${kind}.webp?v=${META.revision}`,
       `${import.meta.env.BASE_URL}art/machinery/${kind}.json?v=${META.revision}`);
 }
-interface Actor { a: Phaser.GameObjects.Image; b: Phaser.GameObjects.Image; heading: number; pos?: Pt;
+interface Actor { a: Phaser.GameObjects.Image; heading: number; pos?: Pt;
   distance: number; dustAt: number; stoneAt: number; tip?: Pt; revealing: boolean }
 
 /** Visual-only crew coordination. Saved deadlines, route selection and money stay in the engine. */
@@ -57,7 +62,7 @@ export class FleetAnimation {
       const key = 'machine:' + unit.kind, frame = META.clips[unit.kind + ':drive'][0];
       const make = () => this.scene.add.image(0, 0, key, frame)
         .setOrigin(META.foot[0] / META.size, META.foot[1] / META.size).setScale(SCALE);
-      a = { a: make(), b: make(), heading: 0, distance: 0, dustAt: 0, stoneAt: 0, revealing: false };
+      a = { a: make(), heading: 0, distance: 0, dustAt: 0, stoneAt: 0, revealing: false };
       this.actors.set(unit.id, a);
     }
     return a;
@@ -65,11 +70,13 @@ export class FleetAnimation {
   private pose(a: Actor, unit: Unit, first: string, second: string, blend: number, pos: Pt) {
     const [x, y] = iso(pos);
     const depth = machineryDepth(unit.kind, a.heading, y, META.size, META.ortho, SCALE);
-    a.a.setFrame(first).setAlpha(1 - blend).setPosition(x, y).setDepth(depth);
-    a.b.setFrame(second).setAlpha(blend).setPosition(x, y).setDepth(depth + .001);
-    const p = META.frames[first].tip, q = META.frames[second].tip;
-    a.tip = [x + ((p[0] + (q[0] - p[0]) * blend) - META.foot[0]) * SCALE,
-      y + ((p[1] + (q[1] - p[1]) * blend) - META.foot[1]) * SCALE];
+    // One opaque atlas pose, not two translucent images that expose the road through the body.
+    const frame = blend < .5 ? first : second;
+    if (a.a.frame.name !== frame) a.a.setFrame(frame);
+    if (a.a.depth !== depth) a.a.setDepth(depth);
+    a.a.setAlpha(1).setPosition(x, y);
+    const tip = META.frames[unit.kind + ':' + frame].tip;
+    a.tip = [x + (tip[0] - META.foot[0]) * SCALE, y + (tip[1] - META.foot[1]) * SCALE];
   }
   private clip(a: Actor, unit: Unit, clip: string, progress: number, pos: Pt, loop = true) {
     const frames = META.clips[unit.kind + ':' + clip];
@@ -80,10 +87,11 @@ export class FleetAnimation {
   private drive(a: Actor, unit: Unit, heading: number, pos: Pt, dt: number, loaded: boolean) {
     a.heading += clamp(turnDelta(a.heading, heading), -dt * 2.8, dt * 2.8);
     if (a.pos) a.distance += Math.hypot(pos[0] - a.pos[0], pos[1] - a.pos[1]);
-    const d = (a.heading / (Math.PI * 2) * 16 % 16 + 16) % 16, n = Math.floor(d);
+    // Only genuinely painted headings exist in the atlas (META.headings); pick the nearest one.
+    const H = META.headings, d = (a.heading / (Math.PI * 2) * H % H + H) % H, n = Math.round(d) % H;
     const roll = Math.floor(a.distance / .13) % 2;
     const frames = META.clips[unit.kind + ':' + (loaded && unit.kind === 'truck' ? 'loaded' : 'drive')];
-    this.pose(a, unit, frames[n * 2 + roll], frames[((n + 1) % 16) * 2 + roll], d - n, pos);
+    const f = frames[n * 2 + roll]; this.pose(a, unit, f, f, 0, pos);
   }
   update(state: GameState, now: number, roadStage: number) {
     this.particles();
@@ -113,7 +121,8 @@ export class FleetAnimation {
       let position = motion.position;
       if (motion.stage === 'work') {
         position = workDock(plot, unit.kind);
-        const heading = unit.kind === 'truck' ? 0 : -Math.PI / 2;
+        // Work paintings face screen down-left (truck, dozer) and left (excavator).
+        const heading = Math.PI / 2;
         if (!a.pos) a.heading = heading;
         const elapsed = now - job.arrival, phase = ((Math.max(0, elapsed - 900)) % CYCLE) / CYCLE;
         if (elapsed < 900 || Math.abs(turnDelta(a.heading, heading)) > .06) {
@@ -123,36 +132,51 @@ export class FleetAnimation {
           const frame = META.clips['truck:fill'][Math.min(3, Math.floor(amount * 4))];
           this.pose(a, unit, frame, frame, 0, position);
         } else {
-          if (unit.kind === 'bulldozer') position[1] -= .19 * Math.sin(phase * Math.PI) ** 2;
-          this.clip(a, unit, 'work', phase, position);
-          if (a.tip && now > a.dustAt && (unit.kind === 'bulldozer' ? phase < .52 : phase < .17)) {
-            this.dust!.emitParticleAt(...a.tip, 2); a.dustAt = now + 180;
+          if (unit.kind === 'bulldozer') {
+            // Blade faces down-left (+y): glide forward through the push window, back through reverse.
+            const [pa, pb] = phaseOf('bulldozer', 'push'), [ra] = phaseOf('bulldozer', 'reverse');
+            position[1] += .19 * (smoothstep(pa, pb, phase) - smoothstep(ra, 1, phase));
           }
-          if (unit.kind === 'excavator' && a.tip && phase > .60 && phase < .70 && now > a.stoneAt) {
-            this.stones!.emitParticleAt(...a.tip, 3); a.stoneAt = now + 65;
+          this.clip(a, unit, 'work', phase, position);
+          if (a.tip && now > a.dustAt && (unit.kind === 'bulldozer' ? inPhase('bulldozer', 'push', phase) : phase > phaseOf('excavator', 'dig_in')[0] && phase < phaseOf('excavator', 'dig')[1])) {
+             this.dust!.setDepth(a.a.depth + .2).emitParticleAt(...a.tip, 2); a.dustAt = now + 180;
+          }
+          if (unit.kind === 'excavator' && a.tip && inPhase('excavator', 'dump', phase) && now > a.stoneAt) {
+             this.stones!.setDepth(a.a.depth + .3).emitParticleAt(...a.tip, 3); a.stoneAt = now + 65;
           }
         }
       } else {
-        const heading = Math.atan2(motion.ahead[1] - position[1], motion.ahead[0] - position[0])
-          + (motion.reverse ? Math.PI : 0);
+        const dx = motion.ahead[0] - position[0], dy = motion.ahead[1] - position[1];
+        const heading = motion.moving && Math.hypot(dx, dy) > .00001
+          ? Math.atan2(dy, dx) + (motion.reverse ? Math.PI : 0) : a.heading;
         if (!a.pos) a.heading = heading;
         this.drive(a, unit, heading, position, dt, motion.stage === 'return');
       }
-      a.a.setAlpha(a.a.alpha * motion.visibility); a.b.setAlpha(a.b.alpha * motion.visibility);
+      if (motion.portal) {
+        const passage = this.doors.passage(source);
+        if (a.a.mask !== passage.mask) a.a.setMask(passage.mask);
+        if (a.a.depth < passage.depth) a.a.setDepth(passage.depth);
+      } else if (a.a.mask) a.a.clearMask();
       if (motion.moving && roadStage < 3 && now > a.dustAt) {
         const q = iso(position); this.dust!.emitParticleAt(q[0], q[1], 1); a.dustAt = now + 210;
       }
       a.pos = position;
     }
     for (const [id, actor] of this.actors) if (!seen.has(id)) {
-      actor.a.destroy(); actor.b.destroy(); this.actors.delete(id);
+      actor.a.clearMask(); actor.a.destroy(); this.actors.delete(id);
     }
   }
   resetDistrict() {
-    for (const a of this.actors.values()) { a.a.destroy(); a.b.destroy(); }
+    for (const a of this.actors.values()) { a.a.clearMask(); a.a.destroy(); }
     this.actors.clear(); this.doors.reset(); this.previousTime = 0;
     this.dust?.destroy(); this.stones?.destroy(); this.dust = this.stones = undefined;
     this.activeIds.clear();
+  }
+  soundSources(state: GameState) {
+    return [...this.actors].flatMap(([id,a])=>{
+      const unit=state.units.find(u=>u.id===id);
+      return unit&&this.activeIds.has(id)?[{id,kind:unit.kind,x:a.a.x,y:a.a.y,working:a.revealing}]:[];
+    });
   }
   /** Sample actual body/tool positions for foreground occlusion, never move units onto roofs. */
   focusPoints() {

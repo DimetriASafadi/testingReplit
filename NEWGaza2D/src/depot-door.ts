@@ -1,101 +1,147 @@
 import Phaser from 'phaser';
 import type { Plot } from './model';
 import { U } from './art';
+import { depotGeometry, type DepotPoint } from './depot-geometry';
 
-import { depotPortal, type DepotPoint } from './fleet-motion';
-export { depotPortal, type DepotPoint } from './fleet-motion';
+export { depotPortal } from './fleet-motion';
+export type { DepotPoint } from './depot-geometry';
 
-const OPEN_MS = 650, HALF_W = 24, DOOR_H = 35, JAMB = 5, LINTEL = 7, DEPTH = 15;
+const OPEN_MS = 650;
 const iso = (p: DepotPoint): DepotPoint => [(p[0] - p[1]) * U, (p[0] + p[1]) * U / 2];
+const factoryDepth = (p: Plot) => iso([p.x + 1, p.y + 1])[1] + 8;
 
-interface View { interior: Phaser.GameObjects.Graphics; frame: Phaser.GameObjects.Graphics; shutter: Phaser.GameObjects.Graphics;
+interface View { cavity: Phaser.GameObjects.Graphics; frame: Phaser.GameObjects.Graphics; shutter: Phaser.GameObjects.Graphics;
+  maskShape: Phaser.GameObjects.Graphics; mask: Phaser.Display.Masks.GeometryMask;
   open: number; last: number; drawn: number; key: string }
+
+const poly = (g: Phaser.GameObjects.Graphics, pts: DepotPoint[]) => {
+  g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]); g.closePath(); g.fillPath();
+};
 
 export class DepotDoors {
   private views = new Map<number, View>();
   constructor(private scene: Phaser.Scene) {}
 
-  update(plot: Plot, requestedOpen: boolean, now: number, openSince = now): void {
-    const [tx, ty] = iso(depotPortal(plot).threshold);
-    const key = `${plot.orientation}:${tx}:${ty}`;
+  private view(plot: Plot, requestedOpen: boolean, now: number, openSince: number): View {
     let v = this.views.get(plot.id);
     if (!v) {
-      v = { interior: this.scene.add.graphics(), frame: this.scene.add.graphics(), shutter: this.scene.add.graphics(),
+      const maskShape = this.scene.make.graphics({}, false);
+      maskShape.setVisible(false);
+      v = { cavity: this.scene.add.graphics(), frame: this.scene.add.graphics(), shutter: this.scene.add.graphics(),
+        maskShape, mask: maskShape.createGeometryMask(),
         open: requestedOpen ? Math.max(0, Math.min(1, (now - openSince) / OPEN_MS)) : 0,
         last: now, drawn: -1, key: '' };
       this.views.set(plot.id, v);
     }
+    return v;
+  }
+
+  private frameOf(plot: Plot) {
+    const g = depotGeometry(plot);
+    const [tx, ty] = iso(g.threshold);
+    const o = iso(g.outward), ol = Math.hypot(o[0], o[1]);
+    return { g, tx, ty, out: [o[0] / ol, o[1] / ol] as DepotPoint };
+  }
+
+  passage(plot: Plot): { mask: Phaser.Display.Masks.GeometryMask; depth: number } {
+    if (!this.views.has(plot.id)) this.update(plot, false, 0);
+    const v = this.views.get(plot.id)!;
+    return { mask: v.mask, depth: factoryDepth(plot) + .08 };
+  }
+
+  private drawMask(v: View, plot: Plot) {
+    const { g, tx, ty, out } = this.frameOf(plot);
+    const hw = g.halfWidth, H = g.height, s = g.slope;
+    const at = (d: number, lat: number): DepotPoint => [tx + out[0] * d + lat, ty + out[1] * d + s * lat];
+    const m = v.maskShape.clear(); m.fillStyle(0xffffff, 1);
+    // Extrude the apron UP by the vehicle clearance as well: a cab outside the doorway
+    // must not lose its roof just because that roof projects above the ground polygon.
+    const floor = [at(0, -hw), at(0, hw), at(50, hw + 18), at(220, hw + 90), at(220, -hw - 90), at(50, -hw - 18)];
+    const points = [...floor, ...floor.map(([x,y],i): DepotPoint => [x,y-(i<2?H:96)])].sort((a,b)=>a[0]-b[0] || a[1]-b[1]);
+    const cross = (a: DepotPoint,b: DepotPoint,c: DepotPoint) => (b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);
+    const half = (pts: DepotPoint[]) => {
+      const chain: DepotPoint[] = [];
+      for (const p of pts) { while(chain.length>1 && cross(chain.at(-2)!,chain.at(-1)!,p)<=0) chain.pop(); chain.push(p); }
+      chain.pop(); return chain;
+    };
+    poly(m, [...half(points), ...half([...points].reverse())]);
+  }
+
+  update(plot: Plot, requestedOpen: boolean, now: number, openSince = now): void {
+    const { g, tx, ty } = this.frameOf(plot);
+    const key = `${plot.orientation}:${tx}:${ty}`;
+    const v = this.view(plot, requestedOpen, now, openSince);
     const dt = Math.max(0, Math.min(500, now - v.last)); v.last = now;
     const step = dt / OPEN_MS;
     v.open = requestedOpen ? Math.min(1, v.open + step) : Math.max(0, v.open - step);
-    v.interior.setDepth(ty - .6); v.frame.setDepth(ty + 1); v.shutter.setDepth(ty + 1.01);
-    if (v.key !== key) { v.key = key; v.drawn = -1; this.drawStatic(v, tx, ty); }
-    if (Math.abs(v.open - v.drawn) > .002) { v.drawn = v.open; this.drawShutter(v, tx, ty); }
-  }
-
-  private drawStatic(v: View, tx: number, ty: number) {
-    const L: DepotPoint = [tx - HALF_W, ty - HALF_W / 2], R: DepotPoint = [tx + HALF_W, ty + HALF_W / 2];
-    const up = (p: DepotPoint, h: number): DepotPoint => [p[0], p[1] - h];
-    const back: DepotPoint = [DEPTH, -DEPTH / 2];
-    const poly = (g: Phaser.GameObjects.Graphics, pts: DepotPoint[]) => { g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); for (const p of pts.slice(1)) g.lineTo(p[0], p[1]); g.closePath(); g.fillPath(); };
-    const sh = (p: DepotPoint, d: DepotPoint): DepotPoint => [p[0] + d[0], p[1] + d[1]];
-    const i = v.interior.clear();
-    // dark cavity: back wall, floor receding inward, side wall
-    i.fillStyle(0x222522, 1); poly(i, [L, R, up(R, DOOR_H), up(L, DOOR_H)]);
-    i.fillStyle(0x131615, .94); poly(i, [L, R, sh(R, back), sh(L, back)]);
-    i.fillStyle(0x383b38, .92); poly(i, [L, sh(L, back), up(sh(L, back), DOOR_H), up(L, DOOR_H)]);
-    i.lineStyle(1, 0x7c7e76, .17);
-    for (let h = 6; h < DOOR_H; h += 6) i.lineBetween(L[0] + 4, L[1] - h - 2, R[0] - 3, R[1] - h - 2);
-    i.fillStyle(0x7e7a6e, .16); poly(i, [up(L, DOOR_H), up(R, DOOR_H), up(R, DOOR_H - 5), up(L, DOOR_H - 5)]);
-    i.fillStyle(0x2a2a27, .35); poly(i, [sh(L, [4, -2]), sh(R, [-4, -2]), sh(R, [2, -1]), sh(L, [2, -1])]);
-    // faint light spill on floor near threshold
-    i.fillStyle(0x6b6558, .12); poly(i, [L, R, sh(R, [5, -2.5]), sh(L, [5, -2.5])]);
-    const f = v.frame.clear();
-    // stone sill + step
-    f.fillStyle(0x5d5a52, 1); poly(f, [sh(L, [-JAMB, JAMB / 2]), sh(R, [JAMB, -JAMB / 2 + JAMB]), sh(R, [JAMB, 3]), sh(L, [-JAMB, 3])].map((p, k) => k === 1 ? [R[0] + JAMB, R[1] + 2.5] as DepotPoint : p));
-    f.fillStyle(0x3e3c37, 1); poly(f, [sh(L, [-JAMB, 3]), [R[0] + JAMB, R[1] + 3], [R[0] + JAMB, R[1] + 5.5], sh(L, [-JAMB, 5.5])]);
-    // jambs: steel posts with lit/shaded face
-    f.fillStyle(0x6c6f70, 1); poly(f, [sh(L, [-JAMB, 0]), L, up(L, DOOR_H + LINTEL), up(sh(L, [-JAMB, 0]), DOOR_H + LINTEL)]);
-    f.fillStyle(0x4a4d4e, 1); poly(f, [R, sh(R, [JAMB, 0]), up(sh(R, [JAMB, 0]), DOOR_H + LINTEL), up(R, DOOR_H + LINTEL)]);
-    f.fillStyle(0x2c2e2f, .6); f.fillRect(L[0] - JAMB + 1, L[1] - DOOR_H - 2, 1.2, DOOR_H + 2);
-    // lintel beam with rivets and rust streak
-    f.fillStyle(0x56595a, 1); poly(f, [up(sh(L, [-JAMB, 0]), DOOR_H), up(sh(R, [JAMB, 0]), DOOR_H), up(sh(R, [JAMB, 0]), DOOR_H + LINTEL), up(sh(L, [-JAMB, 0]), DOOR_H + LINTEL)]);
-    f.fillStyle(0x7d8081, .7); poly(f, [up(sh(L, [-JAMB, 0]), DOOR_H + LINTEL), up(sh(R, [JAMB, 0]), DOOR_H + LINTEL), up(sh(R, [JAMB, 0]), DOOR_H + LINTEL - 1.5), up(sh(L, [-JAMB, 0]), DOOR_H + LINTEL - 1.5)]);
-    f.fillStyle(0x1f2021, .55); poly(f, [up(L, DOOR_H), up(R, DOOR_H), up(R, DOOR_H - 3), up(L, DOOR_H - 3)]);
-    f.fillStyle(0x8a5a3a, .35); f.fillRect(tx - 14, ty - 7 - DOOR_H - 2, 3, 10);
-    f.fillStyle(0x2b2c2d, .7);
-    for (let k = 0; k < 6; k++) { const px = L[0] + 4 + k * 8.4; f.fillRect(px, L[1] + (px - L[0]) / 2 - DOOR_H - 4, 1.4, 1.4); }
-  }
-
-  private drawShutter(v: View, tx: number, ty: number) {
-    const g = v.shutter.clear();
-    const e = v.open * v.open * (3 - 2 * v.open); // eased
-    const h = DOOR_H * (1 - e);
-    if (h < .8) return;
-    const slat = 3.5, n = Math.ceil(h / slat);
-    for (let k = 0; k < n; k++) {
-      const top = DOOR_H - k * slat, bot = Math.max(DOOR_H - h, top - slat);
-      const shade = k % 2 ? 0x73777a : 0x666a6d;
-      const tone = Phaser.Display.Color.IntegerToColor(shade).darken(Math.round((k / 10) * 4)).color;
-      g.fillStyle(tone, 1);
-      const a = (hh: number, s: number) => [tx + s * HALF_W, ty + s * HALF_W / 2 - hh] as DepotPoint;
-      g.beginPath(); const p = [a(top, -1), a(top, 1), a(bot, 1), a(bot, -1)];
-      g.moveTo(p[0][0], p[0][1]); for (const q of p.slice(1)) g.lineTo(q[0], q[1]); g.closePath(); g.fillPath();
-      g.fillStyle(0x1c1d1e, .55); g.fillRect(tx - HALF_W, ty - HALF_W / 2 - bot - .2, 0, 0);
-      g.lineStyle(1, 0x2a2c2e, .5); g.lineBetween(p[3][0], p[3][1], p[2][0], p[2][1]);
+    if (v.key !== key) {
+      const d = factoryDepth(plot);
+      v.cavity.setDepth(d + .04); v.shutter.setDepth(d + .15); v.frame.setDepth(d + .16);
+      v.key = key; v.drawn = -1; this.drawStatic(v, plot);
+      this.drawMask(v, plot);
     }
-    // worn patches and bottom bar with handle
-    const bot = DOOR_H - h;
-    g.fillStyle(0x8a5a3a, .22); g.fillRect(tx - 12, ty - 6 - Math.min(DOOR_H - 6, bot + 8), 7, 5);
-    g.fillStyle(0x3a3d3f, 1);
-    g.beginPath(); g.moveTo(tx - HALF_W, ty - HALF_W / 2 - bot); g.lineTo(tx + HALF_W, ty + HALF_W / 2 - bot);
-    g.lineTo(tx + HALF_W, ty + HALF_W / 2 - bot + 2.5); g.lineTo(tx - HALF_W, ty - HALF_W / 2 - bot + 2.5); g.closePath(); g.fillPath();
-    g.fillStyle(0xa0a3a2, .8); g.fillRect(tx - 1.5, ty - bot + 0.3, 3, 1.2);
+    if (Math.abs(v.open - v.drawn) > .002) { v.drawn = v.open; this.drawShutter(v, tx, ty, g.halfWidth, g.height, g.slope); }
+  }
+
+  private drawStatic(v: View, plot: Plot) {
+    const { g, tx, ty, out } = this.frameOf(plot);
+    const hw = g.halfWidth, H = g.height, s = g.slope;
+    const P = (x: number, h = 0): DepotPoint => [tx + x, ty + s * x - h];
+    const back = plot.orientation === 1;
+    const c = v.cavity.clear();
+    const dx = -out[0] * 7, dy = -out[1] * 7;
+    const sh = (p: DepotPoint): DepotPoint => [p[0] + dx, p[1] + dy];
+    c.fillStyle(0x15130f, .96); poly(c, [P(-hw), P(hw), P(hw, H), P(-hw, H)]);
+    c.fillStyle(0x2a251d, .9); poly(c, [P(-hw), P(hw), sh(P(hw)), sh(P(-hw))]);
+    c.fillStyle(0x0b0a08, .55); poly(c, [P(-hw, H), P(hw, H), P(hw, H - 9), P(-hw, H - 9)]);
+    c.fillStyle(0x8a7a5a, .12); poly(c, [P(-hw), P(-hw + 6), P(-hw + 6, H), P(-hw, H)]);
+    // dusty warm light spill on the floor
+    c.fillStyle(0xb09b6a, .1); poly(c, [P(-hw + 2), P(hw - 2), P(hw - 5, 0), P(-hw + 5, 0)].map((p, i) => i < 2 ? p : [p[0] - out[0] * 5, p[1] - out[1] * 5] as DepotPoint));
+    const f = v.frame.clear();
+    const J = 3, T = 5;
+    const lit = back ? 0x77796f : 0x6e6f66, dark = back ? 0x4a4c47 : 0x45463f;
+    // jambs
+    f.fillStyle(lit, 1); poly(f, [P(-hw - J), P(-hw), P(-hw, H + T), P(-hw - J, H + T)]);
+    f.fillStyle(dark, 1); poly(f, [P(hw), P(hw + J), P(hw + J, H + T), P(hw, H + T)]);
+    f.fillStyle(0x2b2a26, .5); poly(f, [P(-hw - J), P(-hw - J + .8), P(-hw - J + .8, H + T), P(-hw - J, H + T)]);
+    // lintel tucked under roofline
+    f.fillStyle(0x56574f, 1); poly(f, [P(-hw - J, H), P(hw + J, H), P(hw + J, H + T), P(-hw - J, H + T)]);
+    f.fillStyle(0x8b8a7c, .55); poly(f, [P(-hw - J, H + T), P(hw + J, H + T), P(hw + J, H + T - 1.2), P(-hw - J, H + T - 1.2)]);
+    f.fillStyle(0x1d1c19, .5); poly(f, [P(-hw, H), P(hw, H), P(hw, H - 2), P(-hw, H - 2)]);
+    // rust streaks and rivets
+    f.fillStyle(0x7a4e32, .3); poly(f, [P(-6, H), P(-3, H), P(-3, H - 12), P(-6, H - 9)]);
+    f.fillStyle(0x7a4e32, .2); poly(f, [P(hw - 4, H), P(hw - 2, H), P(hw - 2, H - 7), P(hw - 4, H - 6)]);
+    f.fillStyle(0x24231f, .7);
+    for (let x = -hw; x <= hw; x += 7) { const p = P(x, H + 2.4); f.fillRect(p[0], p[1], 1.2, 1.2); }
+    // worn concrete sill
+    f.fillStyle(0x6a665b, 1); poly(f, [P(-hw - J, 0), P(hw + J, 0), [P(hw + J)[0] + out[0] * 3, P(hw + J)[1] + out[1] * 3], [P(-hw - J)[0] + out[0] * 3, P(-hw - J)[1] + out[1] * 3]]);
+  }
+
+  private drawShutter(v: View, tx: number, ty: number, hw: number, H: number, s: number) {
+    const g = v.shutter.clear();
+    const e = v.open * v.open * (3 - 2 * v.open);
+    const h = H * (1 - e);
+    if (h < .8) return;
+    const P = (x: number, hh: number): DepotPoint => [tx + x, ty + s * x - hh];
+    const slat = 3.2, n = Math.ceil(h / slat);
+    for (let k = 0; k < n; k++) {
+      const top = H - k * slat, bot = Math.max(H - h, top - slat);
+      g.fillStyle(Phaser.Display.Color.IntegerToColor(k % 2 ? 0x686a64 : 0x5c5e59).darken(Math.min(10, k)).color, 1);
+      poly(g, [P(-hw, top), P(hw, top), P(hw, bot), P(-hw, bot)]);
+      g.lineStyle(1, 0x25241f, .5); g.lineBetween(P(-hw, bot)[0], P(-hw, bot)[1], P(hw, bot)[0], P(hw, bot)[1]);
+    }
+    const bot = H - h;
+    g.fillStyle(0x7a4e32, .2); poly(g, [P(-9, Math.min(H - 3, bot + 9)), P(-3, Math.min(H - 3, bot + 9)), P(-3, Math.min(H - 3, bot + 3)), P(-9, Math.min(H - 3, bot + 3))]);
+    g.fillStyle(0x34352f, 1); poly(g, [P(-hw, bot + 2.4), P(hw, bot + 2.4), P(hw, bot), P(-hw, bot)]);
+    g.fillStyle(0x9a9a8c, .7); const hp = P(-1.5, bot + 1.8); g.fillRect(hp[0], hp[1], 3, 1);
   }
 
   retain(ids: Set<number>): void {
     for (const [id, v] of this.views) if (!ids.has(id)) { this.destroy(v); this.views.delete(id); }
   }
   reset(): void { for (const v of this.views.values()) this.destroy(v); this.views.clear(); }
-  private destroy(v: View) { v.interior.destroy(); v.frame.destroy(); v.shutter.destroy(); }
+  private destroy(v: View) {
+    v.cavity.destroy(); v.frame.destroy(); v.shutter.destroy();
+    v.mask.destroy(); v.maskShape.destroy();
+  }
 }

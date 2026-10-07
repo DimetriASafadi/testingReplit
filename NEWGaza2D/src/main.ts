@@ -6,9 +6,23 @@ import type { Category, DistrictState, EquipmentKind, GameState, Plot } from './
 import { BootScene, CityScene } from './scenes/CityScene';
 import { machinePreview } from './fleet-animation';
 import { previewUrl } from './realart';
+import { patchContent } from './dom-patch';
+import { dialogLayout, pageControls, pageSize, splitActions } from './ui-layout';
+import { gameAudio } from './game-audio';
 
 const app = document.getElementById('app')!;
 const stage = document.getElementById('stage')!;
+const cityStatus = document.createElement('section');
+cityStatus.id = 'city-status'; cityStatus.hidden = true;
+cityStatus.setAttribute('role', 'status'); cityStatus.setAttribute('aria-live', 'polite');
+document.body.append(cityStatus);
+function showCityStatus(status: 'loading' | 'ready' | 'error', message = '') {
+  cityStatus.hidden = status === 'ready' || !S().currentDistrict;
+  if (status === 'ready') return;
+  cityStatus.innerHTML = status === 'loading'
+    ? '<div class="city-status-card"><h2>تجهيز الحي…</h2><p>جارٍ رسم الأرض والمباني. انتظر قليلًا.</p></div>'
+    : `<div class="city-status-card"><h2>تعذر عرض الحي</h2><p>إعادة المحاولة لا تحذف تقدمك.</p><p class="note">${esc(message)}</p><div class="row"><button class="btn gold" data-a="retry-city">إعادة المحاولة</button><button class="btn" data-a="map">خريطة الأحياء</button></div></div>`;
+}
 const fmt = (n: number) => Math.floor(n).toLocaleString('ar-EG');
 const esc = (s: string) => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 function dur(ms: number) { const s = Math.max(0, Math.ceil(ms / 1000)); const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60; return h ? `${fmt(h)} س ${fmt(m)} د` : m ? `${fmt(m)} د ${fmt(x)} ث` : `${fmt(x)} ث`; }
@@ -44,10 +58,10 @@ function showRecovery(msg: string) {
 function download(text: string, name: string) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
 
 // ---------- UI state ----------
-const ui = { selDistrict: null as string | null, plot: null as number | null, cat: 'equipment' as Category, pick: null as string | null, orient: 0 as 0 | 1, dialog: null as null | 'fleet' | 'mats' | 'projects' | 'progress' | 'save', objectiveHidden: false };
+const ui = { selDistrict: null as string | null, plot: null as number | null, cat: 'all' as Category | 'all', catPage: 0, dialogTab: 0, dialogPage: 0, pick: null as string | null, orient: 0 as 0 | 1, dialog: null as null | 'fleet' | 'mats' | 'projects' | 'progress' | 'save' | 'audio', objectiveHidden: false };
 let toastTimer = 0;
 function toast(msg: string, err = false) { document.querySelector('.toast')?.remove(); const t = document.createElement('div'); t.className = 'toast' + (err ? ' err' : ''); t.setAttribute('role', err ? 'alert' : 'status'); t.textContent = msg; document.body.appendChild(t); clearTimeout(toastTimer); toastTimer = window.setTimeout(() => t.remove(), 3200); }
-function act(a: Parameters<GameStore['dispatch']>[0], ok?: string) { try { store.dispatch(a); if (ok) toast(ok); return true; } catch (e) { toast(e instanceof Error ? e.message : 'تعذر تنفيذ الإجراء', true); return false; } }
+function act(a: Parameters<GameStore['dispatch']>[0], ok?: string) { try { store.dispatch(a); gameAudio.click(true); if (ok) toast(ok); return true; } catch (e) { gameAudio.click(); toast(e instanceof Error ? e.message : 'تعذر تنفيذ الإجراء', true); return false; } }
 
 const S = () => store.state;
 const cur = (): DistrictState | undefined => S().districts.find(d => d.id === S().currentDistrict);
@@ -58,6 +72,10 @@ const busy = (st: GameState) => new Set(st.jobs.flatMap(j => j.unitIds));
 
 // ---------- focus-preserving region renderer ----------
 const regions = new Map<string, string>();
+const resetKeys = new Set<string>();
+const snap = (el: HTMLElement) => { const m = new Map<string, number>(); el.querySelectorAll<HTMLElement>('[data-sk]').forEach(n => m.set(n.dataset.sk!, n.scrollTop)); return m; };
+const restore = (el: HTMLElement, m: Map<string, number>) => el.querySelectorAll<HTMLElement>('[data-sk]').forEach(n => { const k = n.dataset.sk!; const v = m.get(k); if (resetKeys.has(k)) n.scrollTop = 0; else if (v !== undefined && n.scrollTop !== v) n.scrollTop = v; });
+const resetScroll = (...k: string[]) => k.forEach(x => resetKeys.add(x));
 function region(id: string, html: string, cls = '') {
   let el = document.getElementById(id);
   if (!html) { el?.remove(); regions.delete(id); return; }
@@ -65,8 +83,10 @@ function region(id: string, html: string, cls = '') {
   if (cls) el.className = cls;
   if (regions.get(id) === html) return;
   const f = document.activeElement as HTMLElement | null; const key = f && el.contains(f) ? f.dataset.k : undefined;
-  el.innerHTML = html; regions.set(id, html);
-  if (key) (el.querySelector(`[data-k="${CSS.escape(key)}"]`) as HTMLElement | null)?.focus();
+  const pos = snap(el);
+  patchContent(el, html);
+  regions.set(id, html); restore(el, pos);
+  if (key) (el.querySelector(`[data-k="${CSS.escape(key)}"]`) as HTMLElement | null)?.focus({ preventScroll: true });
 }
 
 // ---------- WORLD SCREEN ----------
@@ -86,7 +106,7 @@ function renderWorld() {
       ${pins}</div>
       <div class="map-title"><h1>نيو غزة</h1><p>اختر حيًا على الخريطة. كل حي يُستلم بعد إزالة أنقاضه وإكمال مشاريعه التسعة، فيُفتح الحي التالي حتى كورنيش شارع الرشيد.</p></div>
     </div>
-    <aside class="world-side">
+    <aside class="world-side" data-sk="world">
       <div class="chip-row"><span class="chip"><span class="coin" style="display:inline-block;vertical-align:middle"></span> <b class="num">${fmt(st.coins)}</b></span><span class="chip">أحياء مستلمة <b class="num">${fmt(st.districts.filter(d => d.claimed).length)}/${fmt(DISTRICTS.length)}</b></span></div>
       <div class="district-card"><small>المرحلة ${fmt(idx + 1)} من ${fmt(DISTRICTS.length)}${idx === DISTRICTS.length - 1 ? ' — الختام' : ''}</small><h2>${esc(def.name)}</h2><p>${status}</p>
         ${ds ? `<div class="meter" aria-label="تقدم الحي"><i style="transform:scaleX(${districtProgress(ds) / 100})"></i></div><p class="num" style="font-size:.85rem">${fmt(districtProgress(ds))}٪</p>` : ''}
@@ -157,7 +177,7 @@ const prev = (id: string, o: 0 | 1) => { const k = id + o; if (!previews.has(k))
 function plotSheet(st: GameState, d: DistrictState, now: number) {
   const p = d.plots.find(x => x.id === ui.plot); if (!p) return '';
   const b = building(p.buildingId);
-  let title = '', sub = '', body = '';
+  let title = '', sub = '', body = '', bodyCls = '';
   if (p.status === 'rubble') {
     title = `أنقاض ${b.name}`; sub = 'أرض مغطاة بالركام';
     const free = st.units.filter(u => !busy(st).has(u.id));
@@ -167,15 +187,21 @@ function plotSheet(st: GameState, d: DistrictState, now: number) {
       <button class="btn gold" data-a="clear" data-k="clear" ${hasRecycler(st) && free.length ? '' : 'disabled'}>إرسال الآليات لإزالة الأنقاض</button>`;
   } else if (p.status === 'empty') {
     title = 'أرض نظيفة'; sub = 'جاهزة للبناء';
-    const cats = (Object.keys(CAT) as Category[]);
-    const list = BUILDINGS.filter(x => x.category === ui.cat);
+    const cats = ['all', ...Object.keys(CAT)] as Array<Category | 'all'>;
+    const cnt = (c: Category | 'all') => c === 'all' ? BUILDINGS.length : BUILDINGS.filter(x => x.category === c).length;
+    const list = ui.cat === 'all' ? BUILDINGS : BUILDINGS.filter(x => x.category === ui.cat);
+    const pages = Math.ceil(list.length / pageSize());
+    const page = Math.max(0, Math.min(ui.catPage, pages - 1));
+    const visible = list.slice(page * pageSize(), (page + 1) * pageSize());
     const pick = ui.pick ? building(ui.pick) : null;
-    body = `${!recyclerStarted(st) ? '<p class="note">ابدأ بمصنع إعادة التدوير: هو نقطة انطلاق كل الآليات.</p>' : ''}
-      <div class="tabs" role="tablist">${cats.map(c => `<button role="tab" aria-selected="${ui.cat === c}" data-a="cat" data-id="${c}" data-k="t-${c}">${CAT[c]}</button>`).join('')}</div>
-      <div class="cat-grid">${list.map(x => `<button class="cat-item" aria-pressed="${ui.pick === x.id}" data-a="pickb" data-id="${x.id}" data-k="b-${x.id}"><img src="${prev(x.id, 0)}" alt="" loading="lazy"/><b>${esc(x.name)}</b><small><span class="num">${fmt(x.cost)}</span> · ${secs(x.duration)}${x.income ? ` · دخل <span class="num">${fmt(x.income)}</span>/س` : ''}</small></button>`).join('')}</div>
-      ${pick ? `<div class="preview"><span class="ori">${ui.orient === 0 ? 'أمام: الباب نحوك' : 'خلف: الباب في الجهة الخلفية'}</span><img src="${prev(pick.id, ui.orient)}" alt="معاينة ${esc(pick.name)} ${ui.orient === 0 ? 'من الأمام' : 'من الخلف'}"/></div>
-      <dl class="kv"><dt>التكلفة</dt><dd class="num">${fmt(pick.cost)}</dd><dt>مدة البناء</dt><dd>${secs(pick.duration)} (وقت حقيقي)</dd><dt>الطوابق</dt><dd class="num">${fmt(pick.floors)}</dd><dt>الدخل</dt><dd>${pick.income ? `<span class="num">${fmt(pick.income)}</span> كل ساعة` : 'لا يوجد'}</dd></dl>
-      <div class="row"><button class="btn ghost" data-a="rot" data-k="rot">${IC.rotate} تدوير أمام/خلف</button><button class="btn gold" data-a="place" data-k="place" ${st.coins >= pick.cost ? '' : 'disabled'}>${st.coins >= pick.cost ? 'بناء هنا' : 'الرصيد غير كافٍ'}</button></div>` : '<p class="note">اختر مبنى لمعاينته من الأمام والخلف.</p>'}`;
+    bodyCls = 'build' + (pick ? ' has-pick' : '');
+    const detail = pick ? `<button class="btn ghost catalog-back" data-a="back-catalog" data-k="back-catalog">رجوع إلى المباني والتصنيفات</button><div class="bd-top" data-sk="detail-top"><div class="preview"><span class="ori">${ui.orient === 0 ? 'أمام' : 'خلف'}</span><img src="${prev(pick.id, ui.orient)}" alt="معاينة ${esc(pick.name)} ${ui.orient === 0 ? 'من الأمام' : 'من الخلف'}"/></div>
+        <div class="bd-info"><h3>${esc(pick.name)}</h3><small>${CAT[pick.category]}</small><dl class="kv"><dt>التكلفة</dt><dd class="num">${fmt(pick.cost)}</dd><dt>المدة</dt><dd>${secs(pick.duration)}</dd><dt>الطوابق</dt><dd class="num">${fmt(pick.floors)}</dd><dt>الدخل</dt><dd>${pick.income ? `<span class="num">${fmt(pick.income)}</span>/س` : 'لا يوجد'}</dd></dl></div></div>
+        <div class="row bd-actions"><button class="btn ghost" data-a="rot" data-k="rot">${IC.rotate} ${ui.orient === 0 ? 'أمام' : 'خلف'}: تدوير</button><button class="btn gold" data-a="place" data-k="place" ${st.coins >= pick.cost ? '' : 'disabled'}>${st.coins >= pick.cost ? 'بناء هنا' : 'الرصيد غير كافٍ'}</button></div>`
+      : '<p class="note">اختر مبنى من القائمة لمعاينته من الأمام والخلف ثم ابنِه.</p>';
+    body = `<div class="build-detail" data-sk="detail">${!recyclerStarted(st) ? '<p class="note">ابدأ بمصنع إعادة التدوير: هو نقطة انطلاق كل الآليات.</p>' : ''}${detail}</div>
+      <div class="build-list"><div class="cat-filters" role="tablist" aria-label="فئات المباني">${cats.map(c => `<button role="tab" aria-selected="${ui.cat === c}" data-a="cat" data-id="${c}" data-k="t-${c}">${c === 'all' ? 'كل المباني' : CAT[c]} <span class="cnt num">${fmt(cnt(c))}</span></button>`).join('')}</div>
+      <div class="cat-scroll" data-sk="cat"><div class="cat-grid" aria-label="عدد المباني ${fmt(list.length)}">${visible.map(x => `<button class="cat-item" aria-pressed="${ui.pick === x.id}" title="${esc(x.name)}" data-a="pickb" data-id="${x.id}" data-k="b-${x.id}"><img src="${prev(x.id, 0)}" alt="" loading="lazy"/><b>${esc(x.name)}</b><small><span class="num">${fmt(x.cost)}</span> · ${secs(x.duration)}</small></button>`).join('')}</div></div>${pageControls(page,pages,'catalog-page',list.length)}</div>`;
   } else if (p.status === 'building') {
     title = b.name; sub = `قيد الإنشاء · ${p.orientation === 0 ? 'أمام' : 'خلف'}`;
     const f = Math.min(1, (now - p.startedAt) / Math.max(1, p.endsAt - p.startedAt));
@@ -187,19 +213,33 @@ function plotSheet(st: GameState, d: DistrictState, now: number) {
       ${b.income ? `<dl class="kv"><dt>الدخل</dt><dd><span class="num">${fmt(b.income)}</span> كل ساعة</dd><dt>الدفعة التالية</dt><dd>${ready ? 'جاهزة للجمع' : `بعد <span class="num">${dur(p.incomeAt + 3600000 - now)}</span>`}</dd></dl>
       <button class="btn gold" data-a="collectB" data-k="collectB" ${ready ? '' : 'disabled'}>جمع الدخل</button>` : `<p class="note">${b.id === 'recycling' ? 'مقر الآليات: منه تنطلق وإليه تعود المواد.' : 'مبنى خدمي بلا دخل مباشر.'}</p>`}`;
   }
-  return `<aside class="sheet" aria-labelledby="sh-t"><div class="sheet-head"><div><h2 id="sh-t">${esc(title)}</h2><p>${esc(sub)} · قطعة <span class="num">${fmt(p.id + 1)}</span></p></div><button class="icon-btn" data-a="close-sheet" data-k="close-sheet" aria-label="إغلاق اللوحة">${IC.close}</button></div><div class="sheet-body">${body}</div></aside>`;
+  const layout = splitActions(body);
+  return `<aside class="sheet" aria-labelledby="sh-t"><div class="sheet-head"><div><h2 id="sh-t">${esc(title)}</h2><p>${esc(sub)} · قطعة <span class="num">${fmt(p.id + 1)}</span></p></div><button class="icon-btn" data-a="close-sheet" data-k="close-sheet" aria-label="إغلاق اللوحة">${IC.close}</button></div><div class="sheet-body ${bodyCls}" data-sk="body">${layout.body}</div>${layout.footer ? `<footer class="sheet-footer">${layout.footer}</footer>` : ''}</aside>`;
 }
 
 // ---------- dialogs ----------
 const dlg = document.createElement('dialog'); dlg.setAttribute('aria-labelledby', 'dlg-t'); document.body.appendChild(dlg);
-dlg.addEventListener('close', () => { ui.dialog = null; regions.delete('dlg'); render(); });
-dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+const soundControl=document.createElement('button');
+soundControl.className='icon-btn sound-toggle';soundControl.dataset.a='dlg';soundControl.dataset.id='audio';
+soundControl.setAttribute('aria-label','إعدادات الصوت');soundControl.setAttribute('aria-haspopup','dialog');
+soundControl.innerHTML=I('<path d="M4 9h4l5-4v14l-5-4H4zM17 8c3 2 3 6 0 8M20 5c5 4 5 10 0 14"/>');
+document.body.appendChild(soundControl);
+dlg.addEventListener('close', () => { ui.dialog = null; resetScroll('dlg'); regions.delete('dlg'); render(); });
 function dialogHtml(st: GameState, now: number): [string, string] {
+  if(ui.dialog==='audio'){
+    const p=gameAudio.prefs;
+    const rows=([['master','الصوت العام'],['effects','الآليات والعمل والأزرار'],['ambience','أجواء المدينة والطبيعة']] as const)
+      .map(([key,label])=>`<label class="audio-row" for="audio-${key}"><span>${label}<b class="num">${fmt(p[key]*100)}٪</b></span><input id="audio-${key}" data-pref="${key}" data-k="audio-${key}" type="range" min="0" max="100" step="1" value="${Math.round(p[key]*100)}"/></label>`).join('');
+    return ['الصوتيات',`<p class="note" role="status">${esc(gameAudio.status)}</p>${rows}
+      <p class="note audio-help">يعلو صوت المواقع القريبة عند التكبير، ويتلاشى عند إبعاد الكاميرا. يبدأ بعد أول لمسة ويتوقف عند مغادرة الصفحة.</p>
+      <p class="note audio-music">تتر «مولانا» لم يُضف بعد؛ نحتاج ملفًا مصرحًا باستخدامه.</p>
+      <div class="row"><button class="btn gold" data-a="audio-toggle" data-k="audio-toggle" aria-pressed="${p.enabled}">${p.enabled?'كتم جميع الأصوات':'تشغيل الصوت'}</button><button class="btn" data-a="audio-test">تجربة الصوت</button>${gameAudio.status.includes('تعذّر')?'<button class="btn" data-a="audio-retry">إعادة المحاولة</button>':''}</div>`];
+  }
   const d = cur();
   if (ui.dialog === 'fleet') {
     const b = busy(st);
     return ['الآليات', `${!hasRecycler(st) ? '<p class="note">شراء الآليات يتطلب مصنع إعادة تدوير مكتملًا.</p>' : ''}
-      <h3>شراء</h3><div class="list">${(Object.keys(EQUIPMENT) as EquipmentKind[]).map(k => `<div class="item"><img src="" data-veh="${k}" alt=""/><div><h3>${EQUIPMENT[k].name}</h3><p>السعر <span class="num">${fmt(EQUIPMENT[k].cost)}</span></p></div><button class="btn sm" data-a="buy" data-id="${k}" data-k="buy-${k}" ${hasRecycler(st) && st.coins >= EQUIPMENT[k].cost ? '' : 'disabled'}>شراء</button></div>`).join('')}</div>
+      <h3>شراء</h3><div class="list">${(Object.keys(EQUIPMENT) as EquipmentKind[]).map(k => `<div class="item"><img src="${machinePreview(k)}" data-veh="${k}" alt=""/><div><h3>${EQUIPMENT[k].name}</h3><p>السعر <span class="num">${fmt(EQUIPMENT[k].cost)}</span></p></div><button class="btn sm" data-a="buy" data-id="${k}" data-k="buy-${k}" ${hasRecycler(st) && st.coins >= EQUIPMENT[k].cost ? '' : 'disabled'}>شراء</button></div>`).join('')}</div>
       <h3>أسطولك (${fmt(st.units.length)})</h3>${st.units.length ? `<div class="list">${st.units.map(u => { const cost = Math.floor(u.purchasePrice / 2); return `<div class="item"><span class="st" style="background:${b.has(u.id) ? 'var(--ochre)' : 'var(--olive)'}"></span><div><h3>${EQUIPMENT[u.kind].name} · مستوى <span class="num">${fmt(u.level)}</span>/٣</h3><p>${b.has(u.id) ? 'في مهمة' : 'متاحة'} · الترقية تسرّع السفر وتزيد الحمولة، العمل يبقى ٦٠ ثانية</p></div><button class="btn ghost sm" data-a="upg" data-id="${u.id}" data-k="u-${u.id}" ${u.level >= 3 || st.coins < cost ? 'disabled' : ''}>${u.level >= 3 ? 'أقصى مستوى' : `ترقية <span class="num">${fmt(cost)}</span>`}</button></div>`; }).join('')}</div>` : '<p class="note">لا توجد آليات بعد.</p>'}
       <h3>المهام الجارية</h3>${st.jobs.length ? `<div class="list">${st.jobs.map(j => { const { label, end } = jobDisplay(j, now); return `<div class="item building"><span class="st"></span><div><h3>${esc(dName(j.districtId))} · قطعة <span class="num">${fmt(j.plotId + 1)}</span></h3><p>${label} · متبقٍ <span class="num">${dur(end - now)}</span></p></div><span></span></div>`; }).join('')}</div>` : '<p class="note">لا توجد مهام الآن.</p>'}`];
   }
@@ -223,7 +263,7 @@ function dialogHtml(st: GameState, now: number): [string, string] {
     const rub = d.plots.filter(p => p.status === 'rubble').length; const done = d.projects.filter(p => p.status === 'complete').length; const jobs = st.jobs.filter(j => j.districtId === d.id).length;
     const ok = !rub && !jobs && done === 9 && !d.claimed; const def = DISTRICTS.find(x => x.id === d.id)!;
     return ['استلام الحي', `<div class="big-num num">${fmt(districtProgress(d))}٪</div><div class="meter"><i style="transform:scaleX(${districtProgress(d) / 100})"></i></div>
-      <div class="check ${!rub ? 'ok' : ''}"><i></i>إزالة الأنقاض: <span class="num">${fmt(53 - rub)}/٥٣</span></div>
+      <div class="check ${!rub ? 'ok' : ''}"><i></i>إزالة الأنقاض: <span class="num">${fmt(d.plots.length - 11 - rub)}/${fmt(d.plots.length - 11)}</span></div>
       <div class="check ${done === 9 ? 'ok' : ''}"><i></i>المشاريع المكتملة: <span class="num">${fmt(done)}/٩</span></div>
       <div class="check ${!jobs ? 'ok' : ''}"><i></i>لا مهام جارية في الحي</div>
       <p>المكافأة: <b class="num">${fmt(def.reward)}</b></p>
@@ -237,34 +277,48 @@ function dialogHtml(st: GameState, now: number): [string, string] {
   return ['', ''];
 }
 function renderDialog() {
-  if (!ui.dialog) return;
+  if (!ui.dialog) { if (dlg.open) dlg.close(); return; }
   const [t, body] = dialogHtml(S(), Date.now()); if (!t) { dlg.close(); return; }
-  const html = `<div class="dlg-head"><h2 id="dlg-t">${t}</h2><button class="icon-btn" data-a="close-dlg" data-k="close-dlg" aria-label="إغلاق">${IC.close}</button></div><div class="dlg-body">${body}</div>`;
-  if (regions.get('dlg') !== html) { const f = document.activeElement as HTMLElement | null; const k = f && dlg.contains(f) ? f.dataset.k : undefined; dlg.innerHTML = html; regions.set('dlg', html); vehImgs(); if (k) (dlg.querySelector(`[data-k="${CSS.escape(k)}"]`) as HTMLElement | null)?.focus(); }
+  const layout = dialogLayout(body, ui.dialogTab, ui.dialogPage);
+  const html = `<div class="dlg-head"><h2 id="dlg-t">${t}</h2><button class="icon-btn" data-a="close-dlg" data-k="close-dlg" aria-label="إغلاق">${IC.close}</button></div>${layout.tabs}<div class="dlg-body" data-sk="dlg">${layout.body}</div>${layout.footer ? `<footer class="dlg-footer">${layout.footer}</footer>` : ''}`;
+  if (regions.get('dlg') !== html) { const f = document.activeElement as HTMLElement | null; const k = f && dlg.contains(f) ? f.dataset.k : undefined; const pos = snap(dlg); patchContent(dlg, html); regions.set('dlg', html); restore(dlg, pos); if (k) (dlg.querySelector(`[data-k="${CSS.escape(k)}"]`) as HTMLElement | null)?.focus({ preventScroll: true }); }
   if (!dlg.open) dlg.showModal();
 }
-function vehImgs() { dlg.querySelectorAll<HTMLImageElement>('img[data-veh]').forEach(img => { img.src = machinePreview(img.dataset.veh as EquipmentKind); }); }
 
 // ---------- master render ----------
 let scene: CityScene | null = null;
 function render() {
   const st = S();
+  gameAudio.mode(st);
+  soundControl.style.bottom=st.currentDistrict?'112px':'18px';
+  soundControl.hidden=ui.plot!==null||ui.dialog!==null;
+  soundControl.dataset.muted=String(!gameAudio.prefs.enabled);
+  soundControl.setAttribute('aria-expanded',String(ui.dialog==='audio'));
   if (st.currentDistrict) { stage.classList.remove('hidden'); region('world', ''); renderCity(); scene?.sync(); }
-  else { stage.classList.add('hidden'); region('hud', ''); region('sheet', ''); ui.plot = null; renderWorld(); }
+  else { cityStatus.hidden = true; stage.classList.add('hidden'); region('hud', ''); region('sheet', ''); ui.plot = null; renderWorld(); }
   renderDialog();
+  resetKeys.clear();
 }
 
 // ---------- events ----------
 document.addEventListener('click', e => {
   const t = (e.target as HTMLElement).closest<HTMLElement>('[data-a]'); if (!t || (t as HTMLButtonElement).disabled) return;
+  if(!['enter','map','place','clear','buy','upg','sell','proj','cproj','collectB','claim'].includes(t.dataset.a??''))gameAudio.click();
   const id = t.dataset.id ?? ''; const st = S();
   switch (t.dataset.a) {
-    case 'pick-d': ui.selDistrict = id; break;
+    case 'audio-toggle': gameAudio.setPreference('enabled',!gameAudio.prefs.enabled); break;
+    case 'audio-test': void gameAudio.unlock().then(()=>gameAudio.click(true)); break;
+    case 'audio-retry': gameAudio.retry(); break;
+    case 'pick-d': ui.selDistrict = id; resetScroll('world'); break;
     case 'enter': ui.objectiveHidden = false; act({ type: 'enter', districtId: id }); break;
-    case 'map': ui.plot = null; scene?.select(null); act({ type: 'map' }); break;
-    case 'close-sheet': ui.plot = null; ui.pick = null; scene?.select(null); break;
-    case 'cat': ui.cat = id as Category; break;
-    case 'pickb': ui.pick = id; ui.orient = 0; break;
+    case 'map': resetScroll('body', 'cat', 'detail', 'world'); ui.plot = null; scene?.select(null); act({ type: 'map' }); break;
+    case 'close-sheet': resetScroll('body', 'cat', 'detail'); ui.plot = null; ui.pick = null; scene?.select(null); break;
+    case 'cat': ui.cat = id as Category | 'all'; ui.catPage = 0; ui.pick = null; resetScroll('cat', 'detail', 'detail-top'); break;
+    case 'catalog-page': ui.catPage = Math.max(0, Number(id)); resetScroll('cat'); break;
+    case 'dialog-tab': ui.dialogTab = Number(id); ui.dialogPage = 0; resetScroll('dlg'); break;
+    case 'dialog-page': ui.dialogPage = Math.max(0, Number(id)); resetScroll('dlg'); break;
+    case 'pickb': ui.pick = id; ui.orient = 0; resetScroll('detail', 'detail-top'); break;
+    case 'back-catalog': ui.pick = null; resetScroll('detail', 'detail-top'); break;
     case 'rot': ui.orient = ui.orient ? 0 : 1; break;
     case 'place': if (ui.plot != null && ui.pick && act({ type: 'place', plotId: ui.plot, buildingId: ui.pick, orientation: ui.orient }, `بدأ إنشاء ${building(ui.pick).name}`)) ui.pick = null; break;
     case 'clear': if (ui.plot != null) act({ type: 'clear', plotId: ui.plot }, 'انطلقت الآليات من المصنع'); break;
@@ -275,17 +329,25 @@ document.addEventListener('click', e => {
     case 'proj': act({ type: 'project', projectId: id }, 'بدأ المشروع'); break;
     case 'cproj': act({ type: 'collectProject', projectId: id }, 'تم الجمع'); break;
     case 'claim': act({ type: 'claim' }, 'تم استلام الحي'); break;
-    case 'dlg': ui.dialog = id as typeof ui.dialog; break;
-    case 'close-dlg': dlg.close(); return;
+    case 'dlg': resetScroll('dlg'); ui.dialogTab = 0; ui.dialogPage = 0; ui.dialog = id as typeof ui.dialog; break;
+    case 'close-dlg': ui.dialog = null; dlg.close(); return;
     case 'hide-obj': ui.objectiveHidden = true; break;
     case 'zin': scene?.zoomBy(1.2); scene?.saveCam(); break;
     case 'zout': scene?.zoomBy(1 / 1.2); scene?.saveCam(); break;
     case 'export': download(store.exportSave(), `newgaza2d-save-${new Date().toISOString().slice(0, 10)}.json`); break;
-    case 'reset': if (confirm('حذف كل التقدم من هذا الجهاز نهائيًا؟') && confirm('تأكيد أخير: إعادة الضبط لا يمكن التراجع عنها.')) { localStorage.removeItem(SAVE_KEY); location.reload(); } return;
+    case 'reset': if (confirm('حذف كل التقدم من هذا الجهاز نهائيًا؟') && confirm('تأكيد أخير: إعادة الضبط لا يمكن التراجع عنها.') && store.reset()) location.reload(); return;
+    case 'retry-city': scene?.retryWorld(); break;
   }
   render();
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !dlg.open && ui.plot != null) { ui.plot = null; scene?.select(null); render(); } });
+document.addEventListener('input',e=>{
+  const input=e.target as HTMLInputElement;
+  if(['master','effects','ambience'].includes(input.dataset.pref??'')){
+    gameAudio.setPreference(input.dataset.pref as 'master'|'effects'|'ambience',Number(input.value)/100);
+    renderDialog();
+  }
+});
 
 // ---------- Phaser ----------
 const game = new Phaser.Game({
@@ -298,7 +360,8 @@ if (import.meta.env.DEV) Object.defineProperty(window, '__newgazaArtScene', {
 });
 game.registry.set('hooks', {
   getState: () => store.state,
-  onSelect: (id: number | null) => { ui.plot = id; ui.pick = null; if (id != null) scene?.focusPlot(id); render(); },
+  onWorldState: showCityStatus,
+  onSelect: (id: number | null) => { if (id === null && ui.plot !== null) return; resetScroll('body', 'cat', 'detail'); ui.catPage = 0; ui.plot = id; ui.pick = null; if (id != null) scene?.focusPlot(id); render(); },
   onCamera: (c: { x: number; y: number; zoom: number }) => { try { store.dispatch({ type: 'camera', camera: c }); } catch { /* camera save is best-effort */ } },
 });
 game.events.once('booted', () => {

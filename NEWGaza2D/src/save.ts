@@ -1,5 +1,6 @@
 import { BUILDINGS, DISTRICTS, EQUIPMENT, projects } from './catalog';
 import type { GameState } from './model';
+import { cityLayout, LOT_COUNT } from './city-layout';
 
 /** Reject damaged domain data; leave the original storage entry untouched. */
 export function validateSave(value: unknown): asserts value is GameState {
@@ -24,9 +25,14 @@ export function validateSave(value: unknown): asserts value is GameState {
     require(!d.claimed || d.unlocked);
     require(d.unlocked === (i === 0 || s.districts[i - 1].claimed));
     require(d.camera === null || (typeof d.camera === 'object' && Number.isFinite(d.camera.x) && Number.isFinite(d.camera.y) && d.camera.zoom >= .15 && d.camera.zoom <= 4));
-    require(Array.isArray(d.plots) && d.plots.length === 64 && Array.isArray(d.projects) && d.projects.length === 9);
+    require(Array.isArray(d.plots) && [64, LOT_COUNT].includes(d.plots.length) && Array.isArray(d.projects) && d.projects.length === 9);
+    const legacy = d.plots.length === 64;
+    if (!legacy) require([cityLayout(d.id), cityLayout(d.id,1)].some(layout =>
+      d.plots.every((p,j) => p && p.x === layout.cells[j].x && p.y === layout.cells[j].y)));
     for (const [j,p] of d.plots.entries()) {
-      require(p && p.id === j && p.x === (j % 8) * 2 && p.y === Math.floor(j / 8) * 2);
+      require(p && p.id === j && (legacy
+        ? p.layoutId === undefined && p.x === (j % 8) * 2 && p.y === Math.floor(j / 8) * 2
+        : p.layoutId === d.id));
       require(['rubble','empty','building','built'].includes(p.status) && BUILDINGS.some(b => b.id === p.buildingId));
       require((p.orientation === 0 || p.orientation === 1) && integer(p.startedAt) && integer(p.endsAt) && integer(p.incomeAt));
       require(p.status !== 'building' || (p.endsAt > p.startedAt && p.startedAt <= s.lastSeen));
@@ -43,7 +49,7 @@ export function validateSave(value: unknown): asserts value is GameState {
   const sites: string[] = [];
   for (const j of s.jobs) {
     const d = s.districts.find(d => d.id === j.districtId);
-    require(d?.unlocked && integer(j.plotId) && j.plotId < 64 && integer(j.originPlotId) && j.originPlotId < 64);
+    require(d?.unlocked && integer(j.plotId) && j.plotId < d!.plots.length && integer(j.originPlotId) && j.originPlotId < d!.plots.length);
     const origin = d!.plots[j.originPlotId];
     require(origin.buildingId === 'recycling' && origin.status === 'built');
     require(Array.isArray(j.unitIds) && j.unitIds.length === 3 && unique(j.unitIds));

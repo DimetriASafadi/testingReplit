@@ -20,4 +20,11 @@
 - [Native save performance](native-save-performance.md) — camera checkpoints use detached background snapshots; actual fleet markers fade at close zoom.
 - [Generated machinery preparation](generated-machinery-preparation.md) — split meshes are not complete rigs; check cut topology and request a textured model when UVs are absent.
 - [Browser clock testing](browser-clock-testing.md) — run accelerated browser-clock checks after frontend edits settle; hot reload resets injected clocks, not persisted deadlines.
-- [Consistent 2D machinery](2d-mechanical-art.md) — offline articulated poses preserve vehicle identity; check contact and foreground occlusion inside the playable city.
+- [Consistent 2D machinery and workers](2d-mechanical-art.md) — preserve articulated vehicle identity and the accepted worker style; check grounded movement and foreground occlusion.
+- [Live device testing](live-device-testing.md) — user wants the same testing link to reflect ongoing updates across devices; distinguish live development from published builds.
+- [2D layout persistence](2d-layout-persistence.md) — generator changes require recognized-layout migrations; live reloads can persist earlier geometry during updates.
+- [2D art pipeline](2d-art-pipeline.md) — pack, grade, align, then feather; preserve fresh stage baselines and a shared ground-shadow layer.
+- [Building parcel art direction](2d-building-lot-direction.md) — small buildings need appropriate yards; both poses share coherent ground and a single sunlight direction.
+- [Mobile gesture boundaries](2d-touch-gesture-boundaries.md) — timer and panel refreshes must not reset ongoing camera gestures.
+- [2D sound identity](2d-sound-identity.md) — new standalone audio, not legacy Unity assets; zoom attenuation and the user's named main-menu theme.
+- [Mobile WebGL checks](mobile-webgl-checks.md) — headless Canvas can hide phone GPU texture-limit failures; verify the actual renderer and fresh-entry flows.
