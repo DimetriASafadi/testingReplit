@@ -1,8 +1,10 @@
 # Project context
 
-- This is an imported native Unity 6 project, not a browser/React app. Unity project root: `testingReplic`.
-- Product: **New Gaza / نيو غزة**, a mobile 3D reconstruction/economy game. Source requirements are the Arabic DOCX under `attached_assets`; working coverage and limitations are in `testingReplic/PROJECT.md`.
-- Preserve the imported Unity/URP/Input System stack. Do not migrate the repository or create a web substitute merely to provide a preview.
+- This repository contains the existing Unity 6 project in `testingReplic` and the user's planned, separate browser-game project in `NEWGaza2D/`.
+- Product: **New Gaza / نيو غزة**, a peaceful Gaza reconstruction and economy game. The user wants its new 2D browser-game files kept in `NEWGaza2D/` and wants a playable version accessible on the web.
+- Use Phaser with TypeScript for the planned browser game and Replit Preview during development. Keep every file belonging to this version (application source, tests, art references, manifests and web configuration) inside `NEWGaza2D/`; do not scatter game files at the repository root or in Unity's `Assets/`.
+- Treat `testingReplic/` as the separate Unity project and preserve it. Do not remove or rewrite Unity gameplay or migrate its files as part of browser-game work unless the user specifically asks.
+- The Phaser game has not been implemented yet; creating its home folder and documentation alone does not authorize starting the game implementation.
 - New game entry scene: `Assets/NewGaza/Scenes/NewGaza.unity`. Original racing prototype stays in `Assets/Scenes/SampleScene.unity`, disabled in the mobile build list.
 - Gameplay is peaceful reconstruction, not combat: rubble → recycling → resources → revenue → infrastructure/projects → 100% neighborhood reward → next neighborhood → Al Rashid finale.
 - Runtime-generated world; use the Unity menu `New Gaza/Open game scene`, then Play. The setup menu applies mobile settings and Input System configuration. See `testingReplic/README.ar.md`.
