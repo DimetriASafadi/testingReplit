@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "نيو غزة 2D — تهيئة الويب"
+description = "مشغّل ويب منفصل لمشروع Phaser وTypeScript داخل NEWGaza2D، دون تغيير مشروع Unity الأصلي. اللعبة ستُنفّذ في المرحلة التالية."
+version = "1.0.0"
+id = "artifacts/new-gaza-2d"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18578
+
+[services.development]
+run = "pnpm --filter @workspace/new-gaza-2d run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/new-gaza-2d", "run", "build" ]
+serve = "static"
+publicDir = "NEWGaza2D/dist"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18578"
+BASE_PATH = "/"

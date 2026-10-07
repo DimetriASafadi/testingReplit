@@ -1,0 +1,60 @@
+{
+  "formatVersion": 1,
+  "key": "rubble_heap",
+  "sourceFile": "/home/runner/workspace/attached_assets/licensed_models/rubble_heap.glb",
+  "targetTriangles": 1400,
+  "actualTriangles": 1393,
+  "triangleTolerance": 0.01,
+  "verifiedWithinBudget": true,
+  "vertexCount": 3775,
+  "dimensionsNormalizedBlenderXYZ": [
+    0.9219675660133362,
+    1.0,
+    0.49274519085884094
+  ],
+  "origin": {
+    "originalWorldBoundsMin": [
+      -3.652212142944336,
+      -3.4879820346832275,
+      7.078051567077637e-08
+    ],
+    "originalWorldBoundsMax": [
+      -1.775095820426941,
+      -1.4519925117492676,
+      1.0032241344451904
+    ],
+    "uniformScale": 0.4911616630320137,
+    "normalizedOriginBlender": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "pivot": "bottom-center"
+  },
+  "uvCoverage": {
+    "layer": "UVMap",
+    "loopCount": 4179,
+    "finiteLoopCount": 4179,
+    "bounds": {
+      "min": [
+        0.00035001750802621245,
+        0.00034999847412109375
+      ],
+      "max": [
+        0.9996500015258789,
+        0.9996500015258789
+      ]
+    }
+  },
+  "albedo": {
+    "file": "rubble_heap_albedo.png",
+    "size": null,
+    "bakedDiffuseColorOnly": false,
+    "sourceMaterialCount": 1,
+    "uvLayer": "UVMap"
+  },
+  "preview": {
+    "file": "/home/runner/workspace/exports/models/rubble_heap.png",
+    "status": "rendered"
+  }
+}

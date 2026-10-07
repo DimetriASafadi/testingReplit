@@ -1,0 +1,107 @@
+{
+  "formatVersion": 1,
+  "key": "ruin_context_masonry",
+  "sourceFile": "original procedural geometry (no imported source model)",
+  "targetTriangles": 450,
+  "actualTriangles": 444,
+  "triangleTolerance": 0.0,
+  "verifiedWithinBudget": true,
+  "vertexCount": 316,
+  "dimensionsNormalizedBlenderXYZ": [
+    6.185873031616211,
+    4.811068534851074,
+    2.205235004425049
+  ],
+  "origin": {
+    "normalizedOriginBlender": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "pivot": "bottom-center"
+  },
+  "districtId": null,
+  "category": "destroyed_context_lod",
+  "contextLOD": true,
+  "floors": null,
+  "damageType": "ruin_context_masonry",
+  "visualReference": "User rubble, pancake-collapse and breached-wall photographs",
+  "meshPath": "Resources/Models/ruin_context_masonry.obj",
+  "texturePath": "Resources/Models/ruin_context_masonry_albedo.png",
+  "fbxPath": "Art/DestroyedFBX/ruin_context_masonry.fbx",
+  "triangleCount": 444,
+  "bounds": {
+    "min": [
+      -3.0929365158081055,
+      -2.405534267425537,
+      0.0
+    ],
+    "max": [
+      3.0929365158081055,
+      2.405534267425537,
+      2.205235004425049
+    ],
+    "width": 6.185873031616211,
+    "height": 2.205235004425049,
+    "depth": 4.811068534851074
+  },
+  "units": "meters",
+  "pivot": "bottom-center",
+  "damageOnly": true,
+  "originalAuthored": true,
+  "sourceType": "procedurally_authored_original_geometry",
+  "referenceAssets": [
+    "IMG-20261002-WA0003_1790946116113.jpg",
+    "IMG-20261002-WA0004_1790946116076.jpg"
+  ],
+  "uvCoverage": {
+    "layer": "UVMap",
+    "loopCount": 1332,
+    "finiteLoopCount": 1332,
+    "bounds": {
+      "min": [
+        0.02525000087916851,
+        0.02525000087916851
+      ],
+      "max": [
+        0.7247499823570251,
+        0.22474999725818634
+      ]
+    }
+  },
+  "objAudit": {
+    "vertices": 316,
+    "uvCoordinates": 40,
+    "normals": 404,
+    "triangles": 444
+  },
+  "fbxAudit": {
+    "triangles": 444,
+    "vertices": 316,
+    "bounds": {
+      "min": [
+        -3.0929365158081055,
+        -2.405534267425537,
+        0.0
+      ],
+      "max": [
+        3.0929365158081055,
+        2.405534267425537,
+        2.205235004425049
+      ],
+      "width": 6.185873031616211,
+      "height": 2.205235004425049,
+      "depth": 4.811068534851074
+    },
+    "uvChannels": 1,
+    "textures": [
+      "sharedatlastex.png"
+    ]
+  },
+  "albedo": {
+    "file": "ruin_context_masonry_albedo.png",
+    "sourceMaterialCount": 1,
+    "sharedAtlas": "sharedatlastex.png",
+    "uvLayer": "UVMap"
+  }
+}

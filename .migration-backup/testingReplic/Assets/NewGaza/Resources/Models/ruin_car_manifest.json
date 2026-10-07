@@ -1,0 +1,105 @@
+{
+  "formatVersion": 1,
+  "key": "ruin_car",
+  "sourceFile": "original procedural geometry (no imported source model)",
+  "targetTriangles": 900,
+  "actualTriangles": 593,
+  "triangleTolerance": 0.0,
+  "verifiedWithinBudget": true,
+  "vertexCount": 390,
+  "dimensionsNormalizedBlenderXYZ": [
+    5.097456932067871,
+    3.2351813316345215,
+    1.9801195859909058
+  ],
+  "origin": {
+    "normalizedOriginBlender": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "pivot": "bottom-center"
+  },
+  "districtId": null,
+  "category": "car",
+  "floors": null,
+  "damageType": "burnt_vehicle_wreck",
+  "meshPath": "Resources/Models/ruin_car.obj",
+  "texturePath": "Resources/Models/ruin_car_albedo.png",
+  "fbxPath": "Art/DestroyedFBX/ruin_car.fbx",
+  "triangleCount": 593,
+  "bounds": {
+    "min": [
+      -2.5487284660339355,
+      -1.6175906658172607,
+      0.0
+    ],
+    "max": [
+      2.5487284660339355,
+      1.6175906658172607,
+      1.9801195859909058
+    ],
+    "width": 5.097456932067871,
+    "height": 1.9801195859909058,
+    "depth": 3.2351813316345215
+  },
+  "units": "meters",
+  "pivot": "bottom-center",
+  "damageOnly": true,
+  "originalAuthored": true,
+  "sourceType": "procedurally_authored_original_geometry",
+  "referenceAssets": [
+    "IMG-20261002-WA0003_1790946116113.jpg",
+    "IMG-20261002-WA0004_1790946116076.jpg"
+  ],
+  "uvCoverage": {
+    "layer": "UVMap",
+    "loopCount": 1779,
+    "finiteLoopCount": 1779,
+    "bounds": {
+      "min": [
+        0.02525000087916851,
+        0.02525000087916851
+      ],
+      "max": [
+        0.9747499823570251,
+        0.47475001215934753
+      ]
+    }
+  },
+  "objAudit": {
+    "vertices": 390,
+    "uvCoordinates": 50,
+    "normals": 370,
+    "triangles": 593
+  },
+  "fbxAudit": {
+    "triangles": 593,
+    "vertices": 390,
+    "bounds": {
+      "min": [
+        -2.5487284660339355,
+        -1.6175906658172607,
+        0.0
+      ],
+      "max": [
+        2.5487284660339355,
+        1.6175906658172607,
+        1.9801195859909058
+      ],
+      "width": 5.097456932067871,
+      "height": 1.9801195859909058,
+      "depth": 3.2351813316345215
+    },
+    "uvChannels": 1,
+    "textures": [
+      "sharedatlastex.png"
+    ]
+  },
+  "albedo": {
+    "file": "ruin_car_albedo.png",
+    "sourceMaterialCount": 1,
+    "sharedAtlas": "sharedatlastex.png",
+    "uvLayer": "UVMap"
+  }
+}

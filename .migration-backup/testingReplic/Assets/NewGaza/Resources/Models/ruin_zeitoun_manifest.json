@@ -1,0 +1,106 @@
+{
+  "formatVersion": 1,
+  "key": "ruin_zeitoun",
+  "sourceFile": "original procedural geometry (no imported source model)",
+  "targetTriangles": 2200,
+  "actualTriangles": 1031,
+  "triangleTolerance": 0.0,
+  "verifiedWithinBudget": true,
+  "vertexCount": 724,
+  "dimensionsNormalizedBlenderXYZ": [
+    13.07668399810791,
+    10.65476131439209,
+    11.081037521362305
+  ],
+  "origin": {
+    "normalizedOriginBlender": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "pivot": "bottom-center"
+  },
+  "districtId": "Zeitoun",
+  "category": "family_block",
+  "floors": 5,
+  "damageType": "grounded_breached_shell_compact_collapsed_slabs_dense_mixed_rubble",
+  "visualReference": "User supplied collapse piles, exposed rebar and destroyed masonry",
+  "meshPath": "Resources/Models/ruin_zeitoun.obj",
+  "texturePath": "Resources/Models/ruin_zeitoun_albedo.png",
+  "fbxPath": "Art/DestroyedFBX/ruin_zeitoun.fbx",
+  "triangleCount": 1031,
+  "bounds": {
+    "min": [
+      -6.538341999053955,
+      -5.327380657196045,
+      0.0
+    ],
+    "max": [
+      6.538341999053955,
+      5.327380657196045,
+      11.081037521362305
+    ],
+    "width": 13.07668399810791,
+    "height": 11.081037521362305,
+    "depth": 10.65476131439209
+  },
+  "units": "meters",
+  "pivot": "bottom-center",
+  "damageOnly": true,
+  "originalAuthored": true,
+  "sourceType": "procedurally_authored_original_geometry",
+  "referenceAssets": [
+    "IMG-20261002-WA0003_1790946116113.jpg",
+    "IMG-20261002-WA0004_1790946116076.jpg"
+  ],
+  "uvCoverage": {
+    "layer": "UVMap",
+    "loopCount": 3093,
+    "finiteLoopCount": 3093,
+    "bounds": {
+      "min": [
+        0.02525000087916851,
+        0.02525000087916851
+      ],
+      "max": [
+        0.9747499823570251,
+        0.47475001215934753
+      ]
+    }
+  },
+  "objAudit": {
+    "vertices": 724,
+    "uvCoordinates": 80,
+    "normals": 787,
+    "triangles": 1031
+  },
+  "fbxAudit": {
+    "triangles": 1031,
+    "vertices": 724,
+    "bounds": {
+      "min": [
+        -6.538341999053955,
+        -5.327380657196045,
+        0.0
+      ],
+      "max": [
+        6.538341999053955,
+        5.327380657196045,
+        11.081037521362305
+      ],
+      "width": 13.07668399810791,
+      "height": 11.081037521362305,
+      "depth": 10.65476131439209
+    },
+    "uvChannels": 1,
+    "textures": [
+      "sharedatlastex.png"
+    ]
+  },
+  "albedo": {
+    "file": "ruin_zeitoun_albedo.png",
+    "sourceMaterialCount": 1,
+    "sharedAtlas": "sharedatlastex.png",
+    "uvLayer": "UVMap"
+  }
+}

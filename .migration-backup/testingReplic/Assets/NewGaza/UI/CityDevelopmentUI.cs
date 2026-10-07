@@ -1,0 +1,508 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using NewGaza.Core;
+using NewGaza.UI;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace NewGaza
+{
+    public sealed partial class CityDevelopmentUI : MonoBehaviour
+    {
+        private readonly Dictionary<string, RectTransform> factoryMarkers = new Dictionary<string, RectTransform>();
+        private readonly Dictionary<string, LineRenderer> factoryHalos = new Dictionary<string, LineRenderer>();
+        private readonly HashSet<string> visibleFactories = new HashSet<string>();
+        private readonly Dictionary<string, Vector3> factoryHaloCenters = new Dictionary<string, Vector3>();
+        private readonly Dictionary<string, float> factoryHaloRadii = new Dictionary<string, float>();
+        private readonly CityHudIcons factoryIcons = new CityHudIcons();
+        private bool homeVisible;
+        private RectTransform factoryMarkerLayer;
+
+        private void LateUpdate()
+        {
+            if (development == null || Camera.main == null) return;
+            UpdateFleetMarkers(Camera.main);
+            UpdateActiveWorkMarker(Camera.main);
+            UpdateEventMarkers(Camera.main);
+            if (factoryMarkerLayer == null)
+            {
+                factoryMarkerLayer = Rect("Recycling factories on map", transform);
+                Stretch(factoryMarkerLayer);
+                factoryMarkerLayer.SetAsFirstSibling();
+            }
+            visibleFactories.Clear();
+            if (homeVisible)
+            {
+                foreach (var marker in factoryMarkers.Values) marker.gameObject.SetActive(false);
+                foreach (var halo in factoryHalos.Values) halo.gameObject.SetActive(false);
+                return;
+            }
+            var state = session.State;
+            if (state.factoryLevel > 0 && !state.development.requiresPlacedFactory &&
+                !state.development.dynamicFactoryProvided)
+                ShowFactoryMarker("central", development.CentralFactoryMapPosition + Vector3.up * .5f,
+                    true, () => session.Notify("هذا مصنع إعادة التدوير المركزي المحفوظ من تقدمك السابق."), .7f);
+            foreach (var building in development.Rules.Data.buildings)
+            {
+                var definition = CityBuildingCatalog.Find(building.definitionId);
+                if (definition.category != BuildingCategory.Recycling) continue;
+                if (!state.districts[building.district].unlocked) continue;
+                string id = building.id;
+                ShowFactoryMarker(id, new Vector3(building.x, definition.floors * .15f + .25f, building.z),
+                    building.completed, () => development.SelectFactory(id),
+                    Mathf.Sqrt(definition.widthMeters * definition.widthMeters + definition.depthMeters * definition.depthMeters) / 40f + .05f);
+            }
+            foreach (var marker in factoryMarkers)
+                if (!visibleFactories.Contains(marker.Key) && marker.Value.gameObject.activeSelf) marker.Value.gameObject.SetActive(false);
+            foreach (var halo in factoryHalos)
+                if (!visibleFactories.Contains(halo.Key) && halo.Value.gameObject.activeSelf) halo.Value.gameObject.SetActive(false);
+        }
+
+        private void ShowFactoryMarker(string id, Vector3 position, bool completed, UnityEngine.Events.UnityAction select, float radius = .7f)
+        {
+                visibleFactories.Add(id);
+                if (!factoryMarkers.TryGetValue(id, out var marker))
+                {
+                    var button = Button(factoryMarkerLayer, "", select);
+                    button.GetComponent<CityButtonMotion>().SetIconOnly();
+                    button.gameObject.name = "Recycling factory map marker " + id;
+                    marker = (RectTransform)button.transform;
+                    marker.anchorMin = marker.anchorMax = marker.pivot = new Vector2(.5f, .5f);
+                    marker.sizeDelta = new Vector2(48, 48);
+                    button.GetComponent<Image>().sprite = factoryIcons.Get(CityHudIcons.Icon.Recycling);
+                    button.GetComponent<Image>().preserveAspect = true;
+                    var outline = button.gameObject.AddComponent<Outline>();
+                    outline.effectColor = new Color(.4f, 1f, .7f);
+                    outline.effectDistance = new Vector2(2, -2);
+                    factoryMarkers.Add(id, marker);
+                }
+                var screen = Camera.main.WorldToViewportPoint(position);
+                float opacity = FleetMarkerPresentation.Opacity(Camera.main.orthographicSize);
+                bool visible = opacity > .005f && !development.Placing && screen.z > 0 && screen.x >= 0 && screen.x <= 1 &&
+                    screen.y >= 0 && screen.y <= 1;
+                marker.gameObject.SetActive(visible);
+                if (!visible) return;
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(factoryMarkerLayer,
+                    new Vector2(screen.x * Screen.width, screen.y * Screen.height), null, out var point);
+                marker.anchoredPosition = new Vector2(
+                    Mathf.Clamp(point.x, factoryMarkerLayer.rect.xMin + 28, factoryMarkerLayer.rect.xMax - 28),
+                    Mathf.Clamp(point.y + Mathf.Sin(Time.unscaledTime * 2) * 3,
+                        factoryMarkerLayer.rect.yMin + 100, factoryMarkerLayer.rect.yMax - 70));
+                marker.GetComponent<Image>().color = completed ? new Color(.25f, 1f, .55f, opacity) : new Color(1f, .72f, .15f, opacity);
+                var fadeOutline = marker.GetComponent<Outline>();
+                if (fadeOutline != null) fadeOutline.effectColor = new Color(.4f, 1f, .7f, opacity);
+                ShowFactoryHalo(id, new Vector3(position.x, .018f, position.z), radius, completed);
+        }
+
+        private void ShowFactoryHalo(string id, Vector3 center, float radius, bool completed)
+        {
+            if (!factoryHalos.TryGetValue(id, out var line))
+            {
+                var root = new GameObject("Recycling factory ground halo " + id);
+                root.transform.SetParent(development.transform, false);
+                line = root.AddComponent<LineRenderer>();
+                line.useWorldSpace = true; line.loop = true; line.positionCount = 48;
+                line.sharedMaterial = development.FactoryHighlightMaterial;
+                line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                line.receiveShadows = false;
+                factoryHalos.Add(id, line);
+            }
+            line.gameObject.SetActive(true);
+            line.widthMultiplier = .014f + Mathf.Sin(Time.unscaledTime * 2) * .002f;
+            Color tint = completed ? new Color(.15f, 1f, .5f) : new Color(1f, .7f, .1f);
+            line.startColor = line.endColor = tint;
+            if (factoryHaloCenters.TryGetValue(id, out var previousCenter) && previousCenter == center &&
+                factoryHaloRadii.TryGetValue(id, out float previousRadius) && previousRadius == radius) return;
+            factoryHaloCenters[id] = center; factoryHaloRadii[id] = radius;
+            for (int i = 0; i < line.positionCount; i++)
+            {
+                float angle = i * Mathf.PI * 2 / line.positionCount;
+                line.SetPosition(i, center + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius));
+            }
+        }
+
+        private void OnDestroy()
+        {
+            factoryIcons.Dispose();
+            foreach (var halo in factoryHalos.Values)
+                if (halo != null) Destroy(halo.gameObject);
+        }
+
+        private void OnDisable()
+        {
+            foreach (var halo in factoryHalos.Values)
+                if (halo != null) halo.gameObject.SetActive(false);
+        }
+        private CityDevelopment development;
+        private GameSession session;
+        private Font font;
+        private RectTransform safe, titlePanel, actionPanel, shopPanel, shopContent;
+        private RectTransform toolbar, shopShield;
+        private Canvas canvas;
+        private CanvasScaler scaler;
+        private ArabicLabel actionHeading;
+        private string feedbackSite, workFeedback;
+        private float workFeedbackUntil;
+        private bool regionVisible = true;
+        private int dismissedClaimDistrict = -1, lastFocus = -2;
+        public bool StoreOpen => shop != null && shop.activeInHierarchy;
+        public bool WorkPanelVisible => actionPanel != null && actionPanel.gameObject.activeInHierarchy;
+        private ArabicLabel title, needs, actionText, categoryText;
+        private Button action, rotate, dismiss;
+        private GameObject shop;
+        private int category = -1;
+        private Vector3? storeLocation;
+        private int lastWidth, lastHeight;
+        private Rect lastSafe;
+        private readonly Color panel = new Color(7f / 255, 27f / 255, 54f / 255, .96f);
+        private readonly Color teal = new Color(22f / 255, 139f / 255, 219f / 255);
+
+        internal void Initialize(CityDevelopment controller, GameSession game)
+        {
+            development = controller; session = game;
+            font = CityTypography.FontFor(CityTextRole.Body);
+            if (font == null) throw new InvalidOperationException("Arabic UI font is missing");
+            canvas = gameObject.AddComponent<Canvas>(); canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            scaler = gameObject.AddComponent<CanvasScaler>();
+            canvas.sortingOrder = 25; gameObject.AddComponent<GraphicRaycaster>();
+            safe = Rect("Safe area", transform); Stretch(safe);
+            titlePanel = Panel("Camera region", safe, false);
+            title = Label(titlePanel, "", 19); Box(title.rectTransform, 8, 5, 0, 28, true);
+            needs = Label(titlePanel, "", 12); Box(needs.rectTransform, 8, 35, 0, 58, true);
+            var closeRegion = Button(titlePanel, "إغلاق", () =>
+            { regionVisible = false; session.Hud.EndStoreWindow(); Refresh(); });
+            closeRegion.name = "Close region";
+            toolbar = Rect("World tools", safe);
+            var shopButton = Button(toolbar, "متجر المباني", () => development.OpenStore());
+            Box(shopButton.transform as RectTransform, 0, 0, 184, 44, true);
+            var regionButton = Button(toolbar, "احتياجات الحي", () => { regionVisible = !regionVisible; Refresh(); });
+            Box(regionButton.transform as RectTransform, 192, 0, 148, 44, true);
+            actionPanel = Panel("Local work / building confirmation", safe, true);
+            actionPanel.GetComponent<Image>().color = new Color(18f / 255, 61f / 255, 112f / 255, .98f);
+            // Local actions sit above the HUD (100), below the blocking store (200).
+            var actionCanvas = actionPanel.gameObject.AddComponent<Canvas>();
+            actionCanvas.overrideSorting = true; actionCanvas.sortingOrder = 150;
+            actionPanel.gameObject.AddComponent<GraphicRaycaster>();
+            actionHeading = Label(actionPanel, "تفاصيل الموقع", 19);
+            actionText = Label(actionPanel, "", 15);
+            var closeAction = Button(actionPanel, "إغلاق", DismissAction); closeAction.name = "Close work panel";
+            action = Button(actionPanel, "تأكيد", DoAction);
+            rotate = Button(actionPanel, "اضغط مطولًا للتدوير", () => { });
+            rotate.gameObject.AddComponent<CityHoldRotateButton>().Development = development;
+            dismiss = Button(actionPanel, "إغلاق", DismissAction);
+            shopShield = Panel("Store touch shield", safe, true); Stretch(shopShield);
+            shopShield.GetComponent<Image>().color = new Color(0, 0, 0, .8f);
+            var storeCanvas = shopShield.gameObject.AddComponent<Canvas>();
+            storeCanvas.overrideSorting = true; storeCanvas.sortingOrder = 200;
+            shopShield.gameObject.AddComponent<GraphicRaycaster>();
+            shop = shopShield.gameObject;
+            shopPanel = Panel("Building shop", shopShield, true);
+            var heading = Label(shopPanel, "صفحة · متجر المباني", 21); Box(heading.rectTransform, 12, 16, 0, 38, true);
+            var close = Button(shopPanel, "إغلاق", CloseStore); Box(close.transform as RectTransform, 12, 60, 90, 36, true);
+            var filter = Button(shopPanel, "التصنيف التالي", () => { category = (category + 2) % 8 - 1; PopulateStore(); });
+            Box(filter.transform as RectTransform, 112, 60, 150, 36, true);
+            var legacy = Button(shopPanel, development.Rules.Data.legacyProgress ? "مشاريع الحفظ السابق" : "البنية التحتية",
+                () => { CloseStore(); session.Hud.OpenLegacyProjects(); });
+            Box(legacy.transform as RectTransform, 12, 103, 170, 32, true);
+            categoryText = Label(shopPanel, "الكل", 15); Box(categoryText.rectTransform, 12, 103, 0, 32, true);
+            var viewport = Panel("Scroll viewport", shopPanel, true);
+            viewport.anchorMin = new Vector2(0, 0); viewport.anchorMax = new Vector2(1, 1);
+            viewport.offsetMin = new Vector2(12, 12); viewport.offsetMax = new Vector2(-12, -146);
+            viewport.gameObject.AddComponent<RectMask2D>();
+            var scroll = viewport.gameObject.AddComponent<ScrollRect>(); scroll.horizontal = false;
+            scroll.movementType = ScrollRect.MovementType.Clamped; scroll.viewport = viewport;
+            shopContent = Rect("Building cards", viewport);
+            shopContent.anchorMin = new Vector2(0, 1); shopContent.anchorMax = new Vector2(1, 1);
+            shopContent.pivot = new Vector2(.5f, 1); shopContent.sizeDelta = Vector2.zero;
+            var layout = shopContent.gameObject.AddComponent<VerticalLayoutGroup>();
+            layout.padding = new RectOffset(8, 8, 8, 16);
+            layout.spacing = 12; layout.childControlHeight = true; layout.childControlWidth = true;
+            layout.childForceExpandHeight = false;
+            shopContent.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            scroll.content = shopContent; shop.SetActive(false);
+            Resize(); Refresh();
+        }
+
+        private void Update()
+        {
+            if (lastWidth != Screen.width || lastHeight != Screen.height || lastSafe != Screen.safeArea) Resize();
+        }
+
+        private void Start()
+        {
+            // The HUD owns the existing rounded sprite. Reuse it rather than allocate another atlas.
+            if (session.Hud == null || session.Hud.SurfaceSprite == null) return;
+            foreach (var image in GetComponentsInChildren<Image>(true))
+            {
+                if (image.sprite != null || image.gameObject == shopShield.gameObject) continue;
+                image.sprite = session.Hud.SurfaceSprite;
+                image.type = Image.Type.Sliced;
+            }
+        }
+
+        private void Resize()
+        {
+            lastWidth = Screen.width; lastHeight = Screen.height; lastSafe = Screen.safeArea;
+            if (!CityUiLayout.Apply(canvas, scaler, safe)) return;
+            float safeWidth = safe.rect.width, safeHeight = safe.rect.height;
+            bool portrait = safeHeight > safeWidth;
+            float width = Mathf.Min(safeWidth - 24, 420);
+            float toolbarTop = Mathf.Min(portrait ? 308 : 156, Mathf.Max(72, safeHeight - 280));
+            Box(toolbar, 12, toolbarTop, 340, 44, true);
+            float regionHeight = Mathf.Clamp(safeHeight - toolbarTop - 52 - 116, 56, 142);
+            Box(titlePanel, 12, toolbarTop + 52, width, regionHeight, true);
+            Box(title.rectTransform, 16, 12, width - 132, 36, false);
+            Box(needs.rectTransform, 16, 64, width - 32, Mathf.Max(0, regionHeight - 76), false);
+            Box(titlePanel.Find("Close region") as RectTransform, 12, 12, 88, 44, true);
+            actionPanel.anchorMin = new Vector2(.5f, 0); actionPanel.anchorMax = new Vector2(.5f, 0);
+            actionPanel.pivot = new Vector2(.5f, 0); actionPanel.anchoredPosition = new Vector2(0, 116);
+            actionPanel.sizeDelta = new Vector2(Mathf.Min(safeWidth - 24, 620), 212);
+            if (!portrait)
+            {
+                actionPanel.anchorMin = actionPanel.anchorMax = Vector2.zero;
+                actionPanel.pivot = Vector2.zero; actionPanel.anchoredPosition = new Vector2(12, 116);
+                actionPanel.sizeDelta = new Vector2(Mathf.Min(safeWidth * .47f, 620), 212);
+            }
+            shopPanel.anchorMin = shopPanel.anchorMax = shopPanel.pivot = new Vector2(.5f, .5f);
+            shopPanel.anchoredPosition = Vector2.zero;
+            shopPanel.sizeDelta = new Vector2(Mathf.Min(safeWidth - 24, 850), Mathf.Min(safeHeight - 24, 900));
+            Box(categoryText.rectTransform, 12, 103, shopPanel.sizeDelta.x - 206, 32, false);
+            categoryText.alignment = TextAnchor.UpperLeft;
+            float actionWidth = actionPanel.sizeDelta.x;
+            Box(actionHeading.rectTransform, 16, 12, actionWidth - 132, 36, false);
+            Box(actionPanel.Find("Close work panel") as RectTransform, 12, 12, 88, 44, true);
+            Box(actionText.rectTransform, 16, 64, actionWidth - 32, 76, false);
+            float buttonWidth = (actionPanel.sizeDelta.x - 32) / 3;
+            Box(action.transform as RectTransform, 8, 152, buttonWidth, 44, false);
+            Box(rotate.transform as RectTransform, 16 + buttonWidth, 152, buttonWidth, 44, false);
+            Box(dismiss.transform as RectTransform, 24 + buttonWidth * 2, 152, buttonWidth, 44, false);
+        }
+
+        public void OpenStore() => OpenStore(null);
+        internal void OpenStore(Vector3? target)
+        {
+            session.Hud.BeginStoreWindow();
+            storeLocation = target; shop.SetActive(true); CityCamera.ModalOpen = true; Resize(); PopulateStore(); Refresh();
+        }
+
+        public void CloseStore()
+        {
+            bool wasOpen = StoreOpen;
+            shop.SetActive(false);
+            if (wasOpen && session.Hud != null) session.Hud.EndStoreWindow();
+            Refresh();
+        }
+
+        internal void ShowActiveWorkLocation()
+        {
+            // Keep the central map annotation readable instead of covering it with district needs.
+            regionVisible = false;
+            Refresh();
+        }
+
+        internal void DismissAction()
+        {
+            development.ClearSelection();
+            dismissedClaimDistrict = development.FocusDistrict;
+            session.Hud.EndStoreWindow();
+            Refresh();
+        }
+
+        private void PopulateStore()
+        {
+            foreach (Transform child in shopContent) { child.gameObject.SetActive(false); Destroy(child.gameObject); }
+            categoryText.SetText(category < 0 ? "كل المباني" : CityBuildingCatalog.CategoryNames[category]);
+            foreach (var definition in CityBuildingCatalog.All)
+            {
+                if (category >= 0 && (int)definition.category != category) continue;
+                var captured = definition;
+                var row = Button(shopContent,
+                    definition.name + "  ·  " + definition.widthMeters + " × " + definition.depthMeters + " متر\n" +
+                    definition.cost + " عملة — البناء بالمال فقط\n" +
+                    definition.duration + " ثانية  ·  " + definition.hourlyIncome + " دخل/ساعة" +
+                    (definition.EquipmentDepot ? "  ·  نقطة انطلاق معدات" : ""),
+                    () =>
+                    {
+                        var target = storeLocation;
+                        development.ChooseBuilding(captured.id);
+                        if (target.HasValue) development.PreviewAt(target.Value);
+                    });
+                row.gameObject.AddComponent<LayoutElement>().preferredHeight = 120;
+                var text = row.GetComponentInChildren<ArabicLabel>(); CityTypography.Apply(text, CityTextRole.Small);
+                text.alignment = TextAnchor.MiddleCenter;
+                text.rectTransform.offsetMin = new Vector2(20, 12); text.rectTransform.offsetMax = new Vector2(-20, -12);
+            }
+            shopContent.anchoredPosition = Vector2.zero;
+        }
+
+        internal void Refresh()
+        {
+            if (title == null || development.Rules == null) return;
+            int d = development.FocusDistrict;
+            if (lastFocus != d) { lastFocus = d; dismissedClaimDistrict = -1; }
+            bool blocked = session.Hud != null && session.Hud.BlockingWindowVisible;
+            toolbar.gameObject.SetActive(!blocked && !StoreOpen);
+            titlePanel.gameObject.SetActive(regionVisible && !blocked && !StoreOpen);
+            if (d < 0) { title.SetText("خارج الأحياء — الساحل أو حدود المدينة"); needs.SetText(""); }
+            else
+            {
+                title.SetText(GameCatalog.Districts[d].name + (session.State.districts[d].unlocked ? "" : " — مقفل"));
+                var required = CityDevelopmentService.Needs(d); var supplied = CityDevelopmentService.Supplied(session.State, d);
+                string[] names = { "إسكان", "زراعة", "صناعة", "تجارة", "رفاهية", "إسكان عمراني/سياحي" };
+                var text = new StringBuilder("احتياجات الحي: ");
+                for (int n = 0; n < required.Length; n++)
+                    if (required[n] > 0) text.Append(names[n]).Append(" ").Append(Math.Min(required[n], supplied[n]))
+                        .Append("/").Append(required[n]).Append("  ");
+                needs.SetText(text.ToString());
+            }
+            bool placing = development.Placing;
+            bool site = development.SelectedSite != null;
+            bool building = development.SelectedBuilding != null;
+            bool claim = d >= 0 && session.State.districts[d].unlocked && !session.State.districts[d].rewardClaimed &&
+                CityDevelopmentService.Complete(session.State, d);
+            actionPanel.gameObject.SetActive(!blocked && !StoreOpen &&
+                (placing || site || building || (claim && dismissedClaimDistrict != d)));
+            actionHeading.SetText(placing ? "تأكيد البناء" : site ? "تفاصيل موقع الركام" :
+                building ? "تفاصيل المبنى" : "مكافأة الحي");
+            SetButton(dismiss, placing ? "إلغاء الوضع" : "إغلاق");
+            rotate.gameObject.SetActive(placing);
+            if (placing)
+            {
+                var definition = development.Chosen;
+                actionText.SetText(definition.name + " · " + definition.widthMeters + " × " + definition.depthMeters +
+                    " م · " + definition.cost + " عملة\n" +
+                    (string.IsNullOrEmpty(development.PlacementProblem) ? "مساحة نظيفة مناسبة — أكّد البناء أو غيّر الموقع" : development.PlacementProblem));
+                SetButton(action, "تأكيد البناء");
+                action.interactable = string.IsNullOrEmpty(development.PlacementProblem);
+            }
+            else if (site)
+            {
+                var selected = development.Rules.Site(development.SelectedSite);
+                if (selected == null)
+                {
+                    actionText.SetText("لم يعد الموقع المحدد متاحًا؛ اختر مبنى مهدّمًا على الخريطة.");
+                    SetButton(action, "اختر موقعًا"); action.interactable = true;
+                    return;
+                }
+                var dispatch = RubbleDispatches.ForSite(session.State, selected.id);
+                bool active = dispatch != null || development.Rules.Data.activeRubbleId == selected.id;
+                bool busy = RubbleDispatches.AvailableTeams(session.State) == 0;
+                string details = selected.cleared ? "أرض نظيفة — اختر مبنى من المتجر وضعه هنا أو على أي مساحة نظيفة مناسبة" :
+                    active ? (dispatch != null ? RubbleDispatches.Status(dispatch) : StageText(session.State.jobStage)) :
+                    busy ? "لا يوجد فريق متاح — انتظر عودة حفارة وجرافة وشاحنة إلى المصنع، أو اشترِ فريقًا إضافيًا." :
+                    "موارد للبيع بقيمة تقارب " + RubbleEconomy.Reward(selected) + " عملة" +
+                    "\nمصنع تدوير ← حفار وجرافة وشاحنة ← وصول عبر الطرق" +
+                    "\nدقيقة عمل كاملة ثم تصبح الأرض نظيفة. تبقى الآليات محجوزة حتى عودتها إلى المصنع." +
+                    "\nفرق متاحة: " + RubbleDispatches.AvailableTeams(session.State);
+                // Feedback is retained across the controller's per-frame Refresh, not erased immediately.
+                actionText.SetText(feedbackSite == selected.id && !string.IsNullOrEmpty(workFeedback) &&
+                    Time.unscaledTime < workFeedbackUntil && !selected.cleared
+                    ? workFeedback : details);
+                SetButton(action, selected.cleared ? "اختر مبنى" : active ? "عرض الفريق الجاري" :
+                    busy ? "عرض الفرق المشغولة" : "إرسال فريق لإزالة الدمار");
+                action.interactable = true;
+            }
+            else if (building)
+            {
+                var selected = development.Rules.Building(development.SelectedBuilding);
+                var definition = CityBuildingCatalog.Find(selected.definitionId);
+                long income = CityDevelopmentService.PendingIncome(selected, session.Now);
+                actionText.SetText(definition.name + (selected.completed ? " — مكتمل" : " — قيد البناء") +
+                    "\n" + (selected.completed ? "دخل جاهز: " + income + " عملة" : "المتبقي: " + Math.Max(0, selected.finishUtc - session.Now) + " ثانية") +
+                    (definition.EquipmentDepot ? "\nنقطة انطلاق للآليات عند اختيار موقع العمل الأقرب" : ""));
+                SetButton(action, "جمع الدخل"); action.interactable = income > 0;
+            }
+            else if (claim)
+            {
+                actionText.SetText("اكتملت إزالة الركام واحتياجات " + GameCatalog.Districts[d].name + " — استلم المكافأة لفتح الحي التالي");
+                SetButton(action, "استلام المكافأة"); action.interactable = true;
+            }
+        }
+
+        internal void SetHomeVisible(bool visible)
+        {
+            homeVisible = visible;
+            if (visible)
+            {
+                foreach (var marker in factoryMarkers.Values) marker.gameObject.SetActive(false);
+                foreach (var halo in factoryHalos.Values) halo.gameObject.SetActive(false);
+            }
+            GetComponentInChildren<Canvas>(true).gameObject.SetActive(!visible);
+            if (!visible) { Resize(); Refresh(); }
+        }
+
+        private static string StageText(JobStage stage) => stage == JobStage.Clearing ? "الانتقال ثم إزالة الركام" :
+            stage == JobStage.Hauling ? "نقل الركام إلى المصنع" : stage == JobStage.Recycling ? "إعادة التدوير" : "جاهز";
+
+        private void DoAction()
+        {
+            if (development.Placing) development.Confirm();
+            else if (development.SelectedSite != null)
+            {
+                if (development.Rules.Site(development.SelectedSite)?.cleared == true) development.BuildOnSelectedLand();
+                else development.StartClear();
+            }
+            else if (development.SelectedBuilding != null) development.Collect();
+            else development.ClaimRegion();
+        }
+
+        internal void ShowWorkFeedback(string message)
+        {
+            feedbackSite = development.SelectedSite;
+            workFeedback = message;
+            workFeedbackUntil = Time.unscaledTime + 8f;
+            Refresh();
+        }
+
+        private RectTransform Rect(string name, Transform parent)
+        {
+            var root = new GameObject(name, typeof(RectTransform)); root.transform.SetParent(parent, false);
+            return (RectTransform)root.transform;
+        }
+
+        private RectTransform Panel(string name, Transform parent, bool block)
+        {
+            var rect = Rect(name, parent); var image = rect.gameObject.AddComponent<Image>();
+            if (session.Hud != null && session.Hud.SurfaceSprite != null)
+            { image.sprite = session.Hud.SurfaceSprite; image.type = Image.Type.Sliced; }
+            image.color = panel; image.raycastTarget = block; return rect;
+        }
+
+        private ArabicLabel Label(Transform parent, string text, int size)
+        {
+            var rect = Rect("Arabic text", parent);
+            var label = rect.gameObject.AddComponent<ArabicLabel>(); CityTypography.Apply(label, CityTypography.RoleForSize(size));
+            label.color = new Color(.97f, .94f, .85f); label.alignment = TextAnchor.UpperRight;
+            label.raycastTarget = false; label.horizontalOverflow = HorizontalWrapMode.Wrap;
+            label.verticalOverflow = VerticalWrapMode.Truncate; label.SetText(text); return label;
+        }
+
+        private Button Button(Transform parent, string text, UnityEngine.Events.UnityAction callback)
+        {
+            var rect = Rect(text, parent); var image = rect.gameObject.AddComponent<Image>(); image.color = teal;
+            if (session.Hud != null && session.Hud.SurfaceSprite != null)
+            { image.sprite = session.Hud.SurfaceSprite; image.type = Image.Type.Sliced; }
+            var button = rect.gameObject.AddComponent<Button>(); button.targetGraphic = image;
+            rect.gameObject.AddComponent<CityButtonMotion>();
+            button.onClick.AddListener(callback);
+            var label = Label(rect, text, 15); Stretch(label.rectTransform);
+            label.rectTransform.offsetMin = new Vector2(16, 8); label.rectTransform.offsetMax = new Vector2(-16, -8);
+            label.alignment = TextAnchor.MiddleCenter;
+            CityTypography.Apply(label, CityTextRole.Button);
+            return button;
+        }
+
+        private static void SetButton(Button button, string value) => button.GetComponentInChildren<ArabicLabel>().SetText(value);
+        private static void Stretch(RectTransform rect)
+        { rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.offsetMin = rect.offsetMax = Vector2.zero; }
+        private static void Box(RectTransform rect, float x, float y, float width, float height, bool right)
+        {
+            rect.anchorMin = new Vector2(right ? 1 : 0, 1); rect.anchorMax = rect.anchorMin;
+            rect.pivot = new Vector2(right ? 1 : 0, 1); rect.anchoredPosition = new Vector2(right ? -x : x, -y);
+            if (width == 0)
+            { rect.anchorMin = new Vector2(0, 1); rect.anchorMax = new Vector2(1, 1); rect.pivot = new Vector2(.5f, 1); rect.anchoredPosition = new Vector2(0, -y); rect.sizeDelta = new Vector2(-x * 2, height); }
+            else rect.sizeDelta = new Vector2(width, height);
+        }
+    }
+}

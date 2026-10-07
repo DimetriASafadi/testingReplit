@@ -1,0 +1,106 @@
+{
+  "formatVersion": 1,
+  "key": "ruin_karama",
+  "sourceFile": "original procedural geometry (no imported source model)",
+  "targetTriangles": 2200,
+  "actualTriangles": 1050,
+  "triangleTolerance": 0.0,
+  "verifiedWithinBudget": true,
+  "vertexCount": 738,
+  "dimensionsNormalizedBlenderXYZ": [
+    12.348519325256348,
+    8.80897045135498,
+    8.954850196838379
+  ],
+  "origin": {
+    "normalizedOriginBlender": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "pivot": "bottom-center"
+  },
+  "districtId": "Karama",
+  "category": "apartments",
+  "floors": 4,
+  "damageType": "grounded_breached_shell_compact_collapsed_slabs_dense_mixed_rubble",
+  "visualReference": "User supplied collapse piles, exposed rebar and destroyed masonry",
+  "meshPath": "Resources/Models/ruin_karama.obj",
+  "texturePath": "Resources/Models/ruin_karama_albedo.png",
+  "fbxPath": "Art/DestroyedFBX/ruin_karama.fbx",
+  "triangleCount": 1050,
+  "bounds": {
+    "min": [
+      -6.174259662628174,
+      -4.40448522567749,
+      0.0
+    ],
+    "max": [
+      6.174259662628174,
+      4.40448522567749,
+      8.954850196838379
+    ],
+    "width": 12.348519325256348,
+    "height": 8.954850196838379,
+    "depth": 8.80897045135498
+  },
+  "units": "meters",
+  "pivot": "bottom-center",
+  "damageOnly": true,
+  "originalAuthored": true,
+  "sourceType": "procedurally_authored_original_geometry",
+  "referenceAssets": [
+    "IMG-20261002-WA0003_1790946116113.jpg",
+    "IMG-20261002-WA0004_1790946116076.jpg"
+  ],
+  "uvCoverage": {
+    "layer": "UVMap",
+    "loopCount": 3150,
+    "finiteLoopCount": 3150,
+    "bounds": {
+      "min": [
+        0.02525000087916851,
+        0.02525000087916851
+      ],
+      "max": [
+        0.9747499823570251,
+        0.47475001215934753
+      ]
+    }
+  },
+  "objAudit": {
+    "vertices": 738,
+    "uvCoordinates": 80,
+    "normals": 818,
+    "triangles": 1050
+  },
+  "fbxAudit": {
+    "triangles": 1050,
+    "vertices": 738,
+    "bounds": {
+      "min": [
+        -6.174259662628174,
+        -4.40448522567749,
+        0.0
+      ],
+      "max": [
+        6.174259662628174,
+        4.40448522567749,
+        8.954850196838379
+      ],
+      "width": 12.348519325256348,
+      "height": 8.954850196838379,
+      "depth": 8.80897045135498
+    },
+    "uvChannels": 1,
+    "textures": [
+      "sharedatlastex.png"
+    ]
+  },
+  "albedo": {
+    "file": "ruin_karama_albedo.png",
+    "sourceMaterialCount": 1,
+    "sharedAtlas": "sharedatlastex.png",
+    "uvLayer": "UVMap"
+  }
+}

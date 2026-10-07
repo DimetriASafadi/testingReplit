@@ -1,0 +1,106 @@
+{
+  "formatVersion": 1,
+  "key": "ruin_daraj",
+  "sourceFile": "original procedural geometry (no imported source model)",
+  "targetTriangles": 2200,
+  "actualTriangles": 1038,
+  "triangleTolerance": 0.0,
+  "verifiedWithinBudget": true,
+  "vertexCount": 730,
+  "dimensionsNormalizedBlenderXYZ": [
+    11.314970016479492,
+    8.979057312011719,
+    8.9918794631958
+  ],
+  "origin": {
+    "normalizedOriginBlender": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "pivot": "bottom-center"
+  },
+  "districtId": "Daraj",
+  "category": "mixed_shopfront",
+  "floors": 4,
+  "damageType": "grounded_breached_shell_compact_collapsed_slabs_dense_mixed_rubble",
+  "visualReference": "User supplied collapse piles, exposed rebar and destroyed masonry",
+  "meshPath": "Resources/Models/ruin_daraj.obj",
+  "texturePath": "Resources/Models/ruin_daraj_albedo.png",
+  "fbxPath": "Art/DestroyedFBX/ruin_daraj.fbx",
+  "triangleCount": 1038,
+  "bounds": {
+    "min": [
+      -5.657485008239746,
+      -4.489528656005859,
+      0.0
+    ],
+    "max": [
+      5.657485008239746,
+      4.489528656005859,
+      8.9918794631958
+    ],
+    "width": 11.314970016479492,
+    "height": 8.9918794631958,
+    "depth": 8.979057312011719
+  },
+  "units": "meters",
+  "pivot": "bottom-center",
+  "damageOnly": true,
+  "originalAuthored": true,
+  "sourceType": "procedurally_authored_original_geometry",
+  "referenceAssets": [
+    "IMG-20261002-WA0003_1790946116113.jpg",
+    "IMG-20261002-WA0004_1790946116076.jpg"
+  ],
+  "uvCoverage": {
+    "layer": "UVMap",
+    "loopCount": 3114,
+    "finiteLoopCount": 3114,
+    "bounds": {
+      "min": [
+        0.02525000087916851,
+        0.02525000087916851
+      ],
+      "max": [
+        0.9747499823570251,
+        0.47475001215934753
+      ]
+    }
+  },
+  "objAudit": {
+    "vertices": 730,
+    "uvCoordinates": 80,
+    "normals": 805,
+    "triangles": 1038
+  },
+  "fbxAudit": {
+    "triangles": 1038,
+    "vertices": 730,
+    "bounds": {
+      "min": [
+        -5.657485008239746,
+        -4.489528656005859,
+        0.0
+      ],
+      "max": [
+        5.657485008239746,
+        4.489528656005859,
+        8.9918794631958
+      ],
+      "width": 11.314970016479492,
+      "height": 8.9918794631958,
+      "depth": 8.979057312011719
+    },
+    "uvChannels": 1,
+    "textures": [
+      "sharedatlastex.png"
+    ]
+  },
+  "albedo": {
+    "file": "ruin_daraj_albedo.png",
+    "sourceMaterialCount": 1,
+    "sharedAtlas": "sharedatlastex.png",
+    "uvLayer": "UVMap"
+  }
+}

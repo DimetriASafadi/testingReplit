@@ -1,0 +1,25 @@
+{
+  "basemapFile": "testingReplic/Assets/NewGaza/Resources/GazaBasemap.json",
+  "basemapSha256": "a29a72b83d0e57991f9ed90fb5a3a742abcf25e298d629de28a7a01889eaf53f",
+  "sourceFile": "testingReplic/MapData/GazaBasemap-source.json.gz",
+  "sourceSha256": "2c1774dc33056f3c335f74af36f5b17c515931fc234b6e20ed028cf6abbd4cfb",
+  "sourceCompression": "gzip (mtime=0)",
+  "sourceCompressedSha256": "2c1774dc33056f3c335f74af36f5b17c515931fc234b6e20ed028cf6abbd4cfb",
+  "sourceCompressedBytes": 5104462,
+  "sourceUncompressedFile": "GazaBasemap-source.json (canonical decompressed JSON)",
+  "sourceUncompressedSha256": "d3abb30d3f252a43ae58fe1f8455ccbb408e5691dacaa93caf930ffaf6eb842a",
+  "sourceUncompressedBytes": 30354030,
+  "retrievalDateUtc": "2026-10-01",
+  "attribution": "© OpenStreetMap contributors",
+  "license": "ODbL-1.0",
+  "sourceWays": 74251,
+  "sourceNodes": 370638,
+  "featureCounts": {
+    "roads": 4032,
+    "uniqueRoadWays": 4027,
+    "buildings": 12000,
+    "areas": 528,
+    "sourceNodes": 370638,
+    "sourceWays": 74251
+  }
+}

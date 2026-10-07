@@ -1,0 +1,106 @@
+{
+  "formatVersion": 1,
+  "key": "ruin_sabra",
+  "sourceFile": "original procedural geometry (no imported source model)",
+  "targetTriangles": 2200,
+  "actualTriangles": 1029,
+  "triangleTolerance": 0.0,
+  "verifiedWithinBudget": true,
+  "vertexCount": 724,
+  "dimensionsNormalizedBlenderXYZ": [
+    13.501371383666992,
+    10.22951602935791,
+    8.92477035522461
+  ],
+  "origin": {
+    "normalizedOriginBlender": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "pivot": "bottom-center"
+  },
+  "districtId": "Sabra",
+  "category": "attached_row",
+  "floors": 4,
+  "damageType": "grounded_breached_shell_compact_collapsed_slabs_dense_mixed_rubble",
+  "visualReference": "User supplied collapse piles, exposed rebar and destroyed masonry",
+  "meshPath": "Resources/Models/ruin_sabra.obj",
+  "texturePath": "Resources/Models/ruin_sabra_albedo.png",
+  "fbxPath": "Art/DestroyedFBX/ruin_sabra.fbx",
+  "triangleCount": 1029,
+  "bounds": {
+    "min": [
+      -6.750685691833496,
+      -5.114758014678955,
+      0.0
+    ],
+    "max": [
+      6.750685691833496,
+      5.114758014678955,
+      8.92477035522461
+    ],
+    "width": 13.501371383666992,
+    "height": 8.92477035522461,
+    "depth": 10.22951602935791
+  },
+  "units": "meters",
+  "pivot": "bottom-center",
+  "damageOnly": true,
+  "originalAuthored": true,
+  "sourceType": "procedurally_authored_original_geometry",
+  "referenceAssets": [
+    "IMG-20261002-WA0003_1790946116113.jpg",
+    "IMG-20261002-WA0004_1790946116076.jpg"
+  ],
+  "uvCoverage": {
+    "layer": "UVMap",
+    "loopCount": 3087,
+    "finiteLoopCount": 3087,
+    "bounds": {
+      "min": [
+        0.02525000087916851,
+        0.02525000087916851
+      ],
+      "max": [
+        0.9747499823570251,
+        0.47475001215934753
+      ]
+    }
+  },
+  "objAudit": {
+    "vertices": 724,
+    "uvCoordinates": 80,
+    "normals": 797,
+    "triangles": 1029
+  },
+  "fbxAudit": {
+    "triangles": 1029,
+    "vertices": 724,
+    "bounds": {
+      "min": [
+        -6.750685691833496,
+        -5.114758014678955,
+        0.0
+      ],
+      "max": [
+        6.750685691833496,
+        5.114758014678955,
+        8.92477035522461
+      ],
+      "width": 13.501371383666992,
+      "height": 8.92477035522461,
+      "depth": 10.22951602935791
+    },
+    "uvChannels": 1,
+    "textures": [
+      "sharedatlastex.png"
+    ]
+  },
+  "albedo": {
+    "file": "ruin_sabra_albedo.png",
+    "sourceMaterialCount": 1,
+    "sharedAtlas": "sharedatlastex.png",
+    "uvLayer": "UVMap"
+  }
+}

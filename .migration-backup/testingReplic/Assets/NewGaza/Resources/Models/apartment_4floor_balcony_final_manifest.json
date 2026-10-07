@@ -1,0 +1,69 @@
+{
+  "key": "apartment_4floor_balcony_final",
+  "archetypeKey": "apartment_4floor_balcony",
+  "archetype": "Four-floor balcony apartment",
+  "stage": "final",
+  "stageDescription": "Completed detailed architecture, installed openings, roof services, and compact landscaping.",
+  "modelPath": "Resources/Models/apartment_4floor_balcony_final.obj",
+  "albedoPath": "Resources/Models/apartment_4floor_balcony_final_albedo.png",
+  "scaleConvention": "1 Blender unit = 1 metre; native OBJ is Y-up",
+  "floorCount": 4,
+  "dimensionsMeters": {
+    "width": 10.0,
+    "depth": 8.5,
+    "actualStageHeight": 12.979999542236328,
+    "logicalFinalHeight": 12.979999542236328,
+    "logicalHeightCap": 12.979999542236328
+  },
+  "metersPerCityUnit": 20.0,
+  "nativeScaleConvention": "uniform widthFit; keep completed logical height cap in every stage",
+  "triangleCount": 3660,
+  "vertexCount": 2440,
+  "boundsMeters": {
+    "min": [
+      -5.0,
+      -4.25,
+      0.0
+    ],
+    "max": [
+      5.0,
+      4.25,
+      12.979999542236328
+    ],
+    "width": 10.0,
+    "height": 12.979999542236328,
+    "depth": 8.5
+  },
+  "uvBounds": {
+    "min": [
+      0.030079999938607216,
+      0.05008000135421753
+    ],
+    "max": [
+      0.9699199795722961,
+      0.9499199986457825
+    ]
+  },
+  "atlas": "HousingSharedAtlas.png",
+  "objAudit": {
+    "vertices": 2440,
+    "uvs": 24,
+    "normals": 6,
+    "triangles": 3660,
+    "boundsYUpMeters": {
+      "min": [
+        -5.0,
+        0.0,
+        -4.25
+      ],
+      "max": [
+        5.0,
+        12.979999542236328,
+        4.25
+      ],
+      "width": 10.0,
+      "height": 12.979999542236328,
+      "depth": 8.5
+    }
+  }
+}

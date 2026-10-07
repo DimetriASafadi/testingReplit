@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net7.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../Assets/NewGaza/Core/GameModels.cs" Link="Core/GameModels.cs" />
+    <Compile Include="../../Assets/NewGaza/Core/RoadEconomy.cs" Link="Core/RoadEconomy.cs" />
+    <Compile Include="../../Assets/NewGaza/Core/GameGeography.cs" Link="Core/GameGeography.cs" />
+    <Compile Include="../../Assets/NewGaza/World/CityBasemap.cs" Link="World/CityBasemap.cs" />
+    <Compile Include="../../Assets/NewGaza/World/CityRoadNetwork.cs" Link="World/CityRoadNetwork.cs" />
+    <Compile Include="../../Assets/NewGaza/World/CityGeometry.cs" Link="World/CityGeometry.cs" />
+    <Compile Include="../../Assets/NewGaza/World/CityRoadView.cs" Link="World/CityRoadView.cs" />
+    <Compile Include="../Equipment/UnityStubs.cs" Link="UnityStubs.cs" />
+    <Compile Include="RoadViewUnityExtensions.cs" />
+    <Compile Include="Program.cs" />
+    <None Include="../../Assets/NewGaza/Resources/GazaBasemap.json" Link="GazaBasemap.json"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

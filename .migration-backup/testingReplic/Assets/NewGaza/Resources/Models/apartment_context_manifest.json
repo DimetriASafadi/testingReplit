@@ -1,0 +1,60 @@
+{
+  "formatVersion": 1,
+  "key": "apartment_context",
+  "sourceFile": "/home/runner/workspace/attached_assets/licensed_models/apartment.glb",
+  "targetTriangles": 350,
+  "actualTriangles": 348,
+  "triangleTolerance": 0.01,
+  "verifiedWithinBudget": true,
+  "vertexCount": 7108,
+  "dimensionsNormalizedBlenderXYZ": [
+    0.9561537504196167,
+    1.0,
+    2.0322439670562744
+  ],
+  "origin": {
+    "originalWorldBoundsMin": [
+      -1.0318949222564697,
+      -1.4548730850219727,
+      -0.05740528926253319
+    ],
+    "originalWorldBoundsMax": [
+      1.3892539739608765,
+      1.0773022174835205,
+      5.088592529296875
+    ],
+    "uniformScale": 0.39491736571734876,
+    "normalizedOriginBlender": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "pivot": "bottom-center"
+  },
+  "uvCoverage": {
+    "layer": "UVMap.001",
+    "loopCount": 1044,
+    "finiteLoopCount": 1044,
+    "bounds": {
+      "min": [
+        0.00035001750802621245,
+        0.00034999847412109375
+      ],
+      "max": [
+        0.9756499528884888,
+        0.9673919081687927
+      ]
+    }
+  },
+  "albedo": {
+    "file": "apartment_albedo.png",
+    "size": null,
+    "bakedDiffuseColorOnly": false,
+    "sourceMaterialCount": 1,
+    "uvLayer": "UVMap.001"
+  },
+  "preview": {
+    "file": "/tmp/gaza-context-prep/previews/apartment_context.png",
+    "status": "rendered"
+  }
+}

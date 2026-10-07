@@ -1,0 +1,106 @@
+{
+  "formatVersion": 1,
+  "key": "ruin_rimal",
+  "sourceFile": "original procedural geometry (no imported source model)",
+  "targetTriangles": 2200,
+  "actualTriangles": 1061,
+  "triangleTolerance": 0.0,
+  "verifiedWithinBudget": true,
+  "vertexCount": 744,
+  "dimensionsNormalizedBlenderXYZ": [
+    14.163677215576172,
+    10.07540512084961,
+    15.714821815490723
+  ],
+  "origin": {
+    "normalizedOriginBlender": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "pivot": "bottom-center"
+  },
+  "districtId": "Rimal",
+  "category": "balcony_tower",
+  "floors": 7,
+  "damageType": "grounded_breached_shell_compact_collapsed_slabs_dense_mixed_rubble",
+  "visualReference": "User supplied collapse piles, exposed rebar and destroyed masonry",
+  "meshPath": "Resources/Models/ruin_rimal.obj",
+  "texturePath": "Resources/Models/ruin_rimal_albedo.png",
+  "fbxPath": "Art/DestroyedFBX/ruin_rimal.fbx",
+  "triangleCount": 1061,
+  "bounds": {
+    "min": [
+      -7.081838607788086,
+      -5.037702560424805,
+      0.0
+    ],
+    "max": [
+      7.081838607788086,
+      5.037702560424805,
+      15.714821815490723
+    ],
+    "width": 14.163677215576172,
+    "height": 15.714821815490723,
+    "depth": 10.07540512084961
+  },
+  "units": "meters",
+  "pivot": "bottom-center",
+  "damageOnly": true,
+  "originalAuthored": true,
+  "sourceType": "procedurally_authored_original_geometry",
+  "referenceAssets": [
+    "IMG-20261002-WA0003_1790946116113.jpg",
+    "IMG-20261002-WA0004_1790946116076.jpg"
+  ],
+  "uvCoverage": {
+    "layer": "UVMap",
+    "loopCount": 3183,
+    "finiteLoopCount": 3183,
+    "bounds": {
+      "min": [
+        0.02525000087916851,
+        0.02525000087916851
+      ],
+      "max": [
+        0.9747499823570251,
+        0.47475001215934753
+      ]
+    }
+  },
+  "objAudit": {
+    "vertices": 744,
+    "uvCoordinates": 75,
+    "normals": 817,
+    "triangles": 1061
+  },
+  "fbxAudit": {
+    "triangles": 1061,
+    "vertices": 744,
+    "bounds": {
+      "min": [
+        -7.081838607788086,
+        -5.037702560424805,
+        0.0
+      ],
+      "max": [
+        7.081838607788086,
+        5.037702560424805,
+        15.714821815490723
+      ],
+      "width": 14.163677215576172,
+      "height": 15.714821815490723,
+      "depth": 10.07540512084961
+    },
+    "uvChannels": 1,
+    "textures": [
+      "sharedatlastex.png"
+    ]
+  },
+  "albedo": {
+    "file": "ruin_rimal_albedo.png",
+    "sourceMaterialCount": 1,
+    "sharedAtlas": "sharedatlastex.png",
+    "uvLayer": "UVMap"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "@workspace/new-gaza-2d",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --dir ../../NEWGaza2D run dev",
+    "build": "pnpm --dir ../../NEWGaza2D run build",
+    "serve": "pnpm --dir ../../NEWGaza2D run serve"
+  }
+}

@@ -3,6 +3,12 @@ name: Unity editor verification
 description: Why native source fixtures alone missed Unity editor compilation errors.
 ---
 
+Native workspace migrations must distinguish incomplete local export fixtures from regressions.
+
+**Why:** The source-only backup lacked authored housing and production-placement exports; the unchanged native checks failed identically before and after restoration.
+
+**How to apply:** Compare failures against the original backup before editing tests or native source. Restore genuine local inputs separately; do not invent fixture data or report a full native pass from narrower checks.
+
 Do not treat a passing runtime fixture or syntax parser as evidence that editor smoke checks compile.
 
 Do not infer that an optional JSON header was supplied merely because its deserialized reference is non-null.

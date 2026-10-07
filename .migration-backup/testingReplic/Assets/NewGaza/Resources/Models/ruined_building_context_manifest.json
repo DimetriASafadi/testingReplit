@@ -1,0 +1,60 @@
+{
+  "formatVersion": 1,
+  "key": "ruined_building_context",
+  "sourceFile": "/home/runner/workspace/attached_assets/licensed_models/ruined_building.glb",
+  "targetTriangles": 450,
+  "actualTriangles": 447,
+  "triangleTolerance": 0.01,
+  "verifiedWithinBudget": true,
+  "vertexCount": 6429,
+  "dimensionsNormalizedBlenderXYZ": [
+    1.0,
+    0.9822015166282654,
+    2.3571791648864746
+  ],
+  "origin": {
+    "originalWorldBoundsMin": [
+      -1.055942416191101,
+      -1.0620907545089722,
+      -0.017433788627386093
+    ],
+    "originalWorldBoundsMax": [
+      1.1148687601089478,
+      1.0700832605361938,
+      5.099556922912598
+    ],
+    "uniformScale": 0.46065729295921976,
+    "normalizedOriginBlender": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "pivot": "bottom-center"
+  },
+  "uvCoverage": {
+    "layer": "UVMap.001",
+    "loopCount": 1341,
+    "finiteLoopCount": 1341,
+    "bounds": {
+      "min": [
+        0.00035001750802621245,
+        0.00034999847412109375
+      ],
+      "max": [
+        0.9771780967712402,
+        0.9884140491485596
+      ]
+    }
+  },
+  "albedo": {
+    "file": "ruined_building_albedo.png",
+    "size": null,
+    "bakedDiffuseColorOnly": false,
+    "sourceMaterialCount": 1,
+    "uvLayer": "UVMap.001"
+  },
+  "preview": {
+    "file": "/tmp/gaza-context-prep/previews/ruined_building_context.png",
+    "status": "rendered"
+  }
+}

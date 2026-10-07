@@ -1,0 +1,105 @@
+{
+  "formatVersion": 1,
+  "key": "ruin_mosque",
+  "sourceFile": "original procedural geometry (no imported source model)",
+  "targetTriangles": 1600,
+  "actualTriangles": 824,
+  "triangleTolerance": 0.0,
+  "verifiedWithinBudget": true,
+  "vertexCount": 628,
+  "dimensionsNormalizedBlenderXYZ": [
+    11.407649993896484,
+    9.188043594360352,
+    12.957189559936523
+  ],
+  "origin": {
+    "normalizedOriginBlender": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "pivot": "bottom-center"
+  },
+  "districtId": null,
+  "category": "mosque",
+  "floors": null,
+  "damageType": "fractured_dome_minaret",
+  "meshPath": "Resources/Models/ruin_mosque.obj",
+  "texturePath": "Resources/Models/ruin_mosque_albedo.png",
+  "fbxPath": "Art/DestroyedFBX/ruin_mosque.fbx",
+  "triangleCount": 824,
+  "bounds": {
+    "min": [
+      -5.703824996948242,
+      -4.594021797180176,
+      0.0
+    ],
+    "max": [
+      5.703824996948242,
+      4.594021797180176,
+      12.957189559936523
+    ],
+    "width": 11.407649993896484,
+    "height": 12.957189559936523,
+    "depth": 9.188043594360352
+  },
+  "units": "meters",
+  "pivot": "bottom-center",
+  "damageOnly": true,
+  "originalAuthored": true,
+  "sourceType": "procedurally_authored_original_geometry",
+  "referenceAssets": [
+    "IMG-20261002-WA0003_1790946116113.jpg",
+    "IMG-20261002-WA0004_1790946116076.jpg"
+  ],
+  "uvCoverage": {
+    "layer": "UVMap",
+    "loopCount": 2472,
+    "finiteLoopCount": 2472,
+    "bounds": {
+      "min": [
+        0.02525000087916851,
+        0.02525000087916851
+      ],
+      "max": [
+        0.9747499823570251,
+        0.47475001215934753
+      ]
+    }
+  },
+  "objAudit": {
+    "vertices": 628,
+    "uvCoordinates": 108,
+    "normals": 569,
+    "triangles": 824
+  },
+  "fbxAudit": {
+    "triangles": 824,
+    "vertices": 628,
+    "bounds": {
+      "min": [
+        -5.703824996948242,
+        -4.594021797180176,
+        0.0
+      ],
+      "max": [
+        5.703824996948242,
+        4.594021797180176,
+        12.957189559936523
+      ],
+      "width": 11.407649993896484,
+      "height": 12.957189559936523,
+      "depth": 9.188043594360352
+    },
+    "uvChannels": 1,
+    "textures": [
+      "sharedatlastex.png"
+    ]
+  },
+  "albedo": {
+    "file": "ruin_mosque_albedo.png",
+    "sourceMaterialCount": 1,
+    "sharedAtlas": "sharedatlastex.png",
+    "uvLayer": "UVMap"
+  }
+}

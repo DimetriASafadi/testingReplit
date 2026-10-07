@@ -1,0 +1,20 @@
+- [Arabic font coverage](arabic-font-coverage.md) — test connected forms, Latin digits and UI symbols together; an Arabic font can lack essential interface glyphs.
+- [Geographic sources and saves](geographic-sources-and-saves.md) — disambiguate Gaza map points; later expansions preserve neighborhood identity and earned access, not array positions.
+- [GitHub authentication paths](github-authentication-paths.md) — connector authorization can work while native Git push fails; preserve commit hashes and merge remote history before delivery.
+- [Headless 3D previews](headless-3d-previews.md) — use CPU rendering when no graphics context is available; native GPU initialization can abort before a fallback runs.
+- [Imported model UV channels](imported-model-uv-channels.md) — export the texture's actual UV channel; valid geometry and UV counts do not prove a correctly mapped albedo.
+- [Orthographic city audio](orthographic-city-audio.md) — mix from ground focus plus zoom; camera setback and map units otherwise give misleading sound distance.
+- [Mechanical contact checks](mechanical-contact-checks.md) — valid meshes and joint bounds do not prove digging/loading contact or realistic map-scale travel.
+- [Mechanical FBX animation stacks](mechanical-fbx-animations.md) — multi-object NLA strips split into separate takes; export synchronized channels and distinguish mesh-deformed tracks.
+- [Equipment reference and routing](equipment-reference-and-routing.md) — unbranded yellow machines and green/white tipper; useful roads first, then direct off-road arrival rather than holding.
+- [Native fixture ownership](native-fixture-ownership.md) — model hierarchy destruction; separate selection from static caches and test thin triangles at real geographic coordinates.
+- [Regional building art direction](regional-building-art-direction.md) — user wants family housing in the east, progressing to taller urban and tourist buildings toward the west.
+- [Ground art direction](ground-art-direction.md) — user wants semi-realistic earth, coastal sand and regional ground detail, not a uniformly yellow floor.
+- [2D visual direction](2d-visual-direction.md) — user confirmed the fully destroyed isometric game-map concept as the approximate direction for future work.
+- [Unity editor verification](unity-editor-verification.md) — single-assembly fixtures miss editor access errors; compile editor contracts separately and check obsolete Unity APIs.
+- [UI reference scope](ui-reference-scope.md) — references guide appearance; omit unsupported content and bind menu values/actions to real gameplay.
+- [Economy and onboarding](economic-balance-and-onboarding.md) — rubble pays one-third of its building price; start with placed recycler and equipment, then build on clean land.
+- [Persistence expectations](persistence-expectations.md) — المستخدم يريد استعادة التقدم والحركة ومؤقتات وقت النظام؛ اختبار Unity على جهازه لا يوقف تنفيذ الحفظ.
+- [Destroyed city density](destroyed-city-density.md) — المستخدم يريد خريطة مليئة بالمباني المدمرة؛ تحقق من العدد الفعلي وتوزيعه، لا من رفع الحد فقط.
+- [Native save performance](native-save-performance.md) — camera checkpoints use detached background snapshots; actual fleet markers fade at close zoom.
+- [Generated machinery preparation](generated-machinery-preparation.md) — split meshes are not complete rigs; check cut topology and request a textured model when UVs are absent.

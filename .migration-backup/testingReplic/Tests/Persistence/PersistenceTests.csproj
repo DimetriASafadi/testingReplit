@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../Assets/NewGaza/Core/*.cs" Link="Core/%(Filename)%(Extension)" />
+    <Compile Include="../../Assets/NewGaza/Runtime/GameSaveStore.cs" Link="GameSaveStore.cs" />
+    <Compile Include="../../Assets/NewGaza/Runtime/GameSaveStoreAsync.cs" Link="GameSaveStoreAsync.cs" />
+  </ItemGroup>
+</Project>

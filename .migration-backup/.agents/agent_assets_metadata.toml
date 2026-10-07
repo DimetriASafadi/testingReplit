@@ -1,0 +1,1012 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "1fWh6uOeYQs-_P59ry1Dn"
+uri = "file://exports/NewGaza-Unity-Source.zip"
+type = "unspecified"
+title = "Full Unity source — basemap startup fix"
+description = "Updated loader and regression tests. The source checks and 276,786 basemap assertions passed; Unity startup was not run here."
+logical_id = "5dbf8b92-3bf8-4fbf-a60d-a4baffa6cc98"
+content_hash = "sha256:e2ee23c999a9f4ec948f33913008da59e18b8d76cfc2073194b92f64f0619231"
+size = 45548516
+mtime_ms = 1791025270922
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/5dbf8b92-3bf8-4fbf-a60d-a4baffa6cc98/82381712-b3c3-4859-aee0-11428b7cb4c2"
+storage_version_token = "1791025334510156"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "zsV47ALU-T20gTFKJRi1v"
+uri = "file://exports/models/Imported-City-Models.jpg"
+type = "image"
+title = "المجسمات المستوردة: مبنى ودمار وأنقاض"
+description = "عرض للمجسمات منخفضة المضلعات وخاماتها الفعلية بعد الاستيراد والتخفيض. هذه معاينة Blender، وليست لقطة من Unity."
+logical_id = "eb231df2-3e19-4cee-99b7-586498cd71ef"
+content_hash = "sha256:c19537ad973a2ff170e0cd98de0853842d01515104ad69d3aeaa7bfa5f73e1e4"
+size = 48748
+mtime_ms = 1790875047697
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/eb231df2-3e19-4cee-99b7-586498cd71ef/ef9df07f-7ea4-4b85-9c10-4852de396f34"
+storage_version_token = "1790875238233901"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "NTUoK-Zo6v6jAlCm-ObTV"
+uri = "file://exports/models/district_layout.png"
+type = "image"
+title = "معاينة توزيع الشوارع والمباني المهدمة"
+description = "المجسمات المحسّنة موزعة باستخدام مخطط الشجاعية البرمجي الفعلي: شارع مفتوح وتفرّعان، دون قواعد عرض للمباني. معاينة Blender؛ ليست خريطة مساحية ولا لقطة من Unity."
+logical_id = "78c0383d-5307-4cd4-9996-fe6f2f9234aa"
+content_hash = "sha256:82381a677deab5b091fc87c45987b05c8f4285b20a60f4c57fd1116e5277bc7c"
+size = 653162
+mtime_ms = 1790875906333
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/78c0383d-5307-4cd4-9996-fe6f2f9234aa/d145afb4-b663-488d-a044-44d66b6371cb"
+storage_version_token = "1790876069527419"
+content_type = "image/png"
+
+[[outputs]]
+id = "Vvh-ocyV3HZtLle2uI7NN"
+uri = "file://exports/models/Gaza-City-Overview.png"
+type = "image"
+title = "معاينة المدينة والساحل"
+description = "معاينة خارجية من Blender للبيانات والهندسة المصدرية؛ ليست لقطة تشغيل Unity."
+logical_id = "3d8f4d8d-c6c1-4cc3-82b9-305291dbab83"
+content_hash = "sha256:6175d040eb2be346f6e0e52cb58e600f1aa843dd77e51b665e650c829ef3ee1b"
+size = 770418
+mtime_ms = 1790878912669
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/3d8f4d8d-c6c1-4cc3-82b9-305291dbab83/a9068088-fd50-4286-9d65-d1374d95e682"
+storage_version_token = "1790879300036104"
+content_type = "image/png"
+
+[[outputs]]
+id = "L6V631m0DWpdHI_E6AZo_"
+uri = "file://exports/models/Gaza-Urban-Neighborhood.png"
+type = "image"
+title = "معاينة النسيج العمراني"
+description = "مبانٍ مجسّمة من بصمات OSM مع المجسمات الفنية داخل حي الشجاعية. معاينة Blender، وليست تشغيلًا على الهاتف."
+logical_id = "8e1b084c-8c4f-4911-9b9a-1077b754c856"
+content_hash = "sha256:332a3f724c40686255f4a1d30d505d1900152ca250c05ec859d946ef20773c5b"
+size = 734371
+mtime_ms = 1790878922821
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/8e1b084c-8c4f-4911-9b9a-1077b754c856/c51af4b3-4a88-4d63-853a-3828f328bd53"
+storage_version_token = "1790879301437806"
+content_type = "image/png"
+
+[[outputs]]
+id = "2PFg5pY06GTdHr-wGRKoq"
+uri = "file://attached_assets/generated_audio/new-gaza-ui_confirm.mp3"
+type = "audio"
+title = "new-gaza-ui_confirm"
+description = "Generated sound effect: Restrained warm interface confirmation sound for a grounded city strategy game, a single short soft wooden mechanical click with tiny pleasant tonal tail, no loud flourish no …"
+logical_id = "7018bfa3-401c-492d-992b-37c18fd90b96"
+
+[[outputs]]
+id = "PidXSE5DpaDdX9UrhVAzj"
+uri = "file://attached_assets/generated_audio/new-gaza-ui_click.mp3"
+type = "audio"
+title = "new-gaza-ui_click"
+description = "Generated sound effect: One short soft tactile interface button tap for a realistic city strategy mobile game, restrained dry mechanical click with soft warm body, clean quiet non-musical sound, no e…"
+logical_id = "676fbf00-fbb7-48be-a255-450cab8dcfc6"
+
+[[outputs]]
+id = "YBSaDL6P0G8reNGJ6uPSh"
+uri = "file://attached_assets/generated_audio/new-gaza-dozer_engine.mp3"
+type = "audio"
+title = "new-gaza-dozer_engine"
+description = "Generated sound effect: Realistic compact tracked bulldozer diesel engine working under steady load, low warm diesel rumble, subtle mechanical chatter, close isolated recording, no voices music wind …"
+logical_id = "5935fab9-6a66-4ffb-8558-48e5e9347d20"
+
+[[outputs]]
+id = "03nkxTaNOw0L1U7vtbsf2"
+uri = "file://attached_assets/generated_audio/new-gaza-truck_engine.mp3"
+type = "audio"
+title = "new-gaza-truck_engine"
+description = "Generated sound effect: Realistic small construction dump truck diesel engine under gentle moving load, steady low-mid diesel rumble with restrained mechanical vibration, isolated close field recordi…"
+logical_id = "7146dae3-2c42-44cb-93fb-abc6221d0fb7"
+
+[[outputs]]
+id = "YhZIWCHInHlq-dnPPNCAp"
+uri = "file://attached_assets/generated_audio/new-gaza-excavator_engine.mp3"
+type = "audio"
+title = "new-gaza-excavator_engine"
+description = "Generated sound effect: Steady realistic compact excavator diesel engine at close working idle, low rumbling cylinders and mechanical vibration, steady moderate load, dry isolated recording, no voice…"
+logical_id = "20fe6622-d745-46cb-9ec1-9e1ba44f6ec4"
+
+[[outputs]]
+id = "iBE5OJ70K3Y4LSsX1B-7X"
+uri = "file://attached_assets/generated_audio/new-gaza-hydraulics.mp3"
+type = "audio"
+title = "new-gaza-hydraulics"
+description = "Generated sound effect: Realistic excavator hydraulics operating, restrained hydraulic pump whine, piston hiss and soft heavy metal pivot creaks, smooth recurring hydraulic movements, close dry isola…"
+logical_id = "4ceaaf41-c676-475f-ae5d-fe82011e1846"
+
+[[outputs]]
+id = "-s_1St8srXJNjHYxZ1FnF"
+uri = "file://attached_assets/generated_audio/new-gaza-tracks.mp3"
+type = "audio"
+title = "new-gaza-tracks"
+description = "Generated sound effect: Realistic slow construction machine steel caterpillar tracks on gravel, low gritty rolling crunch with rhythmic track clatter, isolated close recording, no engine or voices or…"
+logical_id = "ed103094-b519-4f65-bbca-ee244f8f305e"
+
+[[outputs]]
+id = "qz_U8f_KKqJ6pU_0M3wBs"
+uri = "file://attached_assets/generated_audio/new-gaza-coastal_surf.mp3"
+type = "audio"
+title = "new-gaza-coastal_surf"
+description = "Generated sound effect: Quiet Mediterranean beach surf, soft small shore waves and gentle water wash, calm natural continuous ambient loop, no wind music people or seagulls, subtle soft waves without…"
+logical_id = "2f063e2c-7cd2-41d6-8a8a-519fd4933293"
+
+[[outputs]]
+id = "cS87LrL3TI0p50JaJkfXo"
+uri = "file://attached_assets/generated_audio/new-gaza-wind_high.mp3"
+type = "audio"
+title = "new-gaza-wind_high"
+description = "Generated sound effect: Gentle open-sky dry coastal wind ambience heard while looking over a city from high above, soft wide airy breeze with restrained low gusts, calm clean spacious desert air, no …"
+logical_id = "ce03012e-9a5a-4fc9-a69a-7dd626592925"
+
+[[outputs]]
+id = "IpUL28eW13rZoTIWCVbuj"
+uri = "file://exports/audio/Camera-Audio-Demo.wav"
+type = "audio"
+title = "عينة الانتقال الصوتي مع الزوم — 15 ثانية"
+description = "هواء بعيد ثم محرك وهيدروليك قريبان ثم ابتعاد. عينة حسابية من مؤثرات اللعبة ومستوياتها الافتراضية، مع اتجاه صوت تقريبي؛ ليست تسجيل تشغيل Unity."
+logical_id = "2f84fab5-46d8-476e-8ad4-4131dcfb6ec7"
+content_hash = "sha256:d04ef35982e5e323544ab6d185ae8c6d579ec534f9812570cdc877e5d450a89a"
+size = 1440044
+mtime_ms = 1790881130680
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/2f84fab5-46d8-476e-8ad4-4131dcfb6ec7/3a48edfa-e37d-402e-985e-714b4b1c0559"
+storage_version_token = "1790884929338252"
+content_type = "audio/wav"
+
+[[outputs]]
+id = "ewmBCZkiAwrgEFn0Kgqoe"
+uri = "file://exports/equipment/Equipment-Offline-Hero.png"
+type = "image"
+title = "معاينة المعدات الثلاث — من هندسة المصدر"
+description = "الحفارة والشاحنة والجرافة. عرض خارجي Blender CPU من المجسمات وتحويلاتها وموادها الفعلية؛ خامات الضوضاء الحسابية تقريبية، وليس تصوير Unity."
+logical_id = "1f1ee067-b83c-44fd-9969-bff16bc0f930"
+content_hash = "sha256:8dab024a758a703a2766ba02e25997041ab5451fb1fff460f0fcd109b0b19961"
+size = 2551446
+mtime_ms = 1790885021155
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/1f1ee067-b83c-44fd-9969-bff16bc0f930/ff6791de-cefd-4796-aee1-2dccdfc290da"
+storage_version_token = "1790885145654484"
+content_type = "image/png"
+
+[[outputs]]
+id = "GB5tSr-U-WAzM7fUWuWRI"
+uri = "file://exports/equipment/Equipment-Offline-Poses.png"
+type = "image"
+title = "حالات العمل — تحميل ونقل وتفريغ"
+description = "لقطات من حالات الحركة المحسوبة في مصدر اللعبة، مرتبة للمقارنة. ليست تشغيلًا لمحرك Unity ولا تحققًا من عرض الهاتف."
+logical_id = "fa349a5f-80b8-40e0-9a88-c0b98cd0530d"
+content_hash = "sha256:a50c602ae7e0c6ce9d1447392f5eaddbd529d42bf34caa16d10f0194fddbff97"
+size = 4858321
+mtime_ms = 1790885064531
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/fa349a5f-80b8-40e0-9a88-c0b98cd0530d/c6459a07-e3c8-491e-8970-f1edda203f96"
+storage_version_token = "1790885147079540"
+content_type = "image/png"
+
+[[outputs]]
+id = "d-UbbCrz8XdZvkzJ0mUgT"
+uri = "file://exports/NewGaza-Destroyed-FBX.zip"
+type = "unspecified"
+title = "حزمة المجسّمات المدمّرة — 21 ملف FBX"
+description = "13 طراز أطلال للأحياء والساحل و8 عناصر مدمّرة، مع الخامات ونسخ التشغيل وصور المعاينة. دون .meta."
+logical_id = "c674854b-af9b-4570-9a71-e003fc237719"
+content_hash = "sha256:5c76d7239a34060e878d4ad6d4cbf236444b8eab24d0624dced3585fb344c72a"
+size = 14829205
+mtime_ms = 1790948052752
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/c674854b-af9b-4570-9a71-e003fc237719/e215a37e-b766-46b1-ac1d-e15f6b7489ff"
+storage_version_token = "1790948226123739"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "iLKhmrcrr--16Vq5QpSyg"
+uri = "file://exports/destroyed-assets/Regional-East-Central.png"
+type = "image"
+title = "معاينة الأنقاض الإقليمية المحدّثة"
+description = "أمثلة للمباني المدمرة والردم المتراكم في الأحياء الشرقية والوسطى، من ملفات FBX الفعلية. معاينة Blender وليست Unity."
+logical_id = "b5e2c4de-fa0e-445a-9d7d-3948e5f868cf"
+content_hash = "sha256:aa2b0b4b19f38917c2f7aff5744742186372522046984db5e898137a130a3695"
+size = 1033749
+mtime_ms = 1791106241723
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/b5e2c4de-fa0e-445a-9d7d-3948e5f868cf/77bca559-2229-4d28-af18-1744ac4a35f3"
+storage_version_token = "1791106373559559"
+content_type = "image/png"
+
+[[outputs]]
+id = "u8iivlBrM87BV3ZJvWjZe"
+uri = "file://exports/destroyed-assets/Regional-Urban-Coast.png"
+type = "image"
+title = "معاينة أطلال العمران والمناطق الغربية والساحل"
+description = "طرز مدمّرة أعلى للمناطق العمرانية والساحلية؛ معاينة Blender خارج اللعبة."
+logical_id = "cbe9ff32-dbae-4a7e-a63d-9e8fff8f6f7a"
+content_hash = "sha256:132fba54387b8e9b35de47c0a84e50b7377207cfe1023ba12c65d15f86017efd"
+size = 1341965
+mtime_ms = 1790948051004
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/cbe9ff32-dbae-4a7e-a63d-9e8fff8f6f7a/ac358c8f-3fe3-43de-b1d7-a7aa9f23de1d"
+storage_version_token = "1790948230535319"
+content_type = "image/png"
+
+[[outputs]]
+id = "QR5bB4k6KlHq5Sv93etpF"
+uri = "file://exports/destroyed-assets/Destroyed-Objects.png"
+type = "image"
+title = "معاينة المباني الخدمية والعناصر المدمّرة"
+description = "مسجد ومدرسة ومبنى صحي وخدمات، وجدار ومركبة محترقة وحفرة وأنقاض. معاينة Blender."
+logical_id = "d5c9f4b3-84c4-4123-b367-06b5a88ae2d5"
+content_hash = "sha256:f53384e89b3197ae8da25db0cd1eb2c85a070270a15b54a0fa1221f810ed73ec"
+size = 1333309
+mtime_ms = 1790948051928
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/d5c9f4b3-84c4-4123-b367-06b5a88ae2d5/66ff610f-f11f-4890-aac4-ba24148b8b13"
+storage_version_token = "1790948231911139"
+content_type = "image/png"
+
+[[outputs]]
+id = "n0fO5UjIAJZQnraPGohSq"
+uri = "file://exports/NewGaza-Equipment-FBX.zip"
+type = "unspecified"
+title = "مجسّمات الآليات — FBX دون شعارات"
+description = "الحفّار والجرافة والشاحنة، بخاماتها وتسلسلها المفصلي وعينات حركة متزامنة. دون ملفات .meta؛ حركة الجنازير الكاملة يقودها مصدر اللعبة."
+logical_id = "955129ac-3cf0-4890-8815-8fed7f44c190"
+content_hash = "sha256:56e89d8ea235c7ccc2de9c17d61523768dc996538a3340e99a70d07d1e22092f"
+size = 2361295
+mtime_ms = 1790952082224
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/955129ac-3cf0-4890-8815-8fed7f44c190/adcdfe74-8fda-4275-ba4c-34ed8ab96a6f"
+storage_version_token = "1790952439230277"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "LoKzQnIs8bXKFJWHhR6aa"
+uri = "file://exports/equipment/Equipment-FBX-Proofs/YellowExcavator-Offline-Reference.png"
+type = "image"
+title = "معاينة الحفّار دون شعارات"
+description = "معاينة Blender من المجسّم الفعلي أثناء دورة العمل، وليست لقطة من Unity."
+logical_id = "d38d742e-c9cb-4ff1-908a-56fcfd629d64"
+content_hash = "sha256:3e935c4c5ef05f9372370a3fffa30b662084295087cc17a793b61e5a13f67d2a"
+size = 1134025
+mtime_ms = 1790951888096
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/d38d742e-c9cb-4ff1-908a-56fcfd629d64/31e1a098-265f-403b-8495-f5e7c3a320e0"
+storage_version_token = "1790952443763010"
+content_type = "image/png"
+
+[[outputs]]
+id = "iIfH2oFc8KKaeS43j5Vqk"
+uri = "file://exports/equipment/Equipment-FBX-Proofs/GreenTipper-Offline-Reference.png"
+type = "image"
+title = "معاينة الشاحنة الخضراء والفاتحة"
+description = "خامات أصلية وصندوق أخضر مدعّم؛ معاينة خارجية من المجسّم الفعلي دون شارات شركات."
+logical_id = "8aa02c67-3b19-4e2d-9d5c-ca024a0dcca6"
+content_hash = "sha256:4d78d738fc6a819f75c15981c9e4f006ab1a7f18714774090cb18197ac5ddb84"
+size = 1077243
+mtime_ms = 1790951923396
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/8aa02c67-3b19-4e2d-9d5c-ca024a0dcca6/a6dcbcf6-9dd5-4e55-b0f5-dfd9255d7377"
+storage_version_token = "1790952445115654"
+content_type = "image/png"
+
+[[outputs]]
+id = "g0bn9qgbRsZUi9YbsdfNK"
+uri = "file://exports/equipment/Equipment-FBX-Proofs/YellowBulldozer-Offline-Reference.png"
+type = "image"
+title = "معاينة الجرافة الصفراء"
+description = "جنازير وشفرة منحنية وتفاصيل المقصورة دون شعارات؛ معاينة Blender وليست اختبار هاتف."
+logical_id = "2991422e-012c-4d53-a5bf-118b6996b121"
+content_hash = "sha256:8165273929ca2fb43012d77d67a4c4f182da5c0827a112bba9e446170525b94e"
+size = 1133124
+mtime_ms = 1790951954572
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/2991422e-012c-4d53-a5bf-118b6996b121/b64231ce-7b05-46dd-9607-eef1c00695c7"
+storage_version_token = "1790952446453868"
+content_type = "image/png"
+
+[[outputs]]
+id = "D3bHMoHvW_6NX-7hZEVsi"
+uri = "file://exports/NewGaza-Housing-FBX.zip"
+type = "unspecified"
+title = "مباني غزة — ٤٠ ملف FBX ومراحل البناء"
+description = "عشرة نماذج مستوحاة من المرجع، لكل منها التأسيس والهيكل والتشطيب والشكل النهائي، مع الخامات وموارد Unity والمعاينات. دون ملفات .meta."
+logical_id = "784e760e-99ad-42d9-8912-33e5d633f61e"
+content_hash = "sha256:c9b1522cae5aae62a90613f14c76fe99db425b68b20ad3e2fe98c5412926fbf1"
+size = 17593054
+mtime_ms = 1790954224889
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/784e760e-99ad-42d9-8912-33e5d633f61e/6166a7b7-7325-4583-9a6a-c105073407b3"
+storage_version_token = "1790954515487596"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "nvnqj9_tU9kCBWp3CbtCK"
+uri = "file://exports/housing-assets/Housing-Reference-Families.png"
+type = "image"
+title = "معاينة أنواع المباني العشرة"
+description = "صور ملفات FBX الفعلية بعد إعادة استيرادها في Blender، وليست لقطات من Unity."
+logical_id = "f04468c7-1238-4664-8fb3-1334e71e7e71"
+content_hash = "sha256:12e8c3ea26acf93b4c8463652f5ac28660936d29a65f13d0b650074c18cc412e"
+size = 1373748
+mtime_ms = 1790953847757
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/f04468c7-1238-4664-8fb3-1334e71e7e71/fca1f395-1c08-4189-964f-596ddbfcfc8c"
+storage_version_token = "1790954519422951"
+content_type = "image/png"
+
+[[outputs]]
+id = "KUj5atsNIEAQ32RhlQ3B-"
+uri = "file://exports/housing-assets/Housing-Construction-Stages.png"
+type = "image"
+title = "التأسيس ← البناء ← التشطيب ← المكتمل"
+description = "أشكال فعلية مختلفة لمنزل عائلي وعمارة وبرج، بخامات وأبعاد ثابتة للموقع."
+logical_id = "0eb0a906-0d34-40e3-8a2f-4b3286fc6a0d"
+content_hash = "sha256:5c046a2228837e115294c2110e5a34aa2184c97f2e109b249fdc69f1492e0992"
+size = 1483388
+mtime_ms = 1790953848781
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/0eb0a906-0d34-40e3-8a2f-4b3286fc6a0d/dbd7293a-0e31-4d45-9aae-058d0468a4fb"
+storage_version_token = "1790954520840515"
+content_type = "image/png"
+
+[[outputs]]
+id = "aba4lJ5d80uusRDZTFEs9"
+uri = "file://exports/housing-assets/Construction-Workers-Source.gif"
+type = "image"
+title = "معاينة حركة العمّال حسب مرحلة البناء"
+description = "GIF مرسوم من هندسة مصدر اللعبة أثناء تحديث العمّال الفعلي، يبيّن الأدوات والحركة في المراحل الثلاث النشطة. ليس تسجيلًا من Unity."
+logical_id = "48963d2c-34b1-411d-bfbe-cbbd8017080e"
+content_hash = "sha256:edfcc7172bf3090f9d64ca9dc17158d1d3d8f18424c2dae0b03e0475ef568175"
+size = 257343
+mtime_ms = 1790953566777
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/48963d2c-34b1-411d-bfbe-cbbd8017080e/5902d182-b400-43d8-98dc-30ceb2605ed5"
+storage_version_token = "1790954522166068"
+content_type = "image/gif"
+
+[[outputs]]
+id = "mHgN7VTqLQjdcRs0Co3SJ"
+uri = "file://exports/NewGaza-CS1503-Fix.zip"
+type = "unspecified"
+title = "إصلاح خطأ CS1503 — ملف الاستبدال"
+description = "فك الضغط داخل مجلد مشروع Unity واستبدل Assets/NewGaza/World/CityWorld.cs. يحتوي على الملف المصحّح فقط، دون .meta."
+logical_id = "daa49732-1e3a-47b6-8baf-62e854298b45"
+content_hash = "sha256:95b68693849dfe76bc0154bd46539bd0cfdd45619f85e34cdb7f4bd5f802fbc3"
+size = 19973
+mtime_ms = 1791013186504
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/daa49732-1e3a-47b6-8baf-62e854298b45/87bfcc53-5bf3-48ce-8998-d04a6bb2acc7"
+storage_version_token = "1791013232813656"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "HfZkVBl5-mJFspnARJpn3"
+uri = "file://exports/NewGaza-Unity6-Editor-Fix.zip"
+type = "unspecified"
+title = "Unity 6 console fixes — replacement files"
+description = "Extract into your Unity project root and replace the four included .cs files. Keep existing .meta files. Includes editor access, numeric checks, audio import settings and the earlier CityWorld correction."
+logical_id = "ecd2958b-0065-429d-ab94-862ae8132515"
+content_hash = "sha256:1cdde8f9fd5b995666d8eb24d9efe5a8643ad2db823745c01ddc1768986b41d9"
+size = 35678
+mtime_ms = 1791013715984
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/ecd2958b-0065-429d-ab94-862ae8132515/b741a85e-0248-4905-977f-b5a9e17153df"
+storage_version_token = "1791013818031362"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "a26s0HxUHWO786TABhG_a"
+uri = "file://exports/NewGaza-PlayerBuild-CS0266-Fix.zip"
+type = "unspecified"
+title = "Fix for the two CS0266 errors"
+description = "Extract into your Unity project root and replace Assets/NewGaza/Editor/NewGazaPlayerBuildGate.cs. Keep its existing .meta file. Error and warning counters now match Unity’s int type."
+logical_id = "37eda8ed-6d62-48cd-ad15-2dff9d799881"
+content_hash = "sha256:c09b8a24665a01bc20db09ac04f02de13209dcd95fee9bd6029d1c27a45e8abc"
+size = 2434
+mtime_ms = 1791024600268
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/37eda8ed-6d62-48cd-ad15-2dff9d799881/52898bb1-4b76-4db5-babf-afe675ab4dc7"
+storage_version_token = "1791024640209440"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "FAY0c4tKJPc6IgXnuAV2J"
+uri = "file://exports/NewGaza-Basemap-Startup-Fix.zip"
+type = "unspecified"
+title = "Basemap startup fix — replacement file"
+description = "Replace Assets/NewGaza/World/CityBasemap.cs inside your Unity project. Keep its existing .meta file. No map geometry or saved progress is changed."
+logical_id = "1cd6d849-df2b-4e54-9dad-34a407c07573"
+content_hash = "sha256:ee8b20a9ac6218762f5d20390119d711e2474b4131f227fd874f9d6bdcf94b3c"
+size = 3848
+mtime_ms = 1791025271733
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/1cd6d849-df2b-4e54-9dad-34a407c07573/e2cd5aa1-bfcd-409c-a248-eb57d2159554"
+storage_version_token = "1791025332543536"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "yTmJ6rrR6hHv6IE3r4y91"
+uri = "file://exports/uploaded-equipment-inspection/source-preview.png"
+type = "image"
+title = "معاينة الآليات الموجودة في ملف FBX الأصلي"
+description = "معاينة خارجية من Blender قبل التعديل؛ تظهر النسخ الكبيرة في الصف العلوي والنسخ الأصغر والأجزاء الإضافية أسفلها. ليست لقطة من Unity."
+logical_id = "4082326f-ad4a-404d-a594-a269ee34895a"
+content_hash = "sha256:e072f174349c01174443bbb27e0209d96bfabd0d68e721133f0916752667c95e"
+size = 1032682
+mtime_ms = 1791035454593
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/4082326f-ad4a-404d-a594-a269ee34895a/9a8dac06-0734-40ea-8aa0-48b2e46cb61b"
+storage_version_token = "1791035506160203"
+content_type = "image/png"
+
+[[outputs]]
+id = "7ZCH9xUSgrywYS1XUj4eb"
+uri = "file://exports/Uploaded-Equipment-All-Variants.zip"
+type = "unspecified"
+title = "جميع الآليات — الأجزاء المتحركة والخامات"
+description = "الحزمة الكاملة: ١٢ ملف FBX مستقلًا، وملف Blender قابل للتحرير، وخامات ومعاينات ودليل عربي. جميع أجزاء المصدر محفوظة، والنسخ الناقصة موضحة. بلا ملفات .meta جديدة؛ لم تُختبر داخل Unity."
+logical_id = "255ee990-a3d2-4a5a-9745-172f62baf096"
+content_hash = "sha256:85962be6cc720331b843e48d83f780b83985e83aae3414be9abadf88e50df5ea"
+size = 41392411
+mtime_ms = 1791037358320
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/255ee990-a3d2-4a5a-9745-172f62baf096/d0cac90f-07f8-4a12-aa33-80a93e8c79b7"
+storage_version_token = "1791037382246614"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "updD83WIk98ZlBc5az1LM"
+uri = "file://exports/uploaded-equipment/Motion_Preview.gif"
+type = "image"
+title = "معاينة حركة الآليات"
+description = "معاينة فعلية من Blender لرفع الذراع والدلو وشفرة البلدوزر وصندوق القلاب، ثم حركة الجنزير والعجلات. ليست محاكاة تفريغ حمولة أو لقطة من Unity."
+logical_id = "fed7f602-ce4e-4748-804f-dda5e7e465c4"
+content_hash = "sha256:52da10c97f9827646383cb98ed9a0409111ed2a45776f3813729533f89011d00"
+size = 694234
+mtime_ms = 1791037116949
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/fed7f602-ce4e-4748-804f-dda5e7e465c4/33a4a599-7704-43bd-98ad-06c0bef66a47"
+storage_version_token = "1791037383611557"
+content_type = "image/gif"
+
+[[outputs]]
+id = "Ar6fwjZ_PByyj9gNSER6b"
+uri = "file://exports/uploaded-equipment/All_Variants_Parked.png"
+type = "image"
+title = "جميع النسخ بعد الفصل والتلوين"
+description = "الآليات الرئيسية والنماذج والأجزاء الأصغر، بخامات الطلاء والمعدن والمطاط والزجاج الداكن. معاينة من ملف Blender المُسلّم؛ بعض التشوهات الأصلية ما زالت موجودة."
+logical_id = "93caba84-cc0c-46d9-9476-79ff019a64df"
+content_hash = "sha256:34f53a3b67660fd382bb497368b5314272054045f4367e95c554390b4c1574c8"
+size = 2065500
+mtime_ms = 1791036802920
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/93caba84-cc0c-46d9-9476-79ff019a64df/372d620a-f0b4-437d-a578-11ebf48a627c"
+storage_version_token = "1791037431581720"
+content_type = "image/png"
+
+[[outputs]]
+id = "H78VIg26bQ9Gli8FFl9Va"
+uri = "file://exports/NewGaza-Free-Build-Update.zip"
+type = "unspecified"
+title = "تحديث New Gaza — البناء الحر وإزالة الدمار"
+description = "حزمة تحديث لمشروع Unity الحالي: المتجر والمباني التجريبية ومواقع الإزالة ومسارات المخازن وحفظ التقدم. ادمج المجلدات داخل مشروع Unity واقرأ INSTALL.ar.txt. دون ملفات .meta جديدة؛ ليست APK أو مشروعًا مستقلًا."
+logical_id = "4fc9720f-00ac-4102-a77b-6b898de67887"
+content_hash = "sha256:60b73dfd6b82d04ab83cf4b989284da9bda3187f75521fe5f409642d18c14f87"
+size = 109656
+mtime_ms = 1791039812230
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/4fc9720f-00ac-4102-a77b-6b898de67887/be864df2-e9e5-4320-90a9-706f452d1849"
+storage_version_token = "1791039847736926"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "CqxIMHid1SX5lkpUSKa91"
+uri = "file://exports/typography/NewGaza-Unicode-Font-Proof.png"
+type = "image"
+title = "معاينة خطوط New Gaza العربية"
+description = "صورة من ملفات الخطوط الفعلية ومنسّق العربية في اللعبة: Cairo للعناوين، Tajawal للنصوص والأزرار، Roboto للأرقام والإنجليزية. ليست لقطة من Unity."
+logical_id = "f6f5eff9-9e41-4364-97b8-aba7a49e74b0"
+content_hash = "sha256:ca50b4be19385c0b0aa0cea1ad8dc4487bbe8c30729208c3a1522c0c259d0a25"
+size = 64489
+mtime_ms = 1791040567510
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/f6f5eff9-9e41-4364-97b8-aba7a49e74b0/d6cf14f8-9b65-4a34-a171-06e7df1b2b62"
+storage_version_token = "1791040825304358"
+content_type = "image/png"
+
+[[outputs]]
+id = "To9toGA_x6tHsAD80FKMf"
+uri = "file://exports/typography/NewGaza-Unicode-Typography-Update.zip"
+type = "unspecified"
+title = "تحديث خطوط اللعبة — Unicode وRTL"
+description = "حزمة Unity تراكمية تشمل الخطوط المفعّلة والتراخيص وتوحيد الأحجام، مع الاحتفاظ بتحديث البناء الحر السابق. ادمجها داخل المشروع واقرأ INSTALL.ar.txt وTYPOGRAPHY.ar.md. دون ملفات .meta جديدة."
+logical_id = "b7cb7c4e-0889-4cdc-ac51-efbaa0470b54"
+content_hash = "sha256:4ad45d113395b6e724fb02047614a1be472c0782b55fcfcc94e47d63d38b5a95"
+size = 1092621
+mtime_ms = 1791040789082
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/b7cb7c4e-0889-4cdc-ac51-efbaa0470b54/2f30d902-9425-4884-b304-169f9ed2ca16"
+storage_version_token = "1791040826653563"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "MBixXghCcDDXKOkYBx8sK"
+uri = "file://testingReplic/Assets/NewGaza/Resources/Menu/MenuIcons.png"
+type = "image"
+title = "أيقونات الواجهة المستخدمة"
+description = "أيقونات موحّدة مستوحاة من المرجع: المخزن والمعدات والطريق والمتجر والهدايا والعملات والمواد والمصنع. هذه الأيقونات الفعلية، وليست لقطة لواجهة Unity."
+logical_id = "43715a7d-b4c3-4974-a5d4-8ac1c88a0487"
+content_hash = "sha256:cdec8d068c6e97b149f7f77e66c01c20e4c1acd310853c9039ca98114b3cd904"
+size = 1087881
+mtime_ms = 1791041652810
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/43715a7d-b4c3-4974-a5d4-8ac1c88a0487/6af93022-209c-48f3-b2c6-ba48d5597bfb"
+storage_version_token = "1791042567050214"
+content_type = "image/png"
+
+[[outputs]]
+id = "rZxIEw6uPTzxFlGkX077J"
+uri = "file://exports/menu/NewGaza-Main-Menu-Update.zip"
+type = "unspecified"
+title = "تحديث الرئيسية والقوائم — New Gaza"
+description = "حزمة Unity تراكمية تضم الواجهة المرتبطة بمنطق اللعبة والأيقونات وتحديثي الخطوط والبناء السابقين. ادمجها داخل مشروع Unity واقرأ INSTALL.ar.txt وMAIN_MENU.ar.md. دون ملفات .meta جديدة."
+logical_id = "99b2e548-1767-417e-9dd8-15e0046ac79a"
+content_hash = "sha256:a2ae7320e997c8286e3c8e56754b197765faf382b71c980b2615a6fb7b836468"
+size = 2195774
+mtime_ms = 1791042441019
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/99b2e548-1767-417e-9dd8-15e0046ac79a/9515ddf5-8830-4c4d-92fa-1c307ba3a98f"
+storage_version_token = "1791042568391781"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "1llC055i2A3nYQaEMe7ds"
+uri = "file://exports/animation/NewGaza-Visual-Effects-Update.zip"
+type = "unspecified"
+title = "تحديث المؤثرات والحركة — New Gaza"
+description = "حزمة Unity تراكمية: حركة الأزرار والتقدم والعملات والمكافآت والإنجازات وفتح الأحياء، وسيور المصانع. تشمل تحديثات الرئيسية والخطوط والبناء السابقة، دون ملفات .meta جديدة. اقرأ INSTALL.ar.txt وVISUAL_EFFECTS.ar.md."
+logical_id = "c58f6919-4f35-4ab6-b439-978d4ea1e662"
+content_hash = "sha256:c5d8e768e204b58cb2276e12705e7c78c4b097a07f345eb4c8feba7d8fd3f57b"
+size = 2208674
+mtime_ms = 1791043638669
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/c58f6919-4f35-4ab6-b439-978d4ea1e662/f87a80b1-01ab-45ee-b5c5-09ce24801649"
+storage_version_token = "1791043689683627"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "x9mOvyKvcOG6nNa4lZ066"
+uri = "file://exports/economy/NewGaza-Economy-Equipment-Update.zip"
+type = "unspecified"
+title = "تحديث اقتصاد الركام والبداية وترقيات المعدات"
+description = "حزمة Unity تراكمية تشمل التحديثات السابقة: عائد الركام ثلث سعر وحدته، مصنع بموقع يختاره اللاعب، وثلاث ترقيات مستقلة لكل آلة بنصف سعر شرائها الأصلي. دون ملفات .meta جديدة. دليل ECONOMY-ONBOARDING.ar.md داخل الحزمة."
+logical_id = "0ad047bd-80a2-41d6-a1b2-260f5fd14d29"
+content_hash = "sha256:8ce4a2d5391ad1e55f3cb314c9f5ce9c440708ffee2ef86988254fbf594cd8f9"
+size = 2216193
+mtime_ms = 1791048961992
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/0ad047bd-80a2-41d6-a1b2-260f5fd14d29/ea4a1bb2-0ca9-4f51-a174-3f4dcaed8892"
+storage_version_token = "1791049008508422"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "toK9CtUnmv7tlJS14Hkd4"
+uri = "file://exports/fixes/NewGaza-Camera-Save-Fix.zip"
+type = "unspecified"
+title = "إصلاح خطأ Invalid saved camera"
+description = "إصلاح Unity صغير فوق مشروعك الحالي: استبدال ملفين داخل Assets دون حذف الحفظ أو ملفات .meta. يعيد ضبط العرض غير الصالح فقط، ويحفظ الملف الأصلي والتقدم، مع دليل تثبيت عربي."
+logical_id = "322a9ba1-3d8e-4782-9045-251795d7bccd"
+content_hash = "sha256:dc5f67e5d514da92c87e17f7901a274006ed41140d4a71f513e7e78d17efcb54"
+size = 5005
+mtime_ms = 1791098704599
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/322a9ba1-3d8e-4782-9045-251795d7bccd/0f2ae7b5-e436-44e9-8215-9bf1e41061c1"
+storage_version_token = "1791098777123393"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "5tGe53YoqnZihXaT6Ltu5"
+uri = "file://exports/fixes/NewGaza-Pointer-Camera-Fix.zip"
+type = "unspecified"
+title = "إصلاح أخطاء مؤشر الكاميرا في Unity"
+description = "حزمة إصلاح فوق المشروع الحالي: تمنع إسقاط قيم inf/-inf والمؤشر خارج النافذة، وتشمل إصلاح تحميل الحفظ السابق. دون ملفات .meta جديدة. اقرأ POINTER-CAMERA-FIX.ar.md، ولا تحذف الحفظ."
+logical_id = "ed7295e9-fdc2-47ff-a809-3d48966e09f5"
+content_hash = "sha256:b050e0513fd7f13794093617f796be192cc76b5a95bb3b32da70397f3c377ead"
+size = 15879
+mtime_ms = 1791099265682
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/ed7295e9-fdc2-47ff-a809-3d48966e09f5/376256e3-4347-496d-8315-084725864edc"
+storage_version_token = "1791099308069929"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "-uSjcRaHXBH5YgQzSlhh_"
+uri = "file://exports/fixes/NewGaza-Responsive-UI-Fix.zip"
+type = "unspecified"
+title = "إصلاح تحجيم واجهة Unity وإغلاق النوافذ"
+description = "تحديث فوق المشروع الحالي: تحجيم موحد للـ Canvas والمنطقة الآمنة، نوافذ أوضح وأزرار إغلاق، ومنع تراكب المتجر والصفحات. يشمل إصلاحات الكاميرا والحفظ السابقة، دون .meta جديدة. دليل RESPONSIVE-UI-FIX.ar.md داخل الحزمة."
+logical_id = "8589dbbf-1dea-42b4-9a98-8c353797b168"
+content_hash = "sha256:a8137ac76e56d366df22c46045c4850d0dac4dd2e1e0c75d0a1418b322c3c92b"
+size = 51794
+mtime_ms = 1791100357096
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/8589dbbf-1dea-42b4-9a98-8c353797b168/2ca05da1-e4d2-4919-9549-4cdafa4fff9a"
+storage_version_token = "1791100444570042"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "2lt9Mf2OCgYSIdvXf2pEU"
+uri = "file://exports/fixes/NewGaza-Faster-Zoom-Update.zip"
+type = "unspecified"
+title = "تحديث سرعة التكبير والتصغير"
+description = "زوم أسرع بعجلة الفأرة وحركة الإصبعين، مع استجابة أسرع للكاميرا وحدود الزوم نفسها. يشمل إصلاحات الواجهة والكاميرا والحفظ السابقة، دون ملفات .meta جديدة."
+logical_id = "a9b893ed-acbc-4f86-88bc-379d703f9613"
+content_hash = "sha256:cf03e66a189b06e0d3e7bd57b1f2745b1887a4ebfe5d9919a2ad194d8a2e2763"
+size = 52650
+mtime_ms = 1791100560292
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/a9b893ed-acbc-4f86-88bc-379d703f9613/38228825-502d-4d37-8ed6-4718c88c9dfd"
+storage_version_token = "1791100694240208"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "u7LnVLwYUe0U5fR8Frhqb"
+uri = "file://exports/fixes/NewGaza-Development-Save-Fix.zip"
+type = "unspecified"
+title = "تحديث توافق حفظ مواقع البناء"
+description = "يعالج المراجع الاختيارية الفارغة دون حذف التقدم، ويحفظ نسخة أصلية ويضيف تفاصيل لأخطاء التحقق. يشمل إصلاحات الواجهة والزوم السابقة، دون .meta جديدة. ملف الحفظ الأصلي لم يُفحص هنا."
+logical_id = "fd761325-573b-4f54-b262-4c1fa8befb78"
+content_hash = "sha256:0e67ea7a4f71412e39ab7e0fcb95d04bcdc8eba4410fa513b92f9e31f6a2b177"
+size = 59499
+mtime_ms = 1791103153084
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/fd761325-573b-4f54-b262-4c1fa8befb78/f4d2d6da-b407-4b11-b6e6-1604377d7a82"
+storage_version_token = "1791103182005671"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "lRA-yxvLm2pxDnkl8WF9y"
+uri = "file://exports/fixes/NewGaza-Destroyed-City-Update.zip"
+type = "unspecified"
+title = "تحديث Unity — مدينة مدمّرة ومتنوعة"
+description = "123 ملفًا: المجسّمات والخامات والربط الفعلي بخلفية الخريطة، مع إصلاحات الحفظ والواجهة والزوم السابقة. بدون .meta؛ لا يمسح الحفظ. فُحصت الملفات والمعاينات، لكن Unity Editor غير متاح هنا."
+logical_id = "9df15c19-d193-42be-9214-115020a068ba"
+content_hash = "sha256:368ea7b6156a1e339cf407d7cf21b63bfc48da94c9a8a0a8ed1dfc18a44480d0"
+size = 17404271
+mtime_ms = 1791106314219
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/9df15c19-d193-42be-9214-115020a068ba/b658d325-2b20-4794-8029-d08c9a60d8a9"
+storage_version_token = "1791106370888735"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "GT9uEZXt-ZrHgL2leABzQ"
+uri = "file://exports/destroyed-assets/Destroyed-Context.png"
+type = "image"
+title = "معاينة أنواع الدمار الأربعة"
+description = "معاينة أصول FBX الفعلية في Blender: انهيار خرسانة، جدران مكسورة، طوابق متراكمة، وردم ووحدات مجوّفة. ليست لقطة Unity."
+logical_id = "684742a2-d510-4c5d-b21d-530cb1c8e927"
+content_hash = "sha256:76e9bcb4dd536e86dca51fc4c9990dc03324aa50d75b984615494bc8532175cf"
+size = 720415
+mtime_ms = 1791106241047
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/684742a2-d510-4c5d-b21d-530cb1c8e927/643a5d6c-f1e8-47a9-b86c-c7960127d448"
+storage_version_token = "1791106372220579"
+content_type = "image/png"
+
+[[outputs]]
+id = "ziZffAID6ZGBO8A9uHwet"
+uri = "file://exports/fixes/NewGaza-Salvage-Scenario-Update.zip"
+type = "unspecified"
+title = "تحديث Unity — إزالة الركام وبيع الموارد"
+description = "حزمة تراكمية تشمل المصنع والمعدات والرحلة والعمل والعودة، والموارد للبيع والبناء بالمال فقط، مع تحديث الدمار والإصلاحات السابقة. 130 ملفًا، دون .meta جديدة. تتضمن تعليمات التثبيت؛ لا تحذف الحفظ."
+logical_id = "45044f41-8bc6-42a6-a2cb-bec648f6ef51"
+content_hash = "sha256:080c426e33df4448d35309b3e5d610a8286254dc0fa10fbd985bc6f264a0d337"
+size = 17437528
+mtime_ms = 1791107000907
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/45044f41-8bc6-42a6-a2cb-bec648f6ef51/3b61d1e1-0ee2-4e1f-9dac-f2d53b73a3b5"
+storage_version_token = "1791107012175458"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "u-8VAPwfNvi6FKD8BtCgR"
+uri = "file://exports/fixes/NewGaza-Million-Dense-City-Update.zip"
+type = "unspecified"
+title = "تحديث Unity — مليون عملة ودمار كثيف وعلامات المصانع"
+description = "حزمة تراكمية: مليون عملة للبداية وللحفظ القديم مرة واحدة، أمر إعادة ضبط مع أرشفة الحفظ، علامات مصانع التدوير، و4,800 نموذج مبنى مدمر موزّعة على الخريطة. تتضمن التحديثات السابقة وتعليمات التثبيت، دون ملفات .meta جديدة."
+logical_id = "a84872bd-70ef-4ea7-8160-b0be9ffacc40"
+content_hash = "sha256:eeb5fb79ab9507f9189bc79e4d0459daefb732531877dfae2b6111f5040ce6c4"
+size = 17448213
+mtime_ms = 1791108024711
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/a84872bd-70ef-4ea7-8160-b0be9ffacc40/1c03ee0f-2a5d-419a-8af9-5593bb39e203"
+storage_version_token = "1791108032321417"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "bAH7QQXHQ6fJiI5t1nmHF"
+uri = "file://exports/fixes/NewGaza-UnityAction-Fix.zip"
+type = "unspecified"
+title = "إصلاح خطأ UnityAction"
+description = "تحديث صغير يحتوي فقط على CityDevelopmentUI.cs المصحح. فك الحزمة داخل مشروع Unity واستبدل الملف. لا يمس الحفظ ولا يضيف ملفات .meta."
+logical_id = "3072910d-3960-4f9b-a757-6e9688967b3b"
+content_hash = "sha256:b6def639f2603b4af63eae12ba9866db56b7674c99e6410462bbf59eb16e7a79"
+size = 6629
+mtime_ms = 1791108205198
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/3072910d-3960-4f9b-a757-6e9688967b3b/651ad405-c204-4492-a94a-319e0577ba9f"
+storage_version_token = "1791108236313007"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "tmFp3tzeQxfaJQQTLJwod"
+uri = "file://exports/fixes/NewGaza-Interactive-Rubble-Smooth-Rotation.zip"
+type = "unspecified"
+title = "تحديث Unity — إزالة الدمار والتدوير المستمر"
+description = "حزمة محدثة تشمل النقر على مباني الخلفية وإزالتها مع حفظ التقدم، والتدوير السلس أثناء الضغط. تضم الإصلاحات السابقة وتعليمات التثبيت بالعربية، دون ملفات .meta."
+logical_id = "e3395f92-5f76-4a5b-b65d-6bef97d8a12c"
+content_hash = "sha256:41fdd791ba7298f6a430f41db7834071ec13e90cbd5ec29d8e7801bd7e56b6b9"
+size = 47311156
+mtime_ms = 1791110092471
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/e3395f92-5f76-4a5b-b65d-6bef97d8a12c/48a625d3-ffe7-4178-915d-4389d6fa2608"
+storage_version_token = "1791110107550089"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "lyhcyN-EKBbDanxcDq678"
+uri = "file://exports/fixes/NewGaza-Dense-Ruins-No-Cubes-Factory-Icon.zip"
+type = "unspecified"
+title = "دمار كثيف دون المكعبات — وأيقونة مصنع التدوير"
+description = "تحديث Unity تراكمي: 8,000 مجسم دمار موزع على الأحياء، ركام وشظايا بدل الأرضيات الكبيرة الصلبة، وأيقونة تدوير قابلة للضغط مع هالة حول المصنع. يحافظ على الحفظ والإصلاحات السابقة، ودون ملفات .meta."
+logical_id = "7dd17a07-661c-4208-b75f-91b1260af2e6"
+content_hash = "sha256:e59af25a480871e52212fe9f63c875b751265289ecc5ad42730e71ab95b251b2"
+size = 47312982
+mtime_ms = 1791110698575
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/7dd17a07-661c-4208-b75f-91b1260af2e6/3da5386c-f6ed-420e-8839-3a23284a5125"
+storage_version_token = "1791110730529514"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "4c_qrMajU0tZKO_ddDz6O"
+uri = "file://exports/fixes/NewGaza-HUD-Activity-Navigation-Buttons-Fix.zip"
+type = "unspecified"
+title = "إصلاح نافذة العمل والقائمة والأزرار"
+description = "حزمة Unity تراكمية: حالة عمل صحيحة مع إغلاق محفوظ، إظهار اسم الحي، توزيع الأزرار الستة داخل الشاشة، مؤثرات أزرار أوضح وإصلاح انتظار المسار الاحتياطي. تحافظ على الحفظ وتشمل التحديثات السابقة، دون ملفات .meta."
+logical_id = "3766633f-bba3-46f3-85a8-03558d043c1c"
+content_hash = "sha256:59c81a76c46050325941a37b65c2641e58b0883af1c5fa3676d02580196452a2"
+size = 47315160
+mtime_ms = 1791111448098
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/3766633f-bba3-46f3-85a8-03558d043c1c/f0bf80ca-6d5c-4bd4-8057-50375b006b60"
+storage_version_token = "1791111457799284"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "ya3-N_IuZuDxmVqNF3Ioj"
+uri = "file://exports/fixes/NewGaza-Construction-Workers-And-Farmers.zip"
+type = "unspecified"
+title = "تنويع حركة العمال والمزارعين"
+description = "حزمة Unity تراكمية: حمل الحجارة وضرب المطرقة ومشرف بمخطط، ومزارعون للبذر والسقاية والعزق حسب نوع المنشأة. تشمل الإصلاحات السابقة وتحافظ على الحفظ، دون ملفات .meta."
+logical_id = "f7b95ab2-bb2b-4a1e-b48b-583d6effa485"
+content_hash = "sha256:4e42848fca7fef3f82abcfa6d419afe9fd76616bcf982adc1f6c2d96f665ff75"
+size = 47317766
+mtime_ms = 1791112236771
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/f7b95ab2-bb2b-4a1e-b48b-583d6effa485/58840bf4-ece4-4a4b-bebf-5eeda5cb5165"
+storage_version_token = "1791112251653979"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "bzQ-YNHxVupEnZFQAU9G7"
+uri = "file://exports/fixes/NewGaza-Proportional-Workers-Rubble-Scale.zip"
+type = "unspecified"
+title = "تناسُب أحجام العمال والركام والمعدات"
+description = "حزمة Unity تراكمية: العمال نحو 1.7م، كومة الركام الرئيسية أطول من الشاحنة بنحو 31%، وضبط أدوات العمال ومساراتهم وحدود الضغط. تتضمن ملف مقارنة الأحجام وتحافظ على الحفظ، دون ملفات .meta."
+logical_id = "e2a2866a-7807-400c-9745-9801f94bbfa3"
+content_hash = "sha256:7c8035800a56deeec1e3aec83c69180196b19be06827d24f02f6ddd6999c082f"
+size = 47319040
+mtime_ms = 1791112890642
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/e2a2866a-7807-400c-9745-9801f94bbfa3/acc878a1-207e-453d-9e4c-91cf4795bd0c"
+storage_version_token = "1791112900259886"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "PAFT5ZIaLP_yc6mOxtKiN"
+uri = "file://exports/fixes/NewGaza-Clear-Rubble-Button-Response-Fix.zip"
+type = "unspecified"
+title = "إصلاح استجابة زر إزالة الدمار"
+description = "حزمة Unity تراكمية: استقبال الضغط فوق HUD، رسائل السبب داخل نافذة العمل، وبدء الإرسال أو عرض المهمة الجارية دون إعادة المؤقت. تشمل التحديثات السابقة وتحافظ على الحفظ، دون ملفات .meta."
+logical_id = "5b440c11-f75b-4dd3-9fcb-3f92d537ac10"
+content_hash = "sha256:9608dd84334d2dcea1b091784fa7e4fed2b1398429302a01b75d2b5e7b1bac15"
+size = 47320806
+mtime_ms = 1791124308775
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/5b440c11-f75b-4dd3-9fcb-3f92d537ac10/3b291354-0576-4b92-a665-3c8e9aa955db"
+storage_version_token = "1791124354819161"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "LEvda8T8fIQ2ezkdYGjk6"
+uri = "file://exports/fixes/NewGaza-Zoom-Performance-And-Fleet-Markers.zip"
+type = "unspecified"
+title = "تخفيف تقطيع الزوم وأيقونات مواقع الآليات"
+description = "حزمة Unity تراكمية: حفظ متسلسل في الخلفية بدل تعطيل إطار اللعبة، وتخفيف تحديثات الواجهة، وأيقونات فعلية للحفارة والشاحنة والجرافة تتلاشى عند الاقتراب. تحافظ على الحفظ وتشمل الإصلاحات السابقة، دون .meta."
+logical_id = "bdb89957-6e7c-4c24-856c-0da458f70017"
+content_hash = "sha256:22c4c1633c246795bc9aa19b94e2690eca19dfdd8a5f216fc4215d7cac2496f9"
+size = 47327102
+mtime_ms = 1791126578435
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/bdb89957-6e7c-4c24-856c-0da458f70017/6b33e666-98b6-4016-9a0c-11ae42b3f855"
+storage_version_token = "1791126610159877"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "73wUZyX3EGEVUraMdTIC0"
+uri = "file://exports/fixes/NewGaza-Active-Work-Locator.zip"
+type = "unspecified"
+title = "زر موقع العمل وعلامة حالة إزالة الدمار"
+description = "حزمة Unity تراكمية: زر ينقل الكاميرا ويزوّم على المهمة الجارية، وعلامة فوق الموقع تعرض مرحلة العمل. تشمل إصلاحات الزوم وأيقونات الآليات السابقة، وتحافظ على التقدم دون ملفات .meta."
+logical_id = "955f1da3-bd5b-4e35-88d9-3eaf713d62bd"
+content_hash = "sha256:228a52a0d3d9222e622addb64357f535fee91fea3753a53b4760658768077c5b"
+size = 47330688
+mtime_ms = 1791127136983
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/955f1da3-bd5b-4e35-88d9-3eaf713d62bd/88b23d48-0e8e-489d-999f-accc55bcc548"
+storage_version_token = "1791127145344602"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "tEyPBAdh_dpw5NUBqiibw"
+uri = "file://exports/fixes/NewGaza-UI-Centered-Content-Polish.zip"
+type = "unspecified"
+title = "تحديث محاذاة ومسافات وثيم الواجهة"
+description = "حزمة Unity تراكمية: نصوص أزرار في المنتصف، حشو داخلي ومقاسات متوازنة، ترتيب مناسب للأيقونات، وتنسيق موحّد للقوائم والمتجر والبناء بألوانك وخطوطك الحالية. تشمل الإصلاحات السابقة ودون ملفات .meta."
+logical_id = "7fcf4c77-023b-4b3e-a934-066082ad4821"
+content_hash = "sha256:c10587e544b7ee6fb727216be517eee2753199e6ea4b5a9ba25ec60ffa355cc5"
+size = 47334646
+mtime_ms = 1791127923510
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/7fcf4c77-023b-4b3e-a934-066082ad4821/d82e7aff-4337-4a64-ba36-26defebb70cc"
+storage_version_token = "1791127962439911"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "Epb_4g8cBBWuKvlWAg0de"
+uri = "file://exports/fixes/NewGaza-Live-Activities-UX.zip"
+type = "unspecified"
+title = "واجهة الأحداث ومواقع العمل — تحديث تراكمي"
+description = "زر «ما يحدث الآن» في الرئيسية و«الأحداث» على الخريطة، انتقال إلى مواقع العمل والبناء والدخل والمكافآت والآليات، وعلامات تظهر من بعيد وتتلاشى عند الاقتراب. تشمل تحسينات الواجهة السابقة ودون ملفات .meta. نجحت الفحوص المتاحة؛ لم يتم تشغيل العرض داخل Unity أو هاتف."
+logical_id = "c130d267-3bb2-451e-802e-625ebeebcb41"
+content_hash = "sha256:0b69724f8cd80ea272dbd051cf543e6d7f2bc11346e84a3cd2dfd3ba80731cd5"
+size = 47342613
+mtime_ms = 1791181956171
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/c130d267-3bb2-451e-802e-625ebeebcb41/906b84a1-5ddc-4762-b50d-76448170e32f"
+storage_version_token = "1791181978612298"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "KKzdFjy1tmgHbyo7JZmzq"
+uri = "file://exports/Meshy_Excavator_MobileSplit.zip"
+type = "unspecified"
+title = "Separated excavator — FBX + Blender package"
+description = "Standalone review asset with seven parts, editable pivots, 19,500 triangles, solid-color materials, previews and instructions. No .meta files; the existing game asset is unchanged."
+logical_id = "fcd02639-cc1c-4388-b038-269cb741d242"
+content_hash = "sha256:c34025f2139f5f34d1850a721503b68c25aca260d4b3fce0c6789a49cb11ec85"
+size = 3723950
+mtime_ms = 1791276681777
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/fcd02639-cc1c-4388-b038-269cb741d242/70a65d7e-c9ef-4bd2-bd5e-bcf96908cae7"
+storage_version_token = "1791276711546848"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "f3BiIEnlthVwEnTVaSAqm"
+uri = "file://exports/meshy_excavator/fbx_roundtrip_preview.png"
+type = "image"
+title = "Prepared excavator preview"
+description = "Offline CPU render of the exported FBX after re-import. Replacement solid colors; not the original Meshy textures or a Unity/device screenshot."
+logical_id = "036dfeb7-9223-4583-bcbc-d9f77e76ad25"
+content_hash = "sha256:139df7400532f3cf24f6eb3d51cbd2fb3cf14f3c3917eb914a9d596005e821f9"
+size = 1003847
+mtime_ms = 1791276591709
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/036dfeb7-9223-4583-bcbc-d9f77e76ad25/bd7d1c9c-f32e-4dfc-87e7-312f940bf0e4"
+storage_version_token = "1791276713037551"
+content_type = "image/png"
+
+[[outputs]]
+id = "q4_KbeJZYepvKXbMgG_bv"
+uri = "file://exports/Meshy-Excavator-Game-Art.zip"
+type = "unspecified"
+title = "حزمة حفار Meshy للعبة"
+description = "حزمة المجسم التي يحتاجها خيار Use Meshy excavator. فك الضغط في جذر مشروع Unity، بجانب Assets وليس داخله. تم فحص الحزمة ومطابقة ملف المجسم؛ لا تحتوي على ملفات .meta."
+logical_id = "d7d08fc3-2899-403d-953f-68cbf5940e99"
+content_hash = "sha256:b63f0bb8dcf579ef1a9dbd744002ba3321e608401d90d2a0309e8938e3779c7f"
+size = 644856
+mtime_ms = 1791277873228
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/d7d08fc3-2899-403d-953f-68cbf5940e99/5d557845-a72e-43cc-8292-7e20c3ec20bc"
+storage_version_token = "1791293210422078"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "Un1Zjb-z_3yz_xVmcUFX_"
+uri = "file://exports/meshy_excavator/Meshy-Game-Retarget-Offline.png"
+type = "image"
+title = "New excavator — offline parked-pose preview"
+description = "CPU-rendered review of the Meshy surfaces fitted to the existing game joints. Not a Unity screenshot or device-performance result."
+logical_id = "58ffa1fe-6434-44f5-a5d2-562d1c1623d3"
+content_hash = "sha256:212e91241cecd70402b88d62a4450fcee642ccc514a8e72d1b449e918b0e956d"
+size = 1053492
+mtime_ms = 1791277714769
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/58ffa1fe-6434-44f5-a5d2-562d1c1623d3/5893806d-01ae-45b9-afd6-fd5c6620aadb"
+storage_version_token = "1791278020516287"
+content_type = "image/png"
+
+[[outputs]]
+id = "XNCzXwSvLN2QVOmtmKzqt"
+uri = "file://exports/NewGaza-Ground-Art.zip"
+type = "unspecified"
+title = "خامات الأرض والرمال للعبة"
+description = "ثلاث خامات شبه واقعية بدقة 1024×1024 مع دليل تركيبها في Unity. فك الضغط في جذر مشروع Unity بعد تحديث الكود. لا تحتوي الحزمة على ملفات .meta."
+logical_id = "8a2a67fb-e7f5-432a-b9be-e046140cece5"
+content_hash = "sha256:32beb634ffa86a2af8af4e41165054da5cd400e47ab9ae6025786bbee6634c54"
+size = 6992592
+mtime_ms = 1791279757441
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/8a2a67fb-e7f5-432a-b9be-e046140cece5/4520e701-dd65-4b80-a086-bd28cdc26f35"
+storage_version_token = "1791279901656535"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "LMCCQRLOeuZF5znCe7gQK"
+uri = "file://exports/ground/Ground-Texture-Review.jpg"
+type = "image"
+title = "معاينة خامات الأرض والتكرار"
+description = "أرض حضرية حجرية، رمال ساحلية، وتربة بغطاء نباتي جاف. الصف السفلي يعرض تكرار كل خامة 4×4؛ هذه معاينة صور وليست لقطة من Unity."
+logical_id = "9a73ca9c-da11-41f1-aae9-684cbc252e5e"
+content_hash = "sha256:8e4419db87c677aba65a134c326c9ba9a8fb25432041a3ffa9d0dc4cc5cde988"
+size = 529155
+mtime_ms = 1791279757197
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/9a73ca9c-da11-41f1-aae9-684cbc252e5e/6503d03e-3dd6-4534-8881-078d091346d7"
+storage_version_token = "1791279903202343"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "akAjFMD7RPVy988dPInX3"
+uri = "file://exports/MeshyExcavator-Required-File.zip"
+type = "unspecified"
+title = "ملف مجسّم الحفار الناقص فقط"
+description = "يحتوي على MeshyExcavator.bytes وحده. فك ضغطه مباشرة داخل Assets/NewGaza/Resources/Equipment، في المجلد الظاهر في صورتك. لا يحتوي على ملفات .meta."
+logical_id = "661d33e9-44cd-41a1-abfc-b08f98601c46"
+content_hash = "sha256:9a807197c2ea964954cb5d0184da79e19169afe1fe06381b3ee833d70c7b7ac1"
+size = 642774
+mtime_ms = 1791293328630
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/661d33e9-44cd-41a1-abfc-b08f98601c46/8d42d8d7-6e97-4b0a-a74e-19da53d0c1cb"
+storage_version_token = "1791293337710183"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "KZ-nLRvUvHPqwFUtLjchu"
+uri = "file://attached_assets/generated_images/gaza_2d_game_concept.png"
+type = "image"
+title = "تصوّر تقريبي للعبة غزة بأسلوب 2D"
+description = "رسم تصوري لواجهة لعبة بناء مدن ثنائية الأبعاد: مبانٍ مستوحاة من عمارة غزة، أسطح وخزانات مياه، حطام، شوارع ومعدات. هذه صورة مولّدة لتوضيح الاتجاه الفني؛ ليست لقطة من اللعبة أو نموذجًا نهائيًا."
+logical_id = "ae32faf4-fb1b-4e9d-859d-e763b5c3434c"
+content_hash = "sha256:2a8ba3c88e877b0009743b5ac52a7fc50bb3c2f725f19f2c73fbaafc56c09a49"
+size = 2707289
+mtime_ms = 1791296590358
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/ae32faf4-fb1b-4e9d-859d-e763b5c3434c/103aa0d7-64ad-4711-b376-10b71991d4e5"
+storage_version_token = "1791296611608841"
+content_type = "image/png"
+
+[[outputs]]
+id = "0AtMu1eDoPD69gboa6Txh"
+uri = "file://attached_assets/generated_images/gaza_2d_rebuilt_neighborhood.png"
+type = "image"
+title = "تصوّر حيّ غزة بعد اكتمال البناء"
+description = "مبانٍ سكنية مكتملة ومتنوعة بأسلوب لعبة مدن ثنائية الأبعاد، مع أسطح مسطحة وخزانات مياه وشرفات وأحياء قريبة من الساحل. رسم تصوري، وليس صورة من اللعبة أو مرجعًا معماريًا موثقًا."
+logical_id = "d127741b-9748-44d4-82b8-3b243a6a0b67"
+content_hash = "sha256:7e9fb66fb02abd5ed8ede5720cb290df5310795062aa3ff5ccb7ff6b0b502cee"
+size = 2530201
+mtime_ms = 1791296723138
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/d127741b-9748-44d4-82b8-3b243a6a0b67/613e7976-4999-44dd-bba7-7e3a83c662a4"
+storage_version_token = "1791296745136586"
+content_type = "image/png"
+
+[[outputs]]
+id = "UjW_H4_OmSDakTOFz2wkI"
+uri = "file://attached_assets/generated_images/gaza_2d_damaged_rubble_neighborhood.png"
+type = "image"
+title = "تصوّر حيّ متضرر ومليء بالركام بأسلوب 2D"
+description = "رسم تصوري لحيّ تظهر فيه مبانٍ بأضرار متفاوتة وأكوام ركام، مع حفار وشاحنة لإزالة الأنقاض. مشهد للعبة، وليس صورة وثائقية أو لقطة فعلية منها."
+logical_id = "3b2b7a45-ee42-4cda-a5c0-c574c3699177"
+content_hash = "sha256:eafb3a2c6fcff5a05b39c91b609c7a7233009fbf27b5ca4484575a0ed21ef403"
+size = 2878359
+mtime_ms = 1791296824982
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/3b2b7a45-ee42-4cda-a5c0-c574c3699177/17ad309f-0758-40c1-b568-3791d508784b"
+storage_version_token = "1791296840764685"
+content_type = "image/png"
+
+[[outputs]]
+id = "qBd6tJUEWvkd0ibKShRFk"
+uri = "file://attached_assets/generated_images/gaza_realistic_total_destruction.png"
+type = "image"
+title = "تصوّر واقعي لحيّ شديد الدمار"
+description = "صورة مولّدة بأسلوب فوتوغرافي تُظهر مباني خرسانية مهدمة وركامًا كثيفًا، مستوحاة من السمات العمرانية لغزة. ليست صورة حقيقية من غزة ولا توثيقًا لموقع محدد."
+logical_id = "a8d75fee-ee86-4ce9-a115-4872c7bd893d"
+content_hash = "sha256:61727a17da56ff1bdf1a6600ed40d70ee491cd27293970b52776d831a9cd453b"
+size = 2438608
+mtime_ms = 1791296931558
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/a8d75fee-ee86-4ce9-a115-4872c7bd893d/ebbb4bf8-df54-4d3c-bc66-9c8682b18a3c"
+storage_version_token = "1791297018215072"
+content_type = "image/png"
+
+[[outputs]]
+id = "tzbxtGUhGLpC-prkImcq0"
+uri = "file://attached_assets/generated_images/gaza_2d_fully_destroyed_game_map.png"
+type = "image"
+title = "حيّ كامل مدمر بمنظور لعبة 2D"
+description = "صورة تصورية لخريطة حيّ مدمر بالكامل من زاوية لعب علوية مائلة، مع أنقاض كثيفة وشوارع ومعدات إزالة الركام وواجهة لعب مبسطة. ليست لقطة من اللعبة الحالية."
+logical_id = "5160a6ba-dbb3-4707-9449-ad1f497006a7"
+content_hash = "sha256:f082cafe526934852db6a3372f0902e633b5bf2b8f1d7ebb583b9fe3e8922b1c"
+size = 3010450
+mtime_ms = 1791297191109
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/5160a6ba-dbb3-4707-9449-ad1f497006a7/0ea7999c-e34e-44fe-96e0-4a516158f927"
+storage_version_token = "1791297216005855"
+content_type = "image/png"

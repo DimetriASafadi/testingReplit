@@ -1,0 +1,106 @@
+{
+  "formatVersion": 1,
+  "key": "ruin_nasr",
+  "sourceFile": "original procedural geometry (no imported source model)",
+  "targetTriangles": 2200,
+  "actualTriangles": 1037,
+  "triangleTolerance": 0.0,
+  "verifiedWithinBudget": true,
+  "vertexCount": 728,
+  "dimensionsNormalizedBlenderXYZ": [
+    12.45442008972168,
+    9.870109558105469,
+    13.490398406982422
+  ],
+  "origin": {
+    "normalizedOriginBlender": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "pivot": "bottom-center"
+  },
+  "districtId": "Nasr",
+  "category": "urban_frame",
+  "floors": 6,
+  "damageType": "grounded_breached_shell_compact_collapsed_slabs_dense_mixed_rubble",
+  "visualReference": "User supplied collapse piles, exposed rebar and destroyed masonry",
+  "meshPath": "Resources/Models/ruin_nasr.obj",
+  "texturePath": "Resources/Models/ruin_nasr_albedo.png",
+  "fbxPath": "Art/DestroyedFBX/ruin_nasr.fbx",
+  "triangleCount": 1037,
+  "bounds": {
+    "min": [
+      -6.22721004486084,
+      -4.935054779052734,
+      0.0
+    ],
+    "max": [
+      6.22721004486084,
+      4.935054779052734,
+      13.490398406982422
+    ],
+    "width": 12.45442008972168,
+    "height": 13.490398406982422,
+    "depth": 9.870109558105469
+  },
+  "units": "meters",
+  "pivot": "bottom-center",
+  "damageOnly": true,
+  "originalAuthored": true,
+  "sourceType": "procedurally_authored_original_geometry",
+  "referenceAssets": [
+    "IMG-20261002-WA0003_1790946116113.jpg",
+    "IMG-20261002-WA0004_1790946116076.jpg"
+  ],
+  "uvCoverage": {
+    "layer": "UVMap",
+    "loopCount": 3111,
+    "finiteLoopCount": 3111,
+    "bounds": {
+      "min": [
+        0.02525000087916851,
+        0.02525000087916851
+      ],
+      "max": [
+        0.9747499823570251,
+        0.47475001215934753
+      ]
+    }
+  },
+  "objAudit": {
+    "vertices": 728,
+    "uvCoordinates": 80,
+    "normals": 794,
+    "triangles": 1037
+  },
+  "fbxAudit": {
+    "triangles": 1037,
+    "vertices": 728,
+    "bounds": {
+      "min": [
+        -6.22721004486084,
+        -4.935054779052734,
+        0.0
+      ],
+      "max": [
+        6.22721004486084,
+        4.935054779052734,
+        13.490398406982422
+      ],
+      "width": 12.45442008972168,
+      "height": 13.490398406982422,
+      "depth": 9.870109558105469
+    },
+    "uvChannels": 1,
+    "textures": [
+      "sharedatlastex.png"
+    ]
+  },
+  "albedo": {
+    "file": "ruin_nasr_albedo.png",
+    "sourceMaterialCount": 1,
+    "sharedAtlas": "sharedatlastex.png",
+    "uvLayer": "UVMap"
+  }
+}

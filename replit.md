@@ -1,5 +1,13 @@
 # Project context
 
+## Separate browser workspace
+
+- تعليمات المستخدم: اترك مشروع Unity في مجلده كما هو؛ لا نضيف أو نعدل عليه شيئًا الآن. ركّز العمل على لعبة 2D بالنظام المتفق عليه داخل `NEWGaza2D/`. فحوص Unity وملفاته الناقصة ليست شرطًا لإكمال عمل الويب.
+- The platform wrapper `artifacts/new-gaza-2d/` contains registration and launch commands only. Actual web source, assets, configuration, tests and documentation belong to `NEWGaza2D/`; no React frontend is needed for Unity.
+- Web workflow: `artifacts/new-gaza-2d: web`. It provides `PORT` and `BASE_PATH`, delegates to the Phaser/TypeScript workspace, and currently serves a setup-status page only. See `NEWGaza2D/WORKSPACE.ar.md`.
+- Preserve the native project and installed runtimes, but do not run native checks as part of browser-game work. No database setup, schema push or migration is required; pre-existing API/database scaffold packages are not the Unity application's backend.
+- Post-merge setup installs web packages only. Automatic validation targets NEWGaza2D, not the archived Unity project. Earlier native verification results in `NEWGaza2D/MIGRATION_VERIFICATION.ar.md` are historical, not outstanding web requirements.
+
 - This repository contains the existing Unity 6 project in `testingReplic` and the user's planned, separate browser-game project in `NEWGaza2D/`.
 - Product: **New Gaza / نيو غزة**, a peaceful Gaza reconstruction and economy game. The user wants its new 2D browser-game files kept in `NEWGaza2D/` and wants a playable version accessible on the web.
 - Use Phaser with TypeScript for the planned browser game and Replit Preview during development. Keep every file belonging to this version (application source, tests, art references, manifests and web configuration) inside `NEWGaza2D/`; do not scatter game files at the repository root or in Unity's `Assets/`.

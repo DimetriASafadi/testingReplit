@@ -1,0 +1,654 @@
+using System;
+using System.Collections.Generic;
+
+namespace NewGaza.Core
+{
+    public sealed partial class EconomyService
+    {
+        private const long DaySeconds = 86400;
+        private const int MaximumFleet = 1000;
+        private Dictionary<string, RoadSegmentDefinition> roadDefinitions;
+        private bool roadDefinitionsRegistered;
+        public GameState State { get; private set; }
+        public Func<bool> ClearingCrewReady { get; set; }
+        public Func<bool> HaulingCrewReady { get; set; }
+        public Func<int, string, bool> LegacyLandReady { get; set; }
+        public bool CityComplete
+        {
+            get
+            {
+                foreach (var district in State.districts)
+                    if (!district.rewardClaimed) return false;
+                return true;
+            }
+        }
+
+        public EconomyService(GameState state)
+        {
+            if (state == null) throw new ArgumentNullException(nameof(state), "بيانات الحفظ مفقودة");
+            State = state;
+            ValidateState();
+            EquipmentEconomy.Ensure(State);
+        }
+
+        public void RegisterRoadSegments(RoadSegmentDefinition[] defs)
+        {
+            if (roadDefinitionsRegistered)
+                throw new InvalidOperationException("Road definitions have already been registered.");
+            if (defs == null) throw new ArgumentNullException(nameof(defs));
+
+            var registered = new Dictionary<string, RoadSegmentDefinition>(StringComparer.Ordinal);
+            foreach (var definition in defs)
+            {
+                RoadEconomy.ValidateDefinition(definition);
+                if (registered.ContainsKey(definition.id))
+                    throw new ArgumentException("Road definition IDs must be unique.", nameof(defs));
+                registered.Add(definition.id, new RoadSegmentDefinition(
+                    definition.id, definition.name, definition.lengthMeters));
+            }
+            roadDefinitions = registered;
+            roadDefinitionsRegistered = true;
+        }
+
+        public ActionResult ImproveRoad(string id, int targetLevel)
+        {
+            ValidateState();
+            if (!roadDefinitionsRegistered)
+                return ActionResult.Fail("لم يتم تحميل بيانات الطرق");
+            if (string.IsNullOrEmpty(id) || !roadDefinitions.TryGetValue(id, out var definition))
+                return ActionResult.Fail("مقطع الطريق غير معروف");
+            int currentLevel = RoadEconomy.GetLevel(State, id);
+            if (targetLevel != currentLevel + 1 || targetLevel > 2)
+                return ActionResult.Fail("يجب ترقية الطريق إلى المستوى التالي فقط");
+
+            var cost = RoadEconomy.GetCost(definition, targetLevel);
+            if (!CanPay(cost.coins, cost.concrete, cost.iron))
+                return ActionResult.Fail("الرصيد أو الخرسانة أو الحديد لا يكفي لتحسين الطريق");
+
+            RoadSegmentState segment = null;
+            foreach (var candidate in State.roadSegments)
+                if (string.Equals(candidate.id, id, StringComparison.Ordinal))
+                {
+                    segment = candidate;
+                    break;
+                }
+            RoadSegmentState[] expanded = null;
+            if (segment == null)
+            {
+                expanded = new RoadSegmentState[State.roadSegments.Length + 1];
+                Array.Copy(State.roadSegments, expanded, State.roadSegments.Length);
+                segment = new RoadSegmentState { id = id };
+                expanded[expanded.Length - 1] = segment;
+            }
+
+            State.coins -= cost.coins;
+            State.stock.concrete -= cost.concrete;
+            State.stock.iron -= cost.iron;
+            if (expanded != null)
+            {
+                State.roadSegments = expanded;
+            }
+            segment.level = targetLevel;
+            return ActionResult.Ok("تم تحسين الطريق");
+        }
+
+        // A persisted high-water timestamp makes repeated ticks and clock rollback harmless.
+        // Phase transitions are anchored to their scheduled deadlines, not the time of login.
+        public void Tick(long now)
+        {
+            if (now < 0) throw new ArgumentOutOfRangeException(nameof(now), "وقت الجهاز غير صالح");
+            ValidateState();
+            long effective = Math.Max(now, State.lastSeenUtc);
+            EquipmentEconomy.Ensure(State);
+            TickRubbleDispatches(effective);
+            if (State.jobStage == JobStage.Hauling || State.jobStage == JobStage.Recycling)
+                RubbleDispatches.CleanSite(State, RubbleEconomy.Active(State));
+            bool waitingForCrew = false;
+            // During live play the actual return, not an arbitrary hauling timer,
+            // determines when processing may finish. Offline saves keep their deadline.
+            if (State.jobStage == JobStage.Hauling && RubbleEconomy.Active(State) != null &&
+                HaulingCrewReady != null && HaulingCrewReady())
+                State.jobFinishUtc = Math.Min(State.jobFinishUtc, effective);
+            if (State.jobStage == JobStage.Clearing && State.development != null &&
+                State.development.activeRubbleId != null && !State.development.crewArrived)
+            {
+                waitingForCrew = ClearingCrewReady == null || !ClearingCrewReady();
+                if (!waitingForCrew)
+                {
+                    State.development.crewArrived = true;
+                    State.jobFinishUtc = AddTime(effective, ClearingSeconds());
+                }
+                // Clearing has its own full duration AFTER physical arrival. The flag
+                // survives reload, so subsequent offline hauling/recycling is not lost.
+            }
+            while (!waitingForCrew && State.jobStage != JobStage.Idle && State.jobFinishUtc <= effective)
+            {
+                long boundary = State.jobFinishUtc;
+                if (State.jobStage == JobStage.Clearing)
+                {
+                    RubbleDispatches.CleanSite(State, RubbleEconomy.Active(State));
+                    State.jobStage = JobStage.Hauling;
+                    State.jobFinishUtc = AddTime(boundary, HaulingSeconds());
+                }
+                else if (State.jobStage == JobStage.Hauling)
+                {
+                    if (HaulingCrewReady != null && !HaulingCrewReady()) break;
+                    State.jobStage = JobStage.Recycling;
+                    State.jobFinishUtc = AddTime(boundary, RecyclingSeconds());
+                }
+                else
+                {
+                    var site = RubbleEconomy.Active(State);
+                    long reward = 0;
+                    var yield = RubbleEconomy.Yield(State, site);
+                    if (!FitsCoins(reward) || !FitsStock(yield.concrete, yield.iron, yield.wood, yield.other))
+                    {
+                        // Other actions can fill storage after a contract starts. Keep the
+                        // finished batch intact and retry delivery on a later Tick, allowing
+                        // spending/sales and normal project timers to continue meanwhile.
+                        break;
+                    }
+                    AddStock(yield.concrete, yield.iron, yield.wood, yield.other);
+                    State.coins += reward;
+                    var district = State.districts[State.jobDistrict];
+                    if (site == null && district.clearedLoads < GameCatalog.Districts[State.jobDistrict].rubbleLoads)
+                        district.clearedLoads++;
+                    CityDevelopmentService.CompleteSalvage(State);
+                    State.jobStage = JobStage.Idle;
+                    State.jobFinishUtc = 0;
+                }
+            }
+            for (int d = 0; d < State.districts.Length; d++)
+            {
+                for (int p = 0; p < State.districts[d].projects.Length; p++)
+                {
+                    var project = State.districts[d].projects[p];
+                    if (!project.completed && project.finishUtc > 0 && project.finishUtc <= effective)
+                    {
+                        project.completed = true;
+                        var definition = GameCatalog.Districts[d].projects[p];
+                        if (!IsBatch(definition)) project.lastIncomeUtc = project.finishUtc;
+                    }
+                }
+            }
+            CityDevelopmentService.Advance(State, effective);
+            State.lastSeenUtc = effective;
+        }
+
+        public ActionResult SelectDistrict(int index)
+        {
+            Tick(State.lastSeenUtc);
+            if (!IsUnlocked(index)) return ActionResult.Fail("هذا الحي مقفل؛ أكمل الحي السابق واستلم مكافأته");
+            State.selectedDistrict = index;
+            return ActionResult.Ok("تم اختيار " + GameCatalog.Districts[index].name);
+        }
+
+        public ActionResult BuyEquipment(string kind, long now)
+        {
+            if (!Prepare(now)) return BadTime();
+            if (kind == "factory" && State.development != null && State.development.requiresPlacedFactory)
+                return ActionResult.Fail("اختر مصنع إعادة التدوير من المتجر وحدد مكانه على أرض فارغة");
+            if (kind != "factory" && !EquipmentEconomy.CanBuy(State))
+                return ActionResult.Fail("ضع مصنع إعادة التدوير على الخريطة أولاً");
+            long cost;
+            switch (kind)
+            {
+                case "factory":
+                    if (State.factoryLevel != 0) return ActionResult.Fail("المصنع موجود بالفعل؛ استخدم الترقية");
+                    cost = GameCatalog.FactoryCost; break;
+                case "excavator":
+                    if (State.excavators >= MaximumFleet) return ActionResult.Fail("وصل أسطول الحفارات إلى الحد الأقصى");
+                    cost = GameCatalog.ExcavatorCost; break;
+                case "truck":
+                    if (State.trucks >= MaximumFleet) return ActionResult.Fail("وصل أسطول الشاحنات إلى الحد الأقصى");
+                    cost = GameCatalog.TruckCost; break;
+                case "bulldozer":
+                    if (State.bulldozers >= MaximumFleet) return ActionResult.Fail("وصل أسطول الجرافات إلى الحد الأقصى");
+                    cost = GameCatalog.BulldozerCost; break;
+                default: return ActionResult.Fail("نوع المعدة غير معروف");
+            }
+            if (!CanPay(cost, 0, 0)) return ActionResult.Fail("الرصيد لا يكفي لشراء المعدة");
+            State.coins -= cost;
+            if (kind != "factory") EquipmentEconomy.Add(State, kind, cost);
+            switch (kind)
+            {
+                case "factory": State.factoryLevel = 1; break;
+                case "excavator": State.excavators++; break;
+                case "truck": State.trucks++; break;
+                case "bulldozer": State.bulldozers++; break;
+            }
+            return ActionResult.Ok("تم شراء المعدة");
+        }
+
+        public ActionResult UpgradeFactory(long now)
+        {
+            if (!Prepare(now)) return BadTime();
+            if (State.factoryLevel == 0) return ActionResult.Fail("اشتر مصنع التدوير أولاً");
+            if (State.factoryLevel >= 5) return ActionResult.Fail("المصنع في المستوى الخامس بالفعل");
+            if (State.jobStage != JobStage.Idle) return ActionResult.Fail("انتظر انتهاء عقد التدوير قبل ترقية المصنع");
+            long cost = State.factoryLevel * 20000L;
+            if (!CanPay(cost, 0, 0)) return ActionResult.Fail("الرصيد لا يكفي لترقية المصنع");
+            State.coins -= cost;
+            State.factoryLevel++;
+            return ActionResult.Ok("تمت ترقية المصنع؛ إنتاج مواد أكثر وتدوير أسرع");
+        }
+
+        public ActionResult UpgradeEquipment(long now)
+        {
+            return ActionResult.Fail("اختر آلة محددة من الأسطول؛ لكل آلة ثلاث ترقيات مستقلة");
+        }
+
+        public ActionResult UpgradeEquipment(string unitId, long now)
+        {
+            if (!Prepare(now)) return BadTime();
+            var unit = Array.Find(State.equipmentUnits, u => u.id == unitId);
+            if (unit == null) return ActionResult.Fail("المعدة غير موجودة");
+            if (unit.level >= 4) return ActionResult.Fail("اكتملت الترقيات الثلاث لهذه الآلة");
+            if (RubbleDispatches.Busy(State, unitId)) return ActionResult.Fail("انتظر وصول هذه الآلة إلى المصنع قبل ترقيتها");
+            long cost = EquipmentEconomy.UpgradeCost(unit);
+            if (!CanPay(cost, 0, 0)) return ActionResult.Fail("الرصيد لا يكفي لترقية المعدات");
+            State.coins -= cost;
+            unit.level++;
+            return ActionResult.Ok("تمت ترقية المعدات؛ إزالة ونقل أسرع");
+        }
+
+        public ActionResult StartSalvage(int district, long now, string siteId = null)
+        {
+            if (!Prepare(now)) return BadTime();
+            if (State.development != null && State.development.requiresPlacedFactory &&
+                (siteId == null || !Array.Exists(State.development.rubble,
+                    s => s.id == siteId && s.district == district && !s.cleared)))
+                return ActionResult.Fail("اختر موقع ركام موجودًا على الخريطة؛ لا يوجد ركام على الأرض الفارغة");
+            if (!IsUnlocked(district)) return ActionResult.Fail("لا يمكن العمل في حي مقفل");
+            if (State.jobStage != JobStage.Idle)
+                return ActionResult.Fail(State.jobStage == JobStage.Recycling && State.jobFinishUtc <= State.lastSeenUtc
+                    ? "اكتمل التدوير وينتظر مساحة في المخزن؛ بع بعض المواد لاستلام الإنتاج"
+                    : "هناك عقد إزالة ونقل وتدوير قيد التنفيذ");
+            if (Array.Exists(RubbleDispatches.Jobs(State), j => j.stage != JobStage.Recycling))
+                return ActionResult.Fail("استخدم اختيار مبنى مهدّم لإرسال فريق مستقل؛ توجد فرق محجوزة على الخريطة");
+            if (State.factoryLevel == 0)
+                return ActionResult.Fail("ابنِ مصنع إعادة تدوير وأكمل بناءه أولاً");
+            if (State.excavators == 0 || State.trucks == 0 || State.bulldozers == 0)
+                return ActionResult.Fail("اشترِ المعدات اللازمة: حفار وجرافة وشاحنة نقل");
+            var site = State.development == null || siteId == null ? null :
+                Array.Find(State.development.rubble, s => s.id == siteId && !s.cleared);
+            var output = RubbleEconomy.Yield(State, site);
+            if (!FitsStock(output.concrete, output.iron, output.wood, output.other))
+                return ActionResult.Fail("المخزن ممتلئ؛ بع بعض المواد أولاً");
+            long duration = site != null ? RubbleEconomy.ClearingSeconds(State, site) : ClearingSeconds();
+            long total = site != null ? RubbleEconomy.TotalSeconds(State, site) : duration + HaulingSeconds() + RecyclingSeconds();
+            if (!CanSchedule(total)) return BadTime();
+            State.jobDistrict = district;
+            State.jobStage = JobStage.Clearing;
+            State.jobFinishUtc = State.lastSeenUtc + duration;
+            bool imported = State.districts[district].clearedLoads >= GameCatalog.Districts[district].rubbleLoads;
+            return ActionResult.Ok(imported
+                ? "بدأ عقد تدوير ركام مستورد؛ يوفر مواد ولا يزيد إنجاز الحي"
+                : "بدأت إزالة الركام؛ يليه النقل ثم التدوير تلقائياً");
+        }
+
+        public ActionResult SellResources(string kind, long now)
+        {
+            if (!Prepare(now)) return BadTime();
+            bool all = kind == "all";
+            if (!all && kind != "concrete" && kind != "iron" && kind != "wood" && kind != "other")
+                return ActionResult.Fail("نوع المادة غير معروف");
+            var stock = State.stock;
+            long amount = (all || kind == "concrete" ? stock.concrete * 20L : 0)
+                        + (all || kind == "iron" ? stock.iron * 60L : 0)
+                        + (all || kind == "wood" ? stock.wood * 35L : 0)
+                        + (all || kind == "other" ? stock.other * 10L : 0);
+            if (amount == 0) return ActionResult.Fail("لا توجد مواد من هذا النوع للبيع");
+            if (!FitsCoins(amount)) return ActionResult.Fail("الرصيد بلغ الحد الأقصى؛ لم يتم بيع المواد");
+            State.coins += amount;
+            if (all || kind == "concrete") stock.concrete = 0;
+            if (all || kind == "iron") stock.iron = 0;
+            if (all || kind == "wood") stock.wood = 0;
+            if (all || kind == "other") stock.other = 0;
+            return ActionResult.Ok("تم بيع المواد مقابل " + amount + " عملة");
+        }
+
+        public ActionResult StartProject(int district, string projectId, long now)
+        {
+            if (!Prepare(now)) return BadTime();
+            if (!IsUnlocked(district)) return ActionResult.Fail("لا يمكن البناء في حي مقفل");
+            int index = ProjectIndex(district, projectId);
+            if (index < 0) return ActionResult.Fail("المشروع غير موجود");
+            var definition = GameCatalog.Districts[district].projects[index];
+            var project = State.districts[district].projects[index];
+            if (LegacyLandReady != null && !LegacyLandReady(district, projectId))
+                return ActionResult.Fail("أزل دمار هذا الموقع أولاً؛ لا يمكن البناء فوق مبنى أو موقع بناء جديد");
+            if (!ValidDefinition(definition)) return ActionResult.Fail("بيانات تكلفة المشروع أو مدته غير صالحة");
+            bool batch = IsBatch(definition);
+            if (project.completed && !batch) return ActionResult.Fail("المشروع مكتمل بالفعل");
+            if (project.finishUtc > 0 && (!project.completed || batch))
+                return ActionResult.Fail(batch && project.finishUtc <= State.lastSeenUtc
+                    ? "اجمع الحصاد أو الإنتاج قبل بدء دورة جديدة" : "المشروع قيد التنفيذ؛ انتظر الموعد");
+            if (!string.IsNullOrEmpty(definition.prerequisite))
+            {
+                int prerequisiteIndex = ProjectIndex(district, definition.prerequisite);
+                if (prerequisiteIndex < 0) return ActionResult.Fail("بيانات متطلبات المشروع غير صالحة");
+                if (!State.districts[district].projects[prerequisiteIndex].completed)
+                    return ActionResult.Fail("أكمل المشروع المطلوب أولاً: " + GameCatalog.Districts[district].projects[prerequisiteIndex].name);
+            }
+            if (!CanPay(definition.cost, 0, 0))
+                return ActionResult.Fail("الرصيد لا يكفي؛ بع موارد الركام للحصول على المال");
+            if (!CanSchedule(definition.durationSeconds)) return BadTime();
+            State.coins -= definition.cost;
+            project.startedUtc = State.lastSeenUtc;
+            project.finishUtc = State.lastSeenUtc + definition.durationSeconds;
+            if (batch) project.lastIncomeUtc = 0;
+            return ActionResult.Ok(batch ? "بدأت دورة الزراعة أو الإنتاج؛ اجمعها بعد انتهاء الوقت" : "بدأ البناء؛ يستمر الوقت أثناء غيابك");
+        }
+
+        public ActionResult CollectIncome(int district, string projectId, long now)
+        {
+            if (!Prepare(now)) return BadTime();
+            if (!IsUnlocked(district)) return ActionResult.Fail("الحي مقفل");
+            int index = ProjectIndex(district, projectId);
+            if (index < 0) return ActionResult.Fail("المشروع غير موجود");
+            var definition = GameCatalog.Districts[district].projects[index];
+            if (!ValidDefinition(definition)) return ActionResult.Fail("بيانات دخل المشروع غير صالحة");
+            var project = State.districts[district].projects[index];
+            long amount = PendingIncome(district, projectId, State.lastSeenUtc);
+            if (amount <= 0) return ActionResult.Fail("لا يوجد دخل جاهز؛ انتظر اكتمال البناء أو الحصاد أو دورة الدخل");
+            if (!IsBatch(definition)
+                && (State.lastSeenUtc - project.lastIncomeUtc) / definition.incomeSeconds > long.MaxValue / definition.income)
+                return ActionResult.Fail("الدخل المتراكم يتجاوز سعة الرصيد؛ لم يتم جمعه");
+            if (!FitsCoins(amount))
+                return ActionResult.Fail("الرصيد أو المخزن بلغ الحد الأقصى؛ لم يتم جمع الإنتاج");
+            State.coins += amount;
+            if (IsBatch(definition))
+            {
+                project.startedUtc = 0;
+                project.finishUtc = 0;
+                project.lastIncomeUtc = State.lastSeenUtc;
+            }
+            else
+            {
+                // Preserve the fractional remainder instead of discarding it at collection.
+                long periods = (State.lastSeenUtc - project.lastIncomeUtc) / definition.incomeSeconds;
+                project.lastIncomeUtc += periods * definition.incomeSeconds;
+            }
+            return ActionResult.Ok("تم جمع " + amount + " عملة");
+        }
+
+        public ActionResult ClaimDistrictReward(int district, long now)
+        {
+            if (!Prepare(now)) return BadTime();
+            if (!IsUnlocked(district)) return ActionResult.Fail("الحي مقفل");
+            var state = State.districts[district];
+            if (state.rewardClaimed) return ActionResult.Fail("تم استلام مكافأة هذا الحي سابقاً");
+            if (district == GameCatalog.FinalDistrictIndex)
+                for (int i = 0; i < GameCatalog.NeighborhoodCount; i++)
+                    if (!State.districts[i].rewardClaimed)
+                        return ActionResult.Fail("استلم مكافآت الأحياء الاثني عشر قبل مكافأة الرشيد");
+            if (!IsComplete(district)) return ActionResult.Fail("أكمل إزالة الركام وجميع مشاريع الحي بنسبة ١٠٠٪ أولاً");
+            long reward = GameCatalog.Districts[district].completionReward;
+            if (reward <= 0 || !FitsCoins(reward)) return ActionResult.Fail("قيمة المكافأة غير صالحة أو الرصيد ممتلئ");
+            State.coins += reward;
+            state.rewardClaimed = true;
+            GameStateMigration.ReconcileUnlocks(State);
+            if (CityComplete && State.cityCompletedUtc == 0) State.cityCompletedUtc = State.lastSeenUtc;
+            return ActionResult.Ok(CityComplete ? "اكتملت إعادة بناء المدينة وواجهة الرشيد!" : "تم استلام المكافأة وفتح الحي التالي");
+        }
+
+        public ActionResult ClaimDailyGift(long now)
+        {
+            bool rollback = now < State.lastSeenUtc;
+            if (!Prepare(now)) return BadTime();
+            if (rollback || !CanClaimDailyGift(now)) return ActionResult.Fail("الهدية متاحة كل ٢٤ ساعة؛ تحقق من وقت الجهاز وانتظر الموعد");
+            int completed = 0;
+            for (int i = 0; i < State.districts.Length; i++)
+                if (IsUnlocked(i) && IsComplete(i)) completed++;
+            long coins = 3000 + completed * 1000L;
+            if (!FitsCoins(coins))
+                return ActionResult.Fail("الرصيد أو المخزن ممتلئ؛ لم يتم استلام الهدية");
+            State.coins += coins;
+            State.lastGiftUtc = State.lastSeenUtc;
+            return ActionResult.Ok("تم استلام هدية يومية مضمونة من العملات والمواد");
+        }
+
+        public float Progress(int district)
+        {
+            if (!ValidDistrict(district)) return 0f;
+            if (State.development != null && State.development.initialized && !State.development.legacyProgress)
+                return CityDevelopmentService.Progress(State, district);
+            var state = State.districts[district];
+            var definition = GameCatalog.Districts[district];
+            if (!IsUnlocked(district)) return 0f;
+            int complete = 0;
+            for (int i = 0; i < state.projects.Length; i++)
+                if (state.projects[i].completed) complete++;
+            if (complete == state.projects.Length && state.clearedLoads >= definition.rubbleLoads) return 1f;
+            float rubble = definition.rubbleLoads == 0 ? 1f : Math.Min(1f, (float)state.clearedLoads / definition.rubbleLoads);
+            float classic = Math.Max(0f, Math.Min(1f, rubble * 0.3f + (float)complete / state.projects.Length * 0.7f));
+            return State.development != null && State.development.initialized
+                ? Math.Max(classic, CityDevelopmentService.Progress(State, district)) : classic;
+        }
+
+        public long PendingIncome(int district, string projectId, long now)
+        {
+            if (now < 0 || !IsUnlocked(district)) return 0;
+            int index = ProjectIndex(district, projectId);
+            if (index < 0) return 0;
+            var definition = GameCatalog.Districts[district].projects[index];
+            var project = State.districts[district].projects[index];
+            if (!ValidDefinition(definition) || definition.income <= 0) return 0;
+            // Read-only queries also work before Tick, but do not generate future/rollback income.
+            if (project.finishUtc > now || (!project.completed && project.finishUtc == 0)) return 0;
+            if (IsBatch(definition))
+                return project.finishUtc > 0 && project.lastIncomeUtc < project.finishUtc ? definition.income : 0;
+            if (definition.incomeSeconds <= 0) return 0;
+            long baseline = project.completed ? project.lastIncomeUtc : project.finishUtc;
+            if (now <= baseline) return 0;
+            long periods = (now - baseline) / definition.incomeSeconds;
+            return periods > long.MaxValue / definition.income ? long.MaxValue : periods * definition.income;
+        }
+
+        public bool CanClaimDailyGift(long now)
+        {
+            if (now <= 0 || now < State.lastSeenUtc || now < State.lastGiftUtc) return false;
+            return State.lastGiftUtc == 0 || now - State.lastGiftUtc >= DaySeconds;
+        }
+
+        public ProjectState FindProject(int district, string projectId)
+        {
+            int index = ProjectIndex(district, projectId);
+            return index < 0 ? null : State.districts[district].projects[index];
+        }
+
+        private bool Prepare(long now)
+        {
+            if (now < 0) return false;
+            Tick(now);
+            return true;
+        }
+
+        private static ActionResult BadTime() { return ActionResult.Fail("وقت الجهاز غير صالح؛ لم يبدأ أي إجراء"); }
+        private bool ValidDistrict(int district) { return district >= 0 && district < State.districts.Length; }
+        private bool IsUnlocked(int district)
+        {
+            return IsUnlocked(State, district);
+        }
+        private static bool IsUnlocked(GameState State, int district)
+        {
+            if (district < 0 || district >= State.districts.Length || !State.districts[district].unlocked) return false;
+            if (State.districts[district].legacyAccess) return true;
+            for (int i = 0; i < district; i++)
+                if (!State.districts[i].rewardClaimed) return false;
+            return true;
+        }
+
+        private int ProjectIndex(int district, string id)
+        {
+            if (!ValidDistrict(district) || string.IsNullOrEmpty(id)) return -1;
+            var definitions = GameCatalog.Districts[district].projects;
+            for (int i = 0; i < definitions.Length; i++)
+                if (string.Equals(definitions[i].id, id, StringComparison.Ordinal)) return i;
+            return -1;
+        }
+
+        private bool IsComplete(int district)
+        {
+            if (State.development != null && State.development.initialized &&
+                CityDevelopmentService.Complete(State, district)) return true;
+            if (State.development != null && State.development.initialized && !State.development.legacyProgress) return false;
+            if (State.districts[district].clearedLoads < GameCatalog.Districts[district].rubbleLoads) return false;
+            foreach (var project in State.districts[district].projects)
+                if (!project.completed) return false;
+            return true;
+        }
+
+        private static bool IsBatch(ProjectDefinition definition)
+        {
+            return definition.kind == ProjectKind.Investment && (definition.id == "farm" || definition.id == "industry");
+        }
+        private static bool IsIndustry(ProjectDefinition definition)
+        {
+            return definition.kind == ProjectKind.Investment && definition.id == "industry";
+        }
+        private static bool ValidDefinition(ProjectDefinition definition)
+        {
+            return definition != null && !string.IsNullOrEmpty(definition.id) && definition.cost >= 0
+                && definition.durationSeconds > 0 && definition.concreteCost >= 0 && definition.ironCost >= 0
+                && definition.income >= 0 && definition.incomeSeconds >= 0
+                && definition.kind >= ProjectKind.Housing && definition.kind <= ProjectKind.Landmark
+                && (definition.income == 0 || IsBatch(definition) || definition.incomeSeconds > 0);
+        }
+        private bool CanPay(long cost, int concrete, int iron)
+        {
+            return cost >= 0 && concrete >= 0 && iron >= 0 && State.coins >= cost
+                && State.stock.concrete >= concrete && State.stock.iron >= iron;
+        }
+        private bool FitsCoins(long amount) { return amount >= 0 && State.coins <= long.MaxValue - amount; }
+        private bool FitsStock(int concrete, int iron, int wood, int other)
+        {
+            return State.stock.concrete <= int.MaxValue - concrete && State.stock.iron <= int.MaxValue - iron
+                && State.stock.wood <= int.MaxValue - wood && State.stock.other <= int.MaxValue - other;
+        }
+        private void AddStock(int concrete, int iron, int wood, int other)
+        {
+            State.stock.concrete += concrete; State.stock.iron += iron;
+            State.stock.wood += wood; State.stock.other += other;
+        }
+        private long ClearingSeconds()
+        {
+            var site = RubbleEconomy.Active(State);
+            if (site != null) return RubbleEconomy.ClearingSeconds(State, site);
+            return Math.Max(1L, (long)Math.Ceiling(180 /
+                Math.Sqrt(EquipmentEconomy.Capacity(State, "excavator") * EquipmentEconomy.Capacity(State, "bulldozer"))));
+        }
+        private long HaulingSeconds() { return RubbleEconomy.Active(State) != null ? RubbleEconomy.HaulingSeconds(State) :
+            Math.Max(1L, (long)Math.Ceiling(120L / EquipmentEconomy.Capacity(State, "truck"))); }
+        private long RecyclingSeconds() { return RubbleEconomy.Active(State) != null ? RubbleEconomy.RecyclingSeconds(State) : Math.Max(1L, 240L / State.factoryLevel); }
+        private bool CanSchedule(long seconds) { return seconds > 0 && State.lastSeenUtc <= long.MaxValue - seconds; }
+        private static long AddTime(long timestamp, long seconds)
+        {
+            return timestamp > long.MaxValue - seconds ? long.MaxValue : timestamp + seconds;
+        }
+
+        private void ValidateState()
+        {
+            ValidateState(State, GameCatalog.Districts, 2);
+        }
+
+        // The same authoritative rules validate frozen v1 data BEFORE any migration.
+        internal static void ValidateState(GameState State, DistrictDefinition[] catalog, int version)
+        {
+            const string error = "بيانات الحفظ غير صالحة؛ لم تتم إعادة ضبط تقدمك";
+            if (State == null || State.version != version || State.coins < 0 || State.stock == null
+                || State.stock.concrete < 0 || State.stock.iron < 0 || State.stock.wood < 0 || State.stock.other < 0
+                || State.factoryLevel < 0 || State.factoryLevel > 5 || State.equipmentLevel < 1 || State.equipmentLevel > 5
+                || State.excavators < 0 || State.excavators > MaximumFleet || State.trucks < 0 || State.trucks > MaximumFleet
+                || State.bulldozers < 0 || State.bulldozers > MaximumFleet || State.lastSeenUtc < 0 || State.lastGiftUtc < 0
+                || (State.equipmentLevel > 1 && (State.excavators == 0 || State.trucks == 0 || State.bulldozers == 0))
+                || State.lastGiftUtc > State.lastSeenUtc || State.cityCompletedUtc < 0 || State.cityCompletedUtc > State.lastSeenUtc
+                || State.districts == null || State.districts.Length != catalog.Length
+                || State.selectedDistrict < 0 || State.selectedDistrict >= catalog.Length)
+                throw new InvalidOperationException(error);
+            if (State.roadSegments == null) State.roadSegments = new RoadSegmentState[0];
+            if (version == 2) EquipmentEconomy.Validate(State);
+            var roadIds = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var road in State.roadSegments)
+                if (road == null || !RoadEconomy.IsCanonicalId(road.id) || road.level < 0 || road.level > 2
+                    || !roadIds.Add(road.id))
+                    throw new InvalidOperationException(error);
+            bool claimedPrefix = true;
+            for (int d = 0; d < State.districts.Length; d++)
+            {
+                var district = State.districts[d];
+                var definition = catalog[d];
+                if (district == null || district.clearedLoads < 0 || district.clearedLoads > definition.rubbleLoads
+                    || district.projects == null || district.projects.Length != definition.projects.Length
+                    || (claimedPrefix && !district.unlocked) || (district.rewardClaimed && !district.unlocked)
+                    || (!district.unlocked && district.clearedLoads != 0)
+                    || (version == 2 && district.id != definition.id)
+                    || (version == 1 && (!string.IsNullOrEmpty(district.id) || district.legacyAccess))
+                    || (district.legacyAccess && (!district.unlocked || GameStateMigration.LegacyIndex(district.id) < 0)))
+                    throw new InvalidOperationException(error);
+                if (district.unlocked)
+                    for (int previous = 0; previous < d; previous++)
+                        if (!State.districts[previous].rewardClaimed
+                            && (!district.legacyAccess || GameStateMigration.LegacyIndex(catalog[previous].id) >= 0))
+                            throw new InvalidOperationException(error);
+                for (int p = 0; p < district.projects.Length; p++)
+                {
+                    var project = district.projects[p];
+                    if (project == null || project.id != definition.projects[p].id
+                        || project.startedUtc < 0 || project.finishUtc < 0 || project.lastIncomeUtc < 0
+                        || project.startedUtc > State.lastSeenUtc || project.lastIncomeUtc > State.lastSeenUtc
+                        || (project.finishUtc > 0 && project.finishUtc <= project.startedUtc)
+                        || (project.finishUtc > 0 && project.finishUtc - project.startedUtc != definition.projects[p].durationSeconds)
+                        || (!district.unlocked && (project.completed || project.finishUtc != 0 || project.startedUtc != 0))
+                        || (!project.completed && project.lastIncomeUtc != 0)
+                        || (!project.completed && project.finishUtc == 0 && project.startedUtc != 0))
+                        throw new InvalidOperationException(error);
+                    string prerequisite = definition.projects[p].prerequisite;
+                    if (prerequisite != null && (project.completed || project.finishUtc > 0))
+                    {
+                        var required = Array.Find(district.projects, candidate => candidate != null && candidate.id == prerequisite);
+                        if (required == null || !required.completed
+                            || (project.finishUtc > 0 && required.finishUtc > project.startedUtc))
+                            throw new InvalidOperationException(error);
+                    }
+                    if (project.completed)
+                    {
+                        if (IsBatch(definition.projects[p]))
+                        {
+                            if ((project.finishUtc == 0 && (project.lastIncomeUtc == 0 || project.startedUtc != 0))
+                                || (project.finishUtc > 0 && project.lastIncomeUtc != 0))
+                                throw new InvalidOperationException(error);
+                        }
+                        else if (project.finishUtc == 0 || project.finishUtc > State.lastSeenUtc
+                            || project.lastIncomeUtc < project.finishUtc
+                            || (project.id != "commerce" && project.lastIncomeUtc != project.finishUtc))
+                            throw new InvalidOperationException(error);
+                    }
+                }
+                if (district.rewardClaimed)
+                {
+                    bool freeCompletion = version == 2 && State.development != null &&
+                        State.development.initialized && CityDevelopmentService.Complete(State, d);
+                    if (!freeCompletion)
+                    {
+                        if (district.clearedLoads != definition.rubbleLoads) throw new InvalidOperationException(error);
+                        foreach (var project in district.projects)
+                            if (!project.completed) throw new InvalidOperationException(error);
+                    }
+                }
+                claimedPrefix &= district.rewardClaimed;
+            }
+            if (State.jobStage < JobStage.Idle || State.jobStage > JobStage.Recycling || State.jobFinishUtc < 0
+                || State.jobDistrict < 0 || State.jobDistrict >= catalog.Length
+                || (State.jobStage == JobStage.Idle && State.jobFinishUtc != 0)
+                || (State.jobStage != JobStage.Idle && (!IsUnlocked(State, State.jobDistrict) || State.jobFinishUtc == 0
+                    || State.factoryLevel == 0 || State.excavators == 0 || State.trucks == 0 || State.bulldozers == 0)))
+                throw new InvalidOperationException(error);
+            if (!IsUnlocked(State, State.selectedDistrict) || (State.cityCompletedUtc > 0 && !State.districts[catalog.Length - 1].rewardClaimed))
+                throw new InvalidOperationException(error);
+            if (version == 2) CityDevelopmentService.Validate(State);
+            PresentationSaveValidation.Validate(State);
+        }
+    }
+}

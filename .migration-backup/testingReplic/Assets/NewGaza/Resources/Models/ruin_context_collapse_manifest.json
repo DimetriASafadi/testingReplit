@@ -1,0 +1,107 @@
+{
+  "formatVersion": 1,
+  "key": "ruin_context_collapse",
+  "sourceFile": "original procedural geometry (no imported source model)",
+  "targetTriangles": 450,
+  "actualTriangles": 393,
+  "triangleTolerance": 0.0,
+  "verifiedWithinBudget": true,
+  "vertexCount": 282,
+  "dimensionsNormalizedBlenderXYZ": [
+    6.605010032653809,
+    5.605713367462158,
+    2.349933385848999
+  ],
+  "origin": {
+    "normalizedOriginBlender": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "pivot": "bottom-center"
+  },
+  "districtId": null,
+  "category": "destroyed_context_lod",
+  "contextLOD": true,
+  "floors": null,
+  "damageType": "ruin_context_collapse",
+  "visualReference": "User rubble, pancake-collapse and breached-wall photographs",
+  "meshPath": "Resources/Models/ruin_context_collapse.obj",
+  "texturePath": "Resources/Models/ruin_context_collapse_albedo.png",
+  "fbxPath": "Art/DestroyedFBX/ruin_context_collapse.fbx",
+  "triangleCount": 393,
+  "bounds": {
+    "min": [
+      -3.3025050163269043,
+      -2.802856683731079,
+      0.0
+    ],
+    "max": [
+      3.3025050163269043,
+      2.802856683731079,
+      2.349933385848999
+    ],
+    "width": 6.605010032653809,
+    "height": 2.349933385848999,
+    "depth": 5.605713367462158
+  },
+  "units": "meters",
+  "pivot": "bottom-center",
+  "damageOnly": true,
+  "originalAuthored": true,
+  "sourceType": "procedurally_authored_original_geometry",
+  "referenceAssets": [
+    "IMG-20261002-WA0003_1790946116113.jpg",
+    "IMG-20261002-WA0004_1790946116076.jpg"
+  ],
+  "uvCoverage": {
+    "layer": "UVMap",
+    "loopCount": 1179,
+    "finiteLoopCount": 1179,
+    "bounds": {
+      "min": [
+        0.02525000087916851,
+        0.02525000087916851
+      ],
+      "max": [
+        0.9747499823570251,
+        0.22474999725818634
+      ]
+    }
+  },
+  "objAudit": {
+    "vertices": 282,
+    "uvCoordinates": 24,
+    "normals": 317,
+    "triangles": 393
+  },
+  "fbxAudit": {
+    "triangles": 393,
+    "vertices": 282,
+    "bounds": {
+      "min": [
+        -3.3025050163269043,
+        -2.802856683731079,
+        0.0
+      ],
+      "max": [
+        3.3025050163269043,
+        2.802856683731079,
+        2.349933385848999
+      ],
+      "width": 6.605010032653809,
+      "height": 2.349933385848999,
+      "depth": 5.605713367462158
+    },
+    "uvChannels": 1,
+    "textures": [
+      "sharedatlastex.png"
+    ]
+  },
+  "albedo": {
+    "file": "ruin_context_collapse_albedo.png",
+    "sourceMaterialCount": 1,
+    "sharedAtlas": "sharedatlastex.png",
+    "uvLayer": "UVMap"
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "formatVersion": 1,
+  "key": "ruin_sheikh_ijlin",
+  "sourceFile": "original procedural geometry (no imported source model)",
+  "targetTriangles": 2200,
+  "actualTriangles": 1043,
+  "triangleTolerance": 0.0,
+  "verifiedWithinBudget": true,
+  "vertexCount": 732,
+  "dimensionsNormalizedBlenderXYZ": [
+    16.27166748046875,
+    12.326627731323242,
+    13.427934646606445
+  ],
+  "origin": {
+    "normalizedOriginBlender": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "pivot": "bottom-center"
+  },
+  "districtId": "Sheikh Ijlin",
+  "category": "coastal_terraces",
+  "floors": 6,
+  "damageType": "grounded_breached_shell_compact_collapsed_slabs_dense_mixed_rubble",
+  "visualReference": "User supplied collapse piles, exposed rebar and destroyed masonry",
+  "meshPath": "Resources/Models/ruin_sheikh_ijlin.obj",
+  "texturePath": "Resources/Models/ruin_sheikh_ijlin_albedo.png",
+  "fbxPath": "Art/DestroyedFBX/ruin_sheikh_ijlin.fbx",
+  "triangleCount": 1043,
+  "bounds": {
+    "min": [
+      -8.135833740234375,
+      -6.163313865661621,
+      0.0
+    ],
+    "max": [
+      8.135833740234375,
+      6.163313865661621,
+      13.427934646606445
+    ],
+    "width": 16.27166748046875,
+    "height": 13.427934646606445,
+    "depth": 12.326627731323242
+  },
+  "units": "meters",
+  "pivot": "bottom-center",
+  "damageOnly": true,
+  "originalAuthored": true,
+  "sourceType": "procedurally_authored_original_geometry",
+  "referenceAssets": [
+    "IMG-20261002-WA0003_1790946116113.jpg",
+    "IMG-20261002-WA0004_1790946116076.jpg"
+  ],
+  "uvCoverage": {
+    "layer": "UVMap",
+    "loopCount": 3129,
+    "finiteLoopCount": 3129,
+    "bounds": {
+      "min": [
+        0.02525000087916851,
+        0.02525000087916851
+      ],
+      "max": [
+        0.9747499823570251,
+        0.47475001215934753
+      ]
+    }
+  },
+  "objAudit": {
+    "vertices": 732,
+    "uvCoordinates": 80,
+    "normals": 803,
+    "triangles": 1043
+  },
+  "fbxAudit": {
+    "triangles": 1043,
+    "vertices": 732,
+    "bounds": {
+      "min": [
+        -8.135833740234375,
+        -6.163313865661621,
+        0.0
+      ],
+      "max": [
+        8.135833740234375,
+        6.163313865661621,
+        13.427934646606445
+      ],
+      "width": 16.27166748046875,
+      "height": 13.427934646606445,
+      "depth": 12.326627731323242
+    },
+    "uvChannels": 1,
+    "textures": [
+      "sharedatlastex.png"
+    ]
+  },
+  "albedo": {
+    "file": "ruin_sheikh_ijlin_albedo.png",
+    "sourceMaterialCount": 1,
+    "sharedAtlas": "sharedatlastex.png",
+    "uvLayer": "UVMap"
+  }
+}

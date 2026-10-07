@@ -1,0 +1,106 @@
+{
+  "formatVersion": 1,
+  "key": "ruin_tel_al_hawa",
+  "sourceFile": "original procedural geometry (no imported source model)",
+  "targetTriangles": 2200,
+  "actualTriangles": 1064,
+  "triangleTolerance": 0.0,
+  "verifiedWithinBudget": true,
+  "vertexCount": 746,
+  "dimensionsNormalizedBlenderXYZ": [
+    15.292036056518555,
+    11.745607376098633,
+    17.411331176757812
+  ],
+  "origin": {
+    "normalizedOriginBlender": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "pivot": "bottom-center"
+  },
+  "districtId": "Tel al-Hawa",
+  "category": "modern_tower",
+  "floors": 8,
+  "damageType": "grounded_breached_shell_compact_collapsed_slabs_dense_mixed_rubble",
+  "visualReference": "User supplied collapse piles, exposed rebar and destroyed masonry",
+  "meshPath": "Resources/Models/ruin_tel_al_hawa.obj",
+  "texturePath": "Resources/Models/ruin_tel_al_hawa_albedo.png",
+  "fbxPath": "Art/DestroyedFBX/ruin_tel_al_hawa.fbx",
+  "triangleCount": 1064,
+  "bounds": {
+    "min": [
+      -7.646018028259277,
+      -5.872803688049316,
+      0.0
+    ],
+    "max": [
+      7.646018028259277,
+      5.872803688049316,
+      17.411331176757812
+    ],
+    "width": 15.292036056518555,
+    "height": 17.411331176757812,
+    "depth": 11.745607376098633
+  },
+  "units": "meters",
+  "pivot": "bottom-center",
+  "damageOnly": true,
+  "originalAuthored": true,
+  "sourceType": "procedurally_authored_original_geometry",
+  "referenceAssets": [
+    "IMG-20261002-WA0003_1790946116113.jpg",
+    "IMG-20261002-WA0004_1790946116076.jpg"
+  ],
+  "uvCoverage": {
+    "layer": "UVMap",
+    "loopCount": 3192,
+    "finiteLoopCount": 3192,
+    "bounds": {
+      "min": [
+        0.02525000087916851,
+        0.02525000087916851
+      ],
+      "max": [
+        0.9747499823570251,
+        0.47475001215934753
+      ]
+    }
+  },
+  "objAudit": {
+    "vertices": 746,
+    "uvCoordinates": 80,
+    "normals": 824,
+    "triangles": 1064
+  },
+  "fbxAudit": {
+    "triangles": 1064,
+    "vertices": 746,
+    "bounds": {
+      "min": [
+        -7.646018028259277,
+        -5.872803688049316,
+        0.0
+      ],
+      "max": [
+        7.646018028259277,
+        5.872803688049316,
+        17.411331176757812
+      ],
+      "width": 15.292036056518555,
+      "height": 17.411331176757812,
+      "depth": 11.745607376098633
+    },
+    "uvChannels": 1,
+    "textures": [
+      "sharedatlastex.png"
+    ]
+  },
+  "albedo": {
+    "file": "ruin_tel_al_hawa_albedo.png",
+    "sourceMaterialCount": 1,
+    "sharedAtlas": "sharedatlastex.png",
+    "uvLayer": "UVMap"
+  }
+}

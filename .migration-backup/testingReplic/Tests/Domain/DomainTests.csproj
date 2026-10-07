@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../Assets/NewGaza/Core/EquipmentEconomy.cs" Link="EquipmentEconomy.cs" />
+    <Compile Include="../../Assets/NewGaza/Core/RubbleEconomy.cs" Link="RubbleEconomy.cs" />
+    <Compile Include="../../Assets/NewGaza/Core/RubbleDispatches.cs" Link="RubbleDispatches.cs" />
+    <Compile Include="../../Assets/NewGaza/Core/GameModels.cs" Link="Core/GameModels.cs" />
+    <Compile Include="../../Assets/NewGaza/Core/GameCatalog.cs" Link="Core/GameCatalog.cs" />
+    <Compile Include="../../Assets/NewGaza/Core/GameGeography.cs" Link="Core/GameGeography.cs" />
+    <Compile Include="../../Assets/NewGaza/Core/EconomyService.cs" Link="Core/EconomyService.cs" />
+    <Compile Include="../../Assets/NewGaza/Core/PresentationSaveValidation.cs" Link="Core/PresentationSaveValidation.cs" />
+    <Compile Include="../../Assets/NewGaza/Core/CityBuildingCatalog.cs" Link="Core/CityBuildingCatalog.cs" />
+    <Compile Include="../../Assets/NewGaza/Core/CityDevelopmentService.cs" Link="Core/CityDevelopmentService.cs" />
+    <Compile Include="../../Assets/NewGaza/Core/RoadEconomy.cs" Link="Core/RoadEconomy.cs" />
+    <Compile Include="../../Assets/NewGaza/Core/GameStateMigration.cs" Link="Core/GameStateMigration.cs" />
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../Assets/NewGaza/Core/GameModels.cs" Link="Core/GameModels.cs" />
+    <Compile Include="../../Assets/NewGaza/Core/GameGeography.cs" Link="Core/GameGeography.cs" />
+    <Compile Include="../../Assets/NewGaza/Core/RoadEconomy.cs" Link="Core/RoadEconomy.cs" />
+    <Compile Include="../../Assets/NewGaza/World/CityFleet.cs" Link="World/CityFleet.cs" />
+    <Compile Include="../../Assets/NewGaza/World/CityFleetSteering.cs" Link="World/CityFleetSteering.cs" />
+    <Compile Include="../../Assets/NewGaza/World/CityFleetTeams.cs" Link="World/CityFleetTeams.cs" />
+    <Compile Include="../../Assets/NewGaza/World/CityFleetPersistence.cs" Link="World/CityFleetPersistence.cs" />
+    <Compile Include="../../Assets/NewGaza/World/CityFleetAppearance.cs" Link="World/CityFleetAppearance.cs" />
+    <Compile Include="../../Assets/NewGaza/World/MeshyExcavatorVisuals.cs" Link="World/MeshyExcavatorVisuals.cs" />
+    <Compile Include="../../Assets/NewGaza/World/CityBasemap.cs" Link="World/CityBasemap.cs" />
+    <Compile Include="../../Assets/NewGaza/World/CityRoadNetwork.cs" Link="World/CityRoadNetwork.cs" />
+    <Compile Include="../../Assets/NewGaza/World/CityGeometry.cs" Link="World/CityGeometry.cs" />
+    <Compile Include="../../Assets/NewGaza/World/EquipmentGeometry.cs" Link="World/EquipmentGeometry.cs" />
+    <Compile Include="../../Assets/NewGaza/World/EquipmentHydraulicLink.cs" Link="World/EquipmentHydraulicLink.cs" />
+    <Compile Include="../../Assets/NewGaza/World/EquipmentTrackRig.cs" Link="World/EquipmentTrackRig.cs" />
+    <Compile Include="../../Assets/NewGaza/World/EquipmentMotion.cs" Link="World/EquipmentMotion.cs" />
+    <Compile Include="../../Assets/NewGaza/World/EquipmentDustRig.cs" Link="World/EquipmentDustRig.cs" />
+    <Compile Include="../../Assets/NewGaza/World/CityFleetEffects.cs" Link="World/CityFleetEffects.cs" />
+    <Compile Include="EquipmentDustChecks.cs" />
+    <Compile Include="EquipmentTrackSteeringChecks.cs" />
+    <Compile Include="EquipmentPersistenceChecks.cs" />
+    <Compile Include="EquipmentWorkCycleChecks.cs" />
+    <Compile Include="EquipmentTeamsAndCornersChecks.cs" />
+    <Compile Include="MeshyExcavatorChecks.cs" />
+    <Compile Include="UnityStubs.cs" />
+    <Compile Include="Program.cs" />
+    <None Include="../../Assets/NewGaza/Resources/GazaBasemap.json" Link="GazaBasemap.json"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../Assets/NewGaza/Resources/Equipment/ExcavatorAppearance.json"
+          Link="Equipment/ExcavatorAppearance.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../Assets/NewGaza/Resources/Equipment/MeshyExcavator.bytes"
+          Condition="Exists('../../Assets/NewGaza/Resources/Equipment/MeshyExcavator.bytes')"
+          Link="Equipment/MeshyExcavator.bytes" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../../exports/models/Gaza-City-Production-Placement.json"
+          Condition="Exists('../../../exports/models/Gaza-City-Production-Placement.json')"
+          Link="Gaza-City-Production-Placement.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

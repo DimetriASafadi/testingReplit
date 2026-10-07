@@ -1,0 +1,17 @@
+{
+  "format": "NGEXC001",
+  "triangles": 19500,
+  "vertices": 23821,
+  "draw_meshes": 10,
+  "bytes": 996572,
+  "bucket_contact": [
+    0,
+    -0.1964,
+    0.52
+  ],
+  "notes": [
+    "Retargeted to original runtime joint spacings and IK contact point.",
+    "Solid materials, not original Meshy textures.",
+    "Static track surfaces and fused hydraulic visuals remain draft limitations."
+  ]
+}

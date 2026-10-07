@@ -1,0 +1,54 @@
+{
+  "description": "Generated illustrative ground art, not geographic imagery.",
+  "tile_metres": 8,
+  "normal_maps": false,
+  "textures": [
+    {
+      "file": "UrbanGround_Albedo.png",
+      "source": "attached_assets/generated_images/urban_ground_albedo.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "mode": "RGB",
+      "edge_error": 0,
+      "spatial_stddev": 17.13,
+      "bytes": 2288299,
+      "sha256": "947cb26eabf01b79b2c91e7edd80df4314e80f4d7ee57ab6f695402ba5125119"
+    },
+    {
+      "file": "CoastalSand_Albedo.png",
+      "source": "attached_assets/generated_images/coastal_sand_albedo.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "mode": "RGB",
+      "edge_error": 0,
+      "spatial_stddev": 15.97,
+      "bytes": 2322372,
+      "sha256": "21b74adf7d51153cd7e2fd94bfa7f9853fbff6ac15adaa5d14754bc63ae50763"
+    },
+    {
+      "file": "DryGround_Albedo.png",
+      "source": "attached_assets/generated_images/dry_ground_albedo.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "mode": "RGB",
+      "edge_error": 0,
+      "spatial_stddev": 20.95,
+      "bytes": 2383905,
+      "sha256": "bccdb6f16a3e420019d8f44136413670dcc8e2f5177a6970285c1da3ddc4aa1b"
+    }
+  ],
+  "mobile_import": {
+    "max_size": 1024,
+    "mipmaps": true,
+    "repeat": true,
+    "android": "ETC2_RGB4",
+    "iphone": "ASTC_6x6"
+  },
+  "provenance": "AI-generated original surface images; periodic processing in this repository."
+}
