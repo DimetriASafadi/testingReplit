@@ -1,11 +1,12 @@
 import Phaser from 'phaser';
 import { building, projects } from '../catalog';
-import type { GameState, Job, Plot, Unit } from '../model';
-import { DIRS, TEX_H, TEX_W, U, VEH_SIZE, drawVehicle, makeCanvas } from '../art';
+import type { GameState, Plot } from '../model';
+import { TEX_H, TEX_W, U, makeCanvas } from '../art';
 import { GROUND_KEYS, SPR, SPRITE_KEYS, builtKey, constructKey, groundUrl, isFarm, ruinKey, siteKey, sprUrl } from '../realart';
 import { Painter, blob, frameFor, rect, roundRect, seeded, GK } from '../ground';
-import { WK_FOOT, WK_FRAMES, WK_H, WK_W, drawWorker, type WorkerRole } from '../workers';
-import { constructionCanvas } from '../construction-art';
+import { constructionCanvas, constructionStageFor } from '../construction-art';
+import { SiteAnimation } from '../site-animation';
+import { FleetAnimation, preloadMachinery } from '../fleet-animation';
 import { ENVIRONMENT_IDS, environmentUrl, groundStamp } from '../environment-art';
 
 export interface CityHooks { getState(): GameState; onSelect(plotId: number | null): void; onCamera(c: { x: number; y: number; zoom: number }): void }
@@ -14,13 +15,14 @@ const iso = (lx: number, ly: number) => ({ x: (lx - ly) * U, y: (lx + ly) * U / 
 const unIso = (wx: number, wy: number) => ({ lx: wy / U + wx / (2 * U), ly: wy / U - wx / (2 * U) });
 const DRAG = 9; const ANCHOR_LOT = 380; const SC = 0.88;
 
-interface PlotView { key: string; img: Phaser.GameObjects.Image; shadow?: Phaser.GameObjects.Image; skirt?: Phaser.GameObjects.Image; workers?: Phaser.GameObjects.Image[]; extra?: Phaser.GameObjects.Container; bar?: Phaser.GameObjects.Graphics; coin?: Phaser.GameObjects.Container }
+interface PlotView { key: string; img: Phaser.GameObjects.Image; shadow?: Phaser.GameObjects.Image; skirt?: Phaser.GameObjects.Image; bar?: Phaser.GameObjects.Graphics; coin?: Phaser.GameObjects.Container }
 
 export class CityScene extends Phaser.Scene {
   hooks!: CityHooks;
   private district: string | null = null;
   private views = new Map<number, PlotView>();
-  private vehicles = new Map<string, Phaser.GameObjects.Image>();
+  private siteAnimation!: SiteAnimation;
+  private fleetAnimation!: FleetAnimation;
   private sel!: Phaser.GameObjects.Graphics;
   private layer!: Phaser.GameObjects.Container;
   private selected: number | null = null;
@@ -29,11 +31,17 @@ export class CityScene extends Phaser.Scene {
   private dust!: Phaser.GameObjects.Particles.ParticleEmitter;
   private roadImg?: Phaser.GameObjects.Image; private roadStage = -1; private maxL = 16; private frame!: ReturnType<typeof frameFor>; private groundKey = '';
   private sites = new Map<string, { key: string; img: Phaser.GameObjects.Image; label: Phaser.GameObjects.Text; bar: Phaser.GameObjects.Graphics }>();
+  private projectPlots: Plot[] = [];
+  private occlusion = new Set<number>();
+  private occlusionAt = 0;
 
   constructor() { super('city'); }
 
   create() {
     this.hooks = this.registry.get('hooks');
+    this.siteAnimation = new SiteAnimation(this, iso, SC);
+    this.fleetAnimation = new FleetAnimation(this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { this.siteAnimation.destroy(); this.fleetAnimation.destroy(); });
     this.cameras.main.setBackgroundColor('#b3a483');
     this.input.addPointer(1);
     if (!this.textures.exists('dot')) { const g = this.make.graphics({}, false); g.fillStyle(0xe8dcc4, 1).fillCircle(4, 4, 4); g.generateTexture('dot', 8, 8); g.destroy(); }
@@ -52,7 +60,9 @@ export class CityScene extends Phaser.Scene {
   }
 
   private buildWorld(st: GameState) {
-    this.children.removeAll(true); this.views.clear(); this.vehicles.clear();
+    this.siteAnimation.resetDistrict(); this.fleetAnimation.resetDistrict();
+    this.occlusion.clear(); this.occlusionAt = 0;
+    this.children.removeAll(true); this.views.clear();
     this.dust = this.add.particles(0, 0, 'dot', { speed: { min: 6, max: 26 }, angle: { min: 200, max: 340 }, scale: { start: 0.9, end: 2.4 }, alpha: { start: 0.55, end: 0 }, lifespan: 1300, tint: [0xcdbb98, 0xb8ae9a, 0xe8dcc4], emitting: false }).setDepth(1e6);
     const d = st.districts.find(x => x.id === this.district)!;
     const max = Math.max(...d.plots.map(p => Math.max(p.x, p.y))) + 2;
@@ -167,13 +177,16 @@ export class CityScene extends Phaser.Scene {
   private siteSpots() { const m = this.maxL; return [[m + 1, 1], [m + 1, 5], [m + 1, 9], [m + 1, 13], [1, m + 1], [5, m + 1], [9, m + 1], [13, m + 1]] as [number, number][]; }
   private syncSites(d: { id: string; projects: { id: string; status: string; startedAt: number; endsAt: number }[] }, now: number) {
     const defs = projects(d.id === 'rashid').filter(p => p.id !== 'road'); const spots = this.siteSpots();
+    this.projectPlots = [];
     defs.forEach((def, i) => {
       const ps = d.projects.find(p => p.id === def.id); if (!ps) return;
       const f = ps.status === 'building' ? Phaser.Math.Clamp((now - ps.startedAt) / Math.max(1, ps.endsAt - ps.startedAt), 0, 1) : 0;
-      const stage = ps.status === 'idle' ? 0 : ps.status === 'building' ? 1 : 2; const q = stage === 1 ? Math.floor(f * 3) : 0;
+      const stage = ps.status === 'idle' ? 0 : ps.status === 'building' ? 1 : 2; const q = stage === 1 ? constructionStageFor(f) : 0;
       const key = `ps:${def.id}:${stage}:${q}`; const [lx, ly] = spots[i] ?? [this.maxL + 1, 1 + i * 2]; const c = iso(lx, ly);
       const sk = siteKey(def.id, stage as 0 | 1 | 2, q);
       const projectBuilding: Record<string, string> = { water: 'water_treatment', power: 'work', housing: 'housing_4', park: 'ornamental_trees', services: 'municipality', farm: 'wheat', commerce: 'modern_mall', industry: 'steel' };
+      if (stage === 1) this.projectPlots.push({ id: 1000 + i, x: lx - 1, y: ly - 1, status: 'building',
+        buildingId: projectBuilding[def.id] ?? 'work', orientation: 0, startedAt: ps.startedAt, endsAt: ps.endsAt, incomeAt: 0 });
       const tk = stage === 1 ? this.constructionTex(projectBuilding[def.id] ?? 'work', 0, q) : sk ? 's:' + sk : this.skirtTex(i % 3, true);
       let v = this.sites.get(def.id);
       if (!v) { const img = this.place(tk, c.x, c.y, c.y);
@@ -191,7 +204,7 @@ export class CityScene extends Phaser.Scene {
     if (p.status === 'empty') return `e:${p.id % 7}`;
     if (p.status === 'built') return `b:${p.buildingId}:${p.orientation}`;
     const prog = Math.min(1, Math.max(0, (now - p.startedAt) / Math.max(1, p.endsAt - p.startedAt)));
-    return `c:${p.buildingId}:${p.orientation}:${prog < 0.3 ? 0 : prog < 0.68 ? 1 : 2}`;
+    return `c:${p.buildingId}:${p.orientation}:${constructionStageFor(prog)}`;
   }
 
   /** textured empty lot (gravel + survey stakes) */
@@ -287,7 +300,7 @@ export class CityScene extends Phaser.Scene {
     const c = iso(p.x + 1, p.y + 1);
     if (!v || v.key !== key) {
       const [t, id, a, b] = key.split(':'); const tk = this.plotTex(t, id, a, b, p.id);
-      if (v) { this.applyTex(v.img, tk); v.key = key; v.extra?.destroy(); v.extra = undefined; v.bar?.destroy(); v.bar = undefined; v.workers?.forEach(w => w.destroy()); v.workers = undefined; this.tweens.add({ targets: v.img, scaleY: { from: SC * 0.96, to: SC }, duration: 380, ease: 'Back.out' }); }
+      if (v) { this.applyTex(v.img, tk); v.key = key; v.bar?.destroy(); v.bar = undefined; }
       else { const img = this.place(tk, c.x, c.y, c.y); const shadow = t === 'e' || t === 'r' ? undefined : this.add.image(c.x, c.y, this.shadowTex()).setDepth(c.y - 1).setScale(1.3); v = { key, img, shadow }; this.views.set(p.id, v); }
       if (!v.shadow && t !== 'e' && t !== 'r') v.shadow = this.add.image(c.x, c.y, this.shadowTex()).setDepth(c.y - 1).setScale(1.3);
       if (t !== 'e') {
@@ -297,7 +310,7 @@ export class CityScene extends Phaser.Scene {
       } else if (v.skirt) { v.skirt.destroy(); v.skirt = undefined; }
       if (v.shadow && (t === 'e' || t === 'r')) { v.shadow.destroy(); v.shadow = undefined; }
       v.img.setFlipX(false).setAlpha(1);
-      if (t === 'c') this.addCrane(v, c, p);
+      if (t === 'c') v.bar = this.add.graphics().setDepth(6e5);
     }
     // ready-to-collect badge
     const ready = p.status === 'built' && building(p.buildingId).income > 0 && now >= p.incomeAt + 3600000;
@@ -308,54 +321,6 @@ export class CityScene extends Phaser.Scene {
     } else if (!ready && v.coin) { v.coin.destroy(); v.coin = undefined; }
   }
 
-  private wTex(role: WorkerRole, variant: number, frame: number) {
-    const key = `w:${role}:${variant % 3}:${frame}`; if (!this.textures.exists(key)) { const c = makeCanvas(WK_W, WK_H); drawWorker(c.getContext('2d')!, role, frame, variant); this.textures.addCanvas(key, c); } return key;
-  }
-
-  /** site rig: tower crane (cable + swinging load) for multi-storey jobs, plus rigged workers that run on real timers */
-  private addCrane(v: PlotView, c: { x: number; y: number }, p: Plot) {
-    const def = building(p.buildingId); const tall = def.floors >= 3 && !isFarm(def.id); const h = Math.min(300, 90 + def.floors * 14);
-    const side = p.orientation === 0 ? 1 : -1;
-    if (tall) {
-      const g = this.add.graphics();
-      g.fillStyle(0x2b2320).fillRect(-9, -3, 18, 5);
-      for (let y = -h; y < 0; y += 12) { g.lineStyle(1.4, 0xb8861c).lineBetween(-4, y, -4, y + 12).lineBetween(4, y, 4, y + 12).lineBetween(-4, y + 12, 4, y); }
-      const jib = this.add.graphics(); jib.fillStyle(0xcf9a24).fillRect(-26, -3, 118, 5); jib.fillStyle(0x6f6a62).fillRect(-34, -7, 15, 11); jib.fillStyle(0x3a3532).fillRect(-3, -10, 6, 8); jib.lineStyle(1, 0x3a3532).lineBetween(-3, -10, 92, -3).lineBetween(3, -10, -26, -3);
-      jib.y = -h;
-      const hook = this.add.container(70, -h + 3); const cable = this.add.graphics(); cable.lineStyle(1, 0x2b2320).lineBetween(0, 0, 0, 52); const load = this.add.graphics();
-      load.fillStyle(0x6b5036).fillRect(-12, 52, 24, 3); load.fillStyle(0x9a958a).fillRect(-11, 44, 22, 8).fillStyle(0xb2ada0).fillRect(-11, 44, 22, 2); load.fillStyle(0x8a8378).fillRect(-1, 44, 2, 8);
-      hook.add([cable, load]);
-      const box = this.add.container(c.x + 90 * side, c.y - 10, [g, jib, hook]).setDepth(c.y + 1);
-      const jd = 3200 + (p.id % 5) * 300;
-      this.tweens.add({ targets: jib, scaleX: { from: 1, to: 0.45 }, yoyo: true, repeat: -1, duration: jd, ease: 'Sine.inOut' });
-      this.tweens.add({ targets: hook, x: { from: 70, to: 70 * 0.45 }, yoyo: true, repeat: -1, duration: jd, ease: 'Sine.inOut' });
-      this.tweens.add({ targets: load, angle: { from: -3, to: 3 }, yoyo: true, repeat: -1, duration: 1100, ease: 'Sine.inOut' });
-      box.scaleX = side; v.extra = box;
-    }
-    const n = Math.min(4, 2 + Math.floor(def.floors / 3)); v.workers = [];
-    for (let i = 0; i < n; i++) v.workers.push(this.add.image(c.x, c.y, this.wTex('walk', i, 0)).setOrigin(0.5, WK_FOOT / WK_H).setScale(0.34));
-    v.bar = this.add.graphics().setDepth(6e5);
-  }
-
-  private tickWorkers(d: { plots: Plot[] }, now: number) {
-    for (const p of d.plots) {
-      const v = this.views.get(p.id); if (!v?.workers || p.status !== 'building') continue;
-      const cx = p.x + 1, cy = p.y + 1; const front = p.orientation === 0;
-      v.workers.forEach((w, i) => {
-        const T = 14000; const t = ((now + i * 3300 + p.id * 911) % T) / 1000;
-        const pile: [number, number] = [cx - 0.25 + i * 0.1, cy + 1.3];
-        const site: [number, number] = front ? [cx + 0.45 + i * 0.14, cy + 0.85] : [cx + 0.85, cy + 0.45 + i * 0.14];
-        let pos: [number, number]; let role: WorkerRole = 'walk'; let frame = 0; let dir = 1;
-        const lerp = (k: number, a: [number, number], b: [number, number]): [number, number] => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
-        const sdx = (a: [number, number], b: [number, number]) => ((b[0] - a[0]) - (b[1] - a[1]));
-        if (t < 4.2) { pos = lerp(t / 4.2, pile, site); role = 'carry'; frame = Math.floor(t * 1.9 * WK_FRAMES) % WK_FRAMES; dir = Math.sign(sdx(pile, site)) || 1; }
-        else if (t < 9.2) { pos = site; role = 'hammer'; frame = Math.floor(now / 110 + i * 3) % WK_FRAMES; dir = front ? -1 : 1; if (Math.random() < 0.012) this.dust.emitParticleAt(iso(pos[0], pos[1]).x, iso(pos[0], pos[1]).y - 4, 1); }
-        else if (t < 13.2) { pos = lerp((t - 9.2) / 4, site, pile); frame = Math.floor(t * 1.9 * WK_FRAMES) % WK_FRAMES; dir = Math.sign(sdx(site, pile)) || 1; }
-        else { pos = pile; frame = 0; dir = 1; }
-        const q = iso(pos[0], pos[1]); w.setTexture(this.wTex(role, i, frame)).setPosition(q.x, q.y).setFlipX(dir < 0).setDepth(q.y + 2);
-      });
-    }
-  }
 
   private drawSel(plots: Plot[]) {
     this.sel.clear();
@@ -366,56 +331,34 @@ export class CityScene extends Phaser.Scene {
 
   select(id: number | null) { this.selected = id; const st = this.hooks.getState(); const d = st.districts.find(x => x.id === this.district); if (d) this.drawSel(d.plots); }
 
-  // --- jobs & vehicles ---
-  private route(job: Job, plots: Plot[]) {
-    const o = plots.find(p => p.id === job.originPlotId) ?? plots[0]; const t = plots.find(p => p.id === job.plotId)!;
-    return [[o.x + 1, o.y + 1], [o.x + 2, o.y + 1], [o.x + 2, t.y + 2], [t.x + 1, t.y + 2], [t.x + 1, t.y + 1.15]] as [number, number][];
-  }
-  private along(pts: [number, number][], f: number): [number, number] {
-    const segs = pts.slice(1).map((p, i) => Math.hypot(p[0] - pts[i][0], p[1] - pts[i][1])); const total = segs.reduce((a, b) => a + b, 0) || 1;
-    let dist = Phaser.Math.Clamp(f, 0, 1) * total;
-    for (let i = 0; i < segs.length; i++) { if (dist <= segs[i] || i === segs.length - 1) { const k = segs[i] ? dist / segs[i] : 0; return [pts[i][0] + (pts[i + 1][0] - pts[i][0]) * k, pts[i][1] + (pts[i + 1][1] - pts[i][1]) * k]; } dist -= segs[i]; }
-    return pts[pts.length - 1];
-  }
-
   update() {
     const st = this.hooks?.getState(); if (!st?.currentDistrict || st.currentDistrict !== this.district) return;
     const d = st.districts.find(x => x.id === this.district)!; const now = Date.now();
     // construction progress bars
     for (const p of d.plots) { const v = this.views.get(p.id); if (p.status === 'building' && v?.bar) { const c = iso(p.x + 1, p.y + 1); const f = Phaser.Math.Clamp((now - p.startedAt) / Math.max(1, p.endsAt - p.startedAt), 0, 1); v.bar.clear().fillStyle(0x2b2320, 0.75).fillRoundedRect(c.x - 40, c.y + 30, 80, 9, 4).fillStyle(0xf2d06b).fillRoundedRect(c.x - 38, c.y + 32, 76 * f, 5, 2);  } }
-    this.tickWorkers(d, now);
-    const seen = new Set<string>();
-    for (const job of st.jobs.filter(j => j.districtId === this.district)) {
-      const pts = this.route(job, d.plots); const back = [...pts].reverse();
-      job.unitIds.forEach((uid, i) => {
-        const unit = st.units.find(u => u.id === uid); if (!unit) return;
-        const lag = i * 1200; const t = now - lag;
-        let pos: [number, number] | null; let next: [number, number] | null = null; let working = false;
-        if (t < job.start) pos = pts[0];
-        else if (t < job.arrival) { const f = (t - job.start) / Math.max(1, job.arrival - job.start); pos = this.along(pts, f); next = this.along(pts, f + 0.01); }
-        else if (now < job.workEnd) { pos = [pts[4][0] + (i - 1) * 0.28, pts[4][1] + (i % 2) * 0.2]; working = true; }
-        else if (t < job.returnEnd) { const f = (t - job.workEnd) / Math.max(1, job.returnEnd - job.workEnd); pos = this.along(back, f); next = this.along(back, f + 0.01); }
-        else pos = null;
-        if (!pos) return;
-        seen.add(uid);
-        let spr = this.vehicles.get(uid);
-        if (!spr) { spr = this.add.image(0, 0, this.vTex(unit, 2)).setOrigin(0.5, 0.62); spr.setData('dir', 2); this.vehicles.set(uid, spr); }
-        if (next) { const dir = ((Math.round(Math.atan2(next[1] - pos[1], next[0] - pos[0]) / (Math.PI * 2) * DIRS) % DIRS) + DIRS) % DIRS; if (dir !== spr.getData('dir')) { spr.setData('dir', dir); } spr.setTexture(this.vTex(unit, dir)); }
-        else if (working) { const dir = (Math.floor(now / 1400) + i * 4) % 2 ? 1 : 3; spr.setTexture(this.vTex(unit, dir)); }
-        const w = iso(pos[0], pos[1]);
-        const jig = working ? Math.sin(now / 90 + i) * 1.5 : 0;
-        spr.setPosition(w.x + jig, w.y + (working ? Math.abs(Math.sin(now / 160)) * -2 : 0)).setDepth(w.y + 40).setVisible(true);
-        if (working && Math.random() < 0.18) this.dust.emitParticleAt(w.x + (Math.random() - 0.5) * 50, w.y - 4, 1);
-      });
-    }
-    const depot = d.plots.find(p => p.buildingId === 'recycling' && p.status === 'built');
-    if (depot) { let n = 0; for (const unit of st.units) { if (seen.has(unit.id) || st.jobs.some(j => j.unitIds.includes(unit.id))) continue;
-      const slot = n++; const lx = depot.x + 2 - 0.12 + (slot % 2) * 0.24, ly = depot.y + 0.45 + Math.floor(slot / 2) * 0.32; const w = iso(lx, ly);
-      let spr = this.vehicles.get(unit.id); if (!spr) { spr = this.add.image(0, 0, this.vTex(unit, 4)).setOrigin(0.5, 0.62); this.vehicles.set(unit.id, spr); }
-      spr.setTexture(this.vTex(unit, 4)).setPosition(w.x, w.y).setDepth(w.y + 40).setVisible(true); seen.add(unit.id); } }
-    for (const [id, s] of this.vehicles) if (!seen.has(id)) { s.destroy(); this.vehicles.delete(id); }
+    this.siteAnimation.update([...d.plots, ...this.projectPlots], now);
+    this.fleetAnimation.update(st, now, this.roadStage);
+    this.revealWorkingFleet(now);
   }
-  private vTex(u: Unit, dir: number) { return this.tex(`v:${u.kind}:${dir}:${u.level}`, VEH_SIZE, VEH_SIZE, c => drawVehicle(c, u.kind, dir, u.level)); }
+  private revealWorkingFleet(now: number) {
+    if (now >= this.occlusionAt) {
+      this.occlusionAt = now + 160; this.occlusion.clear();
+      const points = this.fleetAnimation.focusPoints();
+      for (const [id, v] of this.views) {
+        const img = v.img, bounds = img.getBounds();
+        for (const p of points) {
+          if (img.depth <= p.depth + 8 || !bounds.contains(p.x, p.y)) continue;
+          const x = Math.floor((p.x - img.x) / img.scaleX + img.displayOriginX);
+          const y = Math.floor((p.y - img.y) / img.scaleY + img.displayOriginY);
+          if ((this.textures.getPixelAlpha(x, y, img.texture.key) ?? 0) > 90) { this.occlusion.add(id); break; }
+        }
+      }
+    }
+    for (const [id, v] of this.views) {
+      const alpha = this.occlusion.has(id) ? .28 : 1;
+      v.img.setAlpha(v.img.alpha + (alpha - v.img.alpha) * .16);
+    }
+  }
 
   // --- input ---
   private pDown(p: Phaser.Input.Pointer) {
@@ -459,6 +402,7 @@ export class BootScene extends Phaser.Scene {
     for (const k of SPRITE_KEYS) this.load.image('s:' + k, sprUrl(k));
     for (const k of GROUND_KEYS) this.load.image('g:' + k, groundUrl(k));
     for (const id of ENVIRONMENT_IDS) this.load.image('env:' + id, environmentUrl(id));
+    preloadMachinery(this);
     this.load.image('worldmap', base + 'art/world-map.jpg');
   }
   create() { this.game.events.emit('booted'); this.scene.start('city'); }

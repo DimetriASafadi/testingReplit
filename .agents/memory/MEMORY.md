@@ -20,3 +20,4 @@
 - [Native save performance](native-save-performance.md) — camera checkpoints use detached background snapshots; actual fleet markers fade at close zoom.
 - [Generated machinery preparation](generated-machinery-preparation.md) — split meshes are not complete rigs; check cut topology and request a textured model when UVs are absent.
 - [Browser clock testing](browser-clock-testing.md) — run accelerated browser-clock checks after frontend edits settle; hot reload resets injected clocks, not persisted deadlines.
+- [Consistent 2D machinery](2d-mechanical-art.md) — offline articulated poses preserve vehicle identity; check contact and foreground occlusion inside the playable city.

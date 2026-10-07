@@ -1,0 +1,44 @@
+# Articulated 2D machinery and living construction sites
+
+The game remains Phaser 2D. Blender is used **offline**, on CPU, to render transparent
+sprites; players do not download or render 3D models.
+
+- Unbranded yellow excavator and tracked bulldozer; ivory/green ribbed tipper.
+- Three alpha WebP atlases, 276 poses: 16 headings with rolling phases, 72 excavator
+  work poses, 36 blade-work poses, 36 actual tail-hinge tipping poses, and four
+  parked load amounts. Packed art is about 2 MiB; every atlas stays below 4096px.
+- Shared orthographic camera, upper-left lighting, matte paint and the city’s
+  restrained colour grade. Contact shadows are baked without opaque floor pads.
+- Excavator upper carriage, boom, stick, bucket and hydraulic ram articulate
+  independently. The tracks stay planted during digging. Loading particles emit
+  from the rendered bucket lip; the tipper discharges at its rendered rear outlet.
+- Curb positions keep chassis off the ruined building footprint. Trucks can back
+  into loading positions. Adjacent heading/pose interpolation avoids snap turns.
+- Foreground buildings temporarily fade only when their opaque pixels hide an
+  active machine or tool. Depth order and real road positions remain unchanged.
+- Eight construction stages use the chosen building and front/rear orientation.
+  Columns, slabs, formwork and scaffolds precede finished surfaces; grounded workers
+  carry materials and lay them. Multi-storey cranes lift, swing and lower slung pallets.
+- Farms use planted rows, species-specific ripening, irrigation, harvesting and
+  livestock motion. Tree wind uses fragments of the actual farm artwork, not
+  unrelated generic canopy stickers.
+
+Visual classes read existing saved deadlines. They do not change clearance duration,
+purchase prices, income, inventory settlement, save format or district progression.
+Cosmetic depot tipping follows settlement and never delays payment or blocks new jobs.
+
+## Rebuild
+
+From repository root:
+
+```sh
+blender -b --factory-startup --python NEWGaza2D/tools/render_machinery.py
+python NEWGaza2D/tools/pack_machinery.py
+node NEWGaza2D/tests/machinery-integrity.mjs
+node NEWGaza2D/tests/run-construction.mjs
+```
+
+The user-supplied separated Meshy excavator in the existing `exports/meshy_excavator`
+folder is read-only input. Truck/dozer rigs are authored in the rendering script.
+Raw renders live in the ignored `NEWGaza2D/art-src` folder; packed runtime files and
+pose metadata are versioned. No Unity `.meta` files are generated.

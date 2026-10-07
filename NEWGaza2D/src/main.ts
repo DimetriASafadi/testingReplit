@@ -4,7 +4,7 @@ import { BUILDINGS, DISTRICTS, EQUIPMENT, building, projects } from './catalog';
 import { GameStore, SAVE_KEY, districtProgress, jobPhase } from './engine';
 import type { Category, DistrictState, EquipmentKind, GameState, Plot } from './model';
 import { BootScene, CityScene } from './scenes/CityScene';
-import { drawVehicle } from './art';
+import { machinePreview } from './fleet-animation';
 import { previewUrl } from './realart';
 
 const app = document.getElementById('app')!;
@@ -235,8 +235,7 @@ function renderDialog() {
   if (regions.get('dlg') !== html) { const f = document.activeElement as HTMLElement | null; const k = f && dlg.contains(f) ? f.dataset.k : undefined; dlg.innerHTML = html; regions.set('dlg', html); vehImgs(); if (k) (dlg.querySelector(`[data-k="${CSS.escape(k)}"]`) as HTMLElement | null)?.focus(); }
   if (!dlg.open) dlg.showModal();
 }
-const vehCache: Record<string, string> = {};
-function vehImgs() { dlg.querySelectorAll<HTMLImageElement>('img[data-veh]').forEach(img => { const k = img.dataset.veh as EquipmentKind; if (!vehCache[k]) { const c = document.createElement('canvas'); c.width = c.height = 96; drawVehicle(c.getContext('2d')!, k, 3, 0); vehCache[k] = c.toDataURL(); } img.src = vehCache[k]; }); }
+function vehImgs() { dlg.querySelectorAll<HTMLImageElement>('img[data-veh]').forEach(img => { img.src = machinePreview(img.dataset.veh as EquipmentKind); }); }
 
 // ---------- master render ----------
 let scene: CityScene | null = null;
@@ -284,6 +283,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && !dlg.open 
 const game = new Phaser.Game({
   type: Phaser.AUTO, parent: stage, backgroundColor: '#d9c39a', scale: { mode: Phaser.Scale.RESIZE, width: window.innerWidth, height: window.innerHeight },
   scene: [BootScene, CityScene], render: { antialias: true }, input: { activePointers: 3 },
+});
+// Development-only inspection for the isolated art regression browser.
+if (import.meta.env.DEV) Object.defineProperty(window, '__newgazaArtScene', {
+  configurable: true, get: () => game.scene.getScene('city'),
 });
 game.registry.set('hooks', {
   getState: () => store.state,
