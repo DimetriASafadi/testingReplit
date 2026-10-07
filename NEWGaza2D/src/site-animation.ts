@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { building } from './catalog';
 import type { Plot } from './model';
 import { SPR, builtKey } from './realart';
+import { builtScale } from './art-scale';
 import { WK_FOOT, WK_FRAMES, WK_H, WK_W, drawWorker, type WorkerRole } from './workers';
 import { isFarmDef, constructionStageFor, farmLattice } from './construction-art';
 
@@ -27,7 +28,7 @@ const TREE_KIND = ['citrus', 'olive', 'palms', 'protective_trees', 'ornamental_t
 const CROP_KIND: Record<string, string> = { wheat: 'wheat', corn: 'corn', vegetables: 'leaf', strawberry: 'straw' };
 const lerp = (a: Pt, b: Pt, k: number): Pt => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
 const hash = (n: number) => { const s = Math.sin(n * 91.7) * 43758.5; return s - Math.floor(s); };
-const loc = (p: Plot, u: number, v: number): Pt => [p.x + 1 + u * 0.77, p.y + 1 + v * 0.77];
+const loc = (p: Plot, u: number, v: number, k = 1): Pt => [p.x + 1 + u * 0.77 * k, p.y + 1 + v * 0.77 * k];
 const ease = (k: number) => k * k * (3 - 2 * k);
 const clamp01 = (k: number) => Math.min(1, Math.max(0, k));
 
@@ -36,8 +37,10 @@ export class SiteAnimation {
   private dust?: Phaser.GameObjects.Particles.ParticleEmitter;
   private patchCache = new Map<string, Patch[]>();
   private handCache = new Map<string, { x: number; y: number }>();
-  constructor(private scene: Phaser.Scene, private iso: (lx: number, ly: number) => { x: number; y: number }, private sc = 0.88, private maxWorkers = 28) {}
+  constructor(private scene: Phaser.Scene, private iso: (lx: number, ly: number) => { x: number; y: number }, private sc = 0.72, private maxWorkers = 28) {}
 
+  /** actual art scale of this plot's final building; offsets shrink with it, workers do not */
+  private artK(p: Plot) { return builtScale(builtKey(p.buildingId, p.orientation), this.sc) / 0.88; }
   private tex(key: string, w: number, h: number, draw: (c: CanvasRenderingContext2D) => void) {
     const t = this.scene.textures; if (!t.exists(key)) { const cv = document.createElement('canvas'); cv.width = w; cv.height = h; draw(cv.getContext('2d')!); t.addCanvas(key, cv); } return key;
   }
@@ -172,7 +175,8 @@ export class SiteAnimation {
     const cx = p.x + 1, cy = p.y + 1, front = p.orientation === 0; const stageK = constructionStageFor(f);
     const tall = def.floors >= 3 && stageK < 7;
     const T = 16, ct = ((now / 1000 + p.id * 1.37) % T);
-    const pileL: Pt = [cx - 0.5, cy + 0.55], siteL: Pt = front ? [cx + 0.5, cy + 0.62] : [cx + 0.62, cy + 0.5];
+    const K = this.artK(p);
+    const pileL: Pt = [cx - 0.5 * K, cy + 0.55 * K], siteL: Pt = front ? [cx + 0.5 * K, cy + 0.62 * K] : [cx + 0.62 * K, cy + 0.5 * K];
     const pp = this.iso(pileL[0], pileL[1]), sp = this.iso(siteL[0], siteL[1]);
     if (!v.ground) v.ground = this.scene.add.graphics();
     const gr = v.ground; gr.clear(); gr.setDepth(Math.max(pp.y, sp.y) + 0.5);
@@ -183,8 +187,8 @@ export class SiteAnimation {
     if (delivered > 0.02) { gr.fillStyle(0x6b5036, delivered).fillRect(sp.x - 11, sp.y - 2, 22, 3); blocks(sp.x + 1, sp.y - 2, Math.max(1, Math.round(6 * delivered)), 1); }
     if (tall) {
       if (!v.crane) { v.crane = this.scene.add.graphics(); v.load = this.scene.add.graphics(); }
-      const mast = this.iso(front ? cx + 0.62 : cx - 0.05, front ? cy - 0.05 : cy + 0.62); const B = { x: mast.x, y: mast.y };
-      const side = Math.sign(sp.x - B.x) || 1; const H = Math.min(300, 80 + def.floors * 15) + 20;
+      const mast = this.iso(front ? cx + 0.62 * K : cx - 0.05 * K, front ? cy - 0.05 * K : cy + 0.62 * K); const B = { x: mast.x, y: mast.y };
+      const side = Math.sign(sp.x - B.x) || 1; const H = (Math.min(300, 80 + def.floors * 15) + 20) * K;
       const g = v.crane, ld = v.load!; g.clear(); ld.clear(); g.setDepth(B.y + 1); ld.setDepth(B.y + 3);
       const travel = Math.min(pp.y, sp.y) - 78;
       let hx: number, hy: number, carry = false, slack = false;
@@ -214,8 +218,8 @@ export class SiteAnimation {
     // crew picks blocks from the delivered stack/pile, carries to the working face and lays them with the forearm tool
     v.workers.forEach((l, i) => {
       const t = ((now + i * 3300 + p.id * 911) % 14000) / 1000;
-      const face: Pt = front ? [cx + 0.2 + i * 0.16, cy + 0.68] : [cx + 0.68, cy + 0.2 + i * 0.16];
-      const pOff: Pt = [pileL[0] + 0.25 + i * 0.1, pileL[1] - 0.1];
+      const face: Pt = front ? [cx + (0.2 + i * 0.16) * K, cy + 0.68 * K] : [cx + 0.68 * K, cy + (0.2 + i * 0.16) * K];
+      const pOff: Pt = [pileL[0] + (0.25 + i * 0.1) * K, pileL[1] - 0.1 * K];
       const dirOf = (a: Pt, b: Pt) => Math.sign((b[0] - a[0]) - (b[1] - a[1])) || 1;
       let pos: Pt, role: WorkerRole = 'walk', frame = 0, dir = 1;
       if (t < 4.2) { pos = lerp(pOff, face, t / 4.2); role = 'carry'; frame = Math.floor(t * 1.9 * WK_FRAMES) % WK_FRAMES; dir = dirOf(pOff, face); }
@@ -249,18 +253,18 @@ export class SiteAnimation {
     const f = bld ? clamp01((now - p.startedAt) / Math.max(1, p.endsAt - p.startedAt)) : 1;
     const ripe = bld ? 0 : clamp01(1 - (p.incomeAt + 3600000 - now) / 3600000);
     const ready = !bld && now >= p.incomeAt + 3600000;
-    const lat = farmLattice(def.id); const spots = lat.spots;
+    const lat = farmLattice(def.id); const spots = lat.spots; const K = this.artK(p);
     const ck = CROP_KIND[def.id]; const treeKind = TREE_KIND.includes(def.id) ? def.id : '';
     const lvl = bld ? 0 : ready || ripe > 0.8 ? 2 : ripe > 0.4 ? 1 : 0;
     if (ck) {
       const idx = spots.map((_, i) => i).filter(i => i % 3 === 0);
       if (!v.crops.length) idx.forEach(() => v.crops.push(this.scene.add.image(0, 0, this.crop(ck, 0)).setOrigin(0.5, 1)));
       idx.forEach((si, n) => {
-        const im = v.crops[n]; const [lx, ly] = loc(p, spots[si][0] * 0.9, spots[si][1] * 0.9); const q = this.iso(lx, ly);
+        const im = v.crops[n]; const [lx, ly] = loc(p, spots[si][0] * 0.9, spots[si][1] * 0.9, K); const q = this.iso(lx, ly);
         const g = bld ? Math.max(0, f * 1.4 - hash(si) * 0.4) : 1; im.setVisible(g > 0.1);
         const wind = Math.sin(now / 900 + q.x * 0.05 + q.y * 0.04) * 2.6 + Math.sin(now / 370 + si) * 0.8;
         im.setTexture(this.crop(ck, lvl)).setPosition(q.x, q.y).setDepth(q.y + 1).setAngle(wind).setAlpha(.48)
-          .setScale(0.48 * (0.3 + 0.7 * Math.min(1, g)) * this.sc / 0.88, 0.48 * (0.25 + 0.75 * Math.min(1, g)));
+          .setScale(0.48 * (0.3 + 0.7 * Math.min(1, g)) * K, 0.48 * (0.25 + 0.75 * Math.min(1, g)) * Math.max(K, 0.8));
       });
     }
     if (treeKind) {
@@ -270,7 +274,7 @@ export class SiteAnimation {
       pts.forEach((pt, i) => {
         const im = v.trees[i]; const g = bld ? clamp01(f * 1.5 - hash(i + p.id) * 0.5) : 1; im.setVisible(g > 0.08);
         const sway = Math.sin(now / 1400 + i * 1.9 + p.id) * 0.9; // <=1 degree; patch stays rooted on its photo position
-        im.setTexture(this.patchTex(bk, pt, treeKind, fruit)).setPosition(c0.x + pt.ox * this.sc, c0.y + pt.oy * this.sc).setDepth(c0.y + 3 + i * 0.01).setAngle(sway).setScale(this.sc * (0.3 + 0.7 * g));
+        im.setTexture(this.patchTex(bk, pt, treeKind, fruit)).setPosition(c0.x + pt.ox * K * 0.88, c0.y + pt.oy * K * 0.88).setDepth(c0.y + 3 + i * 0.01).setAngle(sway).setScale(K * 0.88 * (0.3 + 0.7 * g));
       });
     }
     const herd = def.id === 'cattle' || def.id === 'zoo';
@@ -278,7 +282,7 @@ export class SiteAnimation {
       const n = def.id === 'zoo' ? 4 : 3;
       if (!v.animals.length) for (let i = 0; i < n; i++) v.animals.push(this.scene.add.image(0, 0, this.cow(i, 0)).setOrigin(0.5, 0.95).setScale(def.id === 'zoo' ? 0.7 : 0.85));
       v.animals.forEach((a, i) => {
-        const t = now / 1000 * (0.12 + i * 0.03) + i * 2.1 + p.id; const pos = (tt: number): Pt => [p.x + 1 + Math.sin(tt) * 0.4, p.y + 1 + Math.cos(tt * 0.8 + i) * 0.36];
+        const t = now / 1000 * (0.12 + i * 0.03) + i * 2.1 + p.id; const pos = (tt: number): Pt => [p.x + 1 + Math.sin(tt) * 0.4 * K, p.y + 1 + Math.cos(tt * 0.8 + i) * 0.36 * K];
         const q = this.iso(...pos(t)), q2 = this.iso(...pos(t + 0.05)); const grazing = Math.sin(t * 2.3 + i) > 0.5;
         a.setTexture(this.cow(i, grazing ? 0 : Math.floor(now / 160) % 4)).setPosition(q.x, q.y).setDepth(q.y + 2).setFlipX(q2.x < q.x);
       });
@@ -291,19 +295,19 @@ export class SiteAnimation {
         role = bld ? (i === 0 ? 'sow' : 'water') : ready ? 'harvest' : 'water';
         const row = (Math.floor(now / 6000) + i * 2) % R; const ph = (now / 6000) % 1; const k = row % 2 ? 1 - ph : ph;
         const rowV = -0.82 + 1.64 * row / (R - 1); const off = i ? 0.1 : -0.06;
-        pos = ready ? loc(p, -0.5 + i * 0.9, rowV) : loc(p, -0.8 + k * 1.6, rowV + off); dir = row % 2 ? -1 : 1;
+        pos = ready ? loc(p, -0.5 + i * 0.9, rowV, K) : loc(p, -0.8 + k * 1.6, rowV + off, K); dir = row % 2 ? -1 : 1;
         if (ready) { dir = 1; role = 'harvest'; }
         frame = role === 'water' || role === 'sow' ? Math.floor(now / 110) % WK_FRAMES : Math.floor(now / 140) % WK_FRAMES;
       } else {
         // trees / herd: visit lattice spots one by one (walk 30%, work 70%)
         const leg = 4200; const n = Math.floor(now / leg) + i * 4 + p.id; const tt = (now % leg) / leg;
-        const a = spots[n % nS], b = spots[(n + 1) % nS]; const prev: Pt = loc(p, a[0] + 0.18, a[1] + 0.2), cur: Pt = loc(p, b[0] + 0.18, b[1] + 0.2);
+        const a = spots[n % nS], b = spots[(n + 1) % nS]; const prev: Pt = loc(p, a[0] + 0.18, a[1] + 0.2, K), cur: Pt = loc(p, b[0] + 0.18, b[1] + 0.2, K);
         const walking = tt < 0.3; pos = walking ? lerp(prev, cur, ease(tt / 0.3)) : cur; dir = Math.sign((cur[0] - prev[0]) - (cur[1] - prev[1])) || 1;
         role = herd ? 'water' : bld ? (i === 0 ? 'harvest' : 'water') : ready ? 'pick' : (i === 0 ? 'water' : 'pick');
         if (!bld && !ready && role === 'pick') role = 'water';
         if (walking) role = 'walk';
         frame = Math.floor(now / (walking ? 110 : 150)) % WK_FRAMES;
-        if (herd) { pos = loc(p, 0.95, -0.5 + i * 0.6); role = 'water'; dir = -1; }
+        if (herd) { pos = loc(p, 0.95, -0.5 + i * 0.6, K); role = 'water'; dir = -1; }
       }
       const q = this.place(l, pos, role, frame, dir, i);
       if (role === 'water') this.pour(v, l, role, i, frame, q, dir < 0, now);

@@ -5,6 +5,7 @@ import { TEX_H, TEX_W, U, makeCanvas } from '../art';
 import { GROUND_KEYS, SPR, SPRITE_KEYS, builtKey, constructKey, groundUrl, isFarm, ruinKey, siteKey, sprUrl } from '../realart';
 import { Painter, blob, frameFor, rect, roundRect, seeded, GK } from '../ground';
 import { constructionCanvas, constructionStageFor } from '../construction-art';
+import { ART_SC, builtScale, ruinScale } from '../art-scale';
 import { SiteAnimation } from '../site-animation';
 import { FleetAnimation, preloadMachinery } from '../fleet-animation';
 import { ENVIRONMENT_IDS, environmentUrl, groundStamp } from '../environment-art';
@@ -13,7 +14,7 @@ export interface CityHooks { getState(): GameState; onSelect(plotId: number | nu
 
 const iso = (lx: number, ly: number) => ({ x: (lx - ly) * U, y: (lx + ly) * U / 2 });
 const unIso = (wx: number, wy: number) => ({ lx: wy / U + wx / (2 * U), ly: wy / U - wx / (2 * U) });
-const DRAG = 9; const ANCHOR_LOT = 380; const SC = 0.88;
+const DRAG = 9; const ANCHOR_LOT = 380; const SC = ART_SC;
 
 interface PlotView { key: string; img: Phaser.GameObjects.Image; shadow?: Phaser.GameObjects.Image; skirt?: Phaser.GameObjects.Image; bar?: Phaser.GameObjects.Graphics; coin?: Phaser.GameObjects.Container }
 
@@ -80,7 +81,7 @@ export class CityScene extends Phaser.Scene {
     const cam = this.cameras.main;
     cam.setBounds(this.frame.ox - 120, this.frame.oy - 120, this.frame.w / GK + 240, this.frame.h / GK + 240);
     if (d.camera) { cam.setZoom(d.camera.zoom); cam.centerOn(d.camera.x, d.camera.y); }
-    else { cam.setZoom(Math.min(1, this.scale.width / (max * U * 2.2))); cam.centerOn(c.x, c.y); }
+    else { cam.setZoom(Phaser.Math.Clamp(Math.min(this.scale.width / (max * U * 2.0), this.scale.height / (max * U * 1.1)), 0.45, 1)); cam.centerOn(c.x, c.y); }
   }
 
   sync() {
@@ -151,21 +152,21 @@ export class CityScene extends Phaser.Scene {
     } else if (stage === 2) {
       each((c, v) => { P.fill(strip(c, v, 0.35), 'earth', 6, 0.9); P.fill(strip(c, v, 0.3), 'gravel', 4.5, 1); });
     } else {
-      each((c, v) => { P.fill(strip(c, v, stage === 4 ? 0.4 : 0.37), 'sand', 8, 0.6); P.fill(strip(c, v, 0.3), 'asphalt', 7, 1, 0, 0, stage === 3 ? 'rgba(10,10,12,.2)' : undefined); });
+      each((c, v) => { P.fill(strip(c, v, stage === 4 ? 0.46 : 0.43), 'sand', 8, 0.6); P.fill(strip(c, v, 0.35), 'asphalt', 7, 1, 0, 0, stage === 3 ? 'rgba(10,10,12,.2)' : undefined); });
       if (stage === 4) each((c, v) => {
-        for (const o of [-0.3, 0.3]) P.stroke(at(c, v, -0.4, o), at(c, v, max + 0.4, o), 'rgba(205,195,170,.8)', 2.2);
+        for (const o of [-0.34, 0.34]) P.stroke(at(c, v, -0.4, o), at(c, v, max + 0.4, o), 'rgba(205,195,170,.8)', 2.2);
         for (let s = 0.1; s < max; s += 0.55) P.stroke(at(c, v, s, 0), at(c, v, s + 0.24, 0), 'rgba(236,228,205,.85)', 2.2);
       });
     }
     // road edge darkening for crisp shoulders
-    if (stage >= 3) each((c, v) => { for (const o of [-0.3, 0.3]) P.stroke(at(c, v, -0.4, o), at(c, v, max + 0.4, o), 'rgba(15,15,15,.35)', 1.2); });
+    if (stage >= 3) each((c, v) => { for (const o of [-0.34, 0.34]) P.stroke(at(c, v, -0.4, o), at(c, v, max + 0.4, o), 'rgba(15,15,15,.35)', 1.2); });
     if (stage >= 3) each((c, v) => { for (let s = 0; s < max; s += 0.22) { const t = r(); const o = (r() < 0.5 ? -1 : 1) * (0.26 + r() * 0.08); const [x, y] = at(c, v, s + r() * 0.2, o);
       if (t < 0.5) P.fill(blob(x, y, 0.03 + r() * 0.06, 0.025 + r() * 0.04, r, 6), t < 0.25 ? 'gravel' : 'earth', 2, 0.85, r() * 3, r() * 3);
       else if (t < 0.62) { const [x2, y2] = at(c, v, s + 0.15 + r() * 0.3, (r() - 0.5) * 0.4); P.stroke([x, y], [x2, y2], 'rgba(18,18,18,.4)', 0.8); } } });
     // rounded lot bases: curb + dusty ground under every plot, so lots read as continuous blocks
     for (let bx = 0; bx < max; bx += 2) for (let by = 0; by < max; by += 2) {
-      const b = roundRect(bx + 0.32, by + 0.32, bx + 1.68, by + 1.68, 0.34);
-      if (stage >= 3) { P.shade(roundRect(bx + 0.3, by + 0.3, bx + 1.7, by + 1.7, 0.36), 'rgba(40,34,28,.45)'); P.fill(b, 'sand', 6, 0.9, bx, by, 'rgba(120,100,76,.22)'); }
+      const b = roundRect(bx + 0.42, by + 0.42, bx + 1.58, by + 1.58, 0.3);
+      if (stage >= 3) { P.shade(roundRect(bx + 0.4, by + 0.4, bx + 1.6, by + 1.6, 0.32), 'rgba(40,34,28,.45)'); P.fill(b, 'sand', 6, 0.9, bx, by, 'rgba(120,100,76,.22)'); }
       else P.fill(b, r() > 0.5 ? 'gravel' : 'earth', 5, 0.45, bx, by, 'rgba(183,177,164,.1)');
       for (let i = 0; i < 5; i++) { const a = r() * 4, o = r() < 0.5 ? 0.3 : 1.7; const x = r() < 0.5 ? bx + o + (r() - 0.5) * 0.3 : bx + 0.4 + r() * 1.2, y = x > bx + 0.25 && x < bx + 1.75 && r() < 0.5 ? by + o + (r() - 0.5) * 0.3 : by + 0.4 + r() * 1.2;
         P.fill(blob(x, y, 0.1 + r() * 0.16, 0.07 + r() * 0.1, r, 8), r() > 0.5 ? 'gravel' : 'earth', 1.6, stage >= 3 ? 0.5 : 0.85, a, a, 'rgba(60,48,36,.2)'); }
@@ -192,7 +193,7 @@ export class CityScene extends Phaser.Scene {
       if (!v) { const img = this.place(tk, c.x, c.y, c.y);
         const label = this.add.text(c.x, c.y + 44, '', { fontFamily: 'IBM Plex Sans Arabic, sans-serif', fontSize: '13px', color: '#f1e6d0', backgroundColor: 'rgba(43,35,32,0.72)', padding: { x: 6, y: 2 }, rtl: true }).setOrigin(0.5).setDepth(6e5).setAlpha(0.9);
         v = { key, img, label, bar: this.add.graphics().setDepth(6e5) }; this.sites.set(def.id, v); }
-      else if (v.key !== key) { this.applyTex(v.img, tk); v.key = key; this.tweens.add({ targets: v.img, scaleY: { from: SC * 0.95, to: SC }, duration: 400, ease: 'Back.out' }); }
+      else if (v.key !== key) { this.applyTex(v.img, tk); v.key = key }
       const st = stage === 0 ? 'لم يبدأ' : stage === 1 ? `قيد الإنشاء ${Math.round(f * 100)}٪` : ps.status === 'ready' ? 'جاهز للجمع' : 'مكتمل';
       v.label.setText(`${def.name} · ${st}`);
       v.bar.clear(); if (stage === 1) v.bar.fillStyle(0x2b2320, 0.75).fillRoundedRect(c.x - 40, c.y + 58, 80, 8, 4).fillStyle(0xf2d06b).fillRoundedRect(c.x - 38, c.y + 60, 76 * f, 4, 2);
@@ -275,7 +276,8 @@ export class CityScene extends Phaser.Scene {
   private applyTex(img: Phaser.GameObjects.Image, tk: string) {
     img.setTexture(tk); const m = SPR[tk.startsWith('s:') ? tk.slice(2) : tk];
     img.setOrigin(0.5, m ? m.ay : ANCHOR_LOT / TEX_H);
-    img.setScale(tk.startsWith('s:ruin') && m ? Math.min(SC, 215 / m.h) : SC);
+    const raw = tk.startsWith('s:') ? tk.slice(2) : tk;
+    img.setScale(!m ? SC : raw.startsWith('ruin') ? ruinScale(m.h, SC) : /_(front|back)$/.test(raw) || raw.startsWith('construction:') ? builtScale(raw.startsWith('construction:') ? builtKey(raw.split(':')[1], Number(raw.split(':')[2]) as 0 | 1) : raw, SC) : SC);
   }
   private constructionTex(id: string, orientation: 0 | 1, stage: number) {
     const key = `construction:${id}:${orientation}:${stage}`;
@@ -301,8 +303,8 @@ export class CityScene extends Phaser.Scene {
     if (!v || v.key !== key) {
       const [t, id, a, b] = key.split(':'); const tk = this.plotTex(t, id, a, b, p.id);
       if (v) { this.applyTex(v.img, tk); v.key = key; v.bar?.destroy(); v.bar = undefined; }
-      else { const img = this.place(tk, c.x, c.y, c.y); const shadow = t === 'e' || t === 'r' ? undefined : this.add.image(c.x, c.y, this.shadowTex()).setDepth(c.y - 1).setScale(1.3); v = { key, img, shadow }; this.views.set(p.id, v); }
-      if (!v.shadow && t !== 'e' && t !== 'r') v.shadow = this.add.image(c.x, c.y, this.shadowTex()).setDepth(c.y - 1).setScale(1.3);
+      else { const img = this.place(tk, c.x, c.y, c.y); const shadow = t === 'e' || t === 'r' ? undefined : this.add.image(c.x, c.y, this.shadowTex()).setDepth(c.y - 1).setScale(1.1); v = { key, img, shadow }; this.views.set(p.id, v); }
+      if (!v.shadow && t !== 'e' && t !== 'r') v.shadow = this.add.image(c.x, c.y, this.shadowTex()).setDepth(c.y - 1).setScale(1.1);
       if (t !== 'e') {
         const skirt = this.skirtTex(p.id % 3, false, t !== 'r');
         if (!v.skirt) v.skirt = this.add.image(c.x, c.y, skirt).setOrigin(0.5, ANCHOR_LOT / TEX_H).setDepth(c.y - 2).setScale(SC);

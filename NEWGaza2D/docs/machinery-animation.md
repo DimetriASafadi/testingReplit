@@ -16,6 +16,12 @@ sprites; players do not download or render 3D models.
   into loading positions. Adjacent heading/pose interpolation avoids snap turns.
 - Foreground buildings temporarily fade only when their opaque pixels hide an
   active machine or tool. Depth order and real road positions remain unchanged.
+- The city uses the original 2:1 projection and logical plot positions. Houses,
+  farms, ruins and construction share a smaller, uniform calibrated art scale,
+  with a consistent maximum ruin/building height and wider rendered asphalt.
+  Machinery is 10% more legible than the first atlas placement; its excavator/
+  truck docking separation changed in step, preserving the actual bucket-to-bed
+  contact. No saved camera or plot coordinates are rewritten.
 - Eight construction stages use the chosen building and front/rear orientation.
   Columns, slabs, formwork and scaffolds precede finished surfaces; grounded workers
   carry materials and lay them. Multi-storey cranes lift, swing and lower slung pallets.

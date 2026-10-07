@@ -23,10 +23,10 @@ assert.ok(bytes < 2.5 * 1024 * 1024, 'Machine payload exceeds mobile art budget'
 const dig = m.clips['excavator:work'].slice(8, 13).map(k => m.frames[k].worldTip[2]);
 assert.ok(Math.min(...dig) >= 0 && Math.min(...dig) < .12, 'Bucket must touch rubble, not float/penetrate');
 // Source Z-up geometry and runtime isometric coordinates have the same metres-per-unit.
-const metres = 64 / (m.size / m.ortho * Math.SQRT1_2 * .60);
+const metres = 64 / (m.size / m.ortho * Math.SQRT1_2 * .66);
 for (const key of m.clips['excavator:work'].slice(44, 50)) {
   const [x, y, z] = m.frames[key].worldTip;
-  const bedX = x - .65 * metres; // actual curb spacing between excavator and truck
+  const bedX = x - .715 * metres; // actual curb spacing between excavator and truck
   assert.ok(bedX > -2.98 && bedX < 1.07 && Math.abs(y) < 1.03 && z > 1.30,
     'Release point must be over the actual dump bed, above its floor');
 }

@@ -8,7 +8,7 @@ type Pose = { tip: number[]; worldTip: number[] };
 type Manifest = { size: number; ortho: number; foot: number[]; revision: string;
   clips: Record<string, string[]>; frames: Record<string, Pose> };
 const META: Manifest = metadata;
-const SCALE = .60, CYCLE = 7200;
+const SCALE = .66, CYCLE = 7200;
 const iso = (p: Pt): Pt => [(p[0] - p[1]) * U, (p[0] + p[1]) * U / 2];
 const mix = (a: Pt, b: Pt, t: number): Pt => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
@@ -23,8 +23,9 @@ interface Actor { a: Phaser.GameObjects.Image; b: Phaser.GameObjects.Image; head
   distance: number; dustAt: number; stoneAt: number; tip?: Pt }
 interface Dump { position: Pt; start: number; ends: number }
 const dock = (plot: Plot, kind: EquipmentKind): Pt => kind === 'excavator'
-  ? [plot.x + 1.38, plot.y + 2]
-  : kind === 'truck' ? [plot.x + 2.03, plot.y + 2] : [plot.x + .60, plot.y + 2];
+  ? [plot.x + 1.38, plot.y + 1.92]
+  // Matching bed separation after the modest machine-scale increase keeps loading physical.
+  : kind === 'truck' ? [plot.x + 2.095, plot.y + 1.92] : [plot.x + .72, plot.y + 1.92];
 function along(points: Pt[], f: number): Pt {
   const lengths = points.slice(1).map((p, i) => Math.hypot(p[0] - points[i][0], p[1] - points[i][1]));
   let d = clamp(f, 0, 1) * lengths.reduce((a, b) => a + b, 0);
