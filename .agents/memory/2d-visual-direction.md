@@ -9,6 +9,12 @@ description: Approved 2D game viewpoint and the user's request to absorb visual 
 
 **How to apply:** قيّم الأصول والأنيميشن داخل المشهد القابل للعب مقابل المرجع؛ لا تعتبر تلوين المضلعات المبسطة أو نجاح اختبارات المنطق تحقيقًا للجودة الفنية المطلوبة.
 
+في الحي المدمر، فضّل مزيجًا يغلب عليه الانهيار المنخفض والبلاطات والركام، مع هياكل متوسطة وبقايا عالية قليلة. اضبط الحجم بحيث تبقى الشوارع والعمال مقروءين.
+
+**Why:** أصول مفصلة منفردة بدت جيدة، لكن تكبيرها وملء الحي ببقايا أبراج عالية أخفى الشوارع والعمال وأبعد المشهد الفعلي عن المرجع.
+
+**How to apply:** افحص المشهد كاملًا عند تكبير اللعب المعتاد، لا صور الأصول وحدها؛ لا تستنتج ارتفاع البقايا من عدد طوابق المبنى الأصلي.
+
 المستخدم أكد نيته أن تصبح اللعبة تقريبًا مثل صورة الحي المدمر بالكامل بمنظور لعبة 2D، وقال: «جهز نفسك عشان راح نعمل اللعبة تقريبا هكذا ان شاء الله».
 
 The approved approximate visual reference is `attached_assets/generated_images/gaza_2d_fully_destroyed_game_map.png`: an elevated oblique game-map view, dense ruined plots and rubble, readable streets, and clearing equipment. This is the game-perspective concept, not the documentary-style photographic destruction image.
