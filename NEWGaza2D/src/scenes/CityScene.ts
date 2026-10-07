@@ -1,15 +1,19 @@
 import Phaser from 'phaser';
 import { building, projects } from '../catalog';
 import type { GameState, Job, Plot, Unit } from '../model';
-import { ANCHOR_Y, DIRS, TEX_H, TEX_W, U, VEH_SIZE, drawBuilt, drawConstruction, drawEmpty, drawRubble, drawProjectSite, drawVehicle, makeCanvas } from '../art';
+import { DIRS, TEX_H, TEX_W, U, VEH_SIZE, drawVehicle, makeCanvas } from '../art';
+import { GROUND_KEYS, SPR, SPRITE_KEYS, builtKey, constructKey, groundUrl, isFarm, ruinKey, siteKey, sprUrl } from '../realart';
+import { Painter, blob, frameFor, rect, GK } from '../ground';
+import { WK_FOOT, WK_FRAMES, WK_H, WK_W, drawWorker, type WorkerRole } from '../workers';
+import { constructionCanvas } from '../construction-art';
 
 export interface CityHooks { getState(): GameState; onSelect(plotId: number | null): void; onCamera(c: { x: number; y: number; zoom: number }): void }
 
 const iso = (lx: number, ly: number) => ({ x: (lx - ly) * U, y: (lx + ly) * U / 2 });
 const unIso = (wx: number, wy: number) => ({ lx: wy / U + wx / (2 * U), ly: wy / U - wx / (2 * U) });
-const DRAG = 9;
+const DRAG = 9; const ANCHOR_LOT = 380; const SC = 0.92;
 
-interface PlotView { key: string; img: Phaser.GameObjects.Image; extra?: Phaser.GameObjects.Container; bar?: Phaser.GameObjects.Graphics; coin?: Phaser.GameObjects.Container }
+interface PlotView { key: string; img: Phaser.GameObjects.Image; shadow?: Phaser.GameObjects.Image; workers?: Phaser.GameObjects.Image[]; extra?: Phaser.GameObjects.Container; bar?: Phaser.GameObjects.Graphics; coin?: Phaser.GameObjects.Container }
 
 export class CityScene extends Phaser.Scene {
   hooks!: CityHooks;
@@ -22,7 +26,7 @@ export class CityScene extends Phaser.Scene {
   private down: { x: number; y: number; sx: number; sy: number } | null = null;
   private dragged = false; private pinch: { d: number; z: number } | null = null;
   private dust!: Phaser.GameObjects.Particles.ParticleEmitter;
-  private roadG!: Phaser.GameObjects.Graphics; private roadStage = -1; private maxL = 16;
+  private roadImg?: Phaser.GameObjects.Image; private roadStage = -1; private maxL = 16; private frame!: ReturnType<typeof frameFor>; private groundKey = '';
   private sites = new Map<string, { key: string; img: Phaser.GameObjects.Image; label: Phaser.GameObjects.Text; bar: Phaser.GameObjects.Graphics }>();
 
   constructor() { super('city'); }
@@ -56,25 +60,14 @@ export class CityScene extends Phaser.Scene {
     this.maxL = max;
     const g = this.add.graphics().setDepth(-9e5);
     const quad = (x0: number, y0: number, x1: number, y1: number, col: number, a = 1) => { const pts = [iso(x0, y0), iso(x1, y0), iso(x1, y1), iso(x0, y1)]; g.fillStyle(col, a).fillPoints(pts.map(p => new Phaser.Math.Vector2(p.x, p.y)), true); };
-    // base earth, coast to the west (low lx), groves/scrub to the east
-    g.fillStyle(0xc9b28a, 1).fillRect(c.x - size, c.y - size, size * 2, size * 2);
-    quad(-40, -40, -4.2, max + 40, 0x1f6f78); quad(-40, -40, -6, max + 40, 0x175e66); quad(-40, -40, -9, max + 40, 0x114e56);
-    quad(-4.2, -40, -3.6, max + 40, 0x7fbdb6, 0.8); quad(-3.6, -40, -1.4, max + 40, 0xe6d6b2);
-    for (let i = 0; i < 18; i++) quad(-4.3 + i * 0.01, i * 3 - 8, -4.1, i * 3 - 6.5, 0xeaf2ea, 0.5);
-    quad(max + 2.2, -40, max + 40, max + 40, 0xb4a274, 0.9); quad(-40, max + 2.2, max + 40, max + 40, 0xb9a47a, 0.9);
-    if (this.textures.exists('sand')) this.add.tileSprite(c.x, c.y, size * 2, size * 2, 'sand').setDepth(-8.9e5).setAlpha(0.16).setTileScale(1.6);
-    let seed = d.id.length * 97 + d.id.charCodeAt(0); const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
-    const g2 = this.add.graphics().setDepth(-8.8e5);
-    for (let i = 0; i < 90; i++) { const lx = rnd() * (max + 12) - 3, ly = rnd() * (max + 12) - 6; const p = iso(lx, ly); const east = lx > max + 1 || ly > max + 1;
-      const pal = east ? [0x8a8f5a, 0x9a9a62, 0x7d8a52, 0xa88a5e] : [0xb39a72, 0xbfa984, 0xa89478, 0xc8b894, 0x9c8a74];
-      g2.fillStyle(pal[i % pal.length], east ? 0.45 : 0.28).fillEllipse(p.x, p.y, 60 + rnd() * 240, 30 + rnd() * 110); }
-    for (let i = 0; i < 60; i++) { const lx = max + 2.5 + rnd() * 8, ly = rnd() * (max + 10) - 2; const p = iso(lx, ly); g2.fillStyle(0x5f7a3a, 0.8).fillCircle(p.x, p.y - 6, 6 + rnd() * 6); g2.fillStyle(0x7d9a4a, 0.8).fillCircle(p.x - 2, p.y - 9, 4 + rnd() * 4); }
-    this.roadG = this.add.graphics().setDepth(-8e5); this.roadStage = -1;
+    g.fillStyle(0xb7a47e, 1).fillRect(c.x - size * 1.5, c.y - size * 1.5, size * 3, size * 3);
+    this.paintGround(d.id, max);
+    this.roadStage = -1; this.roadImg = undefined;
     this.sites.clear();
     this.layer = this.add.container(0, 0);
     this.sel = this.add.graphics().setDepth(5e5);
     const cam = this.cameras.main;
-    cam.setBounds(c.x - size * 0.7, c.y - size * 0.5, size * 1.4, size);
+    cam.setBounds(this.frame.ox - 120, this.frame.oy - 120, this.frame.w / GK + 240, this.frame.h / GK + 240);
     if (d.camera) { cam.setZoom(d.camera.zoom); cam.centerOn(d.camera.x, d.camera.y); }
     else { cam.setZoom(Math.min(1, this.scale.width / (max * U * 2.2))); cam.centerOn(c.x, c.y); }
   }
@@ -94,33 +87,66 @@ export class CityScene extends Phaser.Scene {
     this.syncSites(d, now);
   }
 
+  private imgs(): Record<string, CanvasImageSource | undefined> {
+    const o: Record<string, CanvasImageSource | undefined> = {};
+    for (const k of GROUND_KEYS) o[k] = this.textures.exists('g:' + k) ? (this.textures.get('g:' + k).getSourceImage() as HTMLImageElement) : undefined;
+    return o;
+  }
+  private seedRnd(n: number) { let seed = n; return () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }; }
+
+  /** photo-textured ground: earth base, gravel patches, coastal sand ramp, wet-sand edge, scrub to the east */
+  private paintGround(did: string, max: number) {
+    const LX0 = -14, LY0 = -16, LX1 = max + 16, LY1 = max + 16;
+    this.frame = frameFor(LX0, LY0, LX1, LY1); const f = this.frame;
+    const cv = makeCanvas(f.w, f.h); const P = new Painter(cv, f, this.imgs()); const r = this.seedRnd(did.length * 97 + did.charCodeAt(0));
+    const shore = (ly: number) => -3.6 + 0.32 * Math.sin(ly * 0.7) + 0.18 * Math.sin(ly * 1.9 + 1);
+    const wp = (a: number, b: number): [number, number][] => { const p: [number, number][] = []; for (let ly = LY0; ly <= LY1; ly += 0.5) p.push([shore(ly) + a, ly]); for (let ly = LY1; ly >= LY0; ly -= 0.5) p.push([shore(ly) + b, ly]); return p; };
+    P.fill(rect(LX0, LY0, 0, LY1), 'water', 11, 1, 0, 0); P.fill(rect(LX0, LY0, 0, LY1), 'water', 17.3, 0.35, 2.2, 5.1);
+    for (let i = 0; i < 5; i++) P.shade(wp(-12, -1.0 - i * 1.6), 'rgba(6,40,58,.1)');
+    for (let i = 0; i < 3; i++) P.shade(wp(-1.5 + i * 0.3, 0.1), 'rgba(150,215,205,.12)');
+    const land = wp(0, LX1 - shore(0) + 2);
+    P.fill(land, 'earth', 9, 1, 0, 0); P.fill(land, 'earth', 13.7, 0.45, 3.1, 5.7);
+    for (let i = 0; i < 42; i++) { const lx = r() * (LX1 - 0) + 0, ly = r() * (LY1 - LY0) + LY0; P.fill(blob(lx, ly, 1 + r() * 2.8, 0.8 + r() * 2.2, r), r() > 0.45 ? 'gravel' : 'earth', 6 + r() * 3, 0.3 + r() * 0.3, r() * 4, r() * 4); }
+    for (let i = 0; i < 6; i++) P.fill(wp(-0.2, 2.9 - i * 0.45), 'sand', 7.3, 0.34, 1.7, 0.4);
+    P.fill(wp(-0.3, 0.45), 'sand', 7.3, 0.75, 0, 0, 'rgba(70,56,40,.3)');
+    for (let ly = LY0; ly < LY1; ly += 0.5) { const a: [number, number] = [shore(ly) - 0.2, ly], b: [number, number] = [shore(ly + 0.5) - 0.2, ly + 0.5]; P.stroke(a, b, 'rgba(244,250,246,.75)', 1.4); if (Math.sin(ly * 2.1) > -0.2) P.stroke([a[0] - 0.4, a[1]], [b[0] - 0.4, b[1]], 'rgba(244,250,246,.3)', 1); }
+    for (let i = 0; i < 4; i++) P.shade(rect(max + 1.6 + i * 0.9, LY0, LY1 + 20, LY1), 'rgba(98,112,58,.07)');
+    for (let i = 0; i < 4; i++) P.shade(rect(0, max + 1.6 + i * 0.9, LX1, LY1 + 20), 'rgba(98,112,58,.06)');
+    const key = `ground:${did}`; if (this.textures.exists(key)) this.textures.remove(key); this.textures.addCanvas(key, cv); this.groundKey = key;
+    this.add.image(f.ox, f.oy, key).setOrigin(0, 0).setScale(1 / GK).setDepth(-8.9e5);
+  }
+
   /** 0 destroyed, 1 graded dirt, 2 gravel, 3 fresh unmarked asphalt, 4 complete marked roads */
   private drawRoads(stage: number) {
-    const g = this.roadG.clear(); const max = this.maxL;
-    let seed = 7 + (this.district?.length ?? 0) * 13; const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
-    const quad = (x0: number, y0: number, x1: number, y1: number, col: number, a = 1) => { const pts = [iso(x0, y0), iso(x1, y0), iso(x1, y1), iso(x0, y1)]; g.fillStyle(col, a).fillPoints(pts.map(p => new Phaser.Math.Vector2(p.x, p.y)), true); };
-    const both = (fn: (r: number, vertical: boolean) => void) => { for (let k = 0; k <= max / 2; k++) { fn(2 * k, true); fn(2 * k, false); } };
-    const strip = (r: number, v: boolean, w: number, col: number, a = 1) => v ? quad(r - w, -w, r + w, max + w, col, a) : quad(-w, r - w, max + w, r + w, col, a);
-    const seg = (r: number, v: boolean, s0: number, s1: number, w0: number, w1: number, col: number, a = 1) => v ? quad(r + w0, s0, r + w1, s1, col, a) : quad(s0, r + w0, s1, r + w1, col, a);
+    const max = this.maxL; const f = this.frame; const cv = makeCanvas(f.w, f.h); const P = new Painter(cv, f, this.imgs());
+    const r = this.seedRnd(7 + (this.district?.length ?? 0) * 13);
+    const lines: number[] = []; for (let k = 0; k <= max / 2; k++) lines.push(2 * k);
+    const strip = (c: number, v: boolean, w: number, s0 = -0.4, s1 = max + 0.4) => v ? rect(c - w, s0, c + w, s1) : rect(s0, c - w, s1, c + w);
+    const each = (fn: (c: number, v: boolean) => void) => lines.forEach(c => { fn(c, true); fn(c, false); });
+    const at = (c: number, v: boolean, s: number, o: number): [number, number] => v ? [c + o, s] : [s, c + o];
     if (stage === 0) {
-      both((r, v) => strip(r, v, 0.3, 0xa89a82));
-      both((r, v) => { for (let s = 0; s < max; s += 0.35) { const t = rnd(); if (t < 0.45) seg(r, v, s, s + 0.2 + rnd() * 0.3, -0.25 + rnd() * 0.1, 0.05 + rnd() * 0.2, 0x5f5953, 0.9); else if (t < 0.6) seg(r, v, s, s + 0.25, -0.15, 0.15, 0x6b5a48, 0.7); else if (t < 0.75) seg(r, v, s, s + 0.15, -0.28 + rnd() * 0.3, -0.1 + rnd() * 0.3, 0x8a8378, 1); } });
-      both((r, v) => { for (let s = 0.5; s < max; s += 1.2 + rnd()) { const p = v ? iso(r + (rnd() - 0.5) * 0.4, s) : iso(s, r + (rnd() - 0.5) * 0.4); g.fillStyle(0x9b958a).fillTriangle(p.x - 14, p.y, p.x, p.y - 9 - rnd() * 6, p.x + 12, p.y); g.fillStyle(0x7d766c).fillTriangle(p.x, p.y - 8, p.x + 12, p.y, p.x + 2, p.y); g.lineStyle(1, 0x2b2320, 0.5).lineBetween(p.x - 20, p.y + 4, p.x + 18, p.y - 6); } });
+      each((c, v) => { P.fill(strip(c, v, 0.3), 'sand', 8, 0.45); P.fill(strip(c, v, 0.24), 'asphalt', 7, 0.96); });
+      each((c, v) => { for (let s = 0; s < max; s += 0.5) { const t = r(); const [x, y] = at(c, v, s + r() * 0.4, (r() - 0.5) * 0.4);
+        if (t < 0.28) P.fill(blob(x, y, 0.13 + r() * 0.12, 0.1 + r() * 0.1, r, 7), 'earth', 3, 0.92, 0, 0, 'rgba(30,22,14,.35)');
+        else if (t < 0.55) P.fill(blob(x, y, 0.16 + r() * 0.2, 0.08 + r() * 0.1, r, 7), 'gravel', 2.2, 0.9, r() * 3, r() * 3); } });
     } else if (stage === 1) {
-      both((r, v) => strip(r, v, 0.34, 0x9c7f58)); both((r, v) => strip(r, v, 0.26, 0xa98c62));
-      both((r, v) => { for (let i = -2; i <= 2; i++) seg(r, v, 0, max, i * 0.1 - 0.01, i * 0.1 + 0.01, 0x8a6e4a, 0.5); });
+      each((c, v) => { P.fill(strip(c, v, 0.35), 'earth', 6, 1, 0, 0, 'rgba(90,60,30,.18)'); for (let i = -2; i <= 2; i++) { const a = at(c, v, 0, i * 0.11), b = at(c, v, max, i * 0.11); P.stroke(a, b, 'rgba(60,40,20,.3)', 2); } });
     } else if (stage === 2) {
-      both((r, v) => strip(r, v, 0.34, 0xb8a684)); both((r, v) => strip(r, v, 0.27, 0x9a958c));
-      both((r, v) => { for (let s = 0; s < max; s += 0.12) seg(r, v, s, s + 0.04, -0.25 + rnd() * 0.4, -0.2 + rnd() * 0.45, rnd() > 0.5 ? 0xb5b0a6 : 0x7f7a72, 0.7); });
+      each((c, v) => { P.fill(strip(c, v, 0.35), 'earth', 6, 0.9); P.fill(strip(c, v, 0.3), 'gravel', 4.5, 1); });
     } else {
-      both((r, v) => strip(r, v, 0.37, stage === 4 ? 0xd9ccb0 : 0xbfae8c)); both((r, v) => strip(r, v, 0.28, stage === 4 ? 0x4a4642 : 0x3f3c3a));
-      if (stage === 4) {
-        both((r, v) => { seg(r, v, -0.37, max + 0.37, 0.28, 0.3, 0xa8322d, 0.9); seg(r, v, -0.37, max + 0.37, -0.3, -0.28, 0xa8322d, 0.9); for (let s = 0.2; s < max; s += 0.5) { if (s % 2 > 1.7 || s % 2 < 0.3) continue; seg(r, v, s, s + 0.22, -0.018, 0.018, 0xf1e6d0, 0.9); } });
-        for (let i = 0; i <= max / 2; i++) for (let j = 0; j <= max / 2; j++) { for (let z = -0.2; z <= 0.2; z += 0.1) { quad(2 * i + z - 0.02, 2 * j - 0.36, 2 * i + z + 0.02, 2 * j - 0.3, 0xf1e6d0, 0.85); }
-          if ((i + j) % 2 === 0) { const p = iso(2 * i + 0.4, 2 * j + 0.4); g.fillStyle(0x3a3532).fillRect(p.x - 1, p.y - 30, 2, 30); g.fillStyle(0xf2d06b).fillCircle(p.x + 4, p.y - 30, 3); }
-          if ((i * 3 + j) % 4 === 1) { const p = iso(2 * i - 0.4, 2 * j + 0.4); g.fillStyle(0x6a4a2a).fillRect(p.x - 1, p.y - 10, 2, 10); g.fillStyle(0x4f7a3a).fillCircle(p.x, p.y - 14, 7); } }
-      }
+      each((c, v) => { P.fill(strip(c, v, stage === 4 ? 0.4 : 0.37), 'sand', 8, 0.6); P.fill(strip(c, v, 0.3), 'asphalt', 7, 1, 0, 0, stage === 3 ? 'rgba(10,10,12,.2)' : undefined); });
+      if (stage === 4) each((c, v) => {
+        for (const o of [-0.3, 0.3]) P.stroke(at(c, v, -0.4, o), at(c, v, max + 0.4, o), 'rgba(205,195,170,.8)', 2.2);
+        for (let s = 0.1; s < max; s += 0.55) P.stroke(at(c, v, s, 0), at(c, v, s + 0.24, 0), 'rgba(236,228,205,.85)', 2.2);
+      });
     }
+    // road edge darkening for crisp shoulders
+    if (stage >= 3) each((c, v) => { for (const o of [-0.3, 0.3]) P.stroke(at(c, v, -0.4, o), at(c, v, max + 0.4, o), 'rgba(15,15,15,.35)', 1.2); });
+    if (stage >= 3) each((c, v) => { for (let s = 0; s < max; s += 0.22) { const t = r(); const o = (r() < 0.5 ? -1 : 1) * (0.26 + r() * 0.08); const [x, y] = at(c, v, s + r() * 0.2, o);
+      if (t < 0.5) P.fill(blob(x, y, 0.03 + r() * 0.06, 0.025 + r() * 0.04, r, 6), t < 0.25 ? 'gravel' : 'earth', 2, 0.85, r() * 3, r() * 3);
+      else if (t < 0.62) { const [x2, y2] = at(c, v, s + 0.15 + r() * 0.3, (r() - 0.5) * 0.4); P.stroke([x, y], [x2, y2], 'rgba(18,18,18,.4)', 0.8); } } });
+    const key = `roads:${this.district}`; this.roadImg?.destroy(); if (this.textures.exists(key)) this.textures.remove(key); this.textures.addCanvas(key, cv);
+    this.roadImg = this.add.image(f.ox, f.oy, key).setOrigin(0, 0).setScale(1 / GK).setDepth(-8e5);
   }
 
   private siteSpots() { const m = this.maxL; return [[m + 1, 1], [m + 1, 5], [m + 1, 9], [m + 1, 13], [1, m + 1], [5, m + 1], [9, m + 1], [13, m + 1]] as [number, number][]; }
@@ -131,12 +157,14 @@ export class CityScene extends Phaser.Scene {
       const f = ps.status === 'building' ? Phaser.Math.Clamp((now - ps.startedAt) / Math.max(1, ps.endsAt - ps.startedAt), 0, 1) : 0;
       const stage = ps.status === 'idle' ? 0 : ps.status === 'building' ? 1 : 2; const q = stage === 1 ? Math.floor(f * 3) : 0;
       const key = `ps:${def.id}:${stage}:${q}`; const [lx, ly] = spots[i] ?? [this.maxL + 1, 1 + i * 2]; const c = iso(lx, ly);
-      this.tex(key, TEX_W, TEX_H, ctx => drawProjectSite(ctx, def.id, stage as 0 | 1 | 2, (q + 0.5) / 3));
+      const sk = siteKey(def.id, stage as 0 | 1 | 2, q);
+      const projectBuilding: Record<string, string> = { water: 'water_treatment', power: 'work', housing: 'housing_4', park: 'ornamental_trees', services: 'municipality', farm: 'wheat', commerce: 'modern_mall', industry: 'steel' };
+      const tk = stage === 1 ? this.constructionTex(projectBuilding[def.id] ?? 'work', 0, q) : sk ? 's:' + sk : this.lotTex(0);
       let v = this.sites.get(def.id);
-      if (!v) { const img = this.add.image(c.x, c.y, key).setOrigin(0.5, ANCHOR_Y / TEX_H).setDepth(c.y);
+      if (!v) { const img = this.place(tk, c.x, c.y, c.y);
         const label = this.add.text(c.x, c.y + 44, '', { fontFamily: 'IBM Plex Sans Arabic, sans-serif', fontSize: '13px', color: '#f1e6d0', backgroundColor: 'rgba(43,35,32,0.72)', padding: { x: 6, y: 2 }, rtl: true }).setOrigin(0.5).setDepth(6e5).setAlpha(0.9);
         v = { key, img, label, bar: this.add.graphics().setDepth(6e5) }; this.sites.set(def.id, v); }
-      else if (v.key !== key) { v.img.setTexture(key); v.key = key; this.tweens.add({ targets: v.img, scaleY: { from: 0.95, to: 1 }, duration: 400, ease: 'Back.out' }); }
+      else if (v.key !== key) { this.applyTex(v.img, tk); v.key = key; this.tweens.add({ targets: v.img, scaleY: { from: SC * 0.95, to: SC }, duration: 400, ease: 'Back.out' }); }
       const st = stage === 0 ? 'لم يبدأ' : stage === 1 ? `قيد الإنشاء ${Math.round(f * 100)}٪` : ps.status === 'ready' ? 'جاهز للجمع' : 'مكتمل';
       v.label.setText(`${def.name} · ${st}`);
       v.bar.clear(); if (stage === 1) v.bar.fillStyle(0x2b2320, 0.75).fillRoundedRect(c.x - 40, c.y + 58, 80, 8, 4).fillStyle(0xf2d06b).fillRoundedRect(c.x - 38, c.y + 60, 76 * f, 4, 2);
@@ -151,17 +179,58 @@ export class CityScene extends Phaser.Scene {
     return `c:${p.buildingId}:${p.orientation}:${prog < 0.3 ? 0 : prog < 0.68 ? 1 : 2}`;
   }
 
+  /** textured empty lot (gravel + survey stakes) */
+  private lotTex(n: number) {
+    const key = `lot:${n}`; if (this.textures.exists(key)) return key;
+    const c = makeCanvas(); const x = c.getContext('2d')!; const img = this.textures.exists('g:gravel') ? this.textures.get('g:gravel').getSourceImage() as HTMLImageElement : null;
+    const pr = (lx: number, ly: number): [number, number] => [TEX_W / 2 + (lx - ly) * U, 380 + (lx + ly) * U / 2]; const h = 0.74;
+    x.save(); x.beginPath(); [[-h, -h], [h, -h], [h, h], [-h, h]].forEach(([a, b], i) => { const [px, py] = pr(a, b); i ? x.lineTo(px, py) : x.moveTo(px, py); }); x.closePath(); x.clip();
+    if (img) { x.setTransform(U * 5 / 1024, U * 5 / 2048, -U * 5 / 1024, U * 5 / 2048, TEX_W / 2 + n * 37, 380 - 30 * n); x.fillStyle = x.createPattern(img, 'repeat')!; x.fillRect(-4000, -4000, 8000, 8000); x.setTransform(1, 0, 0, 1, 0, 0); } else { x.fillStyle = '#b9a888'; x.fill(); }
+    x.fillStyle = 'rgba(150,120,80,.12)'; x.fill(); x.restore();
+    x.strokeStyle = 'rgba(70,55,40,.4)'; x.lineWidth = 2; x.beginPath(); [[-h, -h], [h, -h], [h, h], [-h, h]].forEach(([a, b], i) => { const [px, py] = pr(a, b); i ? x.lineTo(px, py) : x.moveTo(px, py); }); x.closePath(); x.stroke();
+    for (const [a, b] of [[-0.62, -0.62], [0.62, -0.62], [-0.62, 0.62], [0.62, 0.62]]) { const [px, py] = pr(a, b); x.fillStyle = 'rgba(30,20,10,.3)'; x.fillRect(px - 1, py, 5, 2); x.fillStyle = '#e5dcc4'; x.fillRect(px - 1.5, py - 14, 3, 14); x.fillStyle = '#b33a2a'; x.fillRect(px - 1.5, py - 14, 3, 4); }
+    this.textures.addCanvas(key, c); return key;
+  }
+  private shadowTex() {
+    if (this.textures.exists('shadow')) return 'shadow';
+    const c = makeCanvas(256, 128); const x = c.getContext('2d')!; const g = x.createRadialGradient(128, 64, 8, 128, 64, 124); g.addColorStop(0, 'rgba(30,22,14,.5)'); g.addColorStop(0.6, 'rgba(30,22,14,.22)'); g.addColorStop(1, 'rgba(30,22,14,0)');
+    x.fillStyle = g; x.save(); x.scale(1, 0.5); x.translate(0, 64); x.fillRect(0, -64, 256, 256); x.restore(); this.textures.addCanvas('shadow', c); return 'shadow';
+  }
+  /** sprites are anchored on the ground-footprint centre (ay from manifest), never the building centre */
+  private place(tk: string, x: number, y: number, depth: number) {
+    const img = this.add.image(x, y, tk).setDepth(depth).setScale(SC); this.applyTex(img, tk); return img;
+  }
+  private applyTex(img: Phaser.GameObjects.Image, tk: string) {
+    img.setTexture(tk); const m = SPR[tk.startsWith('s:') ? tk.slice(2) : tk]; img.setOrigin(0.5, m ? m.ay : ANCHOR_LOT / TEX_H);
+  }
+  private constructionTex(id: string, orientation: 0 | 1, stage: number) {
+    const key = `construction:${id}:${orientation}:${stage}`;
+    if (!this.textures.exists(key)) {
+      const finalKey = builtKey(id, orientation), meta = SPR[finalKey];
+      const final = this.textures.get('s:' + finalKey).getSourceImage() as HTMLImageElement;
+      const foundation = this.textures.get('s:' + constructKey(id, 0)).getSourceImage() as HTMLImageElement;
+      const cv = constructionCanvas(final, foundation, meta, building(id), stage, orientation);
+      this.textures.addCanvas(key, cv); SPR[key] = { ...meta };
+    }
+    return key;
+  }
+  private plotTex(t: string, id: string, a: string, b: string, plotId: number) {
+    if (t === 'r') return 's:' + ruinKey(id, Number(a) + plotId);
+    if (t === 'e') return this.lotTex(Number(id) % 3);
+    if (t === 'b') return 's:' + builtKey(id, Number(a) as 0 | 1);
+    return this.constructionTex(id, Number(a) as 0 | 1, Number(b));
+  }
+
   private syncPlot(p: Plot, now: number) {
     const key = this.plotKey(p, now); let v = this.views.get(p.id);
     const c = iso(p.x + 1, p.y + 1);
     if (!v || v.key !== key) {
-      const [t, id, a, b] = key.split(':');
-      this.tex(key, TEX_W, TEX_H, ctx => {
-        if (t === 'r') drawRubble(ctx, id, Number(a)); else if (t === 'e') drawEmpty(ctx, Number(id));
-        else if (t === 'b') drawBuilt(ctx, id, Number(a) as 0 | 1); else drawConstruction(ctx, id, Number(a) as 0 | 1, Number(b));
-      });
-      if (v) { v.img.setTexture(key); v.key = key; v.extra?.destroy(); v.extra = undefined; v.bar?.destroy(); v.bar = undefined; this.tweens.add({ targets: v.img, scaleY: { from: 0.94, to: 1 }, duration: 380, ease: 'Back.out' }); }
-      else { const img = this.add.image(c.x, c.y, key).setOrigin(0.5, ANCHOR_Y / TEX_H).setDepth(c.y); v = { key, img }; this.views.set(p.id, v); }
+      const [t, id, a, b] = key.split(':'); const tk = this.plotTex(t, id, a, b, p.id);
+      if (v) { this.applyTex(v.img, tk); v.key = key; v.extra?.destroy(); v.extra = undefined; v.bar?.destroy(); v.bar = undefined; v.workers?.forEach(w => w.destroy()); v.workers = undefined; this.tweens.add({ targets: v.img, scaleY: { from: SC * 0.96, to: SC }, duration: 380, ease: 'Back.out' }); }
+      else { const img = this.place(tk, c.x, c.y, c.y); const shadow = t === 'e' || t === 'r' ? undefined : this.add.image(c.x, c.y, this.shadowTex()).setDepth(c.y - 1).setScale(1.3); v = { key, img, shadow }; this.views.set(p.id, v); }
+      if (!v.shadow && t !== 'e' && t !== 'r') v.shadow = this.add.image(c.x, c.y, this.shadowTex()).setDepth(c.y - 1).setScale(1.3);
+      if (v.shadow && (t === 'e' || t === 'r')) { v.shadow.destroy(); v.shadow = undefined; }
+      v.img.setFlipX(false).setAlpha(1);
       if (t === 'c') this.addCrane(v, c, p);
     }
     // ready-to-collect badge
@@ -173,23 +242,53 @@ export class CityScene extends Phaser.Scene {
     } else if (!ready && v.coin) { v.coin.destroy(); v.coin = undefined; }
   }
 
+  private wTex(role: WorkerRole, variant: number, frame: number) {
+    const key = `w:${role}:${variant % 3}:${frame}`; if (!this.textures.exists(key)) { const c = makeCanvas(WK_W, WK_H); drawWorker(c.getContext('2d')!, role, frame, variant); this.textures.addCanvas(key, c); } return key;
+  }
+
+  /** site rig: tower crane (cable + swinging load) for multi-storey jobs, plus rigged workers that run on real timers */
   private addCrane(v: PlotView, c: { x: number; y: number }, p: Plot) {
-    const def = building(p.buildingId); const h = Math.min(260, 70 + def.floors * 16);
+    const def = building(p.buildingId); const tall = def.floors >= 3 && !isFarm(def.id); const h = Math.min(300, 90 + def.floors * 14);
     const side = p.orientation === 0 ? 1 : -1;
-    const g = this.add.graphics();
-    if (def.category !== 'farm') {
-      g.fillStyle(0xc58a1c).fillRect(-3, -h, 6, h); for (let y = -h; y < 0; y += 10) g.lineStyle(1, 0x7a5410).lineBetween(-3, y, 3, y + 10);
-      g.fillStyle(0x2b2320).fillRect(-8, -4, 16, 6);
+    if (tall) {
+      const g = this.add.graphics();
+      g.fillStyle(0x2b2320).fillRect(-9, -3, 18, 5);
+      for (let y = -h; y < 0; y += 12) { g.lineStyle(1.4, 0xb8861c).lineBetween(-4, y, -4, y + 12).lineBetween(4, y, 4, y + 12).lineBetween(-4, y + 12, 4, y); }
+      const jib = this.add.graphics(); jib.fillStyle(0xcf9a24).fillRect(-26, -3, 118, 5); jib.fillStyle(0x6f6a62).fillRect(-34, -7, 15, 11); jib.fillStyle(0x3a3532).fillRect(-3, -10, 6, 8); jib.lineStyle(1, 0x3a3532).lineBetween(-3, -10, 92, -3).lineBetween(3, -10, -26, -3);
+      jib.y = -h;
+      const hook = this.add.container(70, -h + 3); const cable = this.add.graphics(); cable.lineStyle(1, 0x2b2320).lineBetween(0, 0, 0, 52); const load = this.add.graphics();
+      load.fillStyle(0x6b5036).fillRect(-12, 52, 24, 3); load.fillStyle(0x9a958a).fillRect(-11, 44, 22, 8).fillStyle(0xb2ada0).fillRect(-11, 44, 22, 2); load.fillStyle(0x8a8378).fillRect(-1, 44, 2, 8);
+      hook.add([cable, load]);
+      const box = this.add.container(c.x + 90 * side, c.y - 10, [g, jib, hook]).setDepth(c.y + 1);
+      const jd = 3200 + (p.id % 5) * 300;
+      this.tweens.add({ targets: jib, scaleX: { from: 1, to: 0.45 }, yoyo: true, repeat: -1, duration: jd, ease: 'Sine.inOut' });
+      this.tweens.add({ targets: hook, x: { from: 70, to: 70 * 0.45 }, yoyo: true, repeat: -1, duration: jd, ease: 'Sine.inOut' });
+      this.tweens.add({ targets: load, angle: { from: -3, to: 3 }, yoyo: true, repeat: -1, duration: 1100, ease: 'Sine.inOut' });
+      box.scaleX = side; v.extra = box;
     }
-    const jib = this.add.graphics(); if (def.category !== 'farm') { jib.fillStyle(0xd9a227).fillRect(-20, -3, 110, 5); jib.fillStyle(0x6f6a62).fillRect(-28, -6, 14, 10); jib.lineStyle(1, 0x2b2320).lineBetween(70, 2, 70, 40); jib.fillStyle(0x9b958a).fillRect(64, 40, 12, 7); jib.y = -h; jib.scaleX = side; }
-    const worker = this.add.graphics(); worker.fillStyle(0xf2a23a).fillCircle(0, -14, 4); worker.fillStyle(0x16747a).fillRect(-3, -10, 6, 10);
-    worker.x = -30 * side;
-    const box = this.add.container(c.x + 52 * side, c.y - 6, [g, jib, worker]).setDepth(c.y + 1);
-    if (def.category !== 'farm') this.tweens.add({ targets: jib, scaleX: { from: side, to: side * 0.55 }, yoyo: true, repeat: -1, duration: 2600 + (p.id % 5) * 300, ease: 'Sine.inOut' });
-    this.tweens.add({ targets: worker, x: -60 * side, yoyo: true, repeat: -1, duration: 1800, ease: 'Sine.inOut' });
-    this.tweens.add({ targets: worker, y: -3, yoyo: true, repeat: -1, duration: 220 });
-    v.extra = box;
+    const n = Math.min(4, 2 + Math.floor(def.floors / 3)); v.workers = [];
+    for (let i = 0; i < n; i++) v.workers.push(this.add.image(c.x, c.y, this.wTex('walk', i, 0)).setOrigin(0.5, WK_FOOT / WK_H).setScale(0.34));
     v.bar = this.add.graphics().setDepth(6e5);
+  }
+
+  private tickWorkers(d: { plots: Plot[] }, now: number) {
+    for (const p of d.plots) {
+      const v = this.views.get(p.id); if (!v?.workers || p.status !== 'building') continue;
+      const cx = p.x + 1, cy = p.y + 1; const front = p.orientation === 0;
+      v.workers.forEach((w, i) => {
+        const T = 14000; const t = ((now + i * 3300 + p.id * 911) % T) / 1000;
+        const pile: [number, number] = [cx - 0.25 + i * 0.1, cy + 1.3];
+        const site: [number, number] = front ? [cx + 0.45 + i * 0.14, cy + 0.85] : [cx + 0.85, cy + 0.45 + i * 0.14];
+        let pos: [number, number]; let role: WorkerRole = 'walk'; let frame = 0; let dir = 1;
+        const lerp = (k: number, a: [number, number], b: [number, number]): [number, number] => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
+        const sdx = (a: [number, number], b: [number, number]) => ((b[0] - a[0]) - (b[1] - a[1]));
+        if (t < 4.2) { pos = lerp(t / 4.2, pile, site); role = 'carry'; frame = Math.floor(t * 1.9 * WK_FRAMES) % WK_FRAMES; dir = Math.sign(sdx(pile, site)) || 1; }
+        else if (t < 9.2) { pos = site; role = 'hammer'; frame = Math.floor(now / 110 + i * 3) % WK_FRAMES; dir = front ? -1 : 1; if (Math.random() < 0.012) this.dust.emitParticleAt(iso(pos[0], pos[1]).x, iso(pos[0], pos[1]).y - 4, 1); }
+        else if (t < 13.2) { pos = lerp((t - 9.2) / 4, site, pile); frame = Math.floor(t * 1.9 * WK_FRAMES) % WK_FRAMES; dir = Math.sign(sdx(site, pile)) || 1; }
+        else { pos = pile; frame = 0; dir = 1; }
+        const q = iso(pos[0], pos[1]); w.setTexture(this.wTex(role, i, frame)).setPosition(q.x, q.y).setFlipX(dir < 0).setDepth(q.y + 2);
+      });
+    }
   }
 
   private drawSel(plots: Plot[]) {
@@ -217,7 +316,8 @@ export class CityScene extends Phaser.Scene {
     const st = this.hooks?.getState(); if (!st?.currentDistrict || st.currentDistrict !== this.district) return;
     const d = st.districts.find(x => x.id === this.district)!; const now = Date.now();
     // construction progress bars
-    for (const p of d.plots) { const v = this.views.get(p.id); if (p.status === 'building' && v?.bar) { const c = iso(p.x + 1, p.y + 1); const f = Phaser.Math.Clamp((now - p.startedAt) / Math.max(1, p.endsAt - p.startedAt), 0, 1); v.bar.clear().fillStyle(0x2b2320, 0.75).fillRoundedRect(c.x - 40, c.y + 30, 80, 9, 4).fillStyle(0xf2d06b).fillRoundedRect(c.x - 38, c.y + 32, 76 * f, 5, 2); if (Math.random() < 0.03) this.dust.emitParticleAt(c.x + (Math.random() - 0.5) * 60, c.y, 2); } }
+    for (const p of d.plots) { const v = this.views.get(p.id); if (p.status === 'building' && v?.bar) { const c = iso(p.x + 1, p.y + 1); const f = Phaser.Math.Clamp((now - p.startedAt) / Math.max(1, p.endsAt - p.startedAt), 0, 1); v.bar.clear().fillStyle(0x2b2320, 0.75).fillRoundedRect(c.x - 40, c.y + 30, 80, 9, 4).fillStyle(0xf2d06b).fillRoundedRect(c.x - 38, c.y + 32, 76 * f, 5, 2);  } }
+    this.tickWorkers(d, now);
     const seen = new Set<string>();
     for (const job of st.jobs.filter(j => j.districtId === this.district)) {
       const pts = this.route(job, d.plots); const back = [...pts].reverse();
@@ -290,6 +390,8 @@ export class BootScene extends Phaser.Scene {
     this.load.on('progress', (v: number) => { if (bar) bar.style.transform = `scaleX(${v})`; if (msg) msg.textContent = `تحميل رسوم المدينة ${Math.round(v * 100)}٪`; });
     this.load.on('loaderror', (f: Phaser.Loader.File) => { const e = document.getElementById('boot-err'); if (e) { e.hidden = false; e.textContent = `تعذر تحميل ملف: ${f.key}. ستعمل اللعبة برسوم بديلة.`; } });
     this.load.image('sand', base + 'art/sand-ground.jpg');
+    for (const k of SPRITE_KEYS) this.load.image('s:' + k, sprUrl(k));
+    for (const k of GROUND_KEYS) this.load.image('g:' + k, groundUrl(k));
     this.load.image('worldmap', base + 'art/world-map.jpg');
   }
   create() { this.game.events.emit('booted'); this.scene.start('city'); }

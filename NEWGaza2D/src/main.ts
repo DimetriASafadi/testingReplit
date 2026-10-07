@@ -4,7 +4,8 @@ import { BUILDINGS, DISTRICTS, EQUIPMENT, building, projects } from './catalog';
 import { GameStore, SAVE_KEY, districtProgress, jobPhase } from './engine';
 import type { Category, DistrictState, EquipmentKind, GameState, Plot } from './model';
 import { BootScene, CityScene } from './scenes/CityScene';
-import { drawVehicle, previewDataURL } from './art';
+import { drawVehicle } from './art';
+import { previewUrl } from './realart';
 
 const app = document.getElementById('app')!;
 const stage = document.getElementById('stage')!;
@@ -143,7 +144,7 @@ function jobHtml(st: GameState, d: DistrictState, p: Plot, now: number) {
 }
 
 const previews = new Map<string, string>();
-const prev = (id: string, o: 0 | 1) => { const k = id + o; if (!previews.has(k)) previews.set(k, previewDataURL(id, o)); return previews.get(k)!; };
+const prev = (id: string, o: 0 | 1) => { const k = id + o; if (!previews.has(k)) previews.set(k, previewUrl(id, o)); return previews.get(k)!; };
 
 function plotSheet(st: GameState, d: DistrictState, now: number) {
   const p = d.plots.find(x => x.id === ui.plot); if (!p) return '';

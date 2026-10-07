@@ -20,7 +20,13 @@ export async function browser(width=1440,height=900) {
   };
   const wait=ms=>new Promise(r=>setTimeout(r,ms));
   const until=async expression=>{
-    for(let i=0;i<100;i++){if(await evaluate(expression))return;await wait(150)}
+    for(let i=0;i<100;i++){
+      try { if(await evaluate(expression))return; }
+      catch(e) {
+        if(!/navigated|context.*destroyed|Cannot find context|closed/i.test(e?.message || ''))throw e;
+      }
+      await wait(150);
+    }
     throw new Error('Timed out: '+expression);
   };
   await send('Page.enable');await send('Runtime.enable');

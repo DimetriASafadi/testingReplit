@@ -1,0 +1,3 @@
+# High-resolution generation masters are local authoring inputs.
+# Ship the optimized runtime WebP sprites and their manifest, not duplicate PNGs.
+art-src/
