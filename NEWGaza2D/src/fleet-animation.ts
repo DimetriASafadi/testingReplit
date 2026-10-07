@@ -1,7 +1,9 @@
 import Phaser from 'phaser';
 import metadata from './machinery-manifest.json';
-import type { EquipmentKind, GameState, Job, Plot, Unit } from './model';
+import type { EquipmentKind, GameState, Unit } from './model';
 import { U } from './art';
+import { convoyMotion, gateDemand, workDock } from './fleet-motion';
+import { DepotDoors } from './depot-door';
 
 type Pt = [number, number];
 type Pose = { tip: number[]; worldTip: number[] };
@@ -10,7 +12,6 @@ type Manifest = { size: number; ortho: number; foot: number[]; revision: string;
 const META: Manifest = metadata;
 const SCALE = .66, CYCLE = 7200;
 const iso = (p: Pt): Pt => [(p[0] - p[1]) * U, (p[0] + p[1]) * U / 2];
-const mix = (a: Pt, b: Pt, t: number): Pt => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
 const turnDelta = (a: number, b: number) => Math.atan2(Math.sin(b - a), Math.cos(b - a));
 export const machinePreview = (kind: EquipmentKind) => `${import.meta.env.BASE_URL}art/machinery/${kind}-preview.webp?v=${META.revision}`;
@@ -20,33 +21,17 @@ export function preloadMachinery(scene: Phaser.Scene) {
       `${import.meta.env.BASE_URL}art/machinery/${kind}.json?v=${META.revision}`);
 }
 interface Actor { a: Phaser.GameObjects.Image; b: Phaser.GameObjects.Image; heading: number; pos?: Pt;
-  distance: number; dustAt: number; stoneAt: number; tip?: Pt }
-interface Dump { position: Pt; start: number; ends: number }
-const dock = (plot: Plot, kind: EquipmentKind): Pt => kind === 'excavator'
-  ? [plot.x + 1.38, plot.y + 1.92]
-  // Matching bed separation after the modest machine-scale increase keeps loading physical.
-  : kind === 'truck' ? [plot.x + 2.095, plot.y + 1.92] : [plot.x + .72, plot.y + 1.92];
-function along(points: Pt[], f: number): Pt {
-  const lengths = points.slice(1).map((p, i) => Math.hypot(p[0] - points[i][0], p[1] - points[i][1]));
-  let d = clamp(f, 0, 1) * lengths.reduce((a, b) => a + b, 0);
-  for (let i = 0; i < lengths.length; i++) {
-    if (d <= lengths[i] || i === lengths.length - 1) return mix(points[i], points[i + 1], lengths[i] ? d / lengths[i] : 0);
-    d -= lengths[i];
-  }
-  return points[0];
-}
+  distance: number; dustAt: number; stoneAt: number; tip?: Pt; revealing: boolean }
 
 /** Visual-only crew coordination. Saved deadlines, route selection and money stay in the engine. */
 export class FleetAnimation {
   private actors = new Map<string, Actor>();
-  private lastJobs = new Map<string, Job>();
-  private dumps = new Map<string, Dump>();
-  private idleHeadings = new Map<string, number>();
+  private doors: DepotDoors;
   private activeIds = new Set<string>();
   private previousTime = 0;
   private dust?: Phaser.GameObjects.Particles.ParticleEmitter;
   private stones?: Phaser.GameObjects.Particles.ParticleEmitter;
-  constructor(private scene: Phaser.Scene) {}
+  constructor(private scene: Phaser.Scene) { this.doors = new DepotDoors(scene); }
   private particles() {
     if (this.dust) return;
     if (!this.scene.textures.exists('fleet:dust')) {
@@ -71,7 +56,7 @@ export class FleetAnimation {
       const key = 'machine:' + unit.kind, frame = META.clips[unit.kind + ':drive'][0];
       const make = () => this.scene.add.image(0, 0, key, frame)
         .setOrigin(META.foot[0] / META.size, META.foot[1] / META.size).setScale(SCALE);
-      a = { a: make(), b: make(), heading: 0, distance: 0, dustAt: 0, stoneAt: 0 };
+      a = { a: make(), b: make(), heading: 0, distance: 0, dustAt: 0, stoneAt: 0, revealing: false };
       this.actors.set(unit.id, a);
     }
     return a;
@@ -98,52 +83,36 @@ export class FleetAnimation {
     const frames = META.clips[unit.kind + ':' + (loaded && unit.kind === 'truck' ? 'loaded' : 'drive')];
     this.pose(a, unit, frames[n * 2 + roll], frames[((n + 1) % 16) * 2 + roll], d - n, pos);
   }
-  private route(job: Job, plots: Plot[], unit: Unit, index: number) {
-    const source = plots.find(p => p.id === job.originPlotId) ?? plots[0];
-    const target = plots.find(p => p.id === job.plotId)!;
-    const park = dock(target, unit.kind);
-    const bay: Pt = [source.x + .40 + (index % 4) * .83, source.y + 2 + Math.floor(index / 4) * 2];
-    return [bay, [source.x + 4, bay[1]], [source.x + 4, target.y + 2], park] as Pt[];
-  }
   update(state: GameState, now: number, roadStage: number) {
     this.particles();
     const district = state.districts.find(d => d.id === state.currentDistrict);
     if (!district) return;
     const dt = clamp((now - this.previousTime) / 1000, 0, .1); this.previousTime = now;
     const jobs = state.jobs.filter(j => j.districtId === district.id);
-    const active = new Set(jobs.flatMap(j => j.unitIds)), seen = new Set<string>();
-    this.activeIds = active;
-    for (const [id, old] of this.lastJobs) {
-      if (!jobs.some(j => j.id === id) && now >= old.returnEnd) {
-        for (const uid of old.unitIds) {
-          const u = state.units.find(v => v.id === uid);
-          if (u?.kind === 'truck' && !active.has(uid)) {
-            const points = this.route(old, district.plots, u, state.units.indexOf(u));
-            this.dumps.set(uid, { position: points[0], start: now, ends: now + 3800 });
-            this.idleHeadings.set(uid, Math.PI);
-          }
-        }
-      }
+    const seen = new Set<string>(); this.activeIds = new Set();
+    const depots = district.plots.filter(p => p.buildingId === 'recycling' && p.status === 'built');
+    for (const depot of depots) {
+      const demands = jobs.filter(j => j.originPlotId === depot.id)
+        .map(j => gateDemand(j, depot, district.plots[j.plotId], now)).filter(d => d.open);
+      this.doors.update(depot, demands.length > 0, now, demands.length ? Math.min(...demands.map(d => d.since)) : now);
     }
-    this.lastJobs = new Map(jobs.map(j => [j.id, j]));
+    this.doors.retain(new Set(depots.map(p => p.id)));
     for (const job of jobs) for (const uid of job.unitIds) {
       const unit = state.units.find(u => u.id === uid); if (!unit) continue;
-      this.dumps.delete(uid); seen.add(uid);
-      const a = this.actor(unit), points = this.route(job, district.plots, unit, state.units.indexOf(unit));
-      let position: Pt, moving = false;
-      if (now < job.arrival) {
-        const f = clamp((now - job.start) / Math.max(1, job.arrival - job.start), 0, 1);
-        position = along(points, f);
-        const ahead = along(points, f + .012);
-        // A tipper backs into the loading position rather than spinning its whole
-        // body through 180 degrees beside the excavator.
-        const reverse = unit.kind === 'truck' && Math.abs(ahead[1] - position[1]) < .00001 && ahead[0] < position[0];
-        const heading = Math.atan2(ahead[1] - position[1], ahead[0] - position[0]) + (reverse ? Math.PI : 0);
-        this.drive(a, unit, heading, position, dt, false); moving = f > 0 && f < 1;
-      } else if (now < job.workEnd) {
-        const plot = district.plots.find(p => p.id === job.plotId)!;
-        position = dock(plot, unit.kind);
+      const source = district.plots[job.originPlotId], plot = district.plots[job.plotId];
+      const motion = convoyMotion(job, source, plot, unit.kind, now);
+      if (motion.visibility <= 0) continue;
+      seen.add(uid); this.activeIds.add(uid);
+      const a = this.actor(unit);
+      // Travelling units pass behind buildings. Only actual loading needs
+      // selective foreground reveal; never make an entire street-front house
+      // transparent just because a truck is driving behind it.
+      a.revealing = motion.stage === 'work';
+      let position = motion.position;
+      if (motion.stage === 'work') {
+        position = workDock(plot, unit.kind);
         const heading = unit.kind === 'truck' ? 0 : -Math.PI / 2;
+        if (!a.pos) a.heading = heading;
         const elapsed = now - job.arrival, phase = ((Math.max(0, elapsed - 900)) % CYCLE) / CYCLE;
         if (elapsed < 900 || Math.abs(turnDelta(a.heading, heading)) > .06) {
           this.drive(a, unit, heading, position, dt, false);
@@ -162,48 +131,31 @@ export class FleetAnimation {
           }
         }
       } else {
-        const f = clamp((now - job.workEnd) / Math.max(1, job.returnEnd - job.workEnd), 0, 1);
-        const back = [...points].reverse(); position = along(back, f);
-        const ahead = along(back, f + .012);
-        this.drive(a, unit, Math.atan2(ahead[1] - position[1], ahead[0] - position[0]), position, dt, true);
-        moving = f < 1;
+        const heading = Math.atan2(motion.ahead[1] - position[1], motion.ahead[0] - position[0])
+          + (motion.reverse ? Math.PI : 0);
+        if (!a.pos) a.heading = heading;
+        this.drive(a, unit, heading, position, dt, motion.stage === 'return');
       }
-      if (moving && roadStage < 3 && now > a.dustAt) {
+      a.a.setAlpha(a.a.alpha * motion.visibility); a.b.setAlpha(a.b.alpha * motion.visibility);
+      if (motion.moving && roadStage < 3 && now > a.dustAt) {
         const q = iso(position); this.dust!.emitParticleAt(q[0], q[1], 1); a.dustAt = now + 210;
       }
       a.pos = position;
     }
-    const depot = district.plots.find(p => p.buildingId === 'recycling' && p.status === 'built');
-    for (const [slot, unit] of state.units.entries()) if (!seen.has(unit.id) && !active.has(unit.id) && depot) {
-      seen.add(unit.id); const a = this.actor(unit), dump = this.dumps.get(unit.id);
-      if (dump && now < dump.ends) {
-        this.activeIds.add(unit.id);
-        this.clip(a, unit, 'work', (now - dump.start) / (dump.ends - dump.start), dump.position, false);
-        const phase = (now - dump.start) / (dump.ends - dump.start);
-        if (a.tip && phase > .4 && phase < .7 && now > a.stoneAt) {
-          this.stones!.emitParticleAt(...a.tip, 4); this.dust!.emitParticleAt(a.tip[0], a.tip[1] + 12, 1); a.stoneAt = now + 90;
-        }
-        a.pos = dump.position;
-      } else {
-        this.dumps.delete(unit.id);
-        const position: Pt = [depot.x + .40 + (slot % 4) * .83, depot.y + 2 + Math.floor(slot / 4) * 2];
-        this.drive(a, unit, this.idleHeadings.get(unit.id) ?? 0, position, dt, false); a.pos = position;
-      }
-    }
     for (const [id, actor] of this.actors) if (!seen.has(id)) {
-      actor.a.destroy(); actor.b.destroy(); this.actors.delete(id); this.dumps.delete(id);
+      actor.a.destroy(); actor.b.destroy(); this.actors.delete(id);
     }
   }
   resetDistrict() {
     for (const a of this.actors.values()) { a.a.destroy(); a.b.destroy(); }
-    this.actors.clear(); this.dumps.clear(); this.lastJobs.clear(); this.idleHeadings.clear(); this.previousTime = 0;
+    this.actors.clear(); this.doors.reset(); this.previousTime = 0;
     this.dust?.destroy(); this.stones?.destroy(); this.dust = this.stones = undefined;
     this.activeIds.clear();
   }
   /** Sample actual body/tool positions for foreground occlusion, never move units onto roofs. */
   focusPoints() {
     const points: { x: number; y: number; depth: number }[] = [];
-    for (const [id, a] of this.actors) if (this.activeIds.has(id)) {
+    for (const [id, a] of this.actors) if (this.activeIds.has(id) && a.revealing) {
       for (const dx of [-10, 0, 10]) points.push({ x: a.a.x + dx, y: a.a.y - 17, depth: a.a.depth });
       if (a.tip) points.push({ x: a.tip[0], y: a.tip[1], depth: a.a.depth });
     }

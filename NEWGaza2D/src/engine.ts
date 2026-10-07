@@ -1,6 +1,7 @@
 import { BUILDINGS, DISTRICTS, EQUIPMENT, building, projects } from './catalog';
 import type { Action, DistrictState, EquipmentKind, GameAPI, GameState, Job, Plot } from './model';
 import { validateSave } from './save';
+import { factoryWindows, nextFactorySlot } from './fleet-motion';
 
 export const SAVE_KEY = 'newgaza2d-save-v1';
 export function newGame(now = Date.now()): GameState {
@@ -151,9 +152,20 @@ export class GameStore implements GameAPI {
           const arrival = now + travel, workEnd = arrival + 60000;
           const truck = team.find(u => u.kind === 'truck')!;
           const returning = Math.max(30000, Math.ceil(90000 / (1 + (truck.level - 1) * .35)), travel);
-          this.state.jobs.push({ id: `job-${++this.state.sequence}`, districtId: d.id, plotId: p.id,
+          const job: Job = { id: `job-${++this.state.sequence}`, districtId: d.id, plotId: p.id,
             unitIds: team.map(u => u.id), start: now, arrival, workEnd, returnEnd: workEnd + returning,
-            cleared: false, value: building(p.buildingId).cost, originPlotId: recycler.id });
+            cleared: false, value: building(p.buildingId).cost, originPlotId: recycler.id };
+          const windows = this.state.jobs.filter(j => j.districtId === d.id && j.originPlotId === recycler.id)
+            .flatMap(j => factoryWindows(j, recycler, d.plots[j.plotId]));
+          const outgoing = factoryWindows(job, recycler, p)[0];
+          job.departureAt = nextFactorySlot(now, outgoing.end - outgoing.start, windows);
+          const dispatchWait = job.departureAt - now;
+          job.arrival += dispatchWait; job.workEnd += dispatchWait; job.returnEnd += dispatchWait;
+          const incoming = factoryWindows(job, recycler, p)[1];
+          const returnWait = nextFactorySlot(incoming.start, incoming.end - incoming.start, windows) - Math.ceil(incoming.start);
+          job.returnStartAt = job.workEnd + Math.max(0, returnWait);
+          job.returnEnd += Math.max(0, returnWait);
+          this.state.jobs.push(job);
           break;
         }
         case 'sell': {

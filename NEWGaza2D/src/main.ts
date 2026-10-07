@@ -136,11 +136,19 @@ function renderCity() {
 }
 
 function jobFor(st: GameState, d: DistrictState, p: Plot) { return st.jobs.find(j => j.districtId === d.id && j.plotId === p.id); }
+function jobDisplay(j: Parameters<typeof jobPhase>[0], now: number) {
+  const ph = jobPhase(j, now);
+  if (ph === 'travel' && now < (j.departureAt ?? j.start))
+    return { label: 'انتظار دور الخروج من المصنع', end: j.departureAt!, span: j.departureAt! - j.start };
+  if (ph === 'return' && now < (j.returnStartAt ?? j.workEnd))
+    return { label: 'انتظار دور العودة إلى المصنع', end: j.returnStartAt!, span: j.returnStartAt! - j.workEnd };
+  return { label: PHASE[ph], end: ph === 'travel' ? j.arrival : ph === 'work' ? j.workEnd : j.returnEnd,
+    span: ph === 'travel' ? j.arrival - (j.departureAt ?? j.start) : ph === 'work' ? j.workEnd - j.arrival : j.returnEnd - (j.returnStartAt ?? j.workEnd) };
+}
 function jobHtml(st: GameState, d: DistrictState, p: Plot, now: number) {
   const j = jobFor(st, d, p); if (!j) return '';
-  const ph = jobPhase(j, now); const end = ph === 'travel' ? j.arrival : ph === 'work' ? j.workEnd : j.returnEnd;
-  const span = ph === 'travel' ? j.arrival - j.start : ph === 'work' ? j.workEnd - j.arrival : j.returnEnd - j.workEnd;
-  return `<div class="note"><b>${PHASE[ph]}</b> — متبقٍ <span class="num">${dur(end - now)}</span><div class="meter" style="margin-top:6px"><i style="transform:scaleX(${Math.min(1, 1 - (end - now) / Math.max(1, span))})"></i></div><small>الآليات: ${j.unitIds.map(id => EQUIPMENT[st.units.find(u => u.id === id)?.kind ?? 'truck'].name).join('، ')} — محجوزة حتى العودة. تُضاف المواد عند وصولها للمصنع.</small></div>`;
+  const { label, end, span } = jobDisplay(j, now);
+  return `<div class="note"><b>${label}</b> — متبقٍ <span class="num">${dur(end - now)}</span><div class="meter" style="margin-top:6px"><i style="transform:scaleX(${Math.min(1, 1 - (end - now) / Math.max(1, span))})"></i></div><small>الآليات: ${j.unitIds.map(id => EQUIPMENT[st.units.find(u => u.id === id)?.kind ?? 'truck'].name).join('، ')} — محجوزة حتى العودة. تُضاف المواد عند وصولها للمصنع.</small></div>`;
 }
 
 const previews = new Map<string, string>();
@@ -193,7 +201,7 @@ function dialogHtml(st: GameState, now: number): [string, string] {
     return ['الآليات', `${!hasRecycler(st) ? '<p class="note">شراء الآليات يتطلب مصنع إعادة تدوير مكتملًا.</p>' : ''}
       <h3>شراء</h3><div class="list">${(Object.keys(EQUIPMENT) as EquipmentKind[]).map(k => `<div class="item"><img src="" data-veh="${k}" alt=""/><div><h3>${EQUIPMENT[k].name}</h3><p>السعر <span class="num">${fmt(EQUIPMENT[k].cost)}</span></p></div><button class="btn sm" data-a="buy" data-id="${k}" data-k="buy-${k}" ${hasRecycler(st) && st.coins >= EQUIPMENT[k].cost ? '' : 'disabled'}>شراء</button></div>`).join('')}</div>
       <h3>أسطولك (${fmt(st.units.length)})</h3>${st.units.length ? `<div class="list">${st.units.map(u => { const cost = Math.floor(u.purchasePrice / 2); return `<div class="item"><span class="st" style="background:${b.has(u.id) ? 'var(--ochre)' : 'var(--olive)'}"></span><div><h3>${EQUIPMENT[u.kind].name} · مستوى <span class="num">${fmt(u.level)}</span>/٣</h3><p>${b.has(u.id) ? 'في مهمة' : 'متاحة'} · الترقية تسرّع السفر وتزيد الحمولة، العمل يبقى ٦٠ ثانية</p></div><button class="btn ghost sm" data-a="upg" data-id="${u.id}" data-k="u-${u.id}" ${u.level >= 3 || st.coins < cost ? 'disabled' : ''}>${u.level >= 3 ? 'أقصى مستوى' : `ترقية <span class="num">${fmt(cost)}</span>`}</button></div>`; }).join('')}</div>` : '<p class="note">لا توجد آليات بعد.</p>'}
-      <h3>المهام الجارية</h3>${st.jobs.length ? `<div class="list">${st.jobs.map(j => { const ph = jobPhase(j, now); const end = ph === 'travel' ? j.arrival : ph === 'work' ? j.workEnd : j.returnEnd; return `<div class="item building"><span class="st"></span><div><h3>${esc(dName(j.districtId))} · قطعة <span class="num">${fmt(j.plotId + 1)}</span></h3><p>${PHASE[ph]} · متبقٍ <span class="num">${dur(end - now)}</span></p></div><span></span></div>`; }).join('')}</div>` : '<p class="note">لا توجد مهام الآن.</p>'}`];
+      <h3>المهام الجارية</h3>${st.jobs.length ? `<div class="list">${st.jobs.map(j => { const { label, end } = jobDisplay(j, now); return `<div class="item building"><span class="st"></span><div><h3>${esc(dName(j.districtId))} · قطعة <span class="num">${fmt(j.plotId + 1)}</span></h3><p>${label} · متبقٍ <span class="num">${dur(end - now)}</span></p></div><span></span></div>`; }).join('')}</div>` : '<p class="note">لا توجد مهام الآن.</p>'}`];
   }
   if (ui.dialog === 'mats') {
     const i = st.inventory;

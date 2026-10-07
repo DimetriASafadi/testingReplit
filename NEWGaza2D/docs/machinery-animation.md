@@ -29,9 +29,19 @@ sprites; players do not download or render 3D models.
   livestock motion. Tree wind uses fragments of the actual farm artwork, not
   unrelated generic canopy stickers.
 
-Visual classes read existing saved deadlines. They do not change clearance duration,
-purchase prices, income, inventory settlement, save format or district progression.
-Cosmetic depot tipping follows settlement and never delays payment or blocks new jobs.
+The recycling factory has a grounded lift-up metal shutter in both building orientations.
+Purchased but idle units stay inside it rather than remaining on the street. A job
+opens the shutter, sends the three units out one at a time along the same road with
+arc-distance separation, and closes it once the last unit clears the apron. On return,
+the same team approaches in order, the shutter opens before the first unit reaches it,
+and each machine disappears as it crosses into the factory; the shutter closes last.
+The shutter and vehicles recover their positions after a reload from saved timestamps.
+Simultaneous crews reserve the shared depot approach so they do not occupy its entry
+together. The job display distinguishes waiting to leave or return from actual travel.
+Existing jobs without these optional timestamps continue to load with their original
+deadlines. Clearance is still sixty seconds; purchase prices, income, inventory
+settlement and district progression are unchanged. No idle street parking or
+post-settlement street tipping remains.
 
 ## Rebuild
 

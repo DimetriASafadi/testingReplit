@@ -6,7 +6,7 @@ export interface Plot { id: number; x: number; y: number; status: 'rubble' | 'em
 export interface ProjectState { id: string; status: 'idle' | 'building' | 'ready' | 'complete'; startedAt: number; endsAt: number; incomeAt: number }
 export interface DistrictState { id: string; unlocked: boolean; claimed: boolean; plots: Plot[]; projects: ProjectState[]; camera: { x: number; y: number; zoom: number } | null }
 export interface Unit { id: string; kind: EquipmentKind; level: number; purchasePrice: number }
-export interface Job { id: string; districtId: string; plotId: number; unitIds: string[]; start: number; arrival: number; workEnd: number; returnEnd: number; cleared: boolean; value: number; originPlotId: number }
+export interface Job { id: string; districtId: string; plotId: number; unitIds: string[]; start: number; arrival: number; workEnd: number; returnEnd: number; cleared: boolean; value: number; originPlotId: number; departureAt?: number; returnStartAt?: number }
 export interface GameState { version: 1; coins: number; inventory: { concrete: number; iron: number; wood: number; other: number; value: number }; units: Unit[]; jobs: Job[]; districts: DistrictState[]; currentDistrict: string | null; lastSeen: number; sequence: number }
 export type Action =
  | { type: 'enter'; districtId: string }

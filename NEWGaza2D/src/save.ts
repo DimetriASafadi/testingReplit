@@ -51,6 +51,8 @@ export function validateSave(value: unknown): asserts value is GameState {
     require(team.every(Boolean) && new Set(team.map(u => u!.kind)).size === 3);
     require([j.start,j.arrival,j.workEnd,j.returnEnd,j.value].every(integer));
     require(j.start <= s.lastSeen && j.start < j.arrival && j.workEnd - j.arrival === 60000 && j.returnEnd > j.workEnd);
+    require(j.departureAt === undefined || (integer(j.departureAt) && j.departureAt >= j.start && j.departureAt < j.arrival));
+    require(j.returnStartAt === undefined || (integer(j.returnStartAt) && j.returnStartAt >= j.workEnd && j.returnStartAt < j.returnEnd));
     require(typeof j.cleared === 'boolean' && (j.cleared || d!.plots[j.plotId].status === 'rubble'));
     busy.push(...j.unitIds); sites.push(`${j.districtId}:${j.plotId}`);
   }

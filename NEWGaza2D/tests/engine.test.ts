@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { GameStore, newGame, rubbleYield, SAVE_KEY } from '../src/engine';
 import { BUILDINGS, DISTRICTS, projects } from '../src/catalog';
 import { validateSave } from '../src/save';
+import { CONVOY_GAP, convoyMotion, factoryWindows, fleetRoute, gateDemand, routeLength } from '../src/fleet-motion';
+import type { EquipmentKind, Job } from '../src/model';
 
 class MemoryStorage {
   data = new Map<string,string>();
@@ -21,6 +23,52 @@ function ready() {
   for (const kind of ['excavator','bulldozer','truck'] as const) store.dispatch({ type:'buy',kind });
   return result;
 }
+test('factory exit/entry convoy has physical spacing, hidden storage and compatible old deadlines', () => {
+  const state = newGame(100000), source = state.districts[0].plots[0], target = state.districts[0].plots[27];
+  const kinds: EquipmentKind[] = ['excavator', 'bulldozer', 'truck'];
+  const j: Job = { id: 'job-4', districtId: state.districts[0].id, plotId: target.id,
+    unitIds: ['unit-1', 'unit-2', 'unit-3'], start: 100000, arrival: 120000,
+    workEnd: 180000, returnEnd: 270000, cleared: false, value: 30000, originPlotId: source.id };
+  for (const orientation of [0, 1] as const) {
+    source.orientation = orientation;
+    for (const kind of kinds) assert.equal(convoyMotion(j, source, target, kind, j.start).visibility, 0);
+    assert.equal(gateDemand(j, source, target, j.start).open, true);
+    assert.equal(gateDemand(j, source, target, j.arrival + 3000).open, false);
+    const out = kinds.map(k => convoyMotion(j, source, target, k, j.start + 7000));
+    for (const m of out) assert.ok(m.visibility > 0);
+    for (let i = 1; i < out.length; i++) assert.ok(Math.hypot(out[i].position[0] - out[i - 1].position[0], out[i].position[1] - out[i - 1].position[1]) >= CONVOY_GAP / Math.SQRT2 - .01);
+    for (const kind of kinds) {
+      assert.equal(convoyMotion(j, source, target, kind, j.arrival).stage, 'work');
+      assert.equal(convoyMotion(j, source, target, kind, j.returnEnd - 249).visibility, 0);
+      assert.ok(routeLength(fleetRoute(source, target, kind)) > 0);
+    }
+    const entering = kinds.map(k => convoyMotion(j, source, target, k, j.returnEnd - 19000));
+    for (let i = 1; i < entering.length; i++) assert.ok(Math.hypot(entering[i].position[0] - entering[i - 1].position[0], entering[i].position[1] - entering[i - 1].position[1]) >= CONVOY_GAP / Math.SQRT2 - .01);
+  }
+});
+test('multiple teams reserve the factory portal, save queues and settle once after actual return', () => {
+  const { store, storage } = ready();
+  for (const kind of ['excavator','bulldozer','truck'] as const) store.dispatch({ type: 'buy', kind });
+  const targets = store.state.districts[0].plots.filter(p => p.status === 'rubble').slice(0, 2);
+  for (const target of targets) store.dispatch({ type: 'clear', plotId: target.id });
+  assert.equal(store.state.jobs.length, 2);
+  const d = store.state.districts[0], source = d.plots[0];
+  const windows = store.state.jobs.flatMap(j => factoryWindows(j, source, d.plots[j.plotId]));
+  for (let i = 0; i < windows.length; i++) for (let k = i + 1; k < windows.length; k++)
+    assert.ok(windows[i].end <= windows[k].start || windows[k].end <= windows[i].start, JSON.stringify(windows));
+  validateSave(store.state);
+  const restored = new GameStore(storage);
+  assert.deepEqual(restored.state.jobs.map(j => [j.departureAt,j.returnStartAt,j.returnEnd]),
+    store.state.jobs.map(j => [j.departureAt,j.returnStartAt,j.returnEnd]));
+  const end = Math.max(...store.state.jobs.map(j => j.returnEnd));
+  const before = store.state.inventory.value;
+  store.tick(end); const after = store.state.inventory.value;
+  assert.ok(after > before); assert.equal(store.state.jobs.length, 0);
+  store.tick(end + 5000); assert.equal(store.state.inventory.value, after);
+  const invalid = structuredClone(restored.state);
+  invalid.jobs[0].departureAt = invalid.jobs[0].arrival;
+  assert.throws(() => validateSave(invalid));
+});
 test('fresh campaign: million once, thirteen districts, dense ruins, no placed recycler', () => {
   const state = newGame();
   validateSave(state);
