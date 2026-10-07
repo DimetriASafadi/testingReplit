@@ -8,6 +8,8 @@ import { constructionCanvas, constructionStageFor } from '../construction-art';
 import { ART_SC, builtScale, ruinScale } from '../art-scale';
 import { SiteAnimation } from '../site-animation';
 import { FleetAnimation, preloadMachinery } from '../fleet-animation';
+import { districtEnvironment } from '../district-environment';
+import { paintSurroundings, TERRAIN_BACKDROP } from '../district-terrain';
 import { ENVIRONMENT_IDS, environmentUrl, groundStamp } from '../environment-art';
 
 export interface CityHooks { getState(): GameState; onSelect(plotId: number | null): void; onCamera(c: { x: number; y: number; zoom: number }): void }
@@ -30,7 +32,7 @@ export class CityScene extends Phaser.Scene {
   private down: { x: number; y: number; sx: number; sy: number } | null = null;
   private dragged = false; private pinch: { d: number; z: number } | null = null;
   private dust!: Phaser.GameObjects.Particles.ParticleEmitter;
-  private roadImg?: Phaser.GameObjects.Image; private roadStage = -1; private maxL = 16; private frame!: ReturnType<typeof frameFor>; private groundKey = '';
+  private roadImg?: Phaser.GameObjects.Image; private roadStage = -1; private maxL = 16; private frame!: ReturnType<typeof frameFor>; private groundKey = ''; terrainInfo?: { style: string; vegetation: string; water: boolean; seed: number };
   private sites = new Map<string, { key: string; img: Phaser.GameObjects.Image; label: Phaser.GameObjects.Text; bar: Phaser.GameObjects.Graphics }>();
   private projectPlots: Plot[] = [];
   private occlusion = new Set<number>();
@@ -43,7 +45,7 @@ export class CityScene extends Phaser.Scene {
     this.siteAnimation = new SiteAnimation(this, iso, SC);
     this.fleetAnimation = new FleetAnimation(this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { this.siteAnimation.destroy(); this.fleetAnimation.destroy(); });
-    this.cameras.main.setBackgroundColor('#b3a483');
+    this.cameras.main.setBackgroundColor(TERRAIN_BACKDROP);
     this.input.addPointer(1);
     if (!this.textures.exists('dot')) { const g = this.make.graphics({}, false); g.fillStyle(0xe8dcc4, 1).fillCircle(4, 4, 4); g.generateTexture('dot', 8, 8); g.destroy(); }
     this.dust = this.add.particles(0, 0, 'dot', { speed: { min: 6, max: 26 }, angle: { min: 200, max: 340 }, scale: { start: 0.9, end: 2.4 }, alpha: { start: 0.55, end: 0 }, lifespan: 1300, tint: [0xcdbb98, 0xb8ae9a, 0xe8dcc4], emitting: false });
@@ -63,7 +65,10 @@ export class CityScene extends Phaser.Scene {
   private buildWorld(st: GameState) {
     this.siteAnimation.resetDistrict(); this.fleetAnimation.resetDistrict();
     this.occlusion.clear(); this.occlusionAt = 0;
-    this.children.removeAll(true); this.views.clear();
+    const oldTex = [this.groundKey, this.roadImg?.texture?.key].filter((k): k is string => !!k && (k.startsWith('ground:') || k.startsWith('roads:')));
+    this.children.removeAll(true); this.views.clear(); this.roadImg = undefined;
+    for (const k of oldTex) if (this.textures.exists(k)) this.textures.remove(k);
+    this.groundKey = '';
     this.dust = this.add.particles(0, 0, 'dot', { speed: { min: 6, max: 26 }, angle: { min: 200, max: 340 }, scale: { start: 0.9, end: 2.4 }, alpha: { start: 0.55, end: 0 }, lifespan: 1300, tint: [0xcdbb98, 0xb8ae9a, 0xe8dcc4], emitting: false }).setDepth(1e6);
     const d = st.districts.find(x => x.id === this.district)!;
     const max = Math.max(...d.plots.map(p => Math.max(p.x, p.y))) + 2;
@@ -72,7 +77,7 @@ export class CityScene extends Phaser.Scene {
     this.maxL = max;
     const g = this.add.graphics().setDepth(-9e5);
     const quad = (x0: number, y0: number, x1: number, y1: number, col: number, a = 1) => { const pts = [iso(x0, y0), iso(x1, y0), iso(x1, y1), iso(x0, y1)]; g.fillStyle(col, a).fillPoints(pts.map(p => new Phaser.Math.Vector2(p.x, p.y)), true); };
-    g.fillStyle(0xb7a47e, 1).fillRect(c.x - size * 1.5, c.y - size * 1.5, size * 3, size * 3);
+    g.fillStyle(0xa39274, 1).fillRect(c.x - size * 1.5, c.y - size * 1.5, size * 3, size * 3);
     this.paintGround(d.id, max);
     this.roadStage = -1; this.roadImg = undefined;
     this.sites.clear();
@@ -110,23 +115,13 @@ export class CityScene extends Phaser.Scene {
   private paintGround(did: string, max: number) {
     const LX0 = -14, LY0 = -16, LX1 = max + 16, LY1 = max + 16;
     this.frame = frameFor(LX0, LY0, LX1, LY1); const f = this.frame;
-    const cv = makeCanvas(f.w, f.h); const P = new Painter(cv, f, this.imgs()); const r = this.seedRnd(did.length * 97 + did.charCodeAt(0));
-    const shore = (ly: number) => -3.6 + 0.32 * Math.sin(ly * 0.7) + 0.18 * Math.sin(ly * 1.9 + 1);
-    const wp = (a: number, b: number): [number, number][] => { const p: [number, number][] = []; for (let ly = LY0; ly <= LY1; ly += 0.5) p.push([shore(ly) + a, ly]); for (let ly = LY1; ly >= LY0; ly -= 0.5) p.push([shore(ly) + b, ly]); return p; };
-    P.fill(rect(-400, -400, 400, 400), 'earth', 9, 1, 0, 0);
-    P.fill(rect(-400, -400, 0, 400), 'water', 11, 1, 0, 0); P.fill(rect(-400, -400, 0, 400), 'water', 17.3, 0.35, 2.2, 5.1);
-    for (let i = 0; i < 5; i++) P.shade(wp(-12, -1.0 - i * 1.6), 'rgba(6,40,58,.1)');
-    for (let i = 0; i < 3; i++) P.shade(wp(-1.5 + i * 0.3, 0.1), 'rgba(150,215,205,.12)');
-    const land = wp(0, 400);
-    P.fill(land, 'earth', 9, 1, 0, 0); P.fill(land, 'earth', 13.7, 0.45, 3.1, 5.7);
-    for (let i = 0; i < 42; i++) { const lx = r() * (LX1 - 0) + 0, ly = r() * (LY1 - LY0) + LY0; P.fill(blob(lx, ly, 1 + r() * 2.8, 0.8 + r() * 2.2, r), r() > 0.45 ? 'gravel' : 'earth', 6 + r() * 3, 0.3 + r() * 0.3, r() * 4, r() * 4); }
-    for (let i = 0; i < 6; i++) P.fill(wp(-0.2, 2.9 - i * 0.45), 'sand', 7.3, 0.34, 1.7, 0.4);
-    P.fill(wp(-0.3, 0.45), 'sand', 7.3, 0.75, 0, 0, 'rgba(70,56,40,.3)');
-    for (let ly = LY0; ly < LY1; ly += 0.5) { const a: [number, number] = [shore(ly) - 0.2, ly], b: [number, number] = [shore(ly + 0.5) - 0.2, ly + 0.5]; P.stroke(a, b, 'rgba(244,250,246,.75)', 1.4); if (Math.sin(ly * 2.1) > -0.2) P.stroke([a[0] - 0.4, a[1]], [b[0] - 0.4, b[1]], 'rgba(244,250,246,.3)', 1); }
-    for (let i = 0; i < 4; i++) P.shade(rect(max + 1.6 + i * 0.9, LY0, LY1 + 20, LY1), 'rgba(98,112,58,.07)');
-    for (let i = 0; i < 4; i++) P.shade(rect(0, max + 1.6 + i * 0.9, LX1, LY1 + 20), 'rgba(98,112,58,.06)');
-    for (let i = 0; i < 26; i++) P.shade(blob(r() * (LX1 + 20), r() * (LY1 - LY0) + LY0, 2 + r() * 4, 1.5 + r() * 3, r), `rgba(${r() > 0.5 ? '120,100,72' : '176,160,128'},.08)`);
-    const key = `ground:${did}`; if (this.textures.exists(key)) this.textures.remove(key); this.textures.addCanvas(key, cv); this.groundKey = key;
+    const cv = makeCanvas(f.w, f.h); const P = new Painter(cv, f, this.imgs());
+    const gi = (k: string) => this.textures.exists(k) ? this.textures.get(k).getSourceImage() as HTMLImageElement : null;
+    const info = paintSurroundings(P, districtEnvironment(did), did, max, { x0: LX0, y0: LY0, x1: LX1, y1: LY1 }, (id, lx, ly, w, op, mir) => {
+      const img = gi('env:' + id); if (!img) return; const [px, py] = P.pt(lx, ly); P.ctx.save(); P.ctx.setTransform(1, 0, 0, 1, 0, 0);
+      groundStamp(P.ctx, img, id, px, py, w * GK * 1.6, op, mir); P.ctx.restore(); }, k => gi('s:' + k));
+    this.terrainInfo = info; this.registry.set('terrain', info);
+    const key = `ground:${did}`; if (this.textures.exists(key)) this.textures.remove(key); this.textures.addCanvas(key, cv); this.groundKey = key; (cv as HTMLCanvasElement).dataset.terrain = `${info.style}:${info.water ? 'sea' : 'nowater'}`;
     this.add.image(f.ox, f.oy, key).setOrigin(0, 0).setScale(1 / GK).setDepth(-8.9e5);
   }
 
