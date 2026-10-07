@@ -3,6 +3,12 @@ name: 2D visual direction
 description: Approved 2D game viewpoint and the user's request to absorb visual references before implementation.
 ---
 
+المستخدم رفض الرسوم الهندسية المسطحة للنسخة الأولى وكرر أن هدفه رسوم واقعية بمستوى صورة الحي المدمر المرجعية، وخامات أرض بمقياس مناسب، وعمّال بأجسام وأنيميشن عمل لا أيقونات تتحرك.
+
+**Why:** الفرق بين الصورة التصورية واللعبة الفعلية كان غير مقبول للمستخدم.
+
+**How to apply:** قيّم الأصول والأنيميشن داخل المشهد القابل للعب مقابل المرجع؛ لا تعتبر تلوين المضلعات المبسطة أو نجاح اختبارات المنطق تحقيقًا للجودة الفنية المطلوبة.
+
 المستخدم أكد نيته أن تصبح اللعبة تقريبًا مثل صورة الحي المدمر بالكامل بمنظور لعبة 2D، وقال: «جهز نفسك عشان راح نعمل اللعبة تقريبا هكذا ان شاء الله».
 
 The approved approximate visual reference is `attached_assets/generated_images/gaza_2d_fully_destroyed_game_map.png`: an elevated oblique game-map view, dense ruined plots and rubble, readable streets, and clearing equipment. This is the game-perspective concept, not the documentary-style photographic destruction image.
