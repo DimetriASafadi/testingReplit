@@ -4,7 +4,7 @@
 
 - تعليمات المستخدم: اترك مشروع Unity في مجلده كما هو؛ لا نضيف أو نعدل عليه شيئًا الآن. ركّز العمل على لعبة 2D بالنظام المتفق عليه داخل `NEWGaza2D/`. فحوص Unity وملفاته الناقصة ليست شرطًا لإكمال عمل الويب.
 - The platform wrapper `artifacts/new-gaza-2d/` contains registration and launch commands only. Actual web source, assets, configuration, tests and documentation belong to `NEWGaza2D/`; no React frontend is needed for Unity.
-- Web workflow: `artifacts/new-gaza-2d: web`. It provides `PORT` and `BASE_PATH`, delegates to the Phaser/TypeScript workspace, and currently serves a setup-status page only. See `NEWGaza2D/WORKSPACE.ar.md`.
+- Web workflow: `artifacts/new-gaza-2d: web`. It provides `PORT` and `BASE_PATH` and runs the playable Phaser browser game. See `NEWGaza2D/README.md` for behavior, verification and save scope.
 - Preserve the native project and installed runtimes, but do not run native checks as part of browser-game work. No database setup, schema push or migration is required; pre-existing API/database scaffold packages are not the Unity application's backend.
 - Post-merge setup installs web packages only. Automatic validation targets NEWGaza2D, not the archived Unity project. Earlier native verification results in `NEWGaza2D/MIGRATION_VERIFICATION.ar.md` are historical, not outstanding web requirements.
 
@@ -12,7 +12,7 @@
 - Product: **New Gaza / نيو غزة**, a peaceful Gaza reconstruction and economy game. The user wants its new 2D browser-game files kept in `NEWGaza2D/` and wants a playable version accessible on the web.
 - Use Phaser with TypeScript for the planned browser game and Replit Preview during development. Keep every file belonging to this version (application source, tests, art references, manifests and web configuration) inside `NEWGaza2D/`; do not scatter game files at the repository root or in Unity's `Assets/`.
 - Treat `testingReplic/` as the separate Unity project and preserve it. Do not remove or rewrite Unity gameplay or migrate its files as part of browser-game work unless the user specifically asks.
-- The Phaser game has not been implemented yet; creating its home folder and documentation alone does not authorize starting the game implementation.
+- The user authorized implementation of the Phaser game. Keep it independent of Unity and honor `NEWGaza2D/PRE_IMPLEMENTATION_NOTES.ar.md`.
 - New game entry scene: `Assets/NewGaza/Scenes/NewGaza.unity`. Original racing prototype stays in `Assets/Scenes/SampleScene.unity`, disabled in the mobile build list.
 - Gameplay is peaceful reconstruction, not combat: rubble → recycling → resources → revenue → infrastructure/projects → 100% neighborhood reward → next neighborhood → Al Rashid finale.
 - Runtime-generated world; use the Unity menu `New Gaza/Open game scene`, then Play. The setup menu applies mobile settings and Input System configuration. See `testingReplic/README.ar.md`.

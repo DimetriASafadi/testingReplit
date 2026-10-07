@@ -19,3 +19,4 @@
 - [Destroyed city density](destroyed-city-density.md) — المستخدم يريد خريطة مليئة بالمباني المدمرة؛ تحقق من العدد الفعلي وتوزيعه، لا من رفع الحد فقط.
 - [Native save performance](native-save-performance.md) — camera checkpoints use detached background snapshots; actual fleet markers fade at close zoom.
 - [Generated machinery preparation](generated-machinery-preparation.md) — split meshes are not complete rigs; check cut topology and request a textured model when UVs are absent.
+- [Browser clock testing](browser-clock-testing.md) — run accelerated browser-clock checks after frontend edits settle; hot reload resets injected clocks, not persisted deadlines.
