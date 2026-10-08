@@ -13,10 +13,14 @@ import { gameAudio } from './game-audio';
 const app = document.getElementById('app')!;
 const stage = document.getElementById('stage')!;
 const cityStatus = document.createElement('section');
+let bootLoading = true, cityLoading = false;
+function syncMusic() { gameAudio.musicPhase(bootLoading || cityLoading ? 'loading' : S().currentDistrict ? 'play' : 'menu'); }
 cityStatus.id = 'city-status'; cityStatus.hidden = true;
 cityStatus.setAttribute('role', 'status'); cityStatus.setAttribute('aria-live', 'polite');
 document.body.append(cityStatus);
 function showCityStatus(status: 'loading' | 'ready' | 'error', message = '') {
+  cityLoading = status === 'loading';
+  syncMusic();
   cityStatus.hidden = status === 'ready' || !S().currentDistrict;
   if (status === 'ready') return;
   cityStatus.innerHTML = status === 'loading'
@@ -232,8 +236,8 @@ function dialogHtml(st: GameState, now: number): [string, string] {
       .map(([key,label])=>`<label class="audio-row" for="audio-${key}"><span>${label}<b class="num">${fmt(p[key]*100)}٪</b></span><input id="audio-${key}" data-pref="${key}" data-k="audio-${key}" type="range" min="0" max="100" step="1" value="${Math.round(p[key]*100)}"/></label>`).join('');
     return ['الصوتيات',`<p class="note" role="status">${esc(gameAudio.status)}</p>${rows}
       <p class="note audio-help">يعلو صوت المواقع القريبة عند التكبير، ويتلاشى عند إبعاد الكاميرا. يبدأ بعد أول لمسة ويتوقف عند مغادرة الصفحة.</p>
-      <p class="note audio-music">تتر «مولانا» لم يُضف بعد؛ نحتاج ملفًا مصرحًا باستخدامه.</p>
-      <div class="row"><button class="btn gold" data-a="audio-toggle" data-k="audio-toggle" aria-pressed="${p.enabled}">${p.enabled?'كتم جميع الأصوات':'تشغيل الصوت'}</button><button class="btn" data-a="audio-test">تجربة الصوت</button>${gameAudio.status.includes('تعذّر')?'<button class="btn" data-a="audio-retry">إعادة المحاولة</button>':''}</div>`];
+      <p class="note audio-music">النغمة المرفقة: ٧٠٪ في التحميل والرئيسية، و٢٥٪ داخل الحي، مع انتقال تدريجي. ${esc(gameAudio.theme.status)}</p>
+      <div class="row"><button class="btn gold" data-a="audio-toggle" data-k="audio-toggle" aria-pressed="${p.enabled}">${p.enabled?'كتم جميع الأصوات':'تشغيل الصوت'}</button><button class="btn" data-a="audio-test">تجربة الصوت</button>${gameAudio.status.includes('تعذّر')||gameAudio.theme.status.includes('تعذّر')?'<button class="btn" data-a="audio-retry">إعادة المحاولة</button>':''}</div>`];
   }
   const d = cur();
   if (ui.dialog === 'fleet') {
@@ -289,6 +293,8 @@ function renderDialog() {
 let scene: CityScene | null = null;
 function render() {
   const st = S();
+  if(!st.currentDistrict)cityLoading=false;
+  syncMusic();
   gameAudio.mode(st);
   soundControl.style.bottom=st.currentDistrict?'112px':'18px';
   soundControl.hidden=ui.plot!==null||ui.dialog!==null;
@@ -365,6 +371,7 @@ game.registry.set('hooks', {
   onCamera: (c: { x: number; y: number; zoom: number }) => { try { store.dispatch({ type: 'camera', camera: c }); } catch { /* camera save is best-effort */ } },
 });
 game.events.once('booted', () => {
+  bootLoading = false;
   scene = game.scene.getScene('city') as CityScene;
   document.getElementById('boot')?.classList.add('done');
   render();

@@ -2,6 +2,7 @@ import { AUDIO_CLIPS, selectVoices, spatialMix, type AudioClip, type AudioFocus,
 import { BUILDINGS } from './catalog';
 import type { GameState, Plot } from './model';
 import { districtEnvironment } from './district-environment';
+import { ThemeMusic, type MusicPhase } from './theme-music';
 
 interface Preferences { enabled: boolean; master: number; effects: number; ambience: number }
 interface Voice { source: AudioBufferSourceNode; gain: GainNode; pan: StereoPannerNode; filter: BiquadFilterNode }
@@ -12,6 +13,7 @@ const defaults=():Preferences=>({enabled:true,master:.7,effects:.8,ambience:.5})
 
 export class GameAudio {
   prefs=defaults();
+  readonly theme = new ThemeMusic(`${import.meta.env.BASE_URL}audio/victory-theme.mp3?v=20261008`);
   status='المؤثرات تبدأ بعد أول لمسة';
   private context?: AudioContext;
   private master?: GainNode;
@@ -33,10 +35,13 @@ export class GameAudio {
         for(const key of ['master','effects','ambience'] as const)
           if(typeof p[key]==='number'&&Number.isFinite(p[key]))this.prefs[key]=Math.max(0,Math.min(1,p[key]));}
     }catch{this.status='تعذّر قراءة إعدادات الصوت؛ استُخدمت الإعدادات الافتراضية';}
+    this.theme.setMaster(this.prefs.master);
+    this.theme.setEnabled(this.prefs.enabled);
+    if(this.prefs.enabled)this.theme.autoplay();
     document.addEventListener('pointerdown',()=>{void this.unlock();},{capture:true});
     document.addEventListener('visibilitychange',()=>{
       this.hidden=document.hidden;
-      if(this.hidden){this.stopAll();void this.context?.suspend();}
+      if(this.hidden){this.theme.pause();this.stopAll();void this.context?.suspend();}
       else if(this.prefs.enabled)void this.unlock();
     });
   }
@@ -50,6 +55,7 @@ export class GameAudio {
         this.compressor.connect(this.master);this.master.connect(this.context.destination);
         this.master.gain.value=this.prefs.master;
       }
+      this.theme.start(this.context);
       await this.context.resume();
       if(!this.loading){
         this.status='جاري تحميل المؤثرات…';
@@ -88,12 +94,15 @@ export class GameAudio {
     if(failed.length){console.warn('Audio files failed:',failed);this.status=`تعذّر تحميل ${failed.length} مؤثر؛ أعد المحاولة`;}
     else this.status='الصوت جاهز';
   }
-  retry(){this.loading=undefined;void this.unlock();}
+  retry(){this.theme.retry();this.loading=undefined;void this.unlock();}
+  musicPhase(phase:MusicPhase){this.theme.setPhase(phase);}
   due(){return performance.now()>=this.nextAt;}
   setPreference(key:keyof Preferences,value:number|boolean){
     if(key==='enabled')this.prefs.enabled=Boolean(value);
     else this.prefs[key]=Math.max(0,Math.min(1,Number(value)));
     try{localStorage.setItem(PREF_KEY,JSON.stringify(this.prefs));}catch{this.status='تعذّر حفظ إعدادات الصوت';}
+    if(key==='enabled')this.theme.setEnabled(this.prefs.enabled);
+    if(key==='master')this.theme.setMaster(this.prefs.master);
     this.master?.gain.setTargetAtTime(this.prefs.enabled?this.prefs.master:0,this.context!.currentTime,.035);
     if(!this.prefs.enabled)this.stopAll();else void this.unlock();
   }

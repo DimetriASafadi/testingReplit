@@ -9,8 +9,8 @@ description: User requirements for the new browser game's standalone soundscape 
 
 **How to apply:** Create or obtain new sound assets for this browser game, not converted legacy-project audio. Preserve distance/zoom mixing and mobile performance when adding more sound types.
 
-للرئيسية طلب المستخدم تتر مقدمة مسلسل «مولانا»، لا موسيقى بديلة من تأليفنا.
+قدّم المستخدم نغمة مرفقة لتحل محل طلب التتر السابق: تُسمع في التحميل والرئيسية بمستوى ٧٠٪، وفي الحي بمستوى ٢٥٪، مع انتقال تدريجي.
 
-**Why:** the user explicitly named this theme.
+**Why:** المستخدم زوّد النغمة بنفسه وحدد مستوى كل حالة، بدل انتظار تسجيل التتر المطلوب سابقًا.
 
-**How to apply:** Integrate an authorized recording provided for the game; do not silently substitute or generate a copy of that recording.
+**How to apply:** حافظ على نفس التسجيل خلال التنقل بين الحالات دون إعادة تشغيله؛ راعِ أن المتصفح قد يتطلب أول لمسة للسماح بالصوت، ولا تستخدم مقطعًا بديلًا بصمت.
