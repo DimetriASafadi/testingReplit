@@ -1,5 +1,6 @@
 /** Keep navigation and primary actions outside the scrolling content area. */
-export const pageSize = () => window.innerHeight < 520 ? 1 : window.innerHeight < 740 ? 2 : 4;
+export const pageSize = () => window.innerHeight < 520 ? (window.innerWidth > window.innerHeight ? 2 : 1) : window.innerHeight < 740 ? 2 : 4;
+export const dialogPageSize = () => window.innerHeight < 520 ? 1 : pageSize();
 export function pageControls(page: number, pages: number, action: string, count: number) {
   if (pages < 2) return '';
   const n = (v: number) => v.toLocaleString('ar-EG');
@@ -35,7 +36,7 @@ export function dialogLayout(html: string, tab: number, requestedPage: number) {
     }
   }
   const list = root.querySelector('.list'), count = list?.children.length ?? 0;
-  const size = pageSize(), pages = Math.max(1, Math.ceil(count / size));
+  const size = dialogPageSize(), pages = Math.max(1, Math.ceil(count / size));
   const page = Math.max(0, Math.min(requestedPage, pages - 1));
   if (list && count > size) Array.from(list.children).forEach((row,i) => {
     if (i < page * size || i >= (page + 1) * size) row.remove();

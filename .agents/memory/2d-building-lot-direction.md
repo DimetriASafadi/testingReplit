@@ -1,6 +1,6 @@
 ---
 name: Building parcel art direction
-description: User-approved small-building yards, coherent ground seams and one sunlight direction for front/rear artwork.
+description: User-approved small-building yards, four faithful building faces, coherent ground seams and one sunlight direction.
 ---
 
 The buildable square is a land parcel, not a requirement to enlarge every building to fill it. Small buildings need suitably furnished surroundings; larger housing should occupy more of the parcel.
@@ -9,8 +9,10 @@ The buildable square is a land parcel, not a requirement to enlarge every buildi
 
 **How to apply:** Preserve that accepted small-house yard approach and adapt accessories to each building's use, rather than putting generic gardens around every industry or shop.
 
-Review every building from both orientations. Its ground must blend gradually into the district, and every building's shadow must follow the same sunlight angle.
+The user expanded rotation from front/rear to four genuine faces of every building. All views must represent the same architecture, floor count, materials and accessories, not mirrored pictures. Ground must blend into the district, and sunlight must not turn with the building.
 
 **Why:** The user identified inconsistent sizes, detached-looking floor platforms and opposing shadows in screenshots, and specifically asked for all building types, not only those pictured.
 
-**How to apply:** Compare paired poses in the actual city with neighboring roads and lots, not only isolated sprite previews; rotation changes the architecture's visible faces, not the scene's sunlight.
+**How to apply:** Compare all four poses in the actual city with neighboring roads and lots, not only isolated previews; rotation changes visible faces, not sunlight. Preserve old saved front/rear meanings when extending the orientation format.
+
+**Why preserve saved meanings:** Players already saved rear-facing buildings before quarter-turn views existed. Re-numbering directions sequentially would silently turn their existing buildings to a different face.

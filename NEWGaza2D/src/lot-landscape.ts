@@ -3,6 +3,8 @@
 import type Phaser from 'phaser';
 import { TEX_W, U, makeCanvas } from './art';
 import { roundRect, seeded } from './ground';
+import type { Orientation } from './model';
+import { rotateLotPoint } from './orientation';
 
 type Pt = [number, number];
 export type YardKind = 'garden' | 'patio' | 'service';
@@ -17,11 +19,11 @@ const pr = (lx: number, ly: number): Pt => [TEX_W / 2 + (lx - ly) * U, ANCHOR + 
 /** photo canopy clumps cut from the existing SPR tree sprites: [sprite, cx, cy, radius] */
 const CLUMPS: [string, number, number, number][] = [['orn_front', 92, 37, 26], ['orn_front', 152, 52, 24], ['citrus_front', 100, 44, 24], ['olive_front', 92, 34, 18]];
 
-export function lotYardKey(yard: YardKind, factor: number, orient: 0 | 1, level: YardLevel, n: number, flavor='default') {
+export function lotYardKey(yard: YardKind, factor: number, orient: Orientation, level: YardLevel, n: number, flavor='default') {
   return `yard:${yard}:${Math.round(factor * 100)}:${orient}:${level}:${n % 3}:${flavor}`;
 }
 
-export function lotLandscape(scene: Phaser.Scene, yard: YardKind, factor: number, orient: 0 | 1, level: YardLevel, n: number, buildingId=''): LotYard {
+export function lotLandscape(scene: Phaser.Scene, yard: YardKind, factor: number, orient: Orientation, level: YardLevel, n: number, buildingId=''): LotYard {
   n %= 3; // cache variants must not depend on which plot was built first
   const dining=['falafel','shawarma','western_food','cafe','luxury_restaurant','snack_kiosk'].includes(buildingId);
   const flavor=dining?'dining':yard==='service'?'civic':yard==='patio'?'retail':'garden';
@@ -29,8 +31,7 @@ export function lotLandscape(scene: Phaser.Scene, yard: YardKind, factor: number
   if (scene.textures.exists(key)) return { back: key, front: scene.textures.exists(fkey) ? fkey : undefined };
   const tex = (k: string) => scene.textures.exists(k) ? scene.textures.get(k).getSourceImage() as HTMLImageElement : null;
   const r = seeded(n * 97 + Math.round(factor * 100) + 5);
-  const s = orient ? -1 : 1; // orientation 1 moves entry and garden arrangement to the rear
-  const m = (p: Pt): Pt => [p[0] * s, p[1] * s];
+  const m = (p: Pt): Pt => rotateLotPoint(p, orient);
   const c = makeCanvas(), x = c.getContext('2d')!;
   const trace = (poly: Pt[]) => { x.beginPath(); poly.forEach((p, i) => { const [a, b] = pr(...p); i ? x.lineTo(a, b) : x.moveTo(a, b); }); x.closePath(); };
   const tile = (poly: Pt[], g: string, tile: number, alpha: number, tint: string, blur = 0) => {

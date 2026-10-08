@@ -3,6 +3,16 @@ name: 2D artwork pipeline ordering
 description: Keep source baselines, grading and ground projection consistent during sprite regeneration.
 ---
 
+## Extracting icons from composite UI references
+
+Do not identify the foreground solely by its color when separating an icon from its badge and counter panel. Tinted metal reflections can share the badge's hue.
+
+**Why:** Automatic background removal can preserve pieces of the adjacent numeric panel, while color-only cleanup can erase legitimate highlights and parts of the object.
+
+**How to apply:** Inspect the complete object silhouette on a contrasting background before integrating it. Separate the object from the panel artwork without transferring reference numbers, and preserve its highlights and shaded edges.
+
+## City artwork
+
 Pack newly authored sprites first, grade their colors second, align planted scenery's ground third, and feather ground seams last. Refresh a stage's source baseline only from the preceding stage's fresh output, never from its own processed result. Grading/projection baselines start with newly packed, unaligned artwork; the final seam baseline starts with already graded/aligned geometry.
 
 **Why:** Color grading restores a separate source baseline. Running it after ground alignment can restore the old projection while leaving the newer contact metadata in place. Reusing stale geometry baselines also discards newly authored art.
@@ -20,3 +30,21 @@ Use bounded background-cleanup batches, collect individual results, and retry on
 **Why:** A wide simultaneous cleanup batch returned rate-limit errors while most images succeeded; failing the aggregate hid those successful results.
 
 **How to apply:** Retain returned file paths and handle errors per image rather than regenerating the entire batch.
+
+Background cleanup returns the actual output path; a repeated requested filename may produce a suffixed new file rather than overwrite the old one.
+
+**Why:** Reviewing the requested name after a successful retry can show stale artwork, making a corrected output appear unchanged.
+
+**How to apply:** Follow the returned path, then replace the canonical staging file explicitly before review or packing.
+
+Generative multi-view sheets are not reliably divided into equal quadrants, and successful packing does not prove a real quarter-turn or the correct camera.
+
+**Why:** Real subjects crossed nominal gutters, while other outputs fit their boxes but repeated the front or switched farms to overhead/pentagonal ground. Forcing dimensions cannot correct those projections.
+
+**How to apply:** Separate subjects by actual components/gutters, reject real source-edge clipping, and inspect camera and physical identity independently of numeric checks. Never publish a rejected view just to fill the requested count.
+
+Use one texture-limit normalization and one world render scale for a building's entire view family.
+
+**Why:** Independent height caps can change the building's apparent footprint while rotating, even when source ground dimensions were equal.
+
+**How to apply:** Bound the largest member without stretching axes, retain equal ground metrics across the quartet, and verify physical size in the live city.

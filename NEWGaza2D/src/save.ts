@@ -1,6 +1,8 @@
 import { BUILDINGS, DISTRICTS, EQUIPMENT, projects } from './catalog';
 import type { GameState } from './model';
 import { cityLayout, LOT_COUNT } from './city-layout';
+import { isOrientation } from './orientation';
+import { MIN_CAMERA_ZOOM } from './camera-overview';
 
 /** Reject damaged domain data; leave the original storage entry untouched. */
 export function validateSave(value: unknown): asserts value is GameState {
@@ -24,7 +26,7 @@ export function validateSave(value: unknown): asserts value is GameState {
     require(d && d.id === DISTRICTS[i].id && typeof d.unlocked === 'boolean' && typeof d.claimed === 'boolean');
     require(!d.claimed || d.unlocked);
     require(d.unlocked === (i === 0 || s.districts[i - 1].claimed));
-    require(d.camera === null || (typeof d.camera === 'object' && Number.isFinite(d.camera.x) && Number.isFinite(d.camera.y) && d.camera.zoom >= .15 && d.camera.zoom <= 4));
+    require(d.camera === null || (typeof d.camera === 'object' && Number.isFinite(d.camera.x) && Number.isFinite(d.camera.y) && d.camera.zoom >= MIN_CAMERA_ZOOM && d.camera.zoom <= 4));
     require(Array.isArray(d.plots) && [64, LOT_COUNT].includes(d.plots.length) && Array.isArray(d.projects) && d.projects.length === 9);
     const legacy = d.plots.length === 64;
     if (!legacy) require([cityLayout(d.id), cityLayout(d.id,1)].some(layout =>
@@ -34,7 +36,8 @@ export function validateSave(value: unknown): asserts value is GameState {
         ? p.layoutId === undefined && p.x === (j % 8) * 2 && p.y === Math.floor(j / 8) * 2
         : p.layoutId === d.id));
       require(['rubble','empty','building','built'].includes(p.status) && BUILDINGS.some(b => b.id === p.buildingId));
-      require((p.orientation === 0 || p.orientation === 1) && integer(p.startedAt) && integer(p.endsAt) && integer(p.incomeAt));
+      require(isOrientation(p.orientation) && integer(p.startedAt) && integer(p.endsAt) && integer(p.incomeAt));
+      require(p.paidCost === undefined || integer(p.paidCost));
       require(p.status !== 'building' || (p.endsAt > p.startedAt && p.startedAt <= s.lastSeen));
     }
     const defs = projects(d.id === 'rashid');
@@ -42,6 +45,15 @@ export function validateSave(value: unknown): asserts value is GameState {
       require(p && p.id === defs[j].id && ['idle','building','ready','complete'].includes(p.status));
       require(integer(p.startedAt) && integer(p.endsAt) && integer(p.incomeAt));
       require(p.status !== 'building' || (p.endsAt > p.startedAt && p.startedAt <= s.lastSeen));
+    }
+  }
+  for (const u of s.units) if (u.depotIds !== undefined) {
+    require(u.depotIds && typeof u.depotIds === 'object' && !Array.isArray(u.depotIds));
+    for (const [districtId, plotId] of Object.entries(u.depotIds)) {
+      const d = s.districts.find(d => d.id === districtId);
+      require(d && integer(plotId));
+      const p = d?.plots.find(p => p.id === plotId);
+      require(p?.status === 'built' && p.buildingId === 'recycling');
     }
   }
   require(s.currentDistrict === null || s.districts.some(d => d.id === s.currentDistrict && d.unlocked));
@@ -55,6 +67,7 @@ export function validateSave(value: unknown): asserts value is GameState {
     require(Array.isArray(j.unitIds) && j.unitIds.length === 3 && unique(j.unitIds));
     const team = j.unitIds.map(id => s.units.find(u => u.id === id));
     require(team.every(Boolean) && new Set(team.map(u => u!.kind)).size === 3);
+    require(team.every(u => u!.depotIds?.[d!.id] === undefined || u!.depotIds[d!.id] === j.originPlotId));
     require([j.start,j.arrival,j.workEnd,j.returnEnd,j.value].every(integer));
     require(j.start <= s.lastSeen && j.start < j.arrival && j.workEnd - j.arrival === 60000 && j.returnEnd > j.workEnd);
     require(j.departureAt === undefined || (integer(j.departureAt) && j.departureAt >= j.start && j.departureAt < j.arrival));

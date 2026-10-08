@@ -48,7 +48,7 @@ if args.import_redraws:
 count = 0
 for path in sorted((ART / "s").glob("*.webp")):
     key = path.stem
-    if not key.endswith(("_front", "_back")) and key != "farm_cattle":
+    if not key.endswith(("_front", "_back", "_right", "_left")) and key != "farm_cattle":
         continue
     source = BASE / path.name
     metadata = BASE / f"{key}.json"

@@ -1,7 +1,7 @@
 // Procedural semi-realistic isometric art. Everything is projected from 3D geometry,
 // so FRONT/BACK views and vehicle headings are genuinely different drawings.
 import { building } from './catalog';
-import type { BuildingDef, EquipmentKind } from './model';
+import type { BuildingDef, EquipmentKind, Orientation } from './model';
 
 export const U = 64; // pixels per logical unit
 export const PLOT = 1.4; // plot footprint in logical units
@@ -168,7 +168,7 @@ function umbrellas(ctx: Ctx, s: Shape, back: boolean) {
 
 function lot(ctx: Ctx, tone: string) { ground(ctx, -PLOT / 2, -PLOT / 2, PLOT / 2, PLOT / 2, tone); }
 
-export function drawBuilt(ctx: Ctx, id: string, orient: 0 | 1) {
+export function drawBuilt(ctx: Ctx, id: string, orient: Orientation) {
   const s = shapeOf(id); const back = orient === 1;
   lot(ctx, s.def.category === 'farm' ? '#8a6a44' : '#d6c4a0');
   if (s.def.category === 'farm') { farm(ctx, s, back, 1); return; }
@@ -185,7 +185,7 @@ export function drawBuilt(ctx: Ctx, id: string, orient: 0 | 1) {
 }
 
 /** Construction: individualized, derived from the same geometry & orientation. stage 0..2 */
-export function drawConstruction(ctx: Ctx, id: string, orient: 0 | 1, stage: number) {
+export function drawConstruction(ctx: Ctx, id: string, orient: Orientation, stage: number) {
   const s = shapeOf(id); const back = orient === 1; const b = s.main;
   lot(ctx, '#bfa77c');
   // site fence on the street side
@@ -330,7 +330,7 @@ export function drawVehicle(ctx: Ctx, kind: EquipmentKind, dir: number, level: n
 export function makeCanvas(w = TEX_W, h = TEX_H) { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
 
 /** small DOM preview used in the build dialog */
-export function previewDataURL(id: string, orient: 0 | 1) { const c = makeCanvas(); drawBuilt(c.getContext('2d')!, id, orient); return c.toDataURL(); }
+export function previewDataURL(id: string, orient: Orientation) { const c = makeCanvas(); drawBuilt(c.getContext('2d')!, id, orient); return c.toDataURL(); }
 
 // ---------- infrastructure project sites (perimeter, not on user plots) ----------
 /** stage: 0 = surveyed/idle, 1 = under construction (prog 0..1), 2 = complete */

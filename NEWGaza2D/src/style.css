@@ -1,3 +1,10 @@
+@font-face{
+  font-family:'NewGaza Elgharib';
+  src:url('/fonts/elgharib-hayyakum-allah-medium.ttf') format('truetype');
+  font-style:normal;
+  font-weight:500;
+  font-display:swap;
+}
 .sound-toggle{position:fixed;right:12px;bottom:112px;z-index:25;width:44px;height:44px;box-shadow:0 3px 12px #30261738}
 .sound-toggle[data-muted="true"]::after{content:"";position:absolute;width:29px;height:2px;background:#9d4437;transform:rotate(-45deg)}
 .sound-toggle[hidden]{display:none}
@@ -10,7 +17,7 @@
   --stone:#f1e6d0; --stone-2:#e5d4b4; --sand:#d9c39a;
   --sumac:#a8322d; --olive:#5f6d33; --ochre:#c58a1c; --gold:#f2d06b;
   --ink:#2b2320; --ink-2:#5a4a3e; --line:rgba(43,35,32,.16);
-  --display:'Reem Kufi',serif; --body:'IBM Plex Sans Arabic',system-ui,sans-serif;
+  --display:'NewGaza Elgharib',system-ui,sans-serif; --body:'NewGaza Elgharib',system-ui,sans-serif;
   --r:14px; --shadow:0 10px 30px -12px rgba(43,35,32,.45);
 }
 *{box-sizing:border-box}
@@ -95,7 +102,15 @@ h1,h2,h3{font-family:var(--display);margin:0;font-weight:700}
 .wallet{margin-inline-start:auto;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .pill{background:var(--stone);border-radius:999px;padding:6px 12px;display:flex;gap:6px;align-items:center;box-shadow:var(--shadow);font-size:.9rem}
 .pill .sw{width:10px;height:10px;border-radius:3px}
-.coin{width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 40% 35%,var(--gold),var(--ochre));box-shadow:inset 0 0 0 2px #a06c10}
+.resource-icon{width:28px;height:28px;flex:none;object-fit:contain;vertical-align:middle;pointer-events:none;padding:2px;border-radius:50%;background:radial-gradient(circle at 35% 25%,var(--resource-light),var(--resource-dark));box-shadow:inset 0 0 0 1px #fff8,0 1px 3px #0003}
+.resource-coins{--resource-light:#b65cf2;--resource-dark:#6525a6}
+.resource-concrete{--resource-light:#ffd567;--resource-dark:#c17b14}
+.resource-iron{--resource-light:#80d9ff;--resource-dark:#1768a6}
+.resource-wood{--resource-light:#a5eb64;--resource-dark:#387c21}
+.wallet .resource-icon{width:24px;height:24px}
+.mat-title{display:flex;align-items:center;gap:8px}
+.mat .resource-icon{width:40px;height:40px}
+@media(max-width:360px){.wallet .resource-icon{width:20px;height:20px}.wallet .pill{gap:4px}}
 .objective{position:fixed;top:calc(env(safe-area-inset-top) + 72px);right:12px;max-width:340px;background:rgba(251,244,228,.95);border-radius:var(--r);padding:12px 14px;box-shadow:var(--shadow);border-inline-start:5px solid var(--gold);font-size:.9rem;animation:slideIn .5s}
 .objective h3{font-size:1rem;margin-bottom:4px}
 .objective ol{margin:6px 0 0;padding-inline-start:18px}
@@ -308,3 +323,81 @@ dialog[open]{display:flex;flex-direction:column;max-height:calc(100dvh - 24px)}
 #city-status[hidden]{display:none}
 .city-status-card{width:min(100%,420px);padding:24px;border-radius:20px;background:#f5eedb;color:#30271e;text-align:center;box-shadow:0 8px 36px #0004}
 .city-status-card h2{margin-top:0}.city-status-card .note{overflow-wrap:anywhere}
+
+/* ===== Landscape / safe-area consolidation (overrides all rules above) ===== */
+.hud-top{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
+.zoom{left:max(12px,env(safe-area-inset-left))}
+.sound-toggle{right:max(12px,env(safe-area-inset-right))}
+.objective{right:max(12px,env(safe-area-inset-right))}
+.banner{left:max(12px,env(safe-area-inset-left))}
+.world-side{padding-right:max(24px,env(safe-area-inset-right));padding-bottom:max(24px,env(safe-area-inset-bottom))}
+@media (min-width:801px) and (min-height:521px){
+  .sheet{left:max(12px,env(safe-area-inset-left));bottom:calc(env(safe-area-inset-bottom) + 96px)}
+}
+@media (max-height:520px) and (orientation:landscape){
+  :root{--sl:env(safe-area-inset-left);--sr:env(safe-area-inset-right);--sb:env(safe-area-inset-bottom);--dockw:140px;--topbar:calc(env(safe-area-inset-top) + 52px)}
+  /* world map: side-by-side, never stacked */
+  .world{grid-template-columns:1fr clamp(250px,36vw,360px);grid-template-rows:none}
+  .world-map{padding-left:var(--sl)}
+  .map-frame{height:min(100dvh,100vw - clamp(250px,36vw,360px) - var(--sl));width:auto}
+  .world-side{border-top:0;border-inline-start:6px solid var(--sumac);padding:12px max(14px,var(--sr)) max(12px,var(--sb)) 14px;gap:10px}
+  .district-card{padding:12px}.district-card h2{font-size:1.4rem}
+  .map-title{top:8px;right:max(12px,var(--sr))}.map-title h1{font-size:1.8rem}.map-title p{display:none}
+  .pin .flag{font-size:.72rem;padding:3px 7px}.pin .flag .n{display:none}
+  .pin{min-width:44px;min-height:44px;justify-content:flex-end}
+  .ladder li button{min-height:44px}
+  /* HUD */
+  .hud-top{flex-wrap:nowrap;gap:8px;padding-top:calc(env(safe-area-inset-top) + 4px);padding-bottom:4px}
+  .wallet{flex-basis:auto;margin-inline-start:auto;flex-wrap:nowrap;justify-content:flex-end}
+  .pill{white-space:nowrap}
+  .icon-btn{width:44px;height:44px}
+  /* right column dock */
+  .dock{inset:auto;top:var(--topbar);bottom:calc(var(--sb) + 100px);right:max(8px,var(--sr));left:auto;transform:none;width:var(--dockw);max-width:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-content:start;justify-content:flex-start;padding:3px;gap:2px;overflow-y:auto;overscroll-behavior:contain}
+  .dock button{flex:none;min-width:0;min-height:44px;padding:3px 4px;gap:0;font-size:.72rem}
+  .dock svg{width:20px;height:20px}
+  .sound-toggle{right:calc(max(8px,var(--sr)) + (var(--dockw) - 44px)/2);bottom:calc(var(--sb) + 4px)}
+  .zoom{top:auto;bottom:calc(var(--sb) + 52px);left:auto;right:calc(max(8px,var(--sr)) + (var(--dockw) - 96px)/2);flex-direction:row}
+  .objective{top:var(--topbar);left:auto;right:calc(max(8px,var(--sr)) + var(--dockw) + 8px);max-width:min(34vw,320px);padding:6px 10px}
+  .objective ol{display:none}
+  .banner{top:var(--topbar);left:max(12px,var(--sl));right:auto;max-width:40vw}
+  body:has(.sheet) .objective{display:none}
+  /* sheet uses the free width */
+  .sheet{top:var(--topbar);bottom:calc(var(--sb) + 8px);left:max(8px,var(--sl));right:auto;height:auto;max-height:none;width:min(calc(100vw - var(--dockw) - max(8px,var(--sl)) - max(8px,var(--sr)) - 16px),680px)}
+  .sheet-head{padding:6px 12px}.sheet-head h2{font-size:1.1rem}.sheet-head p{font-size:.78rem}
+  .sheet-head .icon-btn{width:44px;height:44px}
+  .sheet-body{padding:10px;gap:8px}
+  .sheet-footer{padding:6px 12px}
+  .sheet-body.build{flex-direction:row;gap:10px}
+  .sheet-body.build:not(.has-pick) .build-list{flex:1 1 auto}
+  .sheet-body.build.has-pick .build-list{display:flex}
+  .sheet-body.build.has-pick .build-detail{flex:0 0 46%;max-height:none;overflow:auto}
+  .sheet-body.build.has-pick .catalog-back{display:none}
+  .sheet-body.build.has-pick .bd-top{grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);overflow:visible;flex:none}
+  .sheet-body.build.has-pick .bd-top .preview img{height:clamp(60px,26dvh,110px)}
+  .sheet-body.build.has-pick .bd-actions{position:sticky;bottom:0;flex:none}
+  .sheet-body.build.has-pick .build-detail>.note{display:none}
+  .bd-actions .btn{min-height:44px;padding:0 10px}
+  .cat-filters{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .cat-filters button{min-height:36px}
+  .cat-scroll{overflow:auto}
+  .toast{bottom:calc(var(--sb) + 8px)}
+  /* dialogs */
+  dialog{width:min(720px,calc(100vw - max(16px,var(--sl)) - max(16px,var(--sr))));max-height:calc(100dvh - 12px - env(safe-area-inset-top) - var(--sb))}
+  dialog[open]{max-height:calc(100dvh - 12px - env(safe-area-inset-top) - var(--sb))}
+  .window-tabs button{min-height:40px}
+  .page-controls .btn{min-height:44px}
+  .dlg-footer .row,.sheet-footer .row{flex-wrap:nowrap}
+  .recovery,#city-status{padding:10px}
+}
+@media (max-height:360px) and (orientation:landscape){
+  .world-side .chip-row{flex-wrap:nowrap;gap:4px}
+  .world-side .chip{font-size:.7rem;padding:4px 6px;white-space:nowrap}
+  .district-card{padding:10px}
+  .district-card h2{font-size:1.3rem;line-height:1.3}
+  .district-card p{font-size:.8rem;line-height:1.45;margin:4px 0!important}
+  .district-card>small{font-size:.7rem;line-height:1.4}
+  .district-card .meter{height:6px}
+  .district-card>.btn{margin-top:4px!important}
+  .sheet-body.build:not(.has-pick) .cat-filters{grid-template-columns:repeat(7,minmax(0,1fr))}
+  .sheet-body.build:not(.has-pick) .cat-filters button{font-size:.68rem;padding:3px 2px}
+}

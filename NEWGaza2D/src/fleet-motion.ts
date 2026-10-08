@@ -50,21 +50,29 @@ export function fleetRoute(source: Plot, target: Plot, kind: EquipmentKind, retu
   const saved = routes.get(key); if (saved) return saved;
   const street: DepotPoint = [p.outside[0] + p.outward[0] * lane, p.outside[1] + p.outward[1] * lane];
   const approach = workApproach(target, kind, lane);
-  const joins: DepotPoint[] = source.orientation === 0
+  const alongY = !!p.outward[1], sign = alongY ? p.outward[1] : p.outward[0];
+  const joins: DepotPoint[] = alongY
     ? (Math.abs(street[1] - approach[1]) < .00001 ? [] :
       [[target.x + 2 + lane, street[1]], [target.x + 2 + lane, approach[1]]])
     : [[street[0], approach[1]]];
   const sb = plotBlock(source), tb = plotBlock(target);
   let points: DepotPoint[] = [p.inside, p.threshold, street, ...joins, approach, workDock(target, kind)];
   if (sb && tb) {
-    const directExit = source.orientation === 0 ? source.y + 2 === sb.y1 : source.x + 2 === sb.x1;
-    const exit: DepotPoint = source.orientation === 0
-      ? [directExit ? p.outside[0] : source.x + 2, sb.roadY + lane]
-      : [sb.roadX + lane, directExit ? p.outside[1] : source.y + 2];
+    const layout = cityLayout(source.layoutId!);
+    const boundary = alongY ? sign > 0 ? sb.y1 : sb.y0 : sign > 0 ? sb.x1 : sb.x0;
+    const road = (alongY ? layout.roadY : layout.roadX)
+      .filter(r => sign * (r - boundary) >= -1e-8)
+      .sort((a, b) => Math.abs(a - boundary) - Math.abs(b - boundary))[0];
+    if (road === undefined) throw new Error('Factory has no street on its exit side');
+    const directExit = alongY ? (sign > 0 ? source.y + 2 : source.y) === boundary
+      : (sign > 0 ? source.x + 2 : source.x) === boundary;
+    const corner: DepotPoint = sign > 0 ? [source.x + 2, source.y + 2] : [source.x, source.y];
+    const exit: DepotPoint = alongY ? [directExit ? p.outside[0] : corner[0], road + sign * lane]
+      : [road + sign * lane, directExit ? p.outside[1] : corner[1]];
     const directEntry = target.y + 2 === tb.y1;
     const dock = workDock(target, kind), entry: DepotPoint = [directEntry ? dock[0] : target.x + 2, tb.roadY + lane];
     const bends: DepotPoint[] = [];
-    if (source.orientation === 1) bends.push([exit[0], entry[1]]);
+    if (!alongY) bends.push([exit[0], entry[1]]);
     else if (Math.abs(exit[1] - entry[1]) > .00001) {
       const roads = cityLayout(source.layoutId!).roadX;
       const score = (x: number) => Math.abs(exit[0] - x) + Math.abs(entry[0] - x);
@@ -72,7 +80,7 @@ export function fleetRoute(source: Plot, target: Plot, kind: EquipmentKind, retu
       bends.push([cross, exit[1]], [cross, entry[1]]);
     }
     points = [p.inside, p.threshold, p.outside,
-      ...(!directExit ? [[source.x + 2, source.y + 2] as DepotPoint] : []),
+      ...(!directExit ? [corner] : []),
       exit, ...bends, entry,
       ...(!directEntry ? [[target.x + 2, target.y + 2] as DepotPoint] : []), approach, dock];
   }
@@ -93,6 +101,14 @@ export function routePoint(points: readonly DepotPoint[], distance: number): Dep
     d -= l;
   }
   return [...points[points.length - 1]];
+}
+/** Match return ground speed to departure, including lane length and convoy spacing.
+ * Door/turn waits are not driving time; the final 250 ms remains inside the depot. */
+export function returnTravelDuration(source: Plot, target: Plot, outgoingDuration: number) {
+  const distance = (returning: boolean) => Math.max(...ORDER.map(k =>
+    routeLength(fleetRoute(source, target, k, returning)))) + 2 * CONVOY_GAP;
+  return Math.ceil(Math.max(1, outgoingDuration - OPEN_WAIT) *
+    distance(true) / distance(false)) + TURN_WAIT + INSIDE_FINISH;
 }
 function timing(j: Job, source: Plot, target: Plot, returning: boolean) {
   const max = Math.max(...ORDER.map(k => routeLength(fleetRoute(source, target, k, returning))));

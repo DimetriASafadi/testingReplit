@@ -1,3 +1,5 @@
+import type { Orientation } from './model';
+import { rotateLotPoint } from './orientation';
 type Point = readonly [number, number];
 const PERIMETER: readonly Point[] = [[-1, 1], [.35, 1], [1, 1], [1, -.28], [1, -1], [-.32, -1], [-1, -1], [-1, .3]];
 const DWELL = [800, 2400, 0, 2200, 0, 2000, 0, 2600];
@@ -6,9 +8,9 @@ export interface WorkerRoute { legs: Leg[]; duration: number }
 export interface WorkerPose { x: number; y: number; role: 'walk' | 'carry' | 'hammer'; frame: number; dir: number }
 
 /** Immutable site-local perimeter. Never cut through the building or leave its lot. */
-export function createWorkerRoute(radius: number, orientation: 0 | 1, worker: number): WorkerRoute {
+export function createWorkerRoute(radius: number, orientation: Orientation, worker: number): WorkerRoute {
   const r = Math.max(.3, Math.min(.65, radius) - worker * .014);
-  const points = PERIMETER.map(([x, y]): Point => orientation ? [y * r, x * r] : [x * r, y * r]);
+  const points = PERIMETER.map(([x, y]): Point => rotateLotPoint([x * r, y * r], orientation));
   const legs: Leg[] = [];
   let clock = 0, distance = 0;
   for (let i = 0; i < points.length; i++) {

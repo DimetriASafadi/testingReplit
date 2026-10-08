@@ -18,11 +18,11 @@ export class ThemeMusic {
     this.element = element ?? new Audio(url);
     this.element.loop = true;
     this.element.preload = 'auto';
-    this.element.volume = .7;
+    this.element.volume = .4;
     this.element.addEventListener('error', () => { this.status = 'تعذّر تحميل النغمة؛ تحقق من الاتصال ثم اضغط إعادة المحاولة'; });
   }
 
-  get targetLevel() { return this.enabled ? (this.phase === 'play' ? .25 : .7) * this.master / .7 : 0; }
+  get targetLevel() { return this.enabled ? (this.phase === 'play' ? .15 : .4) * (this.master / .7) : 0; }
 
   /** An allowed autoplay starts at the loading screen; blocked browsers wait for the first touch. */
   autoplay() { if (this.enabled) this.play(); }

@@ -1,10 +1,16 @@
 import { BUILDINGS, DISTRICTS, EQUIPMENT, building, projects } from './catalog';
-import type { Action, DistrictState, EquipmentKind, GameAPI, GameState, Job, Plot } from './model';
+import type { Action, DistrictState, GameAPI, GameState, Job, Plot } from './model';
 import { validateSave } from './save';
-import { factoryWindows, nextFactorySlot } from './fleet-motion';
+import { factoryWindows, nextFactorySlot, returnTravelDuration } from './fleet-motion';
 import { cityLayout, INITIAL_EMPTY } from './city-layout';
+import { availableDepotTeam, balanceFleetDepots } from './fleet-depots';
+import { isOrientation, nextOrientation } from './orientation';
+import { MIN_CAMERA_ZOOM } from './camera-overview';
+import { buildingAccruedIncome, buildingSaleValue } from './building-disposal';
 
 export const SAVE_KEY = 'newgaza2d-save-v1';
+export const factoryRotationBlocked = (state: GameState, plotId: number) =>
+  state.jobs.some(j => j.districtId === state.currentDistrict && j.originPlotId === plotId && j.returnEnd > state.lastSeen);
 export function newGame(now = Date.now()): GameState {
   const homes = BUILDINGS.filter(b => b.category === 'housing');
   return {
@@ -62,6 +68,7 @@ export class GameStore implements GameAPI {
       try { const parsed: unknown = JSON.parse(raw); validateSave(parsed); expandCitySave(parsed); validateSave(parsed); this.state = parsed }
       catch { throw new Error('تعذر التحقق من ملف الحفظ. لم نحذفه أو نستبدله؛ نزّل نسخة منه قبل اختيار بداية جديدة.') }
     } else this.state = newGame(now);
+    balanceFleetDepots(this.state);
     this.tick(now);
     this.persist();
   }
@@ -115,6 +122,7 @@ export class GameStore implements GameAPI {
     }
     this.state.jobs = this.state.jobs.filter(j => now < j.returnEnd);
     this.state.lastSeen = now;
+    if (changed) balanceFleetDepots(this.state);
     if (changed || now - this.savedAt >= 10000) this.persist();
     this.notify();
   }
@@ -143,15 +151,37 @@ export class GameStore implements GameAPI {
         }
         case 'camera': {
           const { x,y,zoom } = action.camera;
-          ensure(Number.isFinite(x) && Number.isFinite(y) && zoom >= 0.15 && zoom <= 4, 'إعداد الكاميرا غير صالح');
+          ensure(Number.isFinite(x) && Number.isFinite(y) && zoom >= MIN_CAMERA_ZOOM && zoom <= 4, 'إعداد الكاميرا غير صالح');
           this.district().camera = { x,y,zoom }; break;
         }
         case 'place': {
           const p = this.plot(action.plotId), def = building(action.buildingId);
           ensure(p.status === 'empty', 'البناء متاح على الأرض النظيفة فقط');
-          ensure(action.orientation === 0 || action.orientation === 1, 'اختر الأمام أو الخلف');
+          ensure(isOrientation(action.orientation), 'اختر إحدى واجهات المبنى الأربع');
           this.pay(def.cost);
-          Object.assign(p, { status: 'building', buildingId: def.id, orientation: action.orientation, startedAt: now, endsAt: now + def.duration * 1000, incomeAt: 0 });
+          Object.assign(p, { status: 'building', buildingId: def.id, orientation: action.orientation, startedAt: now, endsAt: now + def.duration * 1000, incomeAt: 0, paidCost: def.cost });
+          break;
+        }
+        case 'sellBuilding':
+        case 'removeBuilding': {
+          const p = this.plot(action.plotId);
+          ensure(p.status === 'built' || p.status === 'building', 'البيع والإزالة متاحان للمباني فقط');
+          ensure(!action.expected || (p.buildingId === action.expected.buildingId && p.startedAt === action.expected.startedAt),
+            'تغيّر المبنى؛ افتح تفاصيله وأكّد العملية مجددًا');
+          ensure(!factoryRotationBlocked(this.state, p.id), 'انتظر عودة جميع آليات المصنع قبل بيعه أو إزالته');
+          this.state.coins += buildingAccruedIncome(p, now) + (action.type === 'sellBuilding' ? buildingSaleValue(p) : 0);
+          Object.assign(p, { status: 'empty', orientation: 0, startedAt: 0, endsAt: 0, incomeAt: 0 });
+          delete p.paidCost;
+          balanceFleetDepots(this.state);
+          break;
+        }
+        case 'rotateBuilding': {
+          const p = this.plot(action.plotId);
+          ensure(p.status === 'building' || p.status === 'built', 'التدوير متاح للمباني فقط');
+          ensure(!factoryRotationBlocked(this.state, p.id), 'انتظر عودة آليات المصنع قبل تدويره حتى لا يتغير مدخلها أثناء المهمة');
+          const orientation = action.orientation ?? nextOrientation(p.orientation);
+          ensure(isOrientation(orientation), 'اتجاه المبنى غير صالح');
+          p.orientation = orientation;
           break;
         }
         case 'buy': {
@@ -170,26 +200,25 @@ export class GameStore implements GameAPI {
           ensure(recycler, 'يلزم مصنع إعادة تدوير مكتمل في هذا الحي');
           ensure(p.status === 'rubble', 'هذا الموقع ليس ركامًا');
           ensure(!this.state.jobs.some(j => j.districtId === d.id && j.plotId === p.id), 'يوجد فريق يعمل هنا بالفعل');
-          const kinds: EquipmentKind[] = ['excavator','bulldozer','truck'];
-          const units = kinds.map(k => this.state.units.find(u => u.kind === k && !this.busy(u.id)));
-          ensure(units.every(Boolean), 'يلزم حفار وجرافة وشاحنة متاحة؛ اشترِ المعدات أو انتظر عودة الفريق');
-          const team = units.map(u => u!);
+           balanceFleetDepots(this.state);
+           const assigned = availableDepotTeam(this.state, d, p);
+           ensure(assigned, 'يلزم حفار وجرافة وشاحنة متاحة؛ اشترِ المعدات أو انتظر عودة الفريق');
+           const { team, depot: source } = assigned;
           const level = Math.min(...team.map(u => u.level));
-          const distance = Math.abs(p.x - recycler.x) + Math.abs(p.y - recycler.y) + 2;
+           const distance = Math.abs(p.x - source.x) + Math.abs(p.y - source.y) + 2;
           const travel = Math.ceil((8000 + distance * 850) / (1 + (level - 1) * .35));
           const arrival = now + travel, workEnd = arrival + 60000;
-          const truck = team.find(u => u.kind === 'truck')!;
-          const returning = Math.max(30000, Math.ceil(90000 / (1 + (truck.level - 1) * .35)), travel);
+          const returning = returnTravelDuration(source, p, travel);
           const job: Job = { id: `job-${++this.state.sequence}`, districtId: d.id, plotId: p.id,
             unitIds: team.map(u => u.id), start: now, arrival, workEnd, returnEnd: workEnd + returning,
-            cleared: false, value: building(p.buildingId).cost, originPlotId: recycler.id };
-          const windows = this.state.jobs.filter(j => j.districtId === d.id && j.originPlotId === recycler.id)
-            .flatMap(j => factoryWindows(j, recycler, d.plots[j.plotId]));
-          const outgoing = factoryWindows(job, recycler, p)[0];
+             cleared: false, value: building(p.buildingId).cost, originPlotId: source.id };
+           const windows = this.state.jobs.filter(j => j.districtId === d.id && j.originPlotId === source.id)
+             .flatMap(j => factoryWindows(j, source, d.plots[j.plotId]));
+           const outgoing = factoryWindows(job, source, p)[0];
           job.departureAt = nextFactorySlot(now, outgoing.end - outgoing.start, windows);
           const dispatchWait = job.departureAt - now;
           job.arrival += dispatchWait; job.workEnd += dispatchWait; job.returnEnd += dispatchWait;
-          const incoming = factoryWindows(job, recycler, p)[1];
+           const incoming = factoryWindows(job, source, p)[1];
           const returnWait = nextFactorySlot(incoming.start, incoming.end - incoming.start, windows) - Math.ceil(incoming.start);
           job.returnStartAt = job.workEnd + Math.max(0, returnWait);
           job.returnEnd += Math.max(0, returnWait);
@@ -240,7 +269,8 @@ export class GameStore implements GameAPI {
         }
         default: throw new Error('إجراء غير معروف');
       }
-      ensure(Number.isSafeInteger(this.state.coins), 'تجاوز الرصيد الحد المسموح');
+       if (action.type === 'buy' || action.type === 'enter') balanceFleetDepots(this.state);
+       ensure(Number.isSafeInteger(this.state.coins), 'تجاوز الرصيد الحد المسموح');
     } catch (error) { this.state = snapshot; throw error }
     this.persist(); this.notify();
   }

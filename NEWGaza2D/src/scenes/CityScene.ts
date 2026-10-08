@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
+import { districtOverview, MAX_CITY_ZOOM } from '../camera-overview';
 import { building, projects } from '../catalog';
-import type { GameState, Plot } from '../model';
+import type { GameState, Plot, Orientation } from '../model';
 import { TEX_H, TEX_W, U, makeCanvas } from '../art';
 import { GROUND_KEYS, SPR, SPRITE_KEYS, builtKey, constructKey, groundUrl, isFarm, ruinKey, siteKey, sprUrl } from '../realart';
 import { Painter, blob, frameFor, rect, roundRect, seeded, GK } from '../ground';
@@ -57,6 +58,7 @@ export class CityScene extends Phaser.Scene {
   private occlusionAt = 0;
   private clearingStages = new Map<number, number>();
   private clearingAt = 0;
+  private minimumZoom = 0.35;
 
   constructor() { super('city'); }
 
@@ -87,12 +89,32 @@ export class CityScene extends Phaser.Scene {
     document.addEventListener('touchstart', touchStart, { capture: true, passive: true });
     document.addEventListener('visibilitychange', visibility);
     window.addEventListener('blur', reset);
+    let viewportWidth = this.cameras.main.width, viewportHeight = this.cameras.main.height;
+    const resize = (size: Phaser.Structs.Size) => {
+      if (size.width === viewportWidth && size.height === viewportHeight) return;
+      const cam = this.cameras.main;
+      // CameraManager already resized the camera; scroll still refers to the
+      // previous viewport. Recover its ground focus, not the new screen centre.
+      const x = cam.scrollX + viewportWidth / 2;
+      const y = cam.scrollY + viewportHeight / 2;
+      const wasOverview = cam.zoom <= this.minimumZoom * 1.02;
+      viewportWidth = size.width; viewportHeight = size.height;
+      this.minimumZoom = this.overview().zoom;
+      cam.setZoom(wasOverview ? this.minimumZoom : Phaser.Math.Clamp(cam.zoom, this.minimumZoom, MAX_CITY_ZOOM));
+      this.syncCameraBounds();
+      cam.centerOn(x, y);
+      if (wasOverview && this.district) this.centerOverview();
+      reset();
+      if (this.district && this.worldReady) this.saveCam();
+    };
+    this.scale.on(Phaser.Scale.Events.RESIZE, resize);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       reset();
       document.removeEventListener('pointerdown', uiDown, true);
       document.removeEventListener('touchstart', touchStart, true);
       document.removeEventListener('visibilitychange', visibility);
       window.removeEventListener('blur', reset);
+      this.scale.off(Phaser.Scale.Events.RESIZE, resize);
     });
     this.input.on('wheel', (_p: unknown, _o: unknown, _dx: number, dy: number) => { this.zoomBy(dy > 0 ? 0.9 : 1.1); this.saveCam(); });
     this.sync();
@@ -129,8 +151,14 @@ export class CityScene extends Phaser.Scene {
     this.sel = this.add.graphics().setDepth(5e5);
     const cam = this.cameras.main;
     cam.setBounds(this.frame.ox - 120, this.frame.oy - 120, this.frame.w / GK + 240, this.frame.h / GK + 240);
-    if (d.camera) { cam.setZoom(d.camera.zoom); cam.centerOn(d.camera.x, d.camera.y); }
-    else { cam.setZoom(Phaser.Math.Clamp(Math.min(this.scale.width / (max * U * 2.0), this.scale.height / (max * U * 1.1)), 0.45, 1)); cam.centerOn(c.x, c.y); }
+    this.minimumZoom = this.overview().zoom;
+    if (d.camera) {
+      cam.setZoom(Phaser.Math.Clamp(d.camera.zoom, this.minimumZoom, MAX_CITY_ZOOM));
+      this.syncCameraBounds();
+      cam.centerOn(d.camera.x, d.camera.y);
+      if (cam.zoom <= this.minimumZoom * 1.02) this.centerOverview();
+    }
+    else { cam.setZoom(Phaser.Math.Clamp(Math.min(this.scale.width / (max * U * 2.0), this.scale.height / (max * U * 1.1)), 0.45, 1)); this.syncCameraBounds(); cam.centerOn(c.x, c.y); }
   }
 
   sync() {
@@ -266,7 +294,7 @@ export class CityScene extends Phaser.Scene {
       const tk = stage === 1 ? this.constructionTex(projectBuilding[def.id] ?? 'work', 0, q) : sk ? 's:' + sk : this.skirtTex(i % 3, true);
       let v = this.sites.get(def.id);
       if (!v) { const img = this.place(tk, c.x, c.y, c.y);
-        const label = this.add.text(c.x, c.y + 44, '', { fontFamily: 'IBM Plex Sans Arabic, sans-serif', fontSize: '13px', color: '#f1e6d0', backgroundColor: 'rgba(43,35,32,0.72)', padding: { x: 6, y: 2 }, rtl: true }).setOrigin(0.5).setDepth(6e5).setAlpha(0.9);
+        const label = this.add.text(c.x, c.y + 44, '', { fontFamily: '"NewGaza Elgharib", system-ui, sans-serif', fontSize: '13px', color: '#f1e6d0', backgroundColor: 'rgba(43,35,32,0.72)', padding: { x: 6, y: 2 }, rtl: true }).setOrigin(0.5).setDepth(6e5).setAlpha(0.9);
         v = { key, img, label, bar: this.add.graphics().setDepth(6e5) }; this.sites.set(def.id, v); }
       else if (v.key !== key) { this.applyTex(v.img, tk); v.key = key }
       const st = stage === 0 ? 'لم يبدأ' : stage === 1 ? `قيد الإنشاء ${Math.round(f * 100)}٪` : ps.status === 'ready' ? 'جاهز للجمع' : 'مكتمل';
@@ -343,9 +371,9 @@ export class CityScene extends Phaser.Scene {
     img.setTexture(tk); const m = SPR[tk.startsWith('s:') ? tk.slice(2) : tk];
     img.setOrigin(0.5, m ? m.ay : ANCHOR_LOT / TEX_H);
     const raw = tk.startsWith('s:') ? tk.slice(2) : tk;
-    img.setScale(!m ? SC : raw.startsWith('ruin') ? ruinScale(m.h, SC) : /_(front|back)$/.test(raw) || raw.startsWith('construction:') ? builtScale(raw.startsWith('construction:') ? builtKey(raw.split(':')[1], Number(raw.split(':')[2]) as 0 | 1) : raw, SC) : SC);
+    img.setScale(!m ? SC : raw.startsWith('ruin') ? ruinScale(m.h, SC) : /_(front|back|right|left)$/.test(raw) || raw === 'farm_cattle' || raw.startsWith('construction:') ? builtScale(raw.startsWith('construction:') ? builtKey(raw.split(':')[1], Number(raw.split(':')[2]) as Orientation) : raw, SC) : SC);
   }
-  private constructionTex(id: string, orientation: 0 | 1, stage: number) {
+  private constructionTex(id: string, orientation: Orientation, stage: number) {
     const key = `construction:${id}:${orientation}:${stage}`;
     if (!this.textures.exists(key)) {
       const finalKey = builtKey(id, orientation), meta = SPR[finalKey];
@@ -371,8 +399,8 @@ export class CityScene extends Phaser.Scene {
       return key;
     }
     if (t === 'e') return this.skirtTex(Number(id) % 3, true);
-    if (t === 'b') return 's:' + builtKey(id, Number(a) as 0 | 1);
-    return this.constructionTex(id, Number(a) as 0 | 1, Number(b));
+    if (t === 'b') return 's:' + builtKey(id, Number(a) as Orientation);
+    return this.constructionTex(id, Number(a) as Orientation, Number(b));
   }
 
   private syncPlot(p: Plot, now: number) {
@@ -399,8 +427,8 @@ export class CityScene extends Phaser.Scene {
       } else if (v.skirt) { v.skirt.destroy(); v.skirt = undefined; }
       if (v.shadow && (t === 'e' || t === 'r')) { v.shadow.destroy(); v.shadow = undefined; }
       v.img.setFlipX(false).setAlpha(1);
-      const fp = t === 'b' || t === 'c' ? buildingFootprint(builtKey(id, Number(a) as 0 | 1)) : null;
-      this.syncYard(v, p, c, fp, t === 'b' ? 2 : t === 'c' && Number(b) >= 5 ? 1 : 0, Number(a) as 0 | 1);
+      const fp = t === 'b' || t === 'c' ? buildingFootprint(builtKey(id, Number(a) as Orientation)) : null;
+      this.syncYard(v, p, c, fp, t === 'b' ? 2 : t === 'c' && Number(b) >= 5 ? 1 : 0, Number(a) as Orientation);
       const source = v.img.texture.getSourceImage();
       if (!(source instanceof HTMLImageElement || source instanceof HTMLCanvasElement)) throw new Error('Unsupported plot sprite source');
       v.opacity = this.spriteOpacity.prepare(source);
@@ -418,7 +446,7 @@ export class CityScene extends Phaser.Scene {
 
 
   /** compact buildings only: bounded courtyard on the free part of the lot; removed for ruins/empty plots */
-  private syncYard(v: PlotView, p: Plot, c: { x: number; y: number }, fp: { factor: number; yard: string } | null, level: 0 | 1 | 2, orient: 0 | 1) {
+  private syncYard(v: PlotView, p: Plot, c: { x: number; y: number }, fp: { factor: number; yard: string } | null, level: 0 | 1 | 2, orient: Orientation) {
     if (!fp || fp.yard === 'none') { v.yard?.destroy(); v.yardFront?.destroy(); v.yard = v.yardFront = undefined; return; }
     const y = lotLandscape(this, fp.yard as 'garden' | 'patio' | 'service', fp.factor, orient, level, p.id,p.buildingId);
     if (!v.yard) v.yard = this.add.image(c.x, c.y, y.back).setOrigin(0.5, ANCHOR_LOT / TEX_H).setDepth(-200000).setScale(SC); else v.yard.setTexture(y.back);
@@ -505,7 +533,7 @@ export class CityScene extends Phaser.Scene {
     const cam = this.cameras.main;
     const ps = this.contacts.live(nativeTouchIds(p.event));
     if (!ps.includes(p)) return;
-    if (this.pinch && ps.length >= 2) { const d = Phaser.Math.Distance.Between(ps[0].x, ps[0].y, ps[1].x, ps[1].y); cam.setZoom(Phaser.Math.Clamp(this.pinch.z * d / this.pinch.d, 0.35, 2.2)); return; }
+    if (this.pinch && ps.length >= 2) { const d = Phaser.Math.Distance.Between(ps[0].x, ps[0].y, ps[1].x, ps[1].y); this.setCityZoom(this.pinch.z * d / this.pinch.d); return; }
     if (this.pinch) { this.pinch = null; this.beginDrag(p, true); }
     if (!this.down) return;
     if (!this.dragged && Phaser.Math.Distance.Between(p.x, p.y, this.down.x, this.down.y) > DRAG) this.dragged = true;
@@ -533,8 +561,40 @@ export class CityScene extends Phaser.Scene {
     }
     this.down = null;
   }
-  zoomBy(f: number) { const cam = this.cameras.main; cam.setZoom(Phaser.Math.Clamp(cam.zoom * f, 0.35, 2.2)); }
-  saveCam() { const cam = this.cameras.main; const m = cam.midPoint; this.hooks.onCamera({ x: Math.round(m.x), y: Math.round(m.y), zoom: Math.round(cam.zoom * 100) / 100 }); }
+  private overview() {
+    const cam = this.cameras.main;
+    const hud = document.querySelector('.hud-top')?.getBoundingClientRect();
+    const dock = document.querySelector('.dock')?.getBoundingClientRect();
+    const sideDock = !!dock && dock.height > dock.width;
+    return districtOverview(this.maxL * U, cam.width, cam.height, {
+      left: 14, right: sideDock ? cam.width - dock!.left + 12 : 14,
+      top: Math.max(sideDock ? 64 : 112, (hud?.bottom ?? 0) + 12),
+      bottom: sideDock ? 14 : dock ? cam.height - dock.top + 12 : 112,
+    });
+  }
+  private centerOverview() {
+    const o = this.overview(), c = iso(this.maxL / 2, this.maxL / 2);
+    this.cameras.main.centerOn(c.x + o.offsetX, c.y - 80 + o.offsetY);
+  }
+  private syncCameraBounds() {
+    if (!this.frame) return;
+    const cam = this.cameras.main;
+    // Phaser clamps centreOn against the terrain skirt. If the viewport is
+    // larger than that skirt, this pushes the district toward a screen edge.
+    cam.useBounds = cam.width / cam.zoom <= this.frame.w / GK + 240
+      && cam.height / cam.zoom <= this.frame.h / GK + 240;
+  }
+  private setCityZoom(zoom: number) {
+    this.minimumZoom = this.overview().zoom;
+    this.cameras.main.setZoom(Phaser.Math.Clamp(zoom, this.minimumZoom, MAX_CITY_ZOOM));
+    this.syncCameraBounds();
+    if (this.cameras.main.zoom <= this.minimumZoom * 1.001) this.centerOverview();
+  }
+  zoomBy(f: number) { this.setCityZoom(this.cameras.main.zoom * f); }
+  saveCam() {
+    const cam = this.cameras.main;
+    this.hooks.onCamera({ x: Math.round(cam.scrollX + cam.width / 2), y: Math.round(cam.scrollY + cam.height / 2), zoom: Math.round(cam.zoom * 10000) / 10000 });
+  }
   focusPlot(id: number) { const st = this.hooks.getState(); const p = st.districts.find(x => x.id === this.district)?.plots.find(q => q.id === id); if (p) { const c = iso(p.x + 1, p.y + 1); this.cameras.main.pan(c.x, c.y - 40, 500, Phaser.Math.Easing.Sine.InOut); } }
 }
 

@@ -24,7 +24,8 @@
 - [Live device testing](live-device-testing.md) — user wants the same testing link to reflect ongoing updates across devices; distinguish live development from published builds.
 - [2D layout persistence](2d-layout-persistence.md) — generator changes require recognized-layout migrations; live reloads can persist earlier geometry during updates.
 - [2D art pipeline](2d-art-pipeline.md) — pack, grade, align, then feather; preserve fresh stage baselines and a shared ground-shadow layer.
-- [Building parcel art direction](2d-building-lot-direction.md) — small buildings need appropriate yards; both poses share coherent ground and a single sunlight direction.
+- [Building parcel art direction](2d-building-lot-direction.md) — small buildings need appropriate yards; four faithful faces share coherent ground and a single sunlight direction.
 - [Mobile gesture boundaries](2d-touch-gesture-boundaries.md) — timer and panel refreshes must not reset ongoing camera gestures.
 - [2D sound identity](2d-sound-identity.md) — new standalone audio, not legacy Unity assets; zoom attenuation and the user's named main-menu theme.
 - [Mobile WebGL checks](mobile-webgl-checks.md) — headless Canvas can hide phone GPU texture-limit failures; verify the actual renderer and fresh-entry flows.
+- [Neighborhood overview](2d-camera-overview.md) — maximum zoom-out should show roughly 85% or more of the playable neighborhood on phones in both orientations.

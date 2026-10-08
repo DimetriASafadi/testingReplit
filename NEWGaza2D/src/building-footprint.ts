@@ -1,3 +1,5 @@
+import { U, PLOT } from './art';
+import manifest from './realistic-manifest.json';
 /** A plot is land: smaller buildings leave usable space rather than filling it. */
 export interface BuildingFootprint { factor: number; yard: 'garden' | 'patio' | 'service' | 'none' }
 const FULL_LOT: Readonly<BuildingFootprint> = { factor: 1, yard: 'none' };
@@ -31,9 +33,24 @@ const HEIGHTS: Record<string, number> = {
   apt4: 174, h6: 187, complex: 181, modern: 187, trad: 164, tower: 187,
 };
 export function buildingMaxHeight(finalSprite: string) {
-  return HEIGHTS[finalSprite.replace(/_(front|back)$/, '')] ?? 187;
+  return HEIGHTS[finalSprite.replace(/_(front|back|right|left)$/, '')] ?? 187;
 }
-/** Front/back variants use the same footprint; construction inherits its final sprite. */
+/** All four variants use the same footprint; construction inherits its final sprite. */
 export function buildingFootprint(finalSprite: string): Readonly<BuildingFootprint> {
-  return COMPACT[finalSprite.replace(/_(front|back)$/, '')] ?? FULL_LOT;
+  return COMPACT[finalSprite.replace(/_(front|back|right|left)$/, '')] ?? FULL_LOT;
+}
+/** Pure render geometry shared by sprites and their physical factory entrance. */
+export function buildingRenderScale(finalKey: string, m: { w: number; h: number; ground?: { w: number; h: number } }, base = .72) {
+  const metrics = manifest as Record<string, typeof m>;
+  const stem = finalKey === 'farm_cattle' ? 'cattle' : finalKey.replace(/_(front|back|right|left)$/, '');
+  const faces = ['front', 'right', 'back', 'left'].map(face =>
+    metrics[stem === 'cattle' && face === 'front' ? 'farm_cattle' : `${stem}_${face}`]).filter(Boolean);
+  // One world scale for all views: a different silhouette/yard cannot make the
+  // building suddenly grow or shrink when the player rotates it.
+  const one = (v: typeof m) => {
+    const gw = v.ground?.w ?? v.w, gh = v.ground?.h ?? gw / 2;
+    return Math.min(base * buildingFootprint(finalKey).factor, buildingMaxHeight(finalKey) / v.h,
+      (PLOT * U * 2) / gw, (PLOT * U) / gh);
+  };
+  return Math.min(one(m), ...faces.map(one));
 }

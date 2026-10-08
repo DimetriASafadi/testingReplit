@@ -1,17 +1,20 @@
 export type EquipmentKind = 'excavator' | 'bulldozer' | 'truck';
 export type Category = 'equipment' | 'industry' | 'housing' | 'farm' | 'commerce' | 'leisure';
+export type Orientation = 0 | 1 | 2 | 3;
 export interface BuildingDef { id: string; name: string; category: Category; floors: number; cost: number; duration: number; income: number }
 export interface ProjectDef { id: string; name: string; cost: number; duration: number; prerequisite?: string; income: number; period: number }
-export interface Plot { id: number; x: number; y: number; layoutId?: string; status: 'rubble' | 'empty' | 'building' | 'built'; buildingId: string; orientation: 0 | 1; startedAt: number; endsAt: number; incomeAt: number }
+export interface Plot { id: number; x: number; y: number; layoutId?: string; status: 'rubble' | 'empty' | 'building' | 'built'; buildingId: string; orientation: Orientation; startedAt: number; endsAt: number; incomeAt: number; paidCost?: number }
 export interface ProjectState { id: string; status: 'idle' | 'building' | 'ready' | 'complete'; startedAt: number; endsAt: number; incomeAt: number }
 export interface DistrictState { id: string; unlocked: boolean; claimed: boolean; plots: Plot[]; projects: ProjectState[]; camera: { x: number; y: number; zoom: number } | null }
-export interface Unit { id: string; kind: EquipmentKind; level: number; purchasePrice: number }
+export interface Unit { id: string; kind: EquipmentKind; level: number; purchasePrice: number; depotIds?: Record<string, number> }
 export interface Job { id: string; districtId: string; plotId: number; unitIds: string[]; start: number; arrival: number; workEnd: number; returnEnd: number; cleared: boolean; value: number; originPlotId: number; departureAt?: number; returnStartAt?: number }
 export interface GameState { version: 1; coins: number; inventory: { concrete: number; iron: number; wood: number; other: number; value: number }; units: Unit[]; jobs: Job[]; districts: DistrictState[]; currentDistrict: string | null; lastSeen: number; sequence: number }
 export type Action =
  | { type: 'enter'; districtId: string }
  | { type: 'map' }
- | { type: 'place'; plotId: number; buildingId: string; orientation: 0 | 1 }
+ | { type: 'place'; plotId: number; buildingId: string; orientation: Orientation }
+ | { type: 'rotateBuilding'; plotId: number; orientation?: Orientation }
+ | { type: 'sellBuilding' | 'removeBuilding'; plotId: number; expected?: { buildingId: string; startedAt: number } }
  | { type: 'buy'; kind: EquipmentKind }
  | { type: 'upgrade'; unitId: string }
  | { type: 'clear'; plotId: number }

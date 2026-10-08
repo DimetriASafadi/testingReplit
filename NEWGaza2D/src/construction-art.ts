@@ -1,4 +1,4 @@
-import type { BuildingDef } from './model';
+import type { BuildingDef, Orientation } from './model';
 import type { SprMeta } from './realart';
 
 /** Stages 0..7: 0 foundation/excavation, 1-5 rising structure, 6 roof closed, 7 finishing/handover. */
@@ -28,7 +28,7 @@ export function farmLattice(id: string) {
 }
 
 export function constructionCanvas(final: CanvasImageSource, foundation: CanvasImageSource,
-  meta: SprMeta, def: BuildingDef, stage: number, _orientation: 0 | 1) {
+  meta: SprMeta, def: BuildingDef, stage: number, _orientation: Orientation) {
   const cv = document.createElement('canvas'); cv.width = meta.w; cv.height = meta.h;
   const c = cv.getContext('2d')!;
   const { cx, cy: ground, hw, hh } = footprint(meta); const base = meta.w / 4;

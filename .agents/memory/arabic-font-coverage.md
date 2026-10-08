@@ -3,6 +3,12 @@ name: Arabic font coverage
 description: Why font checks must include shaped Arabic and mixed-script interface symbols.
 ---
 
+Distinguish native browser shaping from the legacy Unity text pipeline when applying the checks below.
+
+**Why:** The Unity checks concern text already converted to Unicode presentation forms. A browser can correctly join a Unicode Arabic font through its OpenType GSUB tables even when its cmap contains very few presentation-form code points. Requiring Unity's compatibility aliases for a browser font would reject a valid font unnecessarily.
+
+**How to apply:** Keep the Unity-specific presentation-form checks for Unity. For web fonts, inspect ordinary Arabic, digits and punctuation plus joining tables, then verify the actual loaded face and connected text in the browser. Do not remap a valid Unicode font to private-use characters.
+
 Verify the packaged font against the output of Arabic shaping and mixed-script UI strings, not just Arabic source characters.
 
 **Why:** The Noto Naskh Arabic file obtained from the noto-fonts hinted Arabic family contained Arabic glyphs but omitted Latin letters and common UI symbols such as percent, slash and parentheses. Arabic text alone looked supported while the economy interface would have missing glyphs. DejaVu was originally used for full coverage; the user's later typography requirement selected Cairo titles, Tajawal text/buttons and Roboto Latin/numbers, keeping DejaVu only as a glyph fallback.

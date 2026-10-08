@@ -46,7 +46,7 @@ export class DepotDoors {
   passage(plot: Plot): { mask: Phaser.Display.Masks.GeometryMask; depth: number } {
     if (!this.views.has(plot.id)) this.update(plot, false, 0);
     const v = this.views.get(plot.id)!;
-    return { mask: v.mask, depth: factoryDepth(plot) + .08 };
+    return { mask: v.mask, depth: factoryDepth(plot) + (depotGeometry(plot).visible ? .08 : -.08) };
   }
 
   private drawMask(v: View, plot: Plot) {
@@ -74,6 +74,10 @@ export class DepotDoors {
     const dt = Math.max(0, Math.min(500, now - v.last)); v.last = now;
     const step = dt / OPEN_MS;
     v.open = requestedOpen ? Math.min(1, v.open + step) : Math.max(0, v.open - step);
+    // The authored door is already closed in the sprite. Draw an overlay only when
+    // opening a visible near facade; never paint a doorway through a rear wall.
+    const shown = g.visible && v.open > .001;
+    v.cavity.setVisible(shown); v.shutter.setVisible(shown); v.frame.setVisible(shown);
     if (v.key !== key) {
       const d = factoryDepth(plot);
       v.cavity.setDepth(d + .04); v.shutter.setDepth(d + .15); v.frame.setDepth(d + .16);

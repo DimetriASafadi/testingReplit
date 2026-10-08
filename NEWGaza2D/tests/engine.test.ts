@@ -3,19 +3,184 @@ import assert from 'node:assert/strict';
 import { GameStore, newGame, rubbleYield, SAVE_KEY } from '../src/engine';
 import { BUILDINGS, DISTRICTS, projects } from '../src/catalog';
 import { validateSave } from '../src/save';
-import { CONVOY_GAP, convoyMotion, factoryWindows, fleetRoute, gateDemand, routeLength } from '../src/fleet-motion';
+import { districtOverview, MIN_CAMERA_ZOOM } from '../src/camera-overview';
+import { CONVOY_GAP, convoyMotion, factoryWindows, fleetRoute, gateDemand, routeLength, returnTravelDuration } from '../src/fleet-motion';
 import type { EquipmentKind, Job } from '../src/model';
+import { ORIENTATION_CYCLE, nextOrientation, rotateLotPoint, isOrientation } from '../src/orientation';
+import { buildingSaleValue } from '../src/building-disposal';
 
 class MemoryStorage {
   data = new Map<string,string>();
   getItem(k:string) { return this.data.get(k) ?? null }
   setItem(k:string,v:string) { this.data.set(k,v) }
 }
+test('overview zoom fits a large district on phones and survives save/reload below the old limit', () => {
+  for (const [width,height,insets] of [
+    [390,844,{top:112,right:14,bottom:112,left:14}],
+    [844,390,{top:64,right:164,bottom:14,left:14}],
+    [320,568,{top:112,right:14,bottom:112,left:14}],
+  ] as const) {
+    const worldSize = 48 * 64, o = districtOverview(worldSize,width,height,insets);
+    assert.ok(o.zoom >= MIN_CAMERA_ZOOM && o.zoom < .15);
+    assert.ok((2*worldSize+128)*o.zoom <= width-insets.left-insets.right);
+    assert.ok((worldSize+256)*o.zoom <= height-insets.top-insets.bottom);
+    const storage = new MemoryStorage(), store = new GameStore(storage);
+    store.dispatch({type:'enter',districtId:'shujaiya'});
+    store.dispatch({type:'camera',camera:{x:0,y:1000,zoom:o.zoom}});
+    const restored = new GameStore(storage);
+    assert.equal(restored.state.districts[0].camera?.zoom,o.zoom);
+    validateSave(restored.state);
+    assert.throws(()=>store.dispatch({type:'camera',camera:{x:0,y:0,zoom:.001}}));
+  }
+});
+test('four orientations retain legacy front/back numbering and rotate without mirroring', () => {
+  assert.deepEqual(ORIENTATION_CYCLE, [0, 2, 1, 3]);
+  assert.deepEqual(ORIENTATION_CYCLE.map(o => nextOrientation(o)), [2, 1, 3, 0]);
+  assert.deepEqual(ORIENTATION_CYCLE.map(o => rotateLotPoint([.25, .8], o)),
+    [[.25, .8], [.8, -.25], [-.25, -.8], [-.8, .25]]);
+  for (const o of ORIENTATION_CYCLE) assert.equal(isOrientation(o), true);
+  for (const o of [-1, 4, 1.5, '2', null]) assert.equal(isOrientation(o), false);
+});
+test('all building types place/save/restore four faces; rotation preserves costs and construction deadlines', () => {
+  for (const b of BUILDINGS) {
+    const storage = new MemoryStorage(), store = new GameStore(storage);
+    store.dispatch({ type: 'enter', districtId: 'shujaiya' });
+    store.state.coins = 99_000_000;
+    const p = store.state.districts[0].plots[0];
+    store.dispatch({ type: 'place', plotId: p.id, buildingId: b.id, orientation: 0 });
+    const coins = store.state.coins, start = p.startedAt, end = p.endsAt;
+    for (const orientation of [2, 1, 3, 0] as const) {
+      store.dispatch({ type: 'rotateBuilding', plotId: p.id });
+      assert.equal(p.orientation, orientation, b.id);
+      assert.equal(p.startedAt, start); assert.equal(p.endsAt, end);
+      assert.equal(store.state.coins, coins);
+      const restored = new GameStore(storage);
+      assert.equal(restored.state.districts[0].plots[p.id].orientation, orientation);
+      validateSave(restored.state);
+    }
+    store.tick(end);
+    const incomeAt = p.incomeAt;
+    store.dispatch({ type: 'rotateBuilding', plotId: p.id });
+    assert.equal(p.status, 'built');
+    assert.equal(p.orientation, 2);
+    assert.equal(p.incomeAt, incomeAt);
+  }
+});
+test('factory orientation cannot change under an active convoy, but unlocks once it returns', () => {
+  const { store } = ready();
+  const district = store.state.districts[0], source = district.plots[0];
+  const target = district.plots.find(p => p.status === 'rubble')!;
+  store.dispatch({ type: 'clear', plotId: target.id });
+  const job = store.state.jobs[0], raw = JSON.stringify(store.state);
+  assert.throws(() => store.dispatch({ type: 'rotateBuilding', plotId: source.id }), /عودة آليات/);
+  assert.equal(JSON.stringify(store.state), raw);
+  store.tick(job.returnEnd + 1);
+  store.dispatch({ type: 'rotateBuilding', plotId: source.id });
+  assert.equal(store.state.districts[0].plots[source.id].orientation, 2);
+});
 function setup() {
   const storage = new MemoryStorage(), store = new GameStore(storage);
   store.dispatch({ type:'enter', districtId:'shujaiya' });
   return { storage, store };
 }
+
+test('every building can be sold at half price or removed, during construction and after completion', () => {
+  for (const def of BUILDINGS) for (const completed of [false, true]) for (const type of ['sellBuilding','removeBuilding'] as const) {
+    const { storage, store } = setup();
+    const before = store.state.coins;
+    store.dispatch({ type:'place', plotId:0, buildingId:def.id, orientation:3 });
+    let p = store.state.districts[0].plots[0];
+    assert.equal(p.paidCost, def.cost);
+    if (completed) store.tick(p.endsAt);
+    const location = [p.id,p.x,p.y,p.layoutId];
+    store.dispatch({ type, plotId:0, expected:{buildingId:p.buildingId,startedAt:p.startedAt} });
+    p = store.state.districts[0].plots[0];
+    assert.equal(store.state.coins, before-def.cost+(type==='sellBuilding'?Math.floor(def.cost/2):0));
+    assert.deepEqual([p.id,p.x,p.y,p.layoutId],location);
+    assert.equal(p.status,'empty');
+    assert.equal(p.startedAt,0); assert.equal(p.endsAt,0); assert.equal(p.incomeAt,0);
+    assert.equal(p.paidCost,undefined);
+    const restored = new GameStore(storage,store.state.lastSeen+1);
+    assert.equal(restored.state.districts[0].plots[0].status,'empty');
+    assert.equal(restored.state.coins,store.state.coins);
+    assert.throws(()=>store.dispatch({type,plotId:0}),/للمباني فقط/);
+    store.dispatch({type:'place',plotId:0,buildingId:def.id,orientation:0});
+    validateSave(store.state);
+  }
+});
+
+test('sale respects recorded paid price; legacy buildings remain sellable and bad costs are rejected', () => {
+  const {store}=setup();
+  store.dispatch({type:'place',plotId:0,buildingId:'recycling',orientation:0});
+  const p=store.state.districts[0].plots[0], def=BUILDINGS.find(b=>b.id==='recycling')!;
+  assert.equal(buildingSaleValue(p),def.cost/2);
+  delete p.paidCost;
+  assert.equal(buildingSaleValue(p),def.cost/2);
+  p.paidCost=101;
+  const before=store.state.coins;
+  store.dispatch({type:'sellBuilding',plotId:0});
+  assert.equal(store.state.coins,before+50);
+  for (const cost of [-1,Infinity,1.5]) {
+    const invalid=structuredClone(store.state); invalid.districts[0].plots[0].paidCost=cost;
+    assert.throws(()=>validateSave(invalid));
+  }
+});
+
+test('disposal collects earned income once, rejects changed targets and preserves unrelated buildings', () => {
+  for (const type of ['sellBuilding','removeBuilding'] as const) {
+    const {storage,store}=setup(), def=BUILDINGS.find(b=>b.income>0)!;
+    store.dispatch({type:'place',plotId:0,buildingId:def.id,orientation:0});
+    const p=store.state.districts[0].plots[0];
+    store.tick(p.endsAt+2*3600000+1000);
+    const unrelated=JSON.stringify(store.state.districts[0].plots[1]);
+    assert.throws(()=>store.dispatch({type,plotId:0,expected:{buildingId:def.id,startedAt:p.startedAt+1}}),/تغيّر المبنى/);
+    const before=store.state.coins;
+    store.dispatch({type,plotId:0});
+    assert.equal(store.state.coins,before+2*def.income+(type==='sellBuilding'?Math.floor(def.cost/2):0));
+    assert.equal(JSON.stringify(store.state.districts[0].plots[1]),unrelated);
+    store.tick(store.state.lastSeen+7200000);
+    assert.equal(new GameStore(storage,store.state.lastSeen).state.coins,store.state.coins);
+    assert.equal(store.state.coins,before+2*def.income+(type==='sellBuilding'?Math.floor(def.cost/2):0));
+    const rubble=store.state.districts[0].plots.find(p=>p.status==='rubble')!;
+    assert.throws(()=>store.dispatch({type,plotId:rubble.id}),/للمباني فقط/);
+  }
+});
+
+test('factories with outbound, working or returning teams cannot be sold or removed', () => {
+  for (const type of ['sellBuilding','removeBuilding'] as const) for (const phase of ['travel','work','return']) {
+    const {store}=ready();
+    const target=store.state.districts[0].plots.find(p=>p.status==='rubble')!;
+    store.dispatch({type:'clear',plotId:target.id});
+    const job=store.state.jobs[0];
+    store.tick(phase==='travel'?job.start:phase==='work'?job.arrival+1:job.workEnd+1);
+    const before=store.exportSave();
+    assert.throws(()=>store.dispatch({type,plotId:job.originPlotId}),/عودة جميع آليات/);
+    assert.equal(store.exportSave(),before);
+    validateSave(store.state);
+    store.tick(job.returnEnd+1);
+    store.dispatch({type,plotId:job.originPlotId});
+    assert.equal(store.state.units.length,3);
+    assert.ok(store.state.units.every(u=>u.depotIds?.shujaiya===undefined));
+    validateSave(store.state);
+  }
+});
+
+test('removing a depot rebalances idle machines, preserves all equipment and restores a valid save', () => {
+  const {store,storage}=ready();
+  const next=addDepot(store);
+  store.dispatch({type:'sellBuilding',plotId:0});
+  assert.ok(store.state.units.every(u=>u.depotIds?.shujaiya===next));
+  validateSave(store.state);
+  store.dispatch({type:'removeBuilding',plotId:next});
+  let restored=new GameStore(storage,store.state.lastSeen);
+  assert.equal(restored.state.units.length,3);
+  assert.ok(restored.state.units.every(u=>u.depotIds?.shujaiya===undefined));
+  assert.throws(()=>restored.dispatch({type:'clear',plotId:restored.state.districts[0].plots.find(p=>p.status==='rubble')!.id}));
+  const replacement=addDepot(restored);
+  restored=new GameStore(storage,restored.state.lastSeen);
+  assert.ok(restored.state.units.every(u=>u.depotIds?.shujaiya===replacement));
+  validateSave(restored.state);
+});
 
 test('reset commits a valid fresh save and later ticks cannot restore old progress', () => {
   const { storage, store } = setup();
@@ -51,6 +216,132 @@ function ready() {
   for (const kind of ['excavator','bulldozer','truck'] as const) store.dispatch({ type:'buy',kind });
   return result;
 }
+test('return travel matches departure ground speed at near/far sites and every upgrade and factory face', () => {
+  for (const orientation of ORIENTATION_CYCLE) for (const level of [1,2,4]) for (const far of [false,true]) {
+    const {store,storage}=ready(), d=store.state.districts[0], source=d.plots[0];
+    source.orientation=orientation;
+    for (const u of store.state.units) u.level=level;
+    const targets=d.plots.filter(p=>p.status==='rubble');
+    targets.sort((a,b)=>(Math.abs(a.x-source.x)+Math.abs(a.y-source.y))-(Math.abs(b.x-source.x)+Math.abs(b.y-source.y)));
+    const target=far?targets.at(-1)!:targets[0];
+    store.dispatch({type:'clear',plotId:target.id});
+    const j=store.state.jobs[0], outTime=j.arrival-j.departureAt!, backTime=j.returnEnd-j.returnStartAt!;
+    assert.equal(j.workEnd-j.arrival,60000);
+    assert.equal(backTime,returnTravelDuration(source,target,outTime));
+    const maxLength=(back:boolean)=>Math.max(...(['excavator','bulldozer','truck'] as const).map(k=>routeLength(fleetRoute(source,target,k,back))))+2*CONVOY_GAP;
+    const outSpeed=maxLength(false)/(outTime-750),backSpeed=maxLength(true)/(backTime-550-250);
+    assert.ok(Math.abs(backSpeed/outSpeed-1)<.001,'matching distance-per-time, not a fixed return delay');
+    assert.ok(backTime<outTime*1.2,'return is comparable, not disproportionately slow');
+    const before=structuredClone(j), restored=new GameStore(storage,store.state.lastSeen+1);
+    assert.deepEqual(restored.state.jobs[0],before,'restoring a mission must not alter its timeline');
+    store.tick(j.returnEnd-1);assert.equal(store.state.jobs.length,1);
+    store.tick(j.returnEnd);assert.equal(store.state.jobs.length,0);
+    assert.ok(store.state.inventory.value>0);
+    validateSave(store.state);
+  }
+});
+function addDepot(store: GameStore, finish = true) {
+  const plot = store.state.districts[0].plots.find(p => p.status === 'empty')!;
+  store.dispatch({ type: 'place', plotId: plot.id, buildingId: 'recycling', orientation: 1 });
+  if (finish) store.tick(plot.endsAt);
+  return plot.id;
+}
+function buyTeam(store: GameStore) {
+  for (const kind of ['excavator','bulldozer','truck'] as const) store.dispatch({ type:'buy', kind });
+}
+test('two recycling factories share complete teams and use their own independent portals', () => {
+  const { store, storage } = ready();
+  buyTeam(store);
+  const second = addDepot(store), d = store.state.districts[0];
+  for (const id of [0, second]) {
+    const team = store.state.units.filter(u => u.depotIds?.[d.id] === id);
+    assert.equal(team.length, 3);
+    assert.equal(new Set(team.map(u => u.kind)).size, 3);
+  }
+  const targets = d.plots.filter(p => p.status === 'rubble').slice(0,2);
+  for (const p of targets) store.dispatch({ type:'clear', plotId:p.id });
+  assert.deepEqual(new Set(store.state.jobs.map(j => j.originPlotId)), new Set([0,second]));
+  for (const j of store.state.jobs) {
+    assert.ok(j.unitIds.every(id => store.state.units.find(u => u.id === id)!.depotIds![d.id] === j.originPlotId));
+    for (const id of j.unitIds) {
+      const u = store.state.units.find(u => u.id === id)!;
+      const source = d.plots[j.originPlotId], target = d.plots[j.plotId];
+      assert.equal(convoyMotion(j, source, target, u.kind, j.returnEnd - 100).visibility, 0);
+    }
+  }
+  validateSave(store.state);
+  const restored = new GameStore(storage, store.state.lastSeen);
+  assert.deepEqual(restored.state.units, store.state.units);
+  assert.deepEqual(restored.state.jobs, store.state.jobs);
+});
+test('a newly completed depot redistributes idle teams without changing an active trip', () => {
+  const { store } = ready();
+  buyTeam(store);
+  const second = addDepot(store, false);
+  // Complete the new factory during the mission, without assuming a slow return.
+  store.tick(store.state.districts[0].plots[second].endsAt - 30000);
+  const target = store.state.districts[0].plots.find(p => p.status === 'rubble')!;
+  store.dispatch({ type:'clear', plotId:target.id });
+  const job = structuredClone(store.state.jobs[0]);
+  assert.ok(store.state.units.every(u => u.depotIds?.shujaiya === 0));
+  store.tick(store.state.districts[0].plots[second].endsAt);
+  assert.ok(store.state.jobs.some(j => j.id === job.id));
+  const active = store.state.jobs.find(j => j.id === job.id)!;
+  assert.equal(active.originPlotId, job.originPlotId);
+  assert.equal(active.arrival, job.arrival);
+  assert.equal(active.returnEnd, job.returnEnd);
+  assert.ok(job.unitIds.every(id => store.state.units.find(u => u.id === id)!.depotIds?.shujaiya === 0));
+  assert.equal(store.state.units.filter(u => u.depotIds?.shujaiya === second).length, 3);
+  validateSave(store.state);
+});
+test('three depots distribute uneven equipment counts by kind, with stable idle assignments', () => {
+  const { store } = ready();
+  addDepot(store); addDepot(store);
+  for (let i=0; i<3; i++) buyTeam(store);
+  store.dispatch({ type:'buy', kind:'truck' });
+  const d = store.state.districts[0], depots = d.plots.filter(p => p.status === 'built' && p.buildingId === 'recycling');
+  for (const kind of ['excavator','bulldozer','truck'] as const) {
+    const counts = depots.map(p => store.state.units.filter(u => u.kind === kind && u.depotIds?.[d.id] === p.id).length);
+    assert.ok(Math.max(...counts) - Math.min(...counts) <= 1);
+  }
+  const units = structuredClone(store.state.units);
+  store.dispatch({ type:'map' }); store.dispatch({ type:'enter', districtId:d.id });
+  assert.deepEqual(store.state.units, units);
+  validateSave(store.state);
+});
+test('legacy fleet saves acquire balanced depot homes and keep returning jobs at their original depot', () => {
+  const { store, storage } = ready();
+  buyTeam(store);
+  const second = addDepot(store);
+  store.dispatch({ type:'clear', plotId:2 });
+  const job = structuredClone(store.state.jobs[0]);
+  for (const u of store.state.units) delete u.depotIds;
+  storage.setItem(SAVE_KEY, store.exportSave());
+  const restored = new GameStore(storage, store.state.lastSeen);
+  assert.deepEqual(restored.state.jobs[0], job);
+  for (const id of job.unitIds) assert.equal(restored.state.units.find(u => u.id === id)!.depotIds?.shujaiya, job.originPlotId);
+  assert.equal(restored.state.units.filter(u => u.depotIds?.shujaiya === second).length, 3);
+  validateSave(restored.state);
+  const invalid = structuredClone(restored.state);
+  invalid.units[0].depotIds!.shujaiya = 2;
+  assert.throws(() => validateSave(invalid));
+});
+test('each district keeps a separate depot assignment for the shared campaign fleet', () => {
+  const { store, storage } = ready();
+  buyTeam(store); addDepot(store);
+  const previous = store.state.units.map(u => u.depotIds!.shujaiya);
+  const first = store.state.districts[0];
+  for (const p of first.plots) if (p.status === 'rubble') p.status = 'empty';
+  for (const p of first.projects) p.status = 'complete';
+  store.dispatch({ type:'claim' });
+  store.dispatch({ type:'enter', districtId:'tuffah' });
+  store.dispatch({ type:'place', plotId:0, buildingId:'recycling', orientation:0 });
+  store.tick(store.state.districts[1].plots[0].endsAt);
+  assert.ok(store.state.units.every(u => u.depotIds?.tuffah === 0));
+  assert.deepEqual(store.state.units.map(u => u.depotIds!.shujaiya), previous);
+  validateSave(store.state);
+  assert.deepEqual(new GameStore(storage, store.state.lastSeen).state.units, store.state.units);
+});
 test('factory exit/entry convoy has physical spacing, hidden storage and compatible old deadlines', () => {
   const state = newGame(100000), source = state.districts[0].plots[0], target = state.districts[0].plots[27];
   const kinds: EquipmentKind[] = ['excavator', 'bulldozer', 'truck'];

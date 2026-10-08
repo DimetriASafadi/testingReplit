@@ -1,12 +1,14 @@
 // Mapping from catalog buildings / projects to the pre-rendered photoreal sprites (see tools/pack_art.py).
 import manifest from './realistic-manifest.json';
 import { building } from './catalog';
+import type { Orientation } from './model';
+import { ORIENTATION_FACES } from './orientation';
 
 export interface SprMeta { w: number; h: number; ay: number; ground?: { w: number; h: number } }
 export const SPR = manifest as Record<string, SprMeta>;
 export const SPRITE_KEYS = Object.keys(SPR);
 export const GROUND_KEYS = ['earth', 'sand', 'asphalt', 'gravel', 'water'] as const;
-const ART_VERSION = 'coherent-lots-sun-20261008';
+const ART_VERSION = 'four-faces-fixed-sun-20261008';
 export const sprUrl = (k: string) => `${import.meta.env.BASE_URL}art/realistic/s/${k}.webp?v=${ART_VERSION}`;
 export const groundUrl = (k: string) => `${import.meta.env.BASE_URL}art/realistic/ground-${k}.jpg?v=${ART_VERSION}`;
 
@@ -18,8 +20,9 @@ const KEY: Record<string, string> = {
   wheat: 'wheat', citrus: 'citrus', olive: 'olive', vegetables: 'veg', strawberry: 'straw', cattle: 'cattle', palms: 'palms', corn: 'corn', protective_trees: 'trees', ornamental_trees: 'orn',
 };
 export const isFarm = (id: string) => building(id).category === 'farm' || id === 'zoo';
-export function builtKey(id: string, orient: 0 | 1) {
-  const k = KEY[id] ?? 'house'; const side = orient ? 'back' : 'front';
+export function builtKey(id: string, orient: Orientation) {
+  const k = KEY[id]; if (!k) throw new Error(`Unknown building artwork: ${id}`);
+  const side = ORIENTATION_FACES[orient];
   if (k === 'cattle' && !orient) return 'farm_cattle';
   return `${k}_${side}`;
 }
@@ -45,4 +48,4 @@ export function siteKey(projectId: string, stage: 0 | 1 | 2, q: number): string 
   return a === 'water' || a === 'ind' || a === 'steel' ? `ind_c${q}` : a === 'apt4' ? `apt_c${q}` : a === 'mmall' || a === 'muni' ? `shop_c${q}` : `house_c${q}`;
 }
 /** DOM preview uses the exact scene sprite */
-export function previewUrl(id: string, orient: 0 | 1) { return sprUrl(builtKey(id, orient)); }
+export function previewUrl(id: string, orient: Orientation) { return sprUrl(builtKey(id, orient)); }

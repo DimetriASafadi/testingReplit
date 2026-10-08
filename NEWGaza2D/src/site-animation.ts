@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { building } from './catalog';
-import type { Plot } from './model';
+import type { Plot, Orientation } from './model';
+import { rotateLotPoint } from './orientation';
 import { SPR, builtKey } from './realart';
 import { builtScale } from './art-scale';
 import { WK_FOOT, WK_FRAMES, WK_H, WK_W, drawWorker, type WorkerRole } from './workers';
@@ -69,7 +70,7 @@ export class SiteAnimation {
     });
   }
   /** Foliage fragments cut from the real front/rear farm render (connected green cells), cached per building+orientation. */
-  private patches(id: string, o: 0 | 1) {
+  private patches(id: string, o: Orientation) {
     const bk = builtKey(id, o); const hit = this.patchCache.get(bk); if (hit) return hit;
     const list: Patch[] = []; this.patchCache.set(bk, list);
     const m = SPR[bk]; const tk = 's:' + bk; if (!m || !this.scene.textures.exists(tk)) return list;
@@ -177,7 +178,7 @@ export class SiteAnimation {
   /** non-farm: crane + crew, everything inside the 1.4-unit lot */
   private site(p: Plot, v: PV, now: number) {
     const def = building(p.buildingId); const f = clamp01((now - p.startedAt) / Math.max(1, p.endsAt - p.startedAt));
-    const cx = p.x + 1, cy = p.y + 1, front = p.orientation === 0; const stageK = constructionStageFor(f);
+    const cx = p.x + 1, cy = p.y + 1; const stageK = constructionStageFor(f);
     const tall = def.floors >= 3 && stageK < 7;
     const T = 16, ct = ((now / 1000 + p.id * 1.37) % T);
     const K = this.artK(p);
@@ -188,8 +189,11 @@ export class SiteAnimation {
       v.workerRoutes = v.workers.map((_, i) => createWorkerRoute(radius, p.orientation, i));
       v.routeKey = routeKey;
     }
-    const pileL: Pt = front ? [cx - radius, cy + radius] : [cx + radius, cy - radius];
-    const siteL: Pt = front ? [cx + .35 * radius, cy + radius] : [cx + radius, cy + .35 * radius];
+    const local = (x: number, y: number): Pt => {
+      const q = rotateLotPoint([x, y], p.orientation); return [cx + q[0], cy + q[1]];
+    };
+    const pileL = local(-radius, radius);
+    const siteL = local(.35 * radius, radius);
     const pp = this.iso(pileL[0], pileL[1]), sp = this.iso(siteL[0], siteL[1]);
     if (!v.ground) v.ground = this.scene.add.graphics();
     const gr = v.ground; gr.clear(); gr.setDepth(Math.max(pp.y, sp.y) + 0.5);
@@ -200,7 +204,7 @@ export class SiteAnimation {
     if (delivered > 0.02) { gr.fillStyle(0x6b5036, delivered).fillRect(sp.x - 11, sp.y - 2, 22, 3); blocks(sp.x + 1, sp.y - 2, Math.max(1, Math.round(6 * delivered)), 1); }
     if (tall) {
       if (!v.crane) { v.crane = this.scene.add.graphics(); v.load = this.scene.add.graphics(); }
-      const mast = this.iso(front ? cx + 0.62 * K : cx - 0.05 * K, front ? cy - 0.05 * K : cy + 0.62 * K); const B = { x: mast.x, y: mast.y };
+      const mast = this.iso(...local(.62 * K, -.05 * K)); const B = { x: mast.x, y: mast.y };
       const side = Math.sign(sp.x - B.x) || 1; const H = (Math.min(300, 80 + def.floors * 15) + 20) * K;
       const g = v.crane, ld = v.load!; g.clear(); ld.clear(); g.setDepth(B.y + 1); ld.setDepth(B.y + 3);
       const travel = Math.min(pp.y, sp.y) - 78;

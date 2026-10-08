@@ -50,7 +50,8 @@ test('legacy expansion retains money, buildings, job deadlines, equipment and ea
   const store = new GameStore(storage,now);
   validateSave(store.state);
   assert.equal(store.state.coins,old.coins);
-  assert.deepEqual(store.state.units,old.units);
+  assert.deepEqual(store.state.units.map(({ depotIds: _, ...u }) => u),old.units);
+  assert.ok(store.state.units.every(u => u.depotIds?.[d.id] === 0));
   assert.deepEqual(store.state.jobs,old.jobs);
   assert.equal(store.state.districts[0].claimed,true);
   assert.equal(store.state.districts[1].unlocked,true);
