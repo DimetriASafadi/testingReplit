@@ -13,7 +13,7 @@ const defaults=():Preferences=>({enabled:true,master:.7,effects:.8,ambience:.5})
 
 export class GameAudio {
   prefs=defaults();
-  readonly theme = new ThemeMusic(`${import.meta.env.BASE_URL}audio/victory-theme.mp3?v=20261008`);
+  readonly theme = new ThemeMusic(`${import.meta.env.BASE_URL}audio/victory-theme.mp3?v=796f14edbb29`);
   status='المؤثرات تبدأ بعد أول لمسة';
   private context?: AudioContext;
   private master?: GainNode;
