@@ -7,6 +7,7 @@ import { availableDepotTeam, balanceFleetDepots } from './fleet-depots';
 import { isOrientation, nextOrientation } from './orientation';
 import { MIN_CAMERA_ZOOM } from './camera-overview';
 import { buildingAccruedIncome, buildingSaleValue } from './building-disposal';
+import { activityDuration, applyTimingProfile, buildingIncomePeriod, incomeIntervalLabel, timingProfile } from './game-timing';
 
 export const SAVE_KEY = 'newgaza2d-save-v1';
 export const factoryRotationBlocked = (state: GameState, plotId: number) =>
@@ -14,7 +15,7 @@ export const factoryRotationBlocked = (state: GameState, plotId: number) =>
 export function newGame(now = Date.now()): GameState {
   const homes = BUILDINGS.filter(b => b.category === 'housing');
   return {
-    version: 1, coins: 1000000, inventory: { concrete: 0, iron: 0, wood: 0, other: 0, value: 0 },
+    version: 1, timerProfile: timingProfile(), coins: 1000000, inventory: { concrete: 0, iron: 0, wood: 0, other: 0, value: 0 },
     units: [], jobs: [], currentDistrict: null, lastSeen: now, sequence: 0,
     districts: DISTRICTS.map((d, index) => ({
       id: d.id, unlocked: index === 0, claimed: false, camera: null,
@@ -70,6 +71,7 @@ export class GameStore implements GameAPI {
     } else this.state = newGame(now);
     balanceFleetDepots(this.state);
     this.tick(now);
+    applyTimingProfile(this.state, this.state.lastSeen);
     this.persist();
   }
   subscribe(fn: () => void) { this.listeners.add(fn); return () => { this.listeners.delete(fn) } }
@@ -159,7 +161,7 @@ export class GameStore implements GameAPI {
           ensure(p.status === 'empty', 'البناء متاح على الأرض النظيفة فقط');
           ensure(isOrientation(action.orientation), 'اختر إحدى واجهات المبنى الأربع');
           this.pay(def.cost);
-          Object.assign(p, { status: 'building', buildingId: def.id, orientation: action.orientation, startedAt: now, endsAt: now + def.duration * 1000, incomeAt: 0, paidCost: def.cost });
+          Object.assign(p, { status: 'building', buildingId: def.id, orientation: action.orientation, startedAt: now, endsAt: now + activityDuration(def.duration * 1000), incomeAt: 0, paidCost: def.cost });
           break;
         }
         case 'sellBuilding':
@@ -206,9 +208,9 @@ export class GameStore implements GameAPI {
            const { team, depot: source } = assigned;
           const level = Math.min(...team.map(u => u.level));
            const distance = Math.abs(p.x - source.x) + Math.abs(p.y - source.y) + 2;
-          const travel = Math.ceil((8000 + distance * 850) / (1 + (level - 1) * .35));
+          const travel = activityDuration(Math.ceil((8000 + distance * 850) / (1 + (level - 1) * .35)));
           const arrival = now + travel, workEnd = arrival + 60000;
-          const returning = returnTravelDuration(source, p, travel);
+          const returning = activityDuration(returnTravelDuration(source, p, travel));
           const job: Job = { id: `job-${++this.state.sequence}`, districtId: d.id, plotId: p.id,
             unitIds: team.map(u => u.id), start: now, arrival, workEnd, returnEnd: workEnd + returning,
              cleared: false, value: building(p.buildingId).cost, originPlotId: source.id };
@@ -235,7 +237,7 @@ export class GameStore implements GameAPI {
           ensure(def, 'المشروع غير معروف'); const p = d.projects.find(p => p.id === def.id)!;
           ensure(p.status === 'idle' || (p.status === 'complete' && def.income > 0 && def.period === 0), 'المشروع بدأ بالفعل أو بانتظار التحصيل');
           ensure(!def.prerequisite || d.projects.some(p => p.id === def.prerequisite && p.status === 'complete'), 'أكمل المشروع المطلوب أولًا');
-          this.pay(def.cost); p.status = 'building'; p.startedAt = now; p.endsAt = now + def.duration * 1000; break;
+          this.pay(def.cost); p.status = 'building'; p.startedAt = now; p.endsAt = now + activityDuration(def.duration * 1000); break;
         }
         case 'collectProject': {
           const d = this.district(), def = projects(d.id === 'rashid').find(p => p.id === action.projectId);
@@ -243,9 +245,10 @@ export class GameStore implements GameAPI {
           const p = d.projects.find(p => p.id === def.id)!;
           if (def.period) {
             ensure(p.status === 'complete', 'لم يكتمل المشروع');
-            const periods = Math.floor((now - p.incomeAt) / (def.period * 1000));
-            ensure(periods > 0, 'يتراكم الدخل كل ساعة'); this.state.coins += periods * def.income;
-            p.incomeAt += periods * def.period * 1000;
+            const period = activityDuration(def.period * 1000);
+            const periods = Math.floor((now - p.incomeAt) / period);
+            ensure(periods > 0, `يتراكم الدخل كل ${incomeIntervalLabel()}`); this.state.coins += periods * def.income;
+            p.incomeAt += periods * period;
           } else {
             ensure(p.status === 'ready', 'الدخل غير جاهز للتحصيل');
             this.state.coins += def.income; p.status = 'complete';
@@ -255,9 +258,9 @@ export class GameStore implements GameAPI {
         case 'collectBuilding': {
           const p = this.plot(action.plotId), def = building(p.buildingId);
           ensure(p.status === 'built' && def.income > 0, 'المبنى لا ينتج دخلًا حاليًا');
-          const periods = Math.floor((now - p.incomeAt) / 3600000);
-          ensure(periods > 0, 'يتراكم الدخل كل ساعة');
-          this.state.coins += periods * def.income; p.incomeAt += periods * 3600000; break;
+          const periods = Math.floor((now - p.incomeAt) / buildingIncomePeriod());
+          ensure(periods > 0, `يتراكم الدخل كل ${incomeIntervalLabel()}`);
+          this.state.coins += periods * def.income; p.incomeAt += periods * buildingIncomePeriod(); break;
         }
         case 'claim': {
           const d = this.district(), index = this.state.districts.indexOf(d);

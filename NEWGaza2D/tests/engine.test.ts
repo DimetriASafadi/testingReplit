@@ -1,4 +1,6 @@
 import test from 'node:test';
+import { setMinuteTestTimers } from '../src/game-timing';
+setMinuteTestTimers(false);
 import assert from 'node:assert/strict';
 import { GameStore, newGame, rubbleYield, SAVE_KEY } from '../src/engine';
 import { BUILDINGS, DISTRICTS, projects } from '../src/catalog';

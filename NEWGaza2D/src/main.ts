@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import './style.css';
+import { activityDuration, buildingIncomePeriod, incomeIntervalLabel, MINUTE_TEST_TIMERS } from './game-timing';
 import { BUILDINGS, DISTRICTS, EQUIPMENT, building, projects } from './catalog';
 import { GameStore, SAVE_KEY, districtProgress, jobPhase, factoryRotationBlocked } from './engine';
 import type { Category, DistrictState, EquipmentKind, GameState, Plot, Orientation } from './model';
@@ -32,7 +33,7 @@ function showCityStatus(status: 'loading' | 'ready' | 'error', message = '') {
 const fmt = (n: number) => Math.floor(n).toLocaleString('ar-EG');
 const esc = (s: string) => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 function dur(ms: number) { const s = Math.max(0, Math.ceil(ms / 1000)); const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60; return h ? `${fmt(h)} س ${fmt(m)} د` : m ? `${fmt(m)} د ${fmt(x)} ث` : `${fmt(x)} ث`; }
-const secs = (s: number) => dur(s * 1000);
+const secs = (s: number) => dur(activityDuration(s * 1000));
 const resourceIcon = (name: 'iron' | 'concrete' | 'wood' | 'coins') =>
   `<img class="resource-icon resource-${name}" src="${import.meta.env.BASE_URL}art/ui-resources/${name}.webp" width="160" height="160" alt="" aria-hidden="true" draggable="false"/>`;
 const I = (d: string) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
@@ -143,7 +144,7 @@ function objective(st: GameState, d: DistrictState) {
 
 function renderCity() {
   const st = S(); const d = cur()!; const now = Date.now(); const def = DISTRICTS.find(x => x.id === d.id)!;
-  const inv = st.inventory; const readyProj = d.projects.filter(p => p.status === 'ready' || (p.status === 'complete' && p.id === 'commerce' && p.incomeAt && now >= p.incomeAt + 3600000)).length;
+  const inv = st.inventory; const readyProj = d.projects.filter(p => p.status === 'ready' || (p.status === 'complete' && p.id === 'commerce' && p.incomeAt && now >= p.incomeAt + buildingIncomePeriod())).length;
   region('hud', `<header class="hud-top">
     <button class="icon-btn" data-a="map" data-k="tomap" aria-label="العودة إلى خريطة غزة">${IC.map}</button>
     <div class="place"><h1>${esc(def.name)}</h1><small>تقدم الحي <span class="num">${fmt(districtProgress(d))}٪</span></small></div>
@@ -209,7 +210,7 @@ function plotSheet(st: GameState, d: DistrictState, now: number) {
     const pick = ui.pick ? building(ui.pick) : null;
     bodyCls = 'build' + (pick ? ' has-pick' : '');
     const detail = pick ? `<button class="btn ghost catalog-back" data-a="back-catalog" data-k="back-catalog">رجوع إلى المباني والتصنيفات</button><div class="bd-top" data-sk="detail-top"><div class="preview"><span class="ori">${ORIENTATION_LABELS[ui.orient]}</span><img src="${prev(pick.id, ui.orient)}" alt="معاينة ${esc(pick.name)}: ${ORIENTATION_LABELS[ui.orient]}"/></div>
-        <div class="bd-info"><h3>${esc(pick.name)}</h3><small>${CAT[pick.category]}</small><dl class="kv"><dt>التكلفة</dt><dd class="num">${fmt(pick.cost)}</dd><dt>المدة</dt><dd>${secs(pick.duration)}</dd><dt>الطوابق</dt><dd class="num">${fmt(pick.floors)}</dd><dt>الدخل</dt><dd>${pick.income ? `<span class="num">${fmt(pick.income)}</span>/س` : 'لا يوجد'}</dd></dl></div></div>
+        <div class="bd-info"><h3>${esc(pick.name)}</h3><small>${CAT[pick.category]}</small><dl class="kv"><dt>التكلفة</dt><dd class="num">${fmt(pick.cost)}</dd><dt>المدة</dt><dd>${secs(pick.duration)}</dd><dt>الطوابق</dt><dd class="num">${fmt(pick.floors)}</dd><dt>الدخل</dt><dd>${pick.income ? `<span class="num">${fmt(pick.income)}</span> كل ${incomeIntervalLabel()}` : 'لا يوجد'}</dd></dl></div></div>
         <div class="row bd-actions"><button class="btn ghost" data-a="rot" data-k="rot" aria-label="${rotateLabel(pick.id)}">${IC.rotate} ${rotateLabel(pick.id)}</button><button class="btn gold" data-a="place" data-k="place" ${st.coins >= pick.cost ? '' : 'disabled'}>${st.coins >= pick.cost ? 'بناء هنا' : 'الرصيد غير كافٍ'}</button></div>${pendingFaceNote(pick.id)}`
       : '<p class="note">اختر مبنى لمعاينة جهاته المتوفرة ثم ابنِه.</p>';
     body = `<div class="build-detail" data-sk="detail">${!recyclerStarted(st) ? '<p class="note">ابدأ بمصنع إعادة التدوير: هو نقطة انطلاق كل الآليات.</p>' : ''}${detail}</div>
@@ -221,9 +222,9 @@ function plotSheet(st: GameState, d: DistrictState, now: number) {
     body = `<div class="meter"><i style="transform:scaleX(${f})"></i></div><dl class="kv"><dt>المرحلة</dt><dd>${f < 0.3 ? 'الأساسات وحديد التسليح' : f < 0.68 ? 'الهيكل والسقالات' : 'الجدران والتشطيب'}</dd><dt>متبقٍ</dt><dd class="num">${dur(p.endsAt - now)}</dd><dt>المدة الكلية</dt><dd>${secs(b.duration)}</dd></dl><p class="note">البناء يستمر بالوقت الحقيقي حتى عند إغلاق اللعبة.</p>`;
   } else {
     title = b.name; sub = `${CAT[b.category]} · ${ORIENTATION_LABELS[p.orientation]}`;
-    const ready = b.income > 0 && now >= p.incomeAt + 3600000;
+    const ready = b.income > 0 && now >= p.incomeAt + buildingIncomePeriod();
     body = `<div class="preview"><img src="${prev(b.id, p.orientation)}" alt=""/></div>
-      ${b.income ? `<dl class="kv"><dt>الدخل</dt><dd><span class="num">${fmt(b.income)}</span> كل ساعة</dd><dt>الدفعة التالية</dt><dd>${ready ? 'جاهزة للجمع' : `بعد <span class="num">${dur(p.incomeAt + 3600000 - now)}</span>`}</dd></dl>
+      ${b.income ? `<dl class="kv"><dt>الدخل</dt><dd><span class="num">${fmt(b.income)}</span> كل ${incomeIntervalLabel()}</dd><dt>الدفعة التالية</dt><dd>${ready ? 'جاهزة للجمع' : `بعد <span class="num">${dur(p.incomeAt + buildingIncomePeriod() - now)}</span>`}</dd></dl>
        ` : `<p class="note">${b.id === 'recycling' ? `مقر الآليات: منه تنطلق وإليه تعود المواد. الآليات المخصصة لهذا المصنع: <b class="num">${fmt(st.units.filter(u => u.depotIds?.[d.id] === p.id).length)}</b>. تتوزع الفرق تلقائيًا عند اكتمال مصنع جديد.` : 'مبنى خدمي بلا دخل مباشر.'}</p>`}`;
     body += `<div class="row">${b.income ? `<button class="btn gold" data-a="collectB" data-k="collectB" ${ready ? '' : 'disabled'}>جمع الدخل</button>` : ''}<button class="btn ghost" data-a="rotate-building" data-k="rotate-building" ${factoryRotationBlocked(st, p.id) ? 'disabled' : ''}>${IC.rotate} ${rotateLabel(b.id)}</button></div>${pendingFaceNote(b.id)}`;
     if (factoryRotationBlocked(st, p.id)) body += '<p class="note">يمكن تدوير المصنع بعد عودة آلياته؛ يبقى مدخل الفريق ثابتًا أثناء المهمة.</p>';
@@ -288,12 +289,12 @@ function dialogHtml(st: GameState, now: number): [string, string] {
   }
   if (ui.dialog === 'projects' && d) {
     const defs = projects(d.id === 'rashid');
-    return ['مشاريع الحي', `<p class="note">تسعة مشاريع بالوقت الحقيقي. الزراعة والورشة تُكرَّر بعد الجمع، والسوق يدرّ دخلًا كل ساعة.</p><div class="list">${defs.map(def => { const ps = d.projects.find(x => x.id === def.id)!; const pre = def.prerequisite ? d.projects.find(x => x.id === def.prerequisite) : null; const locked = pre && pre.status !== 'complete';
+    return ['مشاريع الحي', `<p class="note">${MINUTE_TEST_TIMERS ? 'وضع الاختبار مؤقتًا: مدد الأنشطة دقيقة واحدة.' : 'تسعة مشاريع بالوقت الحقيقي.'} الزراعة والورشة تُكرَّر بعد الجمع، والسوق يدرّ دخلًا كل ${incomeIntervalLabel()}.</p><div class="list">${defs.map(def => { const ps = d.projects.find(x => x.id === def.id)!; const pre = def.prerequisite ? d.projects.find(x => x.id === def.prerequisite) : null; const locked = pre && pre.status !== 'complete';
       const repeat = def.id === 'farm' || def.id === 'industry'; let btn = '', info = '';
       if (ps.status === 'idle') { info = locked ? `يتطلب: ${esc(defs.find(x => x.id === def.prerequisite)!.name)}` : `<span class="num">${fmt(def.cost)}</span> · ${secs(def.duration)}${def.income ? ` · عائد <span class="num">${fmt(def.income)}</span>` : ''}`; btn = `<button class="btn sm" data-a="proj" data-id="${def.id}" data-k="p-${def.id}" ${locked || st.coins < def.cost ? 'disabled' : ''}>بدء</button>`; }
       else if (ps.status === 'building') { info = `قيد التنفيذ · متبقٍ <span class="num">${dur(ps.endsAt - now)}</span>`; }
       else if (ps.status === 'ready') { info = `جاهز · عائد <span class="num">${fmt(def.income)}</span>`; btn = `<button class="btn gold sm" data-a="cproj" data-id="${def.id}" data-k="c-${def.id}">جمع</button>`; }
-      else { if (def.period && ps.incomeAt) { const next = ps.incomeAt + def.period * 1000; const r = now >= next; info = r ? 'دخل الساعة جاهز' : `الدخل التالي بعد <span class="num">${dur(next - now)}</span>`; btn = `<button class="btn gold sm" data-a="cproj" data-id="${def.id}" data-k="c-${def.id}" ${r ? '' : 'disabled'}>جمع</button>`; } else if (repeat) { info = 'مكتمل · يمكن تكرار الدورة'; btn = `<button class="btn ghost sm" data-a="proj" data-id="${def.id}" data-k="p-${def.id}" ${st.coins < def.cost ? 'disabled' : ''}>دورة جديدة</button>`; } else info = 'مكتمل'; }
+      else { if (def.period && ps.incomeAt) { const next = ps.incomeAt + activityDuration(def.period * 1000); const r = now >= next; info = r ? 'الدخل جاهز للجمع' : `الدخل التالي بعد <span class="num">${dur(next - now)}</span>`; btn = `<button class="btn gold sm" data-a="cproj" data-id="${def.id}" data-k="c-${def.id}" ${r ? '' : 'disabled'}>جمع</button>`; } else if (repeat) { info = 'مكتمل · يمكن تكرار الدورة'; btn = `<button class="btn ghost sm" data-a="proj" data-id="${def.id}" data-k="p-${def.id}" ${st.coins < def.cost ? 'disabled' : ''}>دورة جديدة</button>`; } else info = 'مكتمل'; }
       return `<div class="item ${ps.status}"><span class="st"></span><div><h3>${esc(def.name)}</h3><p>${info}</p></div>${btn || '<span></span>'}</div>`; }).join('')}</div>`];
   }
   if (ui.dialog === 'progress' && d) {

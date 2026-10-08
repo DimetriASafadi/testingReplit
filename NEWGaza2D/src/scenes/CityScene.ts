@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { districtOverview, MAX_CITY_ZOOM } from '../camera-overview';
 import { building, projects } from '../catalog';
+import { buildingIncomePeriod } from '../game-timing';
 import type { GameState, Plot, Orientation } from '../model';
 import { TEX_H, TEX_W, U, makeCanvas } from '../art';
 import { GROUND_KEYS, SPR, SPRITE_KEYS, builtKey, constructKey, groundUrl, isFarm, ruinKey, siteKey, sprUrl } from '../realart';
@@ -436,7 +437,7 @@ export class CityScene extends Phaser.Scene {
       if (t === 'c') v.bar = this.add.graphics().setDepth(6e5);
     }
     // ready-to-collect badge
-    const ready = p.status === 'built' && building(p.buildingId).income > 0 && now >= p.incomeAt + 3600000;
+    const ready = p.status === 'built' && building(p.buildingId).income > 0 && now >= p.incomeAt + buildingIncomePeriod();
     if (ready && !v.coin) {
       const g = this.add.graphics(); g.fillStyle(0x2b2320, 0.25).fillEllipse(0, 22, 26, 8); g.fillStyle(0xc58a1c).fillCircle(0, 0, 13); g.fillStyle(0xf2d06b).fillCircle(0, -1, 10); g.lineStyle(2, 0xa06c10).strokeCircle(0, -1, 6);
       v.coin = this.add.container(c.x, c.y - 120, [g]).setDepth(6e5);

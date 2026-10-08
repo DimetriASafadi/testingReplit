@@ -8,3 +8,9 @@ Configure the Project Run-button workflow after registering validation commands.
 **Why:** Registering a TypeScript validation recreated Project with only the short-lived check, overriding the previously selected web launcher. A separately running artifact masked this until the Run-button configuration was inspected.
 
 **How to apply:** After validation registration, inspect Project's tasks and use validated platform configuration to point it at the existing managed web workflow. Restart Project itself to verify Run, not just the artifact independently.
+
+A failed managed startup can coexist with a working preview when a previous server process still owns the service port.
+
+**Why:** A managed restart reported a port conflict while an older Vite process continued serving the game; an HTTP success alone did not establish that the managed workflow had recovered.
+
+**How to apply:** Identify the actual listener and its command before restarting again. Stop only the confirmed stale process, then restart the existing registered service and check its managed state. Do not launch a replacement workflow or indiscriminately kill unrelated servers.

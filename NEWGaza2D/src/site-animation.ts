@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { building } from './catalog';
+import { buildingIncomePeriod } from './game-timing';
 import type { Plot, Orientation } from './model';
 import { rotateLotPoint } from './orientation';
 import { SPR, builtKey } from './realart';
@@ -262,8 +263,9 @@ export class SiteAnimation {
   private farm(p: Plot, v: PV, now: number) {
     const def = building(p.buildingId); const bld = p.status === 'building';
     const f = bld ? clamp01((now - p.startedAt) / Math.max(1, p.endsAt - p.startedAt)) : 1;
-    const ripe = bld ? 0 : clamp01(1 - (p.incomeAt + 3600000 - now) / 3600000);
-    const ready = !bld && now >= p.incomeAt + 3600000;
+    const period = buildingIncomePeriod();
+    const ripe = bld ? 0 : clamp01(1 - (p.incomeAt + period - now) / period);
+    const ready = !bld && now >= p.incomeAt + period;
     const lat = farmLattice(def.id); const spots = lat.spots; const K = this.artK(p);
     const ck = CROP_KIND[def.id]; const treeKind = TREE_KIND.includes(def.id) ? def.id : '';
     const lvl = bld ? 0 : ready || ripe > 0.8 ? 2 : ripe > 0.4 ? 1 : 0;
