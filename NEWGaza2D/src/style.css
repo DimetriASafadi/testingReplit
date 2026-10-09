@@ -121,10 +121,10 @@ h1,h2,h3{font-family:var(--display);margin:0;font-weight:700}
 .banner{position:fixed;top:calc(env(safe-area-inset-top) + 72px);left:12px;max-width:340px;background:var(--sumac);color:var(--stone);border-radius:var(--r);padding:10px 14px;box-shadow:var(--shadow);display:flex;gap:10px;align-items:center;font-size:.88rem}
 .zoom{position:fixed;left:12px;bottom:110px;display:flex;flex-direction:column;gap:8px}
 .dock{position:fixed;bottom:calc(env(safe-area-inset-bottom) + 12px);left:50%;transform:translateX(-50%);display:flex;gap:6px;background:rgba(43,35,32,.88);padding:8px;border-radius:20px;box-shadow:var(--shadow);max-width:calc(100vw - 16px);overflow-x:auto}
-.dock button{border:0;background:transparent;color:var(--stone);display:flex;flex-direction:column;align-items:center;gap:2px;min-width:66px;min-height:56px;padding:6px 8px;border-radius:14px;font-size:.78rem}
+.dock button{position:relative;border:0;background:transparent;color:var(--stone);display:flex;flex-direction:column;align-items:center;gap:2px;min-width:66px;min-height:56px;padding:6px 8px;border-radius:14px;font-size:.78rem}
 .dock button:hover,.dock button[aria-expanded=true]{background:rgba(241,230,208,.14)}
 .dock svg{width:24px;height:24px}
-.dock .badge{background:var(--gold);color:var(--ink);border-radius:8px;padding:0 5px;font-size:.7rem;margin-top:-2px}
+.dock .badge{position:absolute;top:1px;right:1px;background:var(--gold);color:var(--ink);border-radius:8px;padding:0 5px;font-size:.7rem;margin-top:0;pointer-events:none}
 .dock .collect-all:not(:disabled){background:rgba(218,174,72,.16)}
 .dock .collect-all .resource-icon{width:24px;height:24px}
 .dock .collect-all .badge{max-width:100%;font-size:.62rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

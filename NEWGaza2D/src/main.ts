@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import './style.css';
+import './navigation-icons.css';
 import { activityDuration, buildingIncomePeriod, incomeIntervalLabel, MINUTE_TEST_TIMERS } from './game-timing';
 import { BUILDINGS, DISTRICTS, EQUIPMENT, building, projects } from './catalog';
 import { GameStore, SAVE_KEY, districtProgress, jobPhase, factoryRotationBlocked } from './engine';
@@ -38,12 +39,11 @@ function dur(ms: number) { const s = Math.max(0, Math.ceil(ms / 1000)); const h 
 const secs = (s: number) => dur(activityDuration(s * 1000));
 const resourceIcon = (name: 'iron' | 'concrete' | 'wood' | 'coins') =>
   `<img class="resource-icon resource-${name}" src="${import.meta.env.BASE_URL}art/ui-resources/${name}.webp" width="160" height="160" alt="" aria-hidden="true" draggable="false"/>`;
+const navigationIcon = (name: 'fleet' | 'mats' | 'projects' | 'progress' | 'save') =>
+  `<img class="nav-art" src="${import.meta.env.BASE_URL}art/ui-navigation/${name}.webp" width="256" height="256" alt="" aria-hidden="true" draggable="false"/>`;
 const I = (d: string) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const IC = {
   close: I('<path d="M6 6l12 12M18 6L6 18"/>'), map: I('<path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/>'),
-  truck: I('<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/>'),
-  box: I('<path d="M3 8l9-5 9 5v8l-9 5-9-5zM3 8l9 5 9-5M12 13v8"/>'), plan: I('<path d="M4 4h16v16H4zM4 10h16M10 10v10"/>'),
-  flag: I('<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>'), save: I('<path d="M5 3h11l3 3v15H5zM8 3v6h8M8 21v-7h8v7"/>'),
   plus: I('<path d="M12 5v14M5 12h14"/>'), minus: I('<path d="M5 12h14"/>'), rotate: I('<path d="M4 12a8 8 0 0114-5l2 2M20 4v5h-5M20 12a8 8 0 01-14 5l-2-2M4 20v-5h5"/>'),
 };
 const CAT: Record<Category, string> = { equipment: 'معدات وورش', industry: 'مصانع', housing: 'سكن', farm: 'زراعة', commerce: 'تجارة', leisure: 'ترفيه ومطاعم' };
@@ -160,12 +160,12 @@ function renderCity() {
   ${store.storageError ? `<div class="banner" role="alert"><span>${esc(store.storageError)}</span><button class="btn gold sm" data-a="export" data-k="exp-b">تصدير</button></div>` : ''}
   <div class="zoom"><button class="icon-btn" data-a="zin" aria-label="تكبير">${IC.plus}</button><button class="icon-btn" data-a="zout" aria-label="تصغير">${IC.minus}</button></div>
   <nav class="dock" aria-label="أدوات الحي">
-    <button class="collect-all" data-a="collect-all" data-k="collect-all" aria-label="جمع كل الدخل الجاهز في الحي: ${fmt(income.total)} عملة من ${fmt(income.count)} مصادر" title="الدخل المتاح: ${fmt(income.total)} عملة" ${income.total > 0 ? '' : 'disabled'}>${resourceIcon('coins')}<span>جمع الكل</span>${income.total > 0 ? `<span class="badge num">${compactIncome}</span>` : ''}</button>
-    <button data-a="dlg" data-id="fleet" data-k="d-fleet" aria-expanded="${ui.dialog === 'fleet'}">${IC.truck}<span>الآليات</span>${st.jobs.length ? `<span class="badge num">${fmt(st.jobs.length)}</span>` : ''}</button>
-    <button data-a="dlg" data-id="mats" data-k="d-mats" aria-expanded="${ui.dialog === 'mats'}">${IC.box}<span>المواد</span></button>
-    <button data-a="dlg" data-id="projects" data-k="d-proj" aria-expanded="${ui.dialog === 'projects'}">${IC.plan}<span>المشاريع</span>${readyProj ? `<span class="badge num">${fmt(readyProj)}</span>` : ''}</button>
-    <button data-a="dlg" data-id="progress" data-k="d-prog" aria-expanded="${ui.dialog === 'progress'}">${IC.flag}<span>الاستلام</span></button>
-    <button data-a="dlg" data-id="save" data-k="d-save" aria-expanded="${ui.dialog === 'save'}">${IC.save}<span>الحفظ</span></button>
+    <button class="collect-all" data-a="collect-all" data-k="collect-all" aria-label="جمع الدخل المتاح في الحي: ${fmt(income.total)} عملة من ${fmt(income.count)} مصادر" title="الدخل المتاح: ${fmt(income.total)} عملة" ${income.total > 0 ? '' : 'disabled'}>${resourceIcon('coins')}<span>جمع الدخل</span>${income.total > 0 ? `<span class="badge num">${compactIncome}</span>` : ''}</button>
+    <button data-a="dlg" data-id="fleet" data-k="d-fleet" aria-expanded="${ui.dialog === 'fleet'}">${navigationIcon('fleet')}<span>الآليات</span>${st.jobs.length ? `<span class="badge num">${fmt(st.jobs.length)}</span>` : ''}</button>
+    <button data-a="dlg" data-id="mats" data-k="d-mats" aria-expanded="${ui.dialog === 'mats'}">${navigationIcon('mats')}<span>المواد</span></button>
+    <button data-a="dlg" data-id="projects" data-k="d-proj" aria-expanded="${ui.dialog === 'projects'}">${navigationIcon('projects')}<span>المشاريع</span>${readyProj ? `<span class="badge num">${fmt(readyProj)}</span>` : ''}</button>
+    <button data-a="dlg" data-id="progress" data-k="d-prog" aria-expanded="${ui.dialog === 'progress'}">${navigationIcon('progress')}<span>الاستلام</span></button>
+    <button data-a="dlg" data-id="save" data-k="d-save" aria-expanded="${ui.dialog === 'save'}">${navigationIcon('save')}<span>الحفظ</span></button>
   </nav>`);
   region('sheet', ui.plot != null ? plotSheet(st, d, now) : '', 'sheet-wrap');
 }
@@ -337,7 +337,7 @@ function render() {
   if(!st.currentDistrict)cityLoading=false;
   syncMusic();
   gameAudio.mode(st);
-  soundControl.style.bottom=st.currentDistrict?'112px':'18px';
+  soundControl.style.bottom=st.currentDistrict?'var(--sound-city-bottom,112px)':'18px';
   soundControl.hidden=ui.plot!==null||ui.dialog!==null;
   soundControl.dataset.muted=String(!gameAudio.prefs.enabled);
   soundControl.setAttribute('aria-expanded',String(ui.dialog==='audio'));

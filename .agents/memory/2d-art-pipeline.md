@@ -48,3 +48,15 @@ Use one texture-limit normalization and one world render scale for a building's 
 **Why:** Independent height caps can change the building's apparent footprint while rotating, even when source ground dimensions were equal.
 
 **How to apply:** Bound the largest member without stretching axes, retain equal ground metrics across the quartet, and verify physical size in the live city.
+
+For uploaded UI icon sheets, preserve the supplied illustration but keep small navigation captions as live Arabic text rather than shrinking the baked-in caption with the artwork.
+
+**Why:** Six toolbar actions share a narrow phone screen; raster captions shrink below readable size, while native captions retain the game's chosen font and accessible button names.
+
+**How to apply:** Extract transparent, consistently padded artwork; retain the existing action identifiers and captions. Verify portrait and short landscape layouts, including nearby floating controls, not just whether the images loaded.
+
+Match the visible size of toolbar illustrations, not just their CSS image dimensions, and keep disabled-action artwork recognizable.
+
+**Why:** The income collection icon looked larger than adjacent artwork despite equal image dimensions because its circular background filled its entire box. Fading the whole disabled button also made the illustration unclear.
+
+**How to apply:** Account for background and transparent padding when comparing icon families. Preserve actual disabled behavior, distinguish inactivity with the caption, and let long Arabic captions wrap on narrow phones rather than shrinking them below a readable size.

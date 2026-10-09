@@ -1,0 +1,22 @@
+/* Uploaded toolbar artwork. Captions stay live text, not tiny raster labels. */
+.dock{background:rgba(5,23,48,.93);border:1px solid rgba(109,175,231,.3)}
+.dock .nav-art,.dock .collect-all .resource-icon{
+  display:block;width:48px;height:48px;max-width:100%;object-fit:contain;
+  flex:none;pointer-events:none;user-select:none;
+}
+.dock button > span:not(.badge){white-space:nowrap;line-height:1.25}
+.dock .collect-all .resource-icon{padding:2px;background-clip:content-box;box-shadow:none}
+.dock .collect-all:disabled{opacity:1}
+.dock .collect-all:disabled > span:not(.badge){color:#b9c9dc}
+.dock button:hover,.dock button[aria-expanded=true]{background:rgba(91,165,225,.2)}
+.dock button:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+@media (max-width:360px){
+  .dock .nav-art,.dock .collect-all .resource-icon{width:40px;height:40px}
+  .dock .collect-all > span:not(.badge){max-width:100%;white-space:normal;text-align:center}
+}
+@media (orientation:landscape) and (max-height:600px){
+  .dock .nav-art,.dock .collect-all .resource-icon{width:30px;height:30px}
+}
+@media (orientation:landscape) and (max-height:520px){
+  .sound-toggle{--sound-city-bottom:calc(env(safe-area-inset-bottom) + 4px)}
+}
