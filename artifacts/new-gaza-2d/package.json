@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "cd ../../NEWGaza2D && exec node ./node_modules/vite/bin/vite.js --host 0.0.0.0",
+    "dev": "cd ../../NEWGaza2D && exec node ./scripts/dev-server.mjs",
     "build": "pnpm --dir ../../NEWGaza2D run build",
     "serve": "pnpm --dir ../../NEWGaza2D run serve"
   }

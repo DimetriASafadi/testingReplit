@@ -17,6 +17,12 @@ A failed managed startup can coexist with a working preview when a previous serv
 
 Prefer a direct, exec-based web-server launch over a wrapper that invokes another package-manager script solely to start the same service.
 
-**Why:** The port conflict recurred after workspace reactivation with an earlier nested package-manager/Vite chain still alive. Removing the unnecessary wrapper makes process ownership clearer; it does not guarantee that a development URL remains online during workspace inactivity.
+**Why:** The port conflict recurred after workspace reactivation even after removing the nested package-manager wrapper. A direct exec simplifies ownership but does not itself prevent an earlier instance from surviving a new managed start.
 
 **How to apply:** Preserve the service's injected environment and working directory, reduce unnecessary launch layers, and verify both the registered workflow's state and the external game page. Never describe restarting a development server as a permanent hosting solution.
+
+Development startup must safely supersede a verified previous instance rather than requiring manual port cleanup every session.
+
+**Why:** Repeated fresh managed starts encountered a still-running earlier instance of the exact same game. Restarting alone left the service marked failed even though that older process could answer HTTP.
+
+**How to apply:** Before taking over an occupied injected port, verify the listener's owning user, exact game working directory, and allowed server entrypoint. Reject unrelated or unverifiable listeners; terminate only verified predecessors gracefully and wait for port release. This handles duplicate startup, not workspace inactivity.

@@ -3,6 +3,7 @@ import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 const require = createRequire(import.meta.url);
 const directory = mkdtempSync(join(tmpdir(), 'newgaza-tests-'));
 try {
@@ -13,6 +14,7 @@ try {
   writeFileSync(join(directory, 'package.json'), '{"type":"commonjs"}');
   execFileSync(process.execPath, ['--test', join(directory, 'tests/engine.test.js'), join(directory, 'tests/minute-timers.test.js'), join(directory, 'tests/audio-mix.test.js'), join(directory, 'tests/canvas-contacts.test.js'), join(directory, 'tests/city-layout.test.js'),
     join(directory, 'tests/machinery-depth.test.js'),
+    fileURLToPath(new URL('./dev-server.test.mjs', import.meta.url)),
     join(directory, 'tests/district-environment.test.js'),
     join(directory, 'tests/building-footprint.test.js'),
     join(directory, 'tests/sprite-opacity.test.js'), join(directory, 'tests/construction-worker-motion.test.js'), join(directory, 'tests/depot-motion.test.js'), join(directory, 'tests/clearing-progress.test.js'), join(directory, 'tests/ground-tiles.test.js'), join(directory, 'tests/theme-music.test.js')], { stdio: 'inherit' });
