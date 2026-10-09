@@ -4,7 +4,7 @@ import { DISTRICTS } from '../src/catalog';
 import { districtEnvironment } from '../src/district-environment';
 
 test('every district has a distinct deterministic environment, with sea restricted to coastal identities', () => {
-  const coast = new Set(['rimal', 'sheikh-ijlin', 'rashid']);
+  const coast = new Set(['rimal', 'sheikh-ijlin', 'shati', 'rashid']);
   const seeds = new Set<number>();
   for (const d of DISTRICTS) {
     const env = districtEnvironment(d.id);

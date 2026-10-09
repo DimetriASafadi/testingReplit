@@ -13,7 +13,11 @@ export function validateSave(value: unknown): asserts value is GameState {
   require(s.version === 1 && integer(s.coins) && integer(s.lastSeen) && integer(s.sequence));
   require(s.inventory && ['concrete','iron','wood','other','value'].every(k => integer(s.inventory[k as keyof typeof s.inventory])));
   require(s.inventory.value === s.inventory.concrete * 20 + s.inventory.iron * 60 + s.inventory.wood * 35 + s.inventory.other * 10);
-  require(Array.isArray(s.districts) && s.districts.length === DISTRICTS.length);
+  require(Array.isArray(s.districts));
+  // Only the exact former roster is accepted, not arbitrary missing/unknown districts.
+  const roster = s.districts.length === DISTRICTS.length - 1 && !s.districts.some(d => d?.id === 'shati')
+    ? DISTRICTS.filter(d => d.id !== 'shati') : DISTRICTS;
+  require(s.districts.length === roster.length);
   require(Array.isArray(s.units) && Array.isArray(s.jobs));
   const unique = (ids: string[]) => ids.every(id => typeof id === 'string' && id.length > 0) && new Set(ids).size === ids.length;
   require(unique(s.units.map(u => u.id)) && unique(s.jobs.map(j => j.id)));
@@ -23,9 +27,12 @@ export function validateSave(value: unknown): asserts value is GameState {
   }
   for (const u of s.units) require(EQUIPMENT[u.kind] && u.purchasePrice === EQUIPMENT[u.kind].cost && integer(u.level) && u.level >= 1 && u.level <= 4);
   for (const [i,d] of s.districts.entries()) {
-    require(d && d.id === DISTRICTS[i].id && typeof d.unlocked === 'boolean' && typeof d.claimed === 'boolean');
+    require(d && d.id === roster[i].id && typeof d.unlocked === 'boolean' && typeof d.claimed === 'boolean');
     require(!d.claimed || d.unlocked);
-    require(d.unlocked === (i === 0 || s.districts[i - 1].claimed));
+    const predecessor = s.districts[i - 1];
+    // Grandfather access to Rashid earned before Shati was inserted.
+    require(d.unlocked === (i === 0 || predecessor.claimed) ||
+      (d.id === 'rashid' && d.unlocked && predecessor?.id === 'shati' && predecessor.unlocked));
     require(d.camera === null || (typeof d.camera === 'object' && Number.isFinite(d.camera.x) && Number.isFinite(d.camera.y) && d.camera.zoom >= MIN_CAMERA_ZOOM && d.camera.zoom <= 4));
     require(Array.isArray(d.plots) && [64, LOT_COUNT].includes(d.plots.length) && Array.isArray(d.projects) && d.projects.length === 9);
     const legacy = d.plots.length === 64;

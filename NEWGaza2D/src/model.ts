@@ -22,6 +22,7 @@ export type Action =
  | { type: 'project'; projectId: string }
  | { type: 'collectProject'; projectId: string }
  | { type: 'collectBuilding'; plotId: number }
+ | { type: 'collectAllIncome' }
  | { type: 'claim' }
  | { type: 'camera'; camera: { x: number; y: number; zoom: number } };
 export interface GameAPI { state: GameState; storageError: string | null; dispatch(action: Action): void; subscribe(fn: () => void): () => void; tick(now?: number): void; exportSave(): string }

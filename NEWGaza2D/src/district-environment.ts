@@ -19,6 +19,7 @@ const PROFILES: Record<string, DistrictEnvironment> = {
   rimal: { style: 'coastal', vegetation: 'palms', farmland: .1, historic: false, seed: 1009 },
   'tel-al-hawa': { style: 'urban', vegetation: 'mixed', farmland: .15, historic: false, seed: 1103 },
   'sheikh-ijlin': { style: 'coastal', vegetation: 'palms', farmland: .35, historic: false, seed: 1201 },
+  shati: { style: 'coastal', vegetation: 'palms', farmland: .05, historic: false, seed: 1409 },
   rashid: { style: 'coastal', vegetation: 'palms', farmland: .1, historic: false, seed: 1301 },
 };
 export function districtEnvironment(id: string): Readonly<DistrictEnvironment> {

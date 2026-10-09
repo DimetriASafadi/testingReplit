@@ -5,8 +5,8 @@ export const EQUIPMENT: Record<EquipmentKind, { name: string; cost: number }> = 
 export const DISTRICTS = [
   ['shujaiya','الشجاعية'],['tuffah','التفاح'],['sheikh-radwan','الشيخ رضوان'],['daraj','الدرج'],
   ['karama','الكرامة'],['old-city','البلدة القديمة'],['nasr','النصر'],['sabra','الصبرة'],
-  ['zeitoun','الزيتون'],['rimal','الرمال'],['tel-al-hawa','تل الهوا'],['sheikh-ijlin','الشيخ عجلين'],['rashid','شارع الرشيد'],
-].map(([id,name],i)=>({id,name,reward:i===12?1000000:100000+([0,1,2,3,3,4,5,5,6,7,8,9,10][i])*25000}));
+ ['zeitoun','الزيتون'],['rimal','الرمال'],['tel-al-hawa','تل الهوا'],['sheikh-ijlin','الشيخ عجلين'],['shati','حي الشاطئ'],['rashid','شارع الرشيد'],
+].map(([id,name],i)=>({id,name,reward:id==='rashid'?1000000:100000+([0,1,2,3,3,4,5,5,6,7,8,9,10][i])*25000}));
 const rows: Array<[BuildingDef['category'], string[], string[], number[], number[]]> = [
  ['equipment',['work','equipment_store','recycling'],['مبنى عمل','مخزن معدات','مصنع إعادة التدوير'],[2,1,2],[2000,4000,15000]],
  ['industry',['glass','cement','steel','asphalt','food_factory','water_treatment'],['مصنع زجاج','مصنع أسمنت','مصنع الحديد والصلب','مصنع أسفلت','مصنع الأغذية','محطة معالجة المياه'],[2,2,2,2,2,2],[9000,10000,11000,12000,13000,14000]],
@@ -15,8 +15,15 @@ const rows: Array<[BuildingDef['category'], string[], string[], number[], number
  ['commerce',['food_shop','clothes_shop','shoe_shop','traditional_mall','modern_mall','municipality'],['محل أغذية','محل ملابس','محل أحذية','مجمع تجاري تقليدي','مجمع تجاري حديث','بلدية المنطقة'],[1,1,1,3,3,3],[3000,6000,9000,12000,15000,18000]],
  ['leisure',['zoo','falafel','shawarma','western_food','luxury_restaurant','cafe','snack_kiosk'],['حديقة حيوان','مطعم فلافل','مطعم شاورما','مطعم وجبات غربية','مطعم فاخر','كافيه','كشك مسليات'],[1,1,1,1,1,1,1],[20000,2000,3000,4000,5000,6000,7000]],
 ];
+// Economic producers only; category membership alone can include public services or decoration.
+const incomeBuildings = new Set([
+ 'glass','cement','steel','asphalt','food_factory',
+ 'wheat','citrus','olive','vegetables','strawberry','cattle','palms','corn',
+ 'food_shop','clothes_shop','shoe_shop','traditional_mall','modern_mall',
+ 'falafel','shawarma','western_food','luxury_restaurant','cafe','snack_kiosk',
+]);
 export const BUILDINGS: BuildingDef[] = rows.flatMap(([category,ids,names,floors,costs]) => ids.map((id,i)=>({
- id,name:names[i],category,floors:floors[i],cost:costs[i],duration:60+floors[i]*30,income:category==='equipment'?0:Math.max(100,Math.floor(costs[i]/12)),
+ id,name:names[i],category,floors:floors[i],cost:costs[i],duration:60+floors[i]*30,income:incomeBuildings.has(id)?Math.max(100,Math.floor(costs[i]/12)):0,
 })));
 export function building(id:string): BuildingDef { const def=BUILDINGS.find(b=>b.id===id); if(!def)throw new Error('نوع المبنى غير معروف'); return def }
 export function projects(finale=false): ProjectDef[] {

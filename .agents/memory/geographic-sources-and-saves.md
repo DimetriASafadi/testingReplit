@@ -1,4 +1,5 @@
 ---
+ 
 name: Geographic sources and legacy saves
 description: Source ambiguity and why geographic reorder preserves milestone progress rather than neighborhood identity.
 ---
@@ -20,3 +21,9 @@ Neighborhood realism requires continuous city fabric at one geographic scale, no
 **Why:** The user rejected the miniature district presentation even after geographic centers were verified. Accurate points alone did not satisfy their request for extensive neighborhoods and streets connecting the city.
 
 **How to apply:** Preserve sourced city scale and neighborhood identity when expanding the world. Treat missing OSM heights as estimates, and never present fictional game damage or nearest-pin presentation cells as current damage surveys or official boundaries.
+
+المستخدم طلب «حي الشاطئ» وعرّف موقعه بأنه شمال غرب مدينة غزة.
+
+**Why:** هذا حي جديد مطلوب ضمن اللعبة نفسها، وليس اسمًا بديلًا لحي قائم.
+
+**How to apply:** حافظ على هويته الساحلية وموقعه شمال غرب الخريطة؛ دبوس الخريطة المرسومة تمثيلي وليس إحداثيات أو حدودًا رسمية. توسيع قائمة الأحياء لا يسحب حق الدخول إلى أحياء فتحها اللاعب سابقًا، ولا يصرف مكافأة حي مستلم مرة أخرى.

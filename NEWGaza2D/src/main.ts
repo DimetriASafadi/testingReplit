@@ -12,6 +12,8 @@ import { patchContent } from './dom-patch';
 import { dialogLayout, dialogPageSize, pageControls, pageSize, splitActions } from './ui-layout';
 import { gameAudio } from './game-audio';
 import { buildingAccruedIncome, buildingSaleValue } from './building-disposal';
+import { districtIncome } from './district-income';
+import { buildingIncomeDetails } from './building-income';
 
 const app = document.getElementById('app')!;
 const stage = document.getElementById('stage')!;
@@ -45,7 +47,7 @@ const IC = {
   plus: I('<path d="M12 5v14M5 12h14"/>'), minus: I('<path d="M5 12h14"/>'), rotate: I('<path d="M4 12a8 8 0 0114-5l2 2M20 4v5h-5M20 12a8 8 0 01-14 5l-2-2M4 20v-5h5"/>'),
 };
 const CAT: Record<Category, string> = { equipment: 'معدات وورش', industry: 'مصانع', housing: 'سكن', farm: 'زراعة', commerce: 'تجارة', leisure: 'ترفيه ومطاعم' };
-const PIN: Record<string, [number, number]> = { karama: [80, 12], 'sheikh-radwan': [70, 22], nasr: [60, 30], tuffah: [80, 34], shujaiya: [88, 48], daraj: [66, 44], 'old-city': [56, 54], rimal: [47, 40], sabra: [44, 62], zeitoun: [60, 72], 'tel-al-hawa': [34, 64], 'sheikh-ijlin': [24, 76], rashid: [12, 82] };
+const PIN: Record<string, [number, number]> = { karama: [80, 12], 'sheikh-radwan': [70, 22], shati: [64, 21], nasr: [60, 30], tuffah: [80, 34], shujaiya: [88, 48], daraj: [66, 44], 'old-city': [56, 54], rimal: [47, 40], sabra: [44, 62], zeitoun: [60, 72], 'tel-al-hawa': [34, 64], 'sheikh-ijlin': [24, 76], rashid: [12, 82] };
 const PHASE = { travel: 'في الطريق عبر الشوارع', work: 'تعمل في الموقع', return: 'عائدة إلى المصنع محمّلة' };
 
 // ---------- store (with explicit recovery) ----------
@@ -108,7 +110,7 @@ function renderWorld() {
   const pins = DISTRICTS.map((d, i) => { const ds = st.districts.find(x => x.id === d.id); const s = !ds ? 'locked' : ds.claimed ? 'claimed' : ds.unlocked ? 'open' : 'locked'; const [x, y] = PIN[d.id] ?? [50, 50];
     return `<button class="pin ${s} ${sel === d.id ? 'sel' : ''}" style="left:${x}%;top:${y}%;animation-delay:${i * 60}ms" data-a="pick-d" data-id="${d.id}" data-k="pin-${d.id}" aria-label="${esc(d.name)}، ${s === 'claimed' ? 'مكتمل' : s === 'open' ? 'متاح' : 'مقفل'}"><span class="flag"><span class="n">${fmt(i + 1)}</span>${esc(d.name)}</span><span class="stem"></span><span class="dot"></span></button>`; }).join('');
   const ds = st.districts.find(x => x.id === sel); const def = DISTRICTS.find(d => d.id === sel)!; const idx = DISTRICTS.indexOf(def);
-  const status = !ds?.unlocked ? `مقفل. يُفتح بعد استلام حي ${esc(DISTRICTS[idx - 1]?.name ?? '')}.` : ds.claimed ? 'تم استلامه. يمكنك العودة إليه وجمع الدخل.' : 'متاح للإعمار الآن.';
+  const status = (!ds?.unlocked ? `مقفل. يُفتح بعد استلام حي ${esc(DISTRICTS[idx - 1]?.name ?? '')}.` : ds.claimed ? 'تم استلامه. يمكنك العودة إليه وجمع الدخل.' : 'متاح للإعمار الآن.') + (def.id === 'shati' ? '<br>حي ساحلي شمال غرب مدينة غزة.' : '');
   region('world', `<section class="world" aria-label="خريطة غزة">
     <div class="world-map"><div class="map-frame">
       <img src="${base}art/world-map.jpg" alt="خريطة مرسومة لساحل غزة وأحيائها" onerror="this.style.background='#16747a'" />
@@ -145,6 +147,8 @@ function objective(st: GameState, d: DistrictState) {
 function renderCity() {
   const st = S(); const d = cur()!; const now = Date.now(); const def = DISTRICTS.find(x => x.id === d.id)!;
   const inv = st.inventory; const readyProj = d.projects.filter(p => p.status === 'ready' || (p.status === 'complete' && p.id === 'commerce' && p.incomeAt && now >= p.incomeAt + buildingIncomePeriod())).length;
+  const income = districtIncome(d, Math.max(now, st.lastSeen));
+  const compactIncome = new Intl.NumberFormat('ar-EG', { notation: 'compact', maximumFractionDigits: 1 }).format(income.total);
   region('hud', `<header class="hud-top">
     <button class="icon-btn" data-a="map" data-k="tomap" aria-label="العودة إلى خريطة غزة">${IC.map}</button>
     <div class="place"><h1>${esc(def.name)}</h1><small>تقدم الحي <span class="num">${fmt(districtProgress(d))}٪</span></small></div>
@@ -156,6 +160,7 @@ function renderCity() {
   ${store.storageError ? `<div class="banner" role="alert"><span>${esc(store.storageError)}</span><button class="btn gold sm" data-a="export" data-k="exp-b">تصدير</button></div>` : ''}
   <div class="zoom"><button class="icon-btn" data-a="zin" aria-label="تكبير">${IC.plus}</button><button class="icon-btn" data-a="zout" aria-label="تصغير">${IC.minus}</button></div>
   <nav class="dock" aria-label="أدوات الحي">
+    <button class="collect-all" data-a="collect-all" data-k="collect-all" aria-label="جمع كل الدخل الجاهز في الحي: ${fmt(income.total)} عملة من ${fmt(income.count)} مصادر" title="الدخل المتاح: ${fmt(income.total)} عملة" ${income.total > 0 ? '' : 'disabled'}>${resourceIcon('coins')}<span>جمع الكل</span>${income.total > 0 ? `<span class="badge num">${compactIncome}</span>` : ''}</button>
     <button data-a="dlg" data-id="fleet" data-k="d-fleet" aria-expanded="${ui.dialog === 'fleet'}">${IC.truck}<span>الآليات</span>${st.jobs.length ? `<span class="badge num">${fmt(st.jobs.length)}</span>` : ''}</button>
     <button data-a="dlg" data-id="mats" data-k="d-mats" aria-expanded="${ui.dialog === 'mats'}">${IC.box}<span>المواد</span></button>
     <button data-a="dlg" data-id="projects" data-k="d-proj" aria-expanded="${ui.dialog === 'projects'}">${IC.plan}<span>المشاريع</span>${readyProj ? `<span class="badge num">${fmt(readyProj)}</span>` : ''}</button>
@@ -222,11 +227,13 @@ function plotSheet(st: GameState, d: DistrictState, now: number) {
     body = `<div class="meter"><i style="transform:scaleX(${f})"></i></div><dl class="kv"><dt>المرحلة</dt><dd>${f < 0.3 ? 'الأساسات وحديد التسليح' : f < 0.68 ? 'الهيكل والسقالات' : 'الجدران والتشطيب'}</dd><dt>متبقٍ</dt><dd class="num">${dur(p.endsAt - now)}</dd><dt>المدة الكلية</dt><dd>${secs(b.duration)}</dd></dl><p class="note">البناء يستمر بالوقت الحقيقي حتى عند إغلاق اللعبة.</p>`;
   } else {
     title = b.name; sub = `${CAT[b.category]} · ${ORIENTATION_LABELS[p.orientation]}`;
-    const ready = b.income > 0 && now >= p.incomeAt + buildingIncomePeriod();
+    const incomeNow = Math.max(now, st.lastSeen);
+    const income = buildingIncomeDetails(p, incomeNow);
+    const ready = income.amount > 0;
     body = `<div class="preview"><img src="${prev(b.id, p.orientation)}" alt=""/></div>
-      ${b.income ? `<dl class="kv"><dt>الدخل</dt><dd><span class="num">${fmt(b.income)}</span> كل ${incomeIntervalLabel()}</dd><dt>الدفعة التالية</dt><dd>${ready ? 'جاهزة للجمع' : `بعد <span class="num">${dur(p.incomeAt + buildingIncomePeriod() - now)}</span>`}</dd></dl>
-       ` : `<p class="note">${b.id === 'recycling' ? `مقر الآليات: منه تنطلق وإليه تعود المواد. الآليات المخصصة لهذا المصنع: <b class="num">${fmt(st.units.filter(u => u.depotIds?.[d.id] === p.id).length)}</b>. تتوزع الفرق تلقائيًا عند اكتمال مصنع جديد.` : 'مبنى خدمي بلا دخل مباشر.'}</p>`}`;
-    body += `<div class="row">${b.income ? `<button class="btn gold" data-a="collectB" data-k="collectB" ${ready ? '' : 'disabled'}>جمع الدخل</button>` : ''}<button class="btn ghost" data-a="rotate-building" data-k="rotate-building" ${factoryRotationBlocked(st, p.id) ? 'disabled' : ''}>${IC.rotate} ${rotateLabel(b.id)}</button></div>${pendingFaceNote(b.id)}`;
+      ${b.income ? `<dl class="kv" data-sk="income-summary"><dt>دخل الدفعة</dt><dd><span class="num">${fmt(income.perPeriod)}</span> كل ${incomeIntervalLabel()}</dd><dt>الدفعات المتراكمة</dt><dd class="num">${fmt(income.periods)}</dd><dt>المتاح للجمع</dt><dd data-income-total="${income.amount}"><span class="num">${fmt(income.amount)}</span> عملة</dd><dt>الدفعة التالية</dt><dd>بعد <span class="num">${dur(income.nextAt - incomeNow)}</span></dd></dl>
+        ` : `<p class="note">${b.id === 'recycling' ? `مقر الآليات: منه تنطلق وإليه تعود المواد. الآليات المخصصة لهذا المصنع: <b class="num">${fmt(st.units.filter(u => u.depotIds?.[d.id] === p.id).length)}</b>. تتوزع الفرق تلقائيًا عند اكتمال مصنع جديد.` : b.category === 'housing' ? 'مبنى سكني؛ لا ينتج دخلًا.' : 'هذا المبنى لا ينتج دخلًا.'}</p>`}`;
+    body += `<div class="row">${b.income ? `<button class="btn gold" data-a="collectB" data-k="collectB" data-income-amount="${income.amount}" ${ready ? '' : 'disabled'}>جمع الدخل · <span class="num">${fmt(income.amount)}</span></button>` : ''}<button class="btn ghost" data-a="rotate-building" data-k="rotate-building" ${factoryRotationBlocked(st, p.id) ? 'disabled' : ''}>${IC.rotate} ${rotateLabel(b.id)}</button></div>${pendingFaceNote(b.id)}`;
     if (factoryRotationBlocked(st, p.id)) body += '<p class="note">يمكن تدوير المصنع بعد عودة آلياته؛ يبقى مدخل الفريق ثابتًا أثناء المهمة.</p>';
   }
   if (p.status === 'building') body += `<button class="btn ghost" data-a="rotate-building" data-k="rotate-building">${IC.rotate} ${rotateLabel(b.id)}</button>${pendingFaceNote(b.id)}`;
@@ -343,7 +350,7 @@ function render() {
 // ---------- events ----------
 document.addEventListener('click', e => {
   const t = (e.target as HTMLElement).closest<HTMLElement>('[data-a]'); if (!t || (t as HTMLButtonElement).disabled) return;
-  if(!['enter','map','place','clear','buy','upg','sell','proj','cproj','collectB','claim'].includes(t.dataset.a??''))gameAudio.click();
+  if(!['enter','map','place','clear','buy','upg','sell','proj','cproj','collectB','collect-all','claim'].includes(t.dataset.a??''))gameAudio.click();
   const id = t.dataset.id ?? ''; const st = S();
   switch (t.dataset.a) {
     case 'audio-toggle': gameAudio.setPreference('enabled',!gameAudio.prefs.enabled); break;
@@ -384,7 +391,18 @@ document.addEventListener('click', e => {
     }
     case 'place': if (ui.plot != null && ui.pick && act({ type: 'place', plotId: ui.plot, buildingId: ui.pick, orientation: ui.orient }, `بدأ إنشاء ${building(ui.pick).name}`)) ui.pick = null; break;
     case 'clear': if (ui.plot != null) act({ type: 'clear', plotId: ui.plot }, 'انطلقت الآليات من المصنع'); break;
-    case 'collectB': if (ui.plot != null) act({ type: 'collectBuilding', plotId: ui.plot }, 'تم جمع الدخل'); break;
+    case 'collectB': {
+      if (ui.plot != null) {
+        const previousCoins = S().coins;
+        if (act({ type: 'collectBuilding', plotId: ui.plot })) toast(`تم جمع ${fmt(S().coins - previousCoins)} عملة من دخل المبنى`);
+      }
+      break;
+    }
+    case 'collect-all': {
+      const previousCoins = S().coins;
+      if (act({ type: 'collectAllIncome' })) toast(`تم جمع ${fmt(S().coins - previousCoins)} عملة من دخل الحي`);
+      break;
+    }
     case 'buy': act({ type: 'buy', kind: id as EquipmentKind }, `تم شراء ${EQUIPMENT[id as EquipmentKind].name}`); break;
     case 'upg': act({ type: 'upgrade', unitId: id }, 'تمت الترقية'); break;
     case 'sell': { const v = st.inventory.value; act({ type: 'sell' }, `تم البيع مقابل ${fmt(v)}`); break; }

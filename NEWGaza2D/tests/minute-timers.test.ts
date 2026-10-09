@@ -76,11 +76,11 @@ test('convoy travel, clearing and return each take a minute, with offline settle
 test('existing long counters shorten once without losing progress, earned income or resetting on reload', () => {
   setMinuteTestTimers(false);
   const { store, storage } = setup(), d = store.state.districts[0];
-  store.dispatch({ type: 'place', plotId: 0, buildingId: 'small_house', orientation: 0 });
+  store.dispatch({ type: 'place', plotId: 0, buildingId: 'food_shop', orientation: 0 });
   store.tick(d.plots[0].endsAt);
   store.dispatch({ type: 'project', projectId: 'water' });
   const now = store.state.lastSeen + 7200000 + 30000;
-  // Keep a long in-progress coastal-road fixture and two accrued housing periods.
+  // Keep a long in-progress utility fixture and two accrued commercial periods.
   const ps = d.projects.find(p => p.id === 'water')!;
   ps.startedAt = now - 30000; ps.endsAt = now + 3570000;
   store.state.lastSeen = now;
@@ -93,7 +93,7 @@ test('existing long counters shorten once without losing progress, earned income
   assert.equal(mp.endsAt - now, 59500);
   const coins = migrated.state.coins;
   migrated.dispatch({ type: 'collectBuilding', plotId: 0 });
-  assert.equal(migrated.state.coins - coins, 2 * building('small_house').income);
+  assert.equal(migrated.state.coins - coins, 2 * building('food_shop').income);
   const reloaded = new GameStore(storage, now + 1000);
   assert.equal(reloaded.state.districts[0].projects.find(p => p.id === 'water')!.endsAt, mp.endsAt);
   validateSave(reloaded.state);

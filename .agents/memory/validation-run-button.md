@@ -26,3 +26,9 @@ Development startup must safely supersede a verified previous instance rather th
 **Why:** Repeated fresh managed starts encountered a still-running earlier instance of the exact same game. Restarting alone left the service marked failed even though that older process could answer HTTP.
 
 **How to apply:** Before taking over an occupied injected port, verify the listener's owning user, exact game working directory, and allowed server entrypoint. Reject unrelated or unverifiable listeners; terminate only verified predecessors gracefully and wait for port release. This handles duplicate startup, not workspace inactivity.
+
+A port-ownership preflight is not an atomic startup lock.
+
+**Why:** A subsequent managed start still reported a bind conflict despite the ownership guard, while another instance was serving. Checking a free port before asynchronous server initialization leaves a window in which another start can bind it.
+
+**How to apply:** Treat serialization through successful binding as a separate requirement when addressing simultaneous starts. Keep ownership verification even with serialization, and do not claim the preflight alone eliminates every startup conflict.

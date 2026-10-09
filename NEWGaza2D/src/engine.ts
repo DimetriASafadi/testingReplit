@@ -8,6 +8,8 @@ import { isOrientation, nextOrientation } from './orientation';
 import { MIN_CAMERA_ZOOM } from './camera-overview';
 import { buildingAccruedIncome, buildingSaleValue } from './building-disposal';
 import { activityDuration, applyTimingProfile, buildingIncomePeriod, incomeIntervalLabel, timingProfile } from './game-timing';
+import { districtIncome } from './district-income';
+import { buildingIncomeDetails } from './building-income';
 
 export const SAVE_KEY = 'newgaza2d-save-v1';
 export const factoryRotationBlocked = (state: GameState, plotId: number) =>
@@ -19,7 +21,7 @@ export function newGame(now = Date.now()): GameState {
     units: [], jobs: [], currentDistrict: null, lastSeen: now, sequence: 0,
     districts: DISTRICTS.map((d, index) => ({
       id: d.id, unlocked: index === 0, claimed: false, camera: null,
-      projects: projects(index === 12).map(p => ({ id: p.id, status: 'idle', startedAt: 0, endsAt: 0, incomeAt: 0 })),
+      projects: projects(d.id === 'rashid').map(p => ({ id: p.id, status: 'idle', startedAt: 0, endsAt: 0, incomeAt: 0 })),
       plots: cityLayout(d.id).cells.map(({ id: i, x, y }) => ({
         id: i, x, y, layoutId: d.id,
         status: INITIAL_EMPTY.includes(i) ? 'empty' : 'rubble',
@@ -28,6 +30,13 @@ export function newGame(now = Date.now()): GameState {
       })),
     })),
   };
+}
+/** Add the new chapter without replacing any existing district, depot or job. */
+export function expandDistrictSave(state: GameState): void {
+  if (state.districts.some(d => d.id === 'shati')) return;
+  const added = newGame(state.lastSeen).districts.find(d => d.id === 'shati')!;
+  added.unlocked = state.districts.find(d => d.id === 'sheikh-ijlin')!.claimed;
+  state.districts.splice(DISTRICTS.findIndex(d => d.id === 'shati'), 0, added);
 }
 function ensure(condition: unknown, message: string): asserts condition { if (!condition) throw new Error(message) }
 export function jobPhase(job: Job, now = Date.now()): 'travel' | 'work' | 'return' {
@@ -66,7 +75,7 @@ export class GameStore implements GameAPI {
     let raw: string | null;
     try { raw = storage.getItem(SAVE_KEY) } catch { throw new Error('تعذر قراءة الحفظ المحلي. اسمح بتخزين بيانات الموقع ثم أعد المحاولة.') }
     if (raw !== null) {
-      try { const parsed: unknown = JSON.parse(raw); validateSave(parsed); expandCitySave(parsed); validateSave(parsed); this.state = parsed }
+      try { const parsed: unknown = JSON.parse(raw); validateSave(parsed); expandDistrictSave(parsed); expandCitySave(parsed); validateSave(parsed); this.state = parsed }
       catch { throw new Error('تعذر التحقق من ملف الحفظ. لم نحذفه أو نستبدله؛ نزّل نسخة منه قبل اختيار بداية جديدة.') }
     } else this.state = newGame(now);
     balanceFleetDepots(this.state);
@@ -258,9 +267,20 @@ export class GameStore implements GameAPI {
         case 'collectBuilding': {
           const p = this.plot(action.plotId), def = building(p.buildingId);
           ensure(p.status === 'built' && def.income > 0, 'المبنى لا ينتج دخلًا حاليًا');
-          const periods = Math.floor((now - p.incomeAt) / buildingIncomePeriod());
-          ensure(periods > 0, `يتراكم الدخل كل ${incomeIntervalLabel()}`);
-          this.state.coins += periods * def.income; p.incomeAt += periods * buildingIncomePeriod(); break;
+          const income = buildingIncomeDetails(p, now);
+          ensure(income.periods > 0, `يتراكم الدخل كل ${incomeIntervalLabel()}`);
+          this.state.coins += income.amount; p.incomeAt += income.periods * income.period; break;
+        }
+        case 'collectAllIncome': {
+          const income = districtIncome(this.district(), now);
+          ensure(income.total > 0, 'لا يوجد دخل جاهز للجمع في هذا الحي');
+          this.state.coins += income.total;
+          for (const entry of income.plots) entry.plot.incomeAt += entry.periods * buildingIncomePeriod();
+          for (const entry of income.investments) {
+            if (entry.period) entry.project.incomeAt += entry.periods * entry.period;
+            else entry.project.status = 'complete';
+          }
+          break;
         }
         case 'claim': {
           const d = this.district(), index = this.state.districts.indexOf(d);

@@ -394,7 +394,7 @@ test('fresh campaign: million once, thirteen districts, dense ruins, no placed r
   const state = newGame();
   validateSave(state);
   assert.equal(state.coins,1000000);
-  assert.equal(state.districts.length,13);
+  assert.equal(state.districts.length,14);
   assert.equal(state.districts.filter(d=>d.unlocked).length,1);
   assert.equal(state.districts[0].plots.length,144);
   assert.equal(state.districts[0].plots.filter(p=>p.status==='rubble').length,133);
@@ -533,7 +533,42 @@ test('storage errors are surfaced without claiming saved success', () => {
   assert.match(store.storageError!,/لم يُحفظ/);
   assert.equal(JSON.parse(store.exportSave()).coins,1000000);
 });
-test('complete thirteen-district campaign via real actions and timers, hourly trade and final reward', () => {
+test('former district saves expand once without losing earned final-chapter access', () => {
+  for (const finalClaimed of [false, true]) {
+    const storage = new MemoryStorage(), now = Date.now() + 600000;
+    const old = newGame(now);
+    old.districts = old.districts.filter(d => d.id !== 'shati');
+    for (const [i,d] of old.districts.entries()) {
+      d.unlocked = true; d.claimed = i < 12 || finalClaimed;
+    }
+    old.currentDistrict = 'rashid';
+    old.coins = 1234567;
+    old.districts[12].camera = { x: 50, y: 60, zoom: .8 };
+    validateSave(old);
+    const prior = structuredClone(old.districts);
+    storage.setItem(SAVE_KEY, JSON.stringify(old));
+    const migrated = new GameStore(storage, now);
+    assert.equal(migrated.state.districts.length, 14);
+    assert.equal(migrated.state.coins, old.coins);
+    assert.equal(migrated.state.currentDistrict, 'rashid');
+    assert.deepEqual(migrated.state.districts.filter(d => d.id !== 'shati'), prior);
+    assert.equal(migrated.state.districts.find(d => d.id === 'shati')!.unlocked, true);
+    assert.equal(migrated.state.districts.find(d => d.id === 'shati')!.claimed, false);
+    assert.equal(migrated.state.districts.at(-1)!.id, 'rashid');
+    validateSave(migrated.state);
+    assert.deepEqual(new GameStore(storage, now).state, migrated.state);
+  }
+  const storage = new MemoryStorage(), old = newGame();
+  old.districts = old.districts.filter(d => d.id !== 'shati');
+  storage.setItem(SAVE_KEY, JSON.stringify(old));
+  const restored = new GameStore(storage, old.lastSeen);
+  assert.equal(restored.state.districts.find(d => d.id === 'shati')!.unlocked, false);
+  const damaged = structuredClone(old);
+  damaged.districts[12].id = 'unknown';
+  assert.throws(() => validateSave(damaged));
+});
+
+test('complete fourteen-district campaign via real actions and timers, hourly trade and final reward', () => {
   const {store}=ready();
   for (const [i,district] of DISTRICTS.entries()) {
     store.dispatch({type:'enter',districtId:district.id});
@@ -546,7 +581,7 @@ test('complete thirteen-district campaign via real actions and timers, hourly tr
       store.tick(store.state.jobs[0].returnEnd);
     }
     store.dispatch({type:'sell'});
-    for(const def of projects(i===12)) {
+    for(const def of projects(district.id==='rashid')) {
       store.dispatch({type:'project',projectId:def.id});
       const p=store.state.districts[i].projects.find(p=>p.id===def.id)!;
       store.tick(p.endsAt);

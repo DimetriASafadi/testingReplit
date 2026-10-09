@@ -70,6 +70,8 @@ h1,h2,h3{font-family:var(--display);margin:0;font-weight:700}
 .pin .flag{background:var(--stone);color:var(--ink);font-family:var(--display);font-size:.85rem;padding:4px 10px;border-radius:10px;white-space:nowrap;box-shadow:var(--shadow);display:flex;gap:6px;align-items:center}
 .pin .flag .n{background:var(--ink);color:var(--stone);border-radius:6px;padding:0 6px;font-size:.75rem}
 .pin .stem{width:2px;height:16px;background:var(--ink)}
+.pin[data-id="shati"] .flag{transform:translateX(-48px)}
+.pin[data-id="shati"] .stem{transform:skewX(50deg);transform-origin:bottom center}
 .pin .dot{width:14px;height:8px;border-radius:50%;background:rgba(43,35,32,.5)}
 .pin.open .flag{background:var(--gold)}
 .pin.open .dot{animation:pulse 1.6s infinite}
@@ -123,6 +125,10 @@ h1,h2,h3{font-family:var(--display);margin:0;font-weight:700}
 .dock button:hover,.dock button[aria-expanded=true]{background:rgba(241,230,208,.14)}
 .dock svg{width:24px;height:24px}
 .dock .badge{background:var(--gold);color:var(--ink);border-radius:8px;padding:0 5px;font-size:.7rem;margin-top:-2px}
+.dock .collect-all:not(:disabled){background:rgba(218,174,72,.16)}
+.dock .collect-all .resource-icon{width:24px;height:24px}
+.dock .collect-all .badge{max-width:100%;font-size:.62rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dock .collect-all:disabled{opacity:.5;cursor:not-allowed}
 
 /* sheet */
 .sheet{position:fixed;top:calc(env(safe-area-inset-top) + 72px);left:12px;bottom:96px;width:min(400px,calc(100vw - 24px));background:var(--stone);border-radius:18px;box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden;animation:sheetIn .35s cubic-bezier(.2,.8,.2,1)}
