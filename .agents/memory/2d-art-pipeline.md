@@ -59,4 +59,4 @@ Match the visible size of toolbar illustrations, not just their CSS image dimens
 
 **Why:** The income collection icon looked larger than adjacent artwork despite equal image dimensions because its circular background filled its entire box. Fading the whole disabled button also made the illustration unclear.
 
-**How to apply:** Account for background and transparent padding when comparing icon families. Preserve actual disabled behavior, distinguish inactivity with the caption, and let long Arabic captions wrap on narrow phones rather than shrinking them below a readable size.
+**How to apply:** Account for background and transparent padding when comparing icon families. The user repeated that the income icon must match the fleet icon: use the fleet artwork's visible height as the reference, not the image box. Preserve actual disabled behavior, distinguish inactivity with the caption, and let long Arabic captions wrap on narrow phones rather than shrinking them below a readable size.

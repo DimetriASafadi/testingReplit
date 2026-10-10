@@ -32,3 +32,9 @@ Check Pillow's `raqm` capability before composing Arabic proof sheets.
 **Why:** The managed Pillow installation in this workspace lacked RAQM. Drawing Arabic directly produced disconnected, left-to-right labels despite using the game's Arabic font.
 
 **How to apply:** Where RAQM is absent, reshape Arabic and apply bidirectional layout before drawing. Inspect the finished exported sheet, including mixed Arabic/Latin footnotes.
+
+The 2D game's displayed numbers must use Western digits (0–9), while labels remain Arabic.
+
+**Why:** The user explicitly requested replacing Arabic-Indic digits throughout the game, not translating the interface.
+
+**How to apply:** Force the Latin numbering system regardless of browser locale. Include balances, timers, percentages, compact income badges, page counters and digits inside building names or help text. Keep the chosen Arabic font and check its Western digit glyphs; this is presentation only, not a change to saved amounts or gameplay.

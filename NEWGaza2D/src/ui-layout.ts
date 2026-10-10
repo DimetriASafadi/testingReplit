@@ -1,9 +1,9 @@
+import { formatNumber as n } from './number-format';
 /** Keep navigation and primary actions outside the scrolling content area. */
 export const pageSize = () => window.innerHeight < 520 ? (window.innerWidth > window.innerHeight ? 2 : 1) : window.innerHeight < 740 ? 2 : 4;
 export const dialogPageSize = () => window.innerHeight < 520 ? 1 : pageSize();
 export function pageControls(page: number, pages: number, action: string, count: number) {
   if (pages < 2) return '';
-  const n = (v: number) => v.toLocaleString('ar-EG');
   return `<nav class="page-controls" aria-label="صفحات الخيارات">
     <button class="btn ghost sm" data-a="${action}" data-id="${page - 1}" data-k="${action}-prev" ${page === 0 ? 'disabled' : ''}>السابق</button>
     <span><b class="num">${n(page + 1)} / ${n(pages)}</b><small>${n(count)} خيارًا</small></span>
