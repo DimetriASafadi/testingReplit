@@ -1,4 +1,23 @@
 /* Actual Cairo Black (900), not a synthesized bold version of the old font. */
+/* Match the original digit size even inside mixed Arabic/numeric labels.
+   A separate Unicode face avoids rebuilding live counters or scaling controls. */
+@font-face{
+  font-family:'Cairo Black Numbers';
+  src:url('/fonts/cairo-black.ttf') format('truetype');
+  font-style:normal;
+  font-weight:900;
+  font-display:swap;
+  unicode-range:U+0025,U+002C,U+002E,U+0030-0039,U+066A;
+  size-adjust:106.666667%;
+}
+:root{
+  --display:'Cairo Black Numbers','Cairo Black',system-ui,sans-serif;
+  --body:'Cairo Black Numbers','Cairo Black',system-ui,sans-serif;
+}
+/* Reduce text, not digits, icons or touch targets. */
+html{font-size:93.75%}
+.audio-row>span{font-size:13.125px}
+@media(max-height:740px){.audio-music{font-size:10.3125px!important}}
 body,button,input,select,textarea,h1,h2,h3,.btn,.kv dd,
 .audio-row>span,.ladder li.open button{font-weight:900;font-synthesis:none}
 body{

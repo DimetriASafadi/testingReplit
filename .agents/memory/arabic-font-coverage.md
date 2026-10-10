@@ -7,9 +7,9 @@ Distinguish native browser shaping from the legacy Unity text pipeline when appl
 
 The standalone 2D game should use Cairo Black with a white outline, a light black shadow and a raised text effect.
 
-**Why:** The user explicitly replaced the previously supplied Elgharib font with Cairo Black and requested this treatment; “Black” refers to the actual heavy face, not black-colored text.
+**Why:** The user explicitly replaced the previously supplied Elgharib font with Cairo Black and requested this treatment; “Black” refers to the actual heavy face, not black-colored text. After seeing the initial styling, the user requested slightly smaller text for visual comfort, then clarified that numbers must retain their earlier size.
 
-**How to apply:** Use a genuine 900-weight face for both browser UI and canvas labels. Keep the navy/white palette and Western digits. Scale outline and shadow strength down for small counters so the effect does not obscure characters or make phone controls harder to read. The visual depth is typography, not a change to the 2D rendering pipeline.
+**How to apply:** Use a genuine 900-weight face for both browser UI and canvas labels. Reduce written labels only; preserve the original numeral size in balances, prices, timers, percentages and mixed text, including canvas labels. Compare actual digit glyph measurements rather than assuming a smaller container font preserves them. Keep icons and touch targets unchanged, along with the navy/white palette and Western digits. Scale outline and shadow strength down for small counters so the effect does not obscure characters or make phone controls harder to read. The visual depth is typography, not a change to the 2D rendering pipeline.
 
 **Why:** The Unity checks concern text already converted to Unicode presentation forms. A browser can correctly join a Unicode Arabic font through its OpenType GSUB tables even when its cmap contains very few presentation-form code points. Requiring Unity's compatibility aliases for a browser font would reject a valid font unnecessarily.
 

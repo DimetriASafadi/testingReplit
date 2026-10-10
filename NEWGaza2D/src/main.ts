@@ -455,7 +455,7 @@ game.events.once('booted', () => {
 store.subscribe(() => render());
 // DOM text swaps automatically; already-rasterized canvas labels need a refresh
 // if the locally hosted font arrives after the scene has started.
-void document.fonts.load('900 16px "Cairo Black"', 'نيو غزة إعادة إعمار الأحياء 0123456789 %,/()').then(() => {
+void document.fonts.load('900 16px "Cairo Black Numbers", "Cairo Black"', 'نيو غزة إعادة إعمار الأحياء 0123456789 %,/()').then(() => {
   for (const current of game.scene.scenes) {
     if (!current.sys.isActive()) continue;
     for (const child of current.children.list) {

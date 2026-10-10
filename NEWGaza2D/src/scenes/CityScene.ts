@@ -296,7 +296,7 @@ export class CityScene extends Phaser.Scene {
       let v = this.sites.get(def.id);
       if (!v) { const img = this.place(tk, c.x, c.y, c.y);
         const label = this.add.text(c.x, c.y + 44, '', {
-          fontFamily: '"Cairo Black", system-ui, sans-serif', fontStyle: '900', fontSize: '13px',
+          fontFamily: '"Cairo Black Numbers", "Cairo Black", system-ui, sans-serif', fontStyle: '900', fontSize: '12.1875px',
           color: '#f5f8ff', stroke: '#ffffff', strokeThickness: 0.4,
           shadow: { offsetX: 0, offsetY: 2, color: '#000000', blur: 2, stroke: false, fill: true },
           backgroundColor: 'rgba(9,29,53,0.86)', padding: { x: 8, y: 3 }, rtl: true,
