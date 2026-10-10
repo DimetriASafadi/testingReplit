@@ -110,6 +110,14 @@ export function returnTravelDuration(source: Plot, target: Plot, outgoingDuratio
   return Math.ceil(Math.max(1, outgoingDuration - OPEN_WAIT) *
     distance(true) / distance(false)) + TURN_WAIT + INSIDE_FINISH;
 }
+/** Ground units per second, independent of the work-countdown testing override.
+ * Include the last vehicle's spacing, not just the straight-line plot distance. */
+export const CONVOY_SPEED = 1.8;
+export function outgoingTravelDuration(source: Plot, target: Plot, level = 1) {
+  const distance = Math.max(...ORDER.map(k => routeLength(fleetRoute(source, target, k)))) + 2 * CONVOY_GAP;
+  const speed = CONVOY_SPEED * (1 + Math.max(0, level - 1) * .35);
+  return OPEN_WAIT + Math.ceil(distance / speed * 1000);
+}
 function timing(j: Job, source: Plot, target: Plot, returning: boolean) {
   const max = Math.max(...ORDER.map(k => routeLength(fleetRoute(source, target, k, returning))));
   const start = returning ? (j.returnStartAt ?? j.workEnd) : (j.departureAt ?? j.start);

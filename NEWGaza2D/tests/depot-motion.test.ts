@@ -2,10 +2,41 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { newGame } from '../src/engine';
 import { depotGeometry } from '../src/depot-geometry';
-import { convoyMotion, fleetRoute, routeLength, routePoint, workDock } from '../src/fleet-motion';
+import { CONVOY_GAP, CONVOY_SPEED, convoyMotion, fleetRoute, outgoingTravelDuration, returnTravelDuration, routeLength, routePoint, workDock } from '../src/fleet-motion';
 import type { Job } from '../src/model';
 import machinery from '../src/machinery-manifest.json';
 import { ORIENTATION_CYCLE, rotateLotPoint } from '../src/orientation';
+test('new convoys use a faster constant ground speed, proportional to route length in both directions', () => {
+  const kinds = ['excavator', 'bulldozer', 'truck'] as const;
+  for (const district of newGame(100000).districts) {
+    const source = district.plots[0], near = district.plots[2], far = district.plots[143];
+    for (const orientation of ORIENTATION_CYCLE) {
+      source.orientation = orientation;
+      assert.ok(outgoingTravelDuration(source, near) < outgoingTravelDuration(source, far));
+      for (const target of [near, far]) for (const level of [1, 2, 4]) {
+        const travel = outgoingTravelDuration(source, target, level);
+        const back = returnTravelDuration(source, target, travel);
+        const distance = (returning: boolean) => Math.max(...kinds.map(k =>
+          routeLength(fleetRoute(source, target, k, returning)))) + 2 * CONVOY_GAP;
+        const desired = CONVOY_SPEED * (1 + (level - 1) * .35);
+        const outSpeed = distance(false) * 1000 / (travel - 750);
+        const backSpeed = distance(true) * 1000 / (back - 550 - 250);
+        assert.ok(Math.abs(outSpeed - desired) < .005);
+        assert.ok(Math.abs(backSpeed - outSpeed) < .005);
+        assert.ok(travel < 60000, 'even the furthest fresh neighborhood site is faster than the old minute');
+        if (level > 1) assert.ok(travel < outgoingTravelDuration(source, target));
+        const j: Job = { id:'speed-check', districtId:district.id, plotId:target.id, originPlotId:source.id,
+          unitIds:[], start:100000, arrival:100000 + travel, workEnd:160000 + travel,
+          returnEnd:160000 + travel + back, cleared:false, value:30000 };
+        for (const kind of kinds) {
+          assert.equal(convoyMotion(j, source, target, kind, j.start).stage, 'waiting');
+          assert.equal(convoyMotion(j, source, target, kind, j.arrival).stage, 'work');
+          assert.equal(convoyMotion(j, source, target, kind, j.returnEnd - 249).visibility, 0);
+        }
+      }
+    }
+  }
+});
 
 test('factory door and vehicles share the same calibrated four-sided opening',()=>{
   const source=newGame(0).districts[0].plots[0], target=newGame(0).districts[0].plots[27];

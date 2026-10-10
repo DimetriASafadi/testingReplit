@@ -45,6 +45,12 @@ Factory entrances must match the actual front/rear artwork, not an arbitrary poi
 
 **How to apply:** Calibrate against each visible facade and use the same entrance geometry for door drawing, travel and passage clipping. Keep existing convoy spacing and saved job deadlines.
 
+تنقل الآليات في لعبة 2D يجب أن يكون أسرع ومتناسقًا مع طول الطريق، مع سرعة أرضية متقاربة في الذهاب والعودة، وليس رحلة مدتها دقيقة ثابتة.
+
+**Why:** المستخدم طلب تسريع الحركة بشكل منطقي بعدما تسبب إعداد الاختبار ذي الدقيقة الواحدة في إبطاء الرحلات القصيرة بشكل واضح. هذا يستثني التنقل من تثبيت عدادات العمل على دقيقة.
+
+**How to apply:** احسب مدة الرحلات الجديدة من المسار الفعلي، مع احتساب فتح الباب وفواصل الفريق وترقيات المعدات. حافظ على عدادات البناء والعمل والدخل كما هي. لا تغيّر مواعيد الرحلات المحفوظة قسرًا فتقفز الآليات أو تختل حجوزات أبواب المصانع؛ واكب سرعة الحركة في اتجاه الرسم ودوران العجلات والجنزير.
+
 Recheck tool-contact calibration whenever the parcel layout or equipment parking positions change.
 
 **Why:** Expanded parcels changed the truck's position while the painted digging cycle retained the previous unloading target; valid animation frames still dumped away from the truck.

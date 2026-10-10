@@ -1,7 +1,7 @@
 import { BUILDINGS, DISTRICTS, EQUIPMENT, building, projects } from './catalog';
 import type { Action, DistrictState, GameAPI, GameState, Job, Plot } from './model';
 import { validateSave } from './save';
-import { factoryWindows, nextFactorySlot, returnTravelDuration } from './fleet-motion';
+import { factoryWindows, nextFactorySlot, outgoingTravelDuration, returnTravelDuration } from './fleet-motion';
 import { cityLayout, INITIAL_EMPTY } from './city-layout';
 import { availableDepotTeam, balanceFleetDepots } from './fleet-depots';
 import { isOrientation, nextOrientation } from './orientation';
@@ -216,10 +216,9 @@ export class GameStore implements GameAPI {
            ensure(assigned, 'يلزم حفار وجرافة وشاحنة متاحة؛ اشترِ المعدات أو انتظر عودة الفريق');
            const { team, depot: source } = assigned;
           const level = Math.min(...team.map(u => u.level));
-           const distance = Math.abs(p.x - source.x) + Math.abs(p.y - source.y) + 2;
-          const travel = activityDuration(Math.ceil((8000 + distance * 850) / (1 + (level - 1) * .35)));
+          const travel = outgoingTravelDuration(source, p, level);
           const arrival = now + travel, workEnd = arrival + 60000;
-          const returning = activityDuration(returnTravelDuration(source, p, travel));
+          const returning = returnTravelDuration(source, p, travel);
           const job: Job = { id: `job-${++this.state.sequence}`, districtId: d.id, plotId: p.id,
             unitIds: team.map(u => u.id), start: now, arrival, workEnd, returnEnd: workEnd + returning,
              cleared: false, value: building(p.buildingId).cost, originPlotId: source.id };

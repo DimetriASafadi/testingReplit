@@ -85,8 +85,12 @@ export class FleetAnimation {
     this.pose(a, unit, frames[n], frames[next], t - n, pos);
   }
   private drive(a: Actor, unit: Unit, heading: number, pos: Pt, dt: number, loaded: boolean) {
-    a.heading += clamp(turnDelta(a.heading, heading), -dt * 2.8, dt * 2.8);
-    if (a.pos) a.distance += Math.hypot(pos[0] - a.pos[0], pos[1] - a.pos[1]);
+    const moved = a.pos ? Math.hypot(pos[0] - a.pos[0], pos[1] - a.pos[1]) : 0;
+    // Follow the existing rounded road bends without facing the old direction
+    // for half a second at the faster speed. Wheel/track animation stays distance-driven.
+    const turnRate = clamp(moved / Math.max(dt, .001) * 4.5, 2.8, 16);
+    a.heading += clamp(turnDelta(a.heading, heading), -dt * turnRate, dt * turnRate);
+    a.distance += moved;
     // Only genuinely painted headings exist in the atlas (META.headings); pick the nearest one.
     const H = META.headings, d = (a.heading / (Math.PI * 2) * H % H + H) % H, n = Math.round(d) % H;
     const roll = Math.floor(a.distance / .13) % 2;

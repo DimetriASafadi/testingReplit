@@ -13,7 +13,8 @@ export const timingProfile = () => MINUTE_TEST_TIMERS ? 'minute-test' as const :
 
 /** Convert long pending work once; reloads must never restart its countdown.
  * Keep construction progress and earned (uncollected) income across the change.
- * Moving convoys retain their saved trajectory/deadlines; new trips use the override. */
+ * Moving convoys retain their saved trajectory/deadlines; travel is distance-based,
+ * not a work-countdown override. */
 export function applyTimingProfile(state: GameState, now: number) {
   const wanted = timingProfile();
   if (state.timerProfile === wanted) return;

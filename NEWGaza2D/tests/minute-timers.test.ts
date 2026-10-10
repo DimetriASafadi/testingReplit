@@ -4,6 +4,7 @@ import { GameStore, SAVE_KEY } from '../src/engine';
 import { BUILDINGS, building, projects } from '../src/catalog';
 import { activityDuration, buildingIncomePeriod, setMinuteTestTimers } from '../src/game-timing';
 import { validateSave } from '../src/save';
+import { outgoingTravelDuration, returnTravelDuration } from '../src/fleet-motion';
 
 class MemoryStorage {
   value: string | null = null;
@@ -52,7 +53,7 @@ test('every building, infrastructure project and recurring period takes one minu
     validateSave(store.state);
   }
 });
-test('convoy travel, clearing and return each take a minute, with offline settlement exactly once', () => {
+test('convoy travel follows route distance while clearing takes a minute, with offline settlement exactly once', () => {
   const { store, storage } = setup(), d = store.state.districts[0], p = d.plots[0];
   store.dispatch({ type: 'place', plotId: 0, buildingId: 'recycling', orientation: 0 });
   store.tick(p.endsAt);
@@ -60,9 +61,11 @@ test('convoy travel, clearing and return each take a minute, with offline settle
   const target = d.plots.find(x => x.status === 'rubble')!;
   store.dispatch({ type: 'clear', plotId: target.id });
   const j = store.state.jobs[0];
-  assert.equal(j.arrival - j.departureAt!, 60000);
+  const travel = outgoingTravelDuration(p, target);
+  assert.equal(j.arrival - j.departureAt!, travel);
+  assert.ok(travel < 60000);
   assert.equal(j.workEnd - j.arrival, 60000);
-  assert.equal(j.returnEnd - j.returnStartAt!, 60000);
+  assert.equal(j.returnEnd - j.returnStartAt!, returnTravelDuration(p, target, travel));
   const restored = new GameStore(storage, j.workEnd);
   assert.equal(restored.state.districts[0].plots[target.id].status, 'empty');
   assert.equal(restored.state.inventory.value, 0);
