@@ -9,6 +9,12 @@ Do not reset camera gestures on ordinary UI rendering, countdown refreshes, or g
 
 **How to apply:** Preserve one-finger panning and two-finger zoom when changing menus. Gesture cleanup belongs to actual input and lifecycle transitions, not to panel updates.
 
+أغلق نافذة المكان تلقائيًا بعد نجاح أمر البناء أو إرسال الآليات لإزالة الركام، وليس عند تحديث المؤقتات.
+
+**Why:** المستخدم لا يريد الضغط على زر الإغلاق بعد بدء العمل؛ طلبه السابق ببقاء النافذة مفتوحة يخص التحديثات التلقائية وليس هذا الإجراء الصريح.
+
+**How to apply:** احتفظ بالنافذة والاختيار إذا فشل الأمر لإظهار السبب وإتاحة التصحيح. الإغلاق عند النجاح يعيد اللاعب للخريطة دون تغيير الكاميرا.
+
 اللعبة تدعم الوضعين الأفقي والعمودي مع مراعاة مقاسات الواجهة، دون إجبار اللاعب على اتجاه واحد.
 
 **Why:** المستخدم طلب دعم الوضعية الأفقية لجميع مقاسات الواجهة، وليس استبدال تجربة الهاتف العمودية.

@@ -162,7 +162,7 @@ function renderCity() {
   ${store.storageError ? `<div class="banner" role="alert"><span>${esc(store.storageError)}</span><button class="btn gold sm" data-a="export" data-k="exp-b">تصدير</button></div>` : ''}
   <div class="zoom"><button class="icon-btn" data-a="zin" aria-label="تكبير">${IC.plus}</button><button class="icon-btn" data-a="zout" aria-label="تصغير">${IC.minus}</button></div>
   <nav class="dock" aria-label="أدوات الحي">
-    <button class="collect-all" data-a="collect-all" data-k="collect-all" aria-label="الدخل: جمع ${fmt(income.total)} عملة من ${fmt(income.count)} مصادر في الحي" title="الدخل المتاح: ${fmt(income.total)} عملة" ${income.total > 0 ? '' : 'disabled'}>${resourceIcon('coins')}<span>الدخل</span>${income.total > 0 ? `<span class="badge num">${compactIncome}</span>` : ''}</button>
+    <button class="collect-all" data-a="collect-all" data-k="collect-all" aria-label="الدخل: جمع ${fmt(income.total)} عملة من ${fmt(income.count)} مصادر في الحي" title="الدخل المتاح: ${fmt(income.total)} عملة">${resourceIcon('coins')}<span>الدخل</span>${income.total > 0 ? `<span class="badge num">${compactIncome}</span>` : ''}</button>
     <button data-a="dlg" data-id="fleet" data-k="d-fleet" aria-expanded="${ui.dialog === 'fleet'}">${navigationIcon('fleet')}<span>الآليات</span>${st.jobs.length ? `<span class="badge num">${fmt(st.jobs.length)}</span>` : ''}</button>
     <button data-a="dlg" data-id="mats" data-k="d-mats" aria-expanded="${ui.dialog === 'mats'}">${navigationIcon('mats')}<span>المواد</span></button>
     <button data-a="dlg" data-id="projects" data-k="d-proj" aria-expanded="${ui.dialog === 'projects'}">${navigationIcon('projects')}<span>المشاريع</span>${readyProj ? `<span class="badge num">${fmt(readyProj)}</span>` : ''}</button>
@@ -350,6 +350,12 @@ function render() {
 }
 
 // ---------- events ----------
+function closePlotSheet() {
+  resetScroll('body', 'cat', 'detail');
+  ui.plot = null;
+  ui.pick = null;
+  scene?.select(null);
+}
 document.addEventListener('click', e => {
   const t = (e.target as HTMLElement).closest<HTMLElement>('[data-a]'); if (!t || (t as HTMLButtonElement).disabled) return;
   if(!['enter','map','place','clear','buy','upg','sell','proj','cproj','collectB','collect-all','claim'].includes(t.dataset.a??''))gameAudio.click();
@@ -361,7 +367,7 @@ document.addEventListener('click', e => {
     case 'pick-d': ui.selDistrict = id; resetScroll('world'); break;
     case 'enter': ui.objectiveHidden = false; act({ type: 'enter', districtId: id }); break;
     case 'map': resetScroll('body', 'cat', 'detail', 'world'); ui.plot = null; scene?.select(null); act({ type: 'map' }); break;
-    case 'close-sheet': resetScroll('body', 'cat', 'detail'); ui.plot = null; ui.pick = null; scene?.select(null); break;
+    case 'close-sheet': closePlotSheet(); break;
     case 'cat': ui.cat = id as Category | 'all'; ui.catPage = 0; ui.pick = null; resetScroll('cat', 'detail', 'detail-top'); break;
     case 'catalog-page': ui.catPage = Math.max(0, Number(id)); resetScroll('cat'); break;
     case 'dialog-tab': ui.dialogTab = Number(id); ui.dialogPage = 0; resetScroll('dlg'); break;
@@ -391,8 +397,8 @@ document.addEventListener('click', e => {
       }
       break;
     }
-    case 'place': if (ui.plot != null && ui.pick && act({ type: 'place', plotId: ui.plot, buildingId: ui.pick, orientation: ui.orient }, `بدأ إنشاء ${building(ui.pick).name}`)) ui.pick = null; break;
-    case 'clear': if (ui.plot != null) act({ type: 'clear', plotId: ui.plot }, 'انطلقت الآليات من المصنع'); break;
+    case 'place': if (ui.plot != null && ui.pick && act({ type: 'place', plotId: ui.plot, buildingId: ui.pick, orientation: ui.orient }, `بدأ إنشاء ${building(ui.pick).name}`)) closePlotSheet(); break;
+    case 'clear': if (ui.plot != null && act({ type: 'clear', plotId: ui.plot }, 'انطلقت الآليات من المصنع')) closePlotSheet(); break;
     case 'collectB': {
       if (ui.plot != null) {
         const previousCoins = S().coins;
@@ -401,6 +407,12 @@ document.addEventListener('click', e => {
       break;
     }
     case 'collect-all': {
+      const district = st.districts.find(d => d.id === st.currentDistrict);
+      if (!district || districtIncome(district, Date.now()).total <= 0) {
+        gameAudio.click();
+        toast('لا يوجد شيء لجمعه');
+        break;
+      }
       const previousCoins = S().coins;
       if (act({ type: 'collectAllIncome' })) toast(`تم جمع ${fmt(S().coins - previousCoins)} عملة من دخل الحي`);
       break;
