@@ -64,3 +64,9 @@ All native pages, confirmation dialogs and small world panels need distinguishab
 **Why:** المستخدم أبلغ مجددًا عن ضعف محاذاة النصوص والمسافات الداخلية، ويريد جودة واجهة موحّدة لا إصلاح زر منفرد.
 
 **How to apply:** وسّط نصوص جميع الأزرار، مع حشو متوازن ومساحة كافية للأيقونة والنص. حافظ على الأزرق الداكن والملكي والفاتح والذهبي والألوان البرتقالية والخضراء للإجراءات، والخطوط العربية الحالية. راجع المقاسات والأزرار القصيرة وبطاقات المتجر والحاويات معًا، ولا تُدخل فحصًا مكلفًا لكل زر في كل إطار.
+
+For the standalone 2D game, menus and windows should use dark navy-blue surfaces and white text rather than the earlier green/cream theme.
+
+**Why:** The user supplied a navy panel reference with white Arabic labels and small green completion indicators and explicitly requested these colors throughout the menus/windows.
+
+**How to apply:** Keep menu, construction, material, settings and HUD surfaces consistent; reserve green for completion/status indicators and red for destructive/error states. Preserve the uploaded multicolor icon artwork, scene art, Arabic font and existing portrait/landscape layouts. The earlier broader action-color guidance above is not a reason to restore green primary buttons in the 2D game.

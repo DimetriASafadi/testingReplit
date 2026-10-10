@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import './style.css';
 import './navigation-icons.css';
+import './blue-theme.css';
 import { activityDuration, buildingIncomePeriod, incomeIntervalLabel, MINUTE_TEST_TIMERS } from './game-timing';
 import { BUILDINGS, DISTRICTS, EQUIPMENT, building, projects } from './catalog';
 import { GameStore, SAVE_KEY, districtProgress, jobPhase, factoryRotationBlocked } from './engine';

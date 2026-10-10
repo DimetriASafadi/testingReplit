@@ -1,0 +1,56 @@
+/* Color-only theme: retain the existing phone/landscape layouts and artwork. */
+:root{
+  color-scheme:dark;
+  --sea:#245b96;--sea-2:#397bbd;--foam:#d3e7ff;
+  --stone:#0c213c;--stone-2:#193653;
+  --ink:#f5f8ff;--ink-2:#c0d1e7;--line:rgba(161,194,234,.25);
+  --panel-top:#142e4d;--on-gold:#11243c;
+  --olive:#298452;
+  --shadow:0 10px 30px -12px rgba(3,12,27,.7);
+}
+html,body,.world{background:#091d35}
+#boot{background:radial-gradient(ellipse at 30% 20%,#224f82,#0c2442 60%,#07182e);color:var(--ink)}
+.map-title,.place{color:var(--ink)}
+.world-side{background:linear-gradient(145deg,#142e4d,#0b1e36);border-color:#37628e}
+.district-card,.cat-item,.item,.mat{background:var(--panel-top)}
+.sheet,dialog,.city-status-card{
+  background:linear-gradient(145deg,#122d4d,#0b1e36);
+  color:var(--ink);border:1px solid var(--line);
+}
+.sheet-head,.sheet-footer,.dlg-footer{background:var(--panel-top)}
+.dlg-head{background:linear-gradient(120deg,#214f81,#153451);color:var(--ink)}
+.dlg-head .icon-btn{background:rgba(169,202,239,.14);color:var(--ink)}
+dialog::backdrop{background:rgba(3,12,28,.65)}
+.objective{background:rgba(11,30,55,.96);color:var(--ink)}
+.pill,.chip{background:var(--stone-2);color:var(--ink)}
+.hud-top{background:linear-gradient(rgba(8,28,52,.94),rgba(8,28,52,0))}
+.icon-btn{background:#1c3d61;color:var(--ink)}
+.btn{background:linear-gradient(#316eab,#245b96);color:var(--ink);box-shadow:0 3px 0 #102e50}
+.btn:active:not(:disabled){box-shadow:0 1px 0 #102e50}
+.btn.gold{background:linear-gradient(#326fac,#2862a0);color:var(--ink);box-shadow:0 3px 0 #123456}
+.btn.sumac{background:var(--sumac);color:var(--ink)}
+.btn.ghost{background:rgba(124,177,231,.06);color:var(--ink)}
+.btn:not(:disabled):hover{filter:brightness(1.05)}
+.cat-filters button[aria-selected=true],.tabs button[aria-selected=true],
+.window-tabs button[aria-pressed=true]{background:#2b6098;color:var(--ink);border-color:#81b9f0}
+.cat-item[aria-pressed=true]{border-color:#8ac4ff}
+.cat-item:hover{background:#1c3d61}
+.preview{background:radial-gradient(ellipse at 50% 80%,#344e67,#182e47)}
+.preview .ori{background:#0d2644;color:var(--ink)}
+.pin .flag{background:#163654;color:var(--ink)}
+.pin .flag .n{background:#2c5e8e;color:var(--ink)}
+.pin.locked .flag{background:rgba(15,37,62,.88);color:var(--ink-2)}
+.pin.open .flag{background:#2c639b;color:var(--ink)}
+.pin.claimed .flag,.tag.olive{background:var(--olive);color:var(--ink)}
+.pin .stem{background:#bfd5ed}
+.ladder li.claimed button{color:#89d9ac}
+.tag.gold,.dock .badge{color:var(--on-gold)}
+.big-num{color:#a9d6ff}
+.check.ok i::after{border-color:var(--ink)}
+.audio-row input{accent-color:#7bbcff}
+.dock button,.banner{color:var(--ink)}
+.dock .collect-all:not(:disabled){background:rgba(92,163,234,.18)}
+.toast{background:#123154;color:var(--ink);border:1px solid var(--line)}
+.recovery{background:#0b213d}
+.recovery textarea{background:var(--stone-2);color:var(--ink);border:1px solid var(--line)}
+#city-status{background:rgba(3,12,28,.72)}
