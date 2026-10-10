@@ -5,6 +5,12 @@ description: Why font checks must include shaped Arabic and mixed-script interfa
 
 Distinguish native browser shaping from the legacy Unity text pipeline when applying the checks below.
 
+The standalone 2D game should use Cairo Black with a white outline, a light black shadow and a raised text effect.
+
+**Why:** The user explicitly replaced the previously supplied Elgharib font with Cairo Black and requested this treatment; “Black” refers to the actual heavy face, not black-colored text.
+
+**How to apply:** Use a genuine 900-weight face for both browser UI and canvas labels. Keep the navy/white palette and Western digits. Scale outline and shadow strength down for small counters so the effect does not obscure characters or make phone controls harder to read. The visual depth is typography, not a change to the 2D rendering pipeline.
+
 **Why:** The Unity checks concern text already converted to Unicode presentation forms. A browser can correctly join a Unicode Arabic font through its OpenType GSUB tables even when its cmap contains very few presentation-form code points. Requiring Unity's compatibility aliases for a browser font would reject a valid font unnecessarily.
 
 **How to apply:** Keep the Unity-specific presentation-form checks for Unity. For web fonts, inspect ordinary Arabic, digits and punctuation plus joining tables, then verify the actual loaded face and connected text in the browser. Do not remap a valid Unicode font to private-use characters.

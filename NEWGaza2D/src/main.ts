@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import './style.css';
 import './navigation-icons.css';
 import './blue-theme.css';
+import './typography.css';
 import { activityDuration, buildingIncomePeriod, incomeIntervalLabel, MINUTE_TEST_TIMERS } from './game-timing';
 import { BUILDINGS, DISTRICTS, EQUIPMENT, building, projects } from './catalog';
 import { GameStore, SAVE_KEY, districtProgress, jobPhase, factoryRotationBlocked } from './engine';
@@ -38,7 +39,7 @@ function showCityStatus(status: 'loading' | 'ready' | 'error', message = '') {
 const esc = (s: string) => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 function dur(ms: number) { const s = Math.max(0, Math.ceil(ms / 1000)); const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60; return h ? `${fmt(h)} س ${fmt(m)} د` : m ? `${fmt(m)} د ${fmt(x)} ث` : `${fmt(x)} ث`; }
 const secs = (s: number) => dur(activityDuration(s * 1000));
-const resourceIcon = (name: 'iron' | 'concrete' | 'wood' | 'coins') =>
+const resourceIcon = (name: 'iron' | 'concrete' | 'wood' | 'coins' | 'other') =>
   `<img class="resource-icon resource-${name}" src="${import.meta.env.BASE_URL}art/ui-resources/${name}.webp" width="160" height="160" alt="" aria-hidden="true" draggable="false"/>`;
 const navigationIcon = (name: 'fleet' | 'mats' | 'projects' | 'progress' | 'save') =>
   `<img class="nav-art" src="${import.meta.env.BASE_URL}art/ui-navigation/${name}.webp" width="256" height="256" alt="" aria-hidden="true" draggable="false"/>`;
@@ -291,7 +292,7 @@ function dialogHtml(st: GameState, now: number): [string, string] {
   }
   if (ui.dialog === 'mats') {
     const i = st.inventory;
-    return ['مخزن المواد', `<div class="mats"><div class="mat" style="--c:#e99c24"><span class="mat-title">${resourceIcon('concrete')}إسمنت وخرسانة</span><b class="num">${fmt(i.concrete)}</b></div><div class="mat" style="--c:#258ecc"><span class="mat-title">${resourceIcon('iron')}حديد</span><b class="num">${fmt(i.iron)}</b></div><div class="mat" style="--c:#68a62c"><span class="mat-title">${resourceIcon('wood')}خشب</span><b class="num">${fmt(i.wood)}</b></div><div class="mat" style="--c:#5f6d33">مواد أخرى<b class="num">${fmt(i.other)}</b></div></div>
+    return ['مخزن المواد', `<div class="mats"><div class="mat" style="--c:#e99c24"><span class="mat-title">${resourceIcon('concrete')}إسمنت وخرسانة</span><b class="num">${fmt(i.concrete)}</b></div><div class="mat" style="--c:#258ecc"><span class="mat-title">${resourceIcon('iron')}حديد</span><b class="num">${fmt(i.iron)}</b></div><div class="mat" style="--c:#68a62c"><span class="mat-title">${resourceIcon('wood')}خشب</span><b class="num">${fmt(i.wood)}</b></div><div class="mat" style="--c:#398bce"><span class="mat-title">${resourceIcon('other')}مواد أخرى</span><b class="num">${fmt(i.other)}</b></div></div>
       <p>القيمة الفعلية المخزنة</p><div class="big-num num">${fmt(i.value)}</div><p class="note">تُضاف المواد فقط عند عودة الآليات إلى المصنع. البيع يحوّل كامل المخزون بقيمته الدقيقة.</p>
       <button class="btn gold" data-a="sell" data-k="sell" ${i.value > 0 ? '' : 'disabled'}>بيع كل المواد مقابل <span class="num">${fmt(i.value)}</span></button>`];
   }
@@ -454,14 +455,14 @@ game.events.once('booted', () => {
 store.subscribe(() => render());
 // DOM text swaps automatically; already-rasterized canvas labels need a refresh
 // if the locally hosted font arrives after the scene has started.
-void document.fonts.load('500 16px "NewGaza Elgharib"', 'نيو غزة إعادة إعمار الأحياء 123,456').then(() => {
+void document.fonts.load('900 16px "Cairo Black"', 'نيو غزة إعادة إعمار الأحياء 0123456789 %,/()').then(() => {
   for (const current of game.scene.scenes) {
     if (!current.sys.isActive()) continue;
     for (const child of current.children.list) {
       if (child instanceof Phaser.GameObjects.Text) child.updateText();
     }
   }
-}).catch(() => toast('تعذّر تحميل الخط المرفق؛ تحقق من الاتصال وأعد فتح اللعبة.', true));
+}).catch(() => toast('تعذّر تحميل خط Cairo Black؛ تحقق من الاتصال وأعد فتح اللعبة.', true));
 let viewportFrame = 0, previousPageSize = pageSize(), previousDialogPageSize = dialogPageSize();
 const refreshViewport = () => {
   cancelAnimationFrame(viewportFrame);

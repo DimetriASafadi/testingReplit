@@ -1,8 +1,8 @@
 @font-face{
-  font-family:'NewGaza Elgharib';
-  src:url('/fonts/elgharib-hayyakum-allah-medium.ttf') format('truetype');
+  font-family:'Cairo Black';
+  src:url('/fonts/cairo-black.ttf') format('truetype');
   font-style:normal;
-  font-weight:500;
+  font-weight:900;
   font-display:swap;
 }
 .sound-toggle{position:fixed;right:12px;bottom:112px;z-index:25;width:44px;height:44px;box-shadow:0 3px 12px #30261738}
@@ -17,7 +17,7 @@
   --stone:#f1e6d0; --stone-2:#e5d4b4; --sand:#d9c39a;
   --sumac:#a8322d; --olive:#5f6d33; --ochre:#c58a1c; --gold:#f2d06b;
   --ink:#2b2320; --ink-2:#5a4a3e; --line:rgba(43,35,32,.16);
-  --display:'NewGaza Elgharib',system-ui,sans-serif; --body:'NewGaza Elgharib',system-ui,sans-serif;
+  --display:'Cairo Black',system-ui,sans-serif; --body:'Cairo Black',system-ui,sans-serif;
   --r:14px; --shadow:0 10px 30px -12px rgba(43,35,32,.45);
 }
 *{box-sizing:border-box}
@@ -109,6 +109,7 @@ h1,h2,h3{font-family:var(--display);margin:0;font-weight:700}
 .resource-concrete{--resource-light:#ffd567;--resource-dark:#c17b14}
 .resource-iron{--resource-light:#80d9ff;--resource-dark:#1768a6}
 .resource-wood{--resource-light:#a5eb64;--resource-dark:#387c21}
+.resource-other{--resource-light:#61bafd;--resource-dark:#11467c}
 .wallet .resource-icon{width:24px;height:24px}
 .mat-title{display:flex;align-items:center;gap:8px}
 .mat .resource-icon{width:40px;height:40px}
