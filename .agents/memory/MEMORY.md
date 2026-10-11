@@ -29,3 +29,4 @@
 - [2D sound identity](2d-sound-identity.md) — new standalone audio, not legacy Unity assets; zoom attenuation and the user's named main-menu theme.
 - [Mobile WebGL checks](mobile-webgl-checks.md) — headless Canvas can hide phone GPU texture-limit failures; verify the actual renderer and fresh-entry flows.
 - [Neighborhood overview](2d-camera-overview.md) — maximum zoom-out should show roughly 85% or more of the playable neighborhood on phones in both orientations.
+- [Startup first paint](2d-startup-first-paint.md) — boot styling must be available before the game module loads; the logo belongs only in the opening loading screen.
