@@ -11,6 +11,7 @@ export function validateSave(value: unknown): asserts value is GameState {
   require(value && typeof value === 'object');
   const s = value as GameState;
   require(s.version === 1 && integer(s.coins) && integer(s.lastSeen) && integer(s.sequence));
+  require(s.gems === undefined || integer(s.gems));
   require(s.inventory && ['concrete','iron','wood','other','value'].every(k => integer(s.inventory[k as keyof typeof s.inventory])));
   require(s.inventory.value === s.inventory.concrete * 20 + s.inventory.iron * 60 + s.inventory.wood * 35 + s.inventory.other * 10);
   require(Array.isArray(s.districts));
@@ -39,6 +40,7 @@ export function validateSave(value: unknown): asserts value is GameState {
     if (!legacy) require([cityLayout(d.id), cityLayout(d.id,1)].some(layout =>
       d.plots.every((p,j) => p && p.x === layout.cells[j].x && p.y === layout.cells[j].y)));
     for (const [j,p] of d.plots.entries()) {
+      require(p.accelerated === undefined || typeof p.accelerated === 'boolean');
       require(p && p.id === j && (legacy
         ? p.layoutId === undefined && p.x === (j % 8) * 2 && p.y === Math.floor(j / 8) * 2
         : p.layoutId === d.id));
@@ -49,6 +51,7 @@ export function validateSave(value: unknown): asserts value is GameState {
     }
     const defs = projects(d.id === 'rashid');
     for (const [j,p] of d.projects.entries()) {
+      require(p.gemRewarded === undefined || typeof p.gemRewarded === 'boolean');
       require(p && p.id === defs[j].id && ['idle','building','ready','complete'].includes(p.status));
       require(integer(p.startedAt) && integer(p.endsAt) && integer(p.incomeAt));
       require(p.status !== 'building' || (p.endsAt > p.startedAt && p.startedAt <= s.lastSeen));

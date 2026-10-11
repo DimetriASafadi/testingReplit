@@ -39,6 +39,7 @@ function showCityStatus(status: 'loading' | 'ready' | 'error', message = '') {
 const esc = (s: string) => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 function dur(ms: number) { const s = Math.max(0, Math.ceil(ms / 1000)); const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60; return h ? `${fmt(h)} س ${fmt(m)} د` : m ? `${fmt(m)} د ${fmt(x)} ث` : `${fmt(x)} ث`; }
 const secs = (s: number) => dur(activityDuration(s * 1000));
+const gemIcon = `<img class="gem-icon" src="${import.meta.env.BASE_URL}art/gem.svg" alt="" />`;
 const resourceIcon = (name: 'iron' | 'concrete' | 'wood' | 'coins' | 'other') =>
   `<img class="resource-icon resource-${name}" src="${import.meta.env.BASE_URL}art/ui-resources/${name}.webp" width="160" height="160" alt="" aria-hidden="true" draggable="false"/>`;
 const navigationIcon = (name: 'fleet' | 'mats' | 'projects' | 'progress' | 'save') =>
@@ -121,7 +122,7 @@ function renderWorld() {
       <div class="map-title"><h1>نيو غزة</h1><p>اختر حيًا على الخريطة. كل حي يُستلم بعد إزالة أنقاضه وإكمال مشاريعه التسعة، فيُفتح الحي التالي حتى كورنيش شارع الرشيد.</p></div>
     </div>
     <aside class="world-side" data-sk="world">
-      <div class="chip-row"><span class="chip" aria-label="الرصيد: ${fmt(st.coins)}">${resourceIcon('coins')} <b class="num">${fmt(st.coins)}</b></span><span class="chip">أحياء مستلمة <b class="num">${fmt(st.districts.filter(d => d.claimed).length)}/${fmt(DISTRICTS.length)}</b></span></div>
+      <div class="chip-row"><span class="chip" aria-label="الرصيد: ${fmt(st.coins)}">${resourceIcon('coins')} <b class="num">${fmt(st.coins)}</b></span><span class="chip gem-wallet" aria-label="الجواهر: ${fmt(st.gems)}">${gemIcon}<b class="num">${fmt(st.gems)}</b></span><span class="chip">أحياء مستلمة <b class="num">${fmt(st.districts.filter(d => d.claimed).length)}/${fmt(DISTRICTS.length)}</b></span></div>
       <div class="district-card"><small>المرحلة ${fmt(idx + 1)} من ${fmt(DISTRICTS.length)}${idx === DISTRICTS.length - 1 ? ' — الختام' : ''}</small><h2>${esc(def.name)}</h2><p>${status}</p>
         ${ds ? `<div class="meter" aria-label="تقدم الحي"><i style="transform:scaleX(${districtProgress(ds) / 100})"></i></div><p class="num" style="font-size:.85rem">${fmt(districtProgress(ds))}٪</p>` : ''}
         <p>مكافأة الاستلام: <b class="num">${fmt(def.reward)}</b></p>
@@ -155,6 +156,7 @@ function renderCity() {
     <button class="icon-btn" data-a="map" data-k="tomap" aria-label="العودة إلى خريطة غزة">${IC.map}</button>
     <div class="place"><h1>${esc(def.name)}</h1><small>تقدم الحي <span class="num">${fmt(districtProgress(d))}٪</span></small></div>
     <div class="wallet"><span class="pill" aria-label="الرصيد: ${fmt(st.coins)}">${resourceIcon('coins')}<b class="num">${fmt(st.coins)}</b></span>
+      <span class="pill gem-wallet" aria-label="الجواهر: ${fmt(st.gems)}" title="الجواهر: مكافآت إنجاز المشاريع والأحياء">${gemIcon}<b class="num">${fmt(st.gems)}</b></span>
       <span class="pill m">${resourceIcon('concrete')}إسمنت <b class="num">${fmt(inv.concrete)}</b></span>
       <span class="pill m">${resourceIcon('iron')}حديد <b class="num">${fmt(inv.iron)}</b></span></div>
   </header>
@@ -218,7 +220,9 @@ function plotSheet(st: GameState, d: DistrictState, now: number) {
     bodyCls = 'build' + (pick ? ' has-pick' : '');
     const detail = pick ? `<button class="btn ghost catalog-back" data-a="back-catalog" data-k="back-catalog">رجوع إلى المباني والتصنيفات</button><div class="bd-top" data-sk="detail-top"><div class="preview"><span class="ori">${ORIENTATION_LABELS[ui.orient]}</span><img src="${prev(pick.id, ui.orient)}" alt="معاينة ${esc(pick.name)}: ${ORIENTATION_LABELS[ui.orient]}"/></div>
         <div class="bd-info"><h3>${esc(pick.name)}</h3><small>${CAT[pick.category]}</small><dl class="kv"><dt>التكلفة</dt><dd class="num">${fmt(pick.cost)}</dd><dt>المدة</dt><dd>${secs(pick.duration)}</dd><dt>الطوابق</dt><dd class="num">${fmt(pick.floors)}</dd><dt>الدخل</dt><dd>${pick.income ? `<span class="num">${fmt(pick.income)}</span> كل ${incomeIntervalLabel()}` : 'لا يوجد'}</dd></dl></div></div>
-        <div class="row bd-actions"><button class="btn ghost" data-a="rot" data-k="rot" aria-label="${rotateLabel(pick.id)}">${IC.rotate} ${rotateLabel(pick.id)}</button><button class="btn gold" data-a="place" data-k="place" ${st.coins >= pick.cost ? '' : 'disabled'}>${st.coins >= pick.cost ? 'بناء هنا' : 'الرصيد غير كافٍ'}</button></div>${pendingFaceNote(pick.id)}`
+        <div class="row bd-actions"><button class="btn ghost" data-a="rot" data-k="rot" aria-label="${rotateLabel(pick.id)}">${IC.rotate} ${rotateLabel(pick.id)}</button><button class="btn gold" data-a="place" data-k="place" ${st.coins >= pick.cost ? '' : 'disabled'}>${st.coins >= pick.cost ? 'بناء عادي' : 'الرصيد غير كافٍ'}</button></div>
+        <button class="btn gem-build" data-a="place-half" data-k="place-half" ${st.coins >= pick.cost && st.gems >= 2 ? '' : 'disabled'}>${gemIcon} بناء بنصف الوقت · <span class="num">2</span> جواهر · <span class="num">${dur(activityDuration(pick.duration * 1000) / 2)}</span></button>
+        <small class="gem-help">الجواهر إضافية لسعر البناء. رصيدك: <span class="num">${fmt(st.gems)}</span> · كل مشروع أول مرة: <span class="num">3</span> جواهر.</small>${pendingFaceNote(pick.id)}`
       : '<p class="note">اختر مبنى لمعاينة جهاته المتوفرة ثم ابنِه.</p>';
     body = `<div class="build-detail" data-sk="detail">${!recyclerStarted(st) ? '<p class="note">ابدأ بمصنع إعادة التدوير: هو نقطة انطلاق كل الآليات.</p>' : ''}${detail}</div>
       <div class="build-list"><div class="cat-filters" role="tablist" aria-label="فئات المباني">${cats.map(c => `<button role="tab" aria-selected="${ui.cat === c}" data-a="cat" data-id="${c}" data-k="t-${c}">${c === 'all' ? 'كل المباني' : CAT[c]} <span class="cnt num">${fmt(cnt(c))}</span></button>`).join('')}</div>
@@ -304,7 +308,7 @@ function dialogHtml(st: GameState, now: number): [string, string] {
       else if (ps.status === 'building') { info = `قيد التنفيذ · متبقٍ <span class="num">${dur(ps.endsAt - now)}</span>`; }
       else if (ps.status === 'ready') { info = `جاهز · عائد <span class="num">${fmt(def.income)}</span>`; btn = `<button class="btn gold sm" data-a="cproj" data-id="${def.id}" data-k="c-${def.id}">جمع</button>`; }
       else { if (def.period && ps.incomeAt) { const next = ps.incomeAt + activityDuration(def.period * 1000); const r = now >= next; info = r ? 'الدخل جاهز للجمع' : `الدخل التالي بعد <span class="num">${dur(next - now)}</span>`; btn = `<button class="btn gold sm" data-a="cproj" data-id="${def.id}" data-k="c-${def.id}" ${r ? '' : 'disabled'}>جمع</button>`; } else if (repeat) { info = 'مكتمل · يمكن تكرار الدورة'; btn = `<button class="btn ghost sm" data-a="proj" data-id="${def.id}" data-k="p-${def.id}" ${st.coins < def.cost ? 'disabled' : ''}>دورة جديدة</button>`; } else info = 'مكتمل'; }
-      return `<div class="item ${ps.status}"><span class="st"></span><div><h3>${esc(def.name)}</h3><p>${info}</p></div>${btn || '<span></span>'}</div>`; }).join('')}</div>`];
+      return `<div class="item ${ps.status}"><span class="st"></span><div><h3>${esc(def.name)}</h3><p>${info}</p><small class="project-gems">${gemIcon} <span class="num">3</span> جواهر · ${ps.gemRewarded ? 'تمت مكافأة الإنجاز الأول' : 'مكافأة أول إنجاز فقط'}</small></div>${btn || '<span></span>'}</div>`; }).join('')}</div>`];
   }
   if (ui.dialog === 'progress' && d) {
     const rub = d.plots.filter(p => p.status === 'rubble').length; const done = d.projects.filter(p => p.status === 'complete').length; const jobs = st.jobs.filter(j => j.districtId === d.id).length;
@@ -313,7 +317,7 @@ function dialogHtml(st: GameState, now: number): [string, string] {
       <div class="check ${!rub ? 'ok' : ''}"><i></i>إزالة الأنقاض: <span class="num">${fmt(d.plots.length - 11 - rub)}/${fmt(d.plots.length - 11)}</span></div>
       <div class="check ${done === 9 ? 'ok' : ''}"><i></i>المشاريع المكتملة: <span class="num">${fmt(done)}/9</span></div>
       <div class="check ${!jobs ? 'ok' : ''}"><i></i>لا مهام جارية في الحي</div>
-      <p>المكافأة: <b class="num">${fmt(def.reward)}</b></p>
+      <p>المكافأة: <b class="num">${fmt(def.reward)}</b> عملة + ${gemIcon} <b class="num">15</b> جوهرة</p>
       <button class="btn gold" data-a="claim" data-k="claim" ${ok ? '' : 'disabled'}>${d.claimed ? 'تم الاستلام' : 'استلام الحي وفتح التالي'}</button>`];
   }
   if (ui.dialog === 'save') {
@@ -397,7 +401,8 @@ document.addEventListener('click', e => {
       }
       break;
     }
-    case 'place': if (ui.plot != null && ui.pick && act({ type: 'place', plotId: ui.plot, buildingId: ui.pick, orientation: ui.orient }, `بدأ إنشاء ${building(ui.pick).name}`)) closePlotSheet(); break;
+    case 'place':
+    case 'place-half': if (ui.plot != null && ui.pick && act({ type: 'place', plotId: ui.plot, buildingId: ui.pick, orientation: ui.orient, accelerate: t.dataset.a === 'place-half' }, `بدأ إنشاء ${building(ui.pick).name}${t.dataset.a === 'place-half' ? ' بنصف الوقت مقابل جوهرتين' : ''}`)) closePlotSheet(); break;
     case 'clear': if (ui.plot != null && act({ type: 'clear', plotId: ui.plot }, 'انطلقت الآليات من المصنع')) closePlotSheet(); break;
     case 'collectB': {
       if (ui.plot != null) {

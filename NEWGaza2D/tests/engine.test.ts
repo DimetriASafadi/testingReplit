@@ -10,6 +10,89 @@ import { CONVOY_GAP, convoyMotion, factoryWindows, fleetRoute, gateDemand, route
 import type { EquipmentKind, Job } from '../src/model';
 import { ORIENTATION_CYCLE, nextOrientation, rotateLotPoint, isOrientation } from '../src/orientation';
 import { buildingSaleValue } from '../src/building-disposal';
+import { PROJECT_GEMS, DISTRICT_GEMS, HALF_TIME_GEMS } from '../src/gems';
+import { activityDuration } from '../src/game-timing';
+
+test('gems reward each project once, including offline completions and legacy progress', () => {
+  const storage = new MemoryStorage(), now = Date.now() + 600000;
+  const saved = newGame(now);
+  const first = saved.districts[0].projects[0];
+  first.status = 'complete'; first.startedAt = now - 60000; first.endsAt = now - 1;
+  delete (saved as Partial<typeof saved>).gems;
+  storage.setItem(SAVE_KEY, JSON.stringify(saved));
+  const store = new GameStore(storage, now);
+  assert.equal(store.state.gems, PROJECT_GEMS);
+  store.tick(now + 1000);
+  assert.equal(new GameStore(storage, now + 2000).state.gems, PROJECT_GEMS);
+  store.dispatch({ type: 'enter', districtId: 'shujaiya' });
+  const farm = store.state.districts[0].projects.find(p => p.id === 'farm')!;
+  Object.assign(farm, { status: 'building', startedAt: now, endsAt: now + 3000 });
+  store.tick(now + 3000);
+  assert.equal(store.state.gems, PROJECT_GEMS * 2);
+  store.dispatch({ type: 'collectProject', projectId: farm.id });
+  store.dispatch({ type: 'project', projectId: farm.id });
+  store.tick(farm.endsAt);
+  assert.equal(store.state.gems, PROJECT_GEMS * 2);
+  validateSave(store.state);
+});
+
+test('half-time building costs two gems, keeps money cost and persists its deadline', () => {
+  for (const minute of [true, false]) {
+    setMinuteTestTimers(minute);
+    const { store, storage } = setup();
+    store.state.gems = HALF_TIME_GEMS;
+    const def = BUILDINGS.find(b => b.category === 'housing')!;
+    const before = store.state.coins;
+    store.dispatch({ type: 'place', plotId: 0, buildingId: def.id, orientation: 2, accelerate: true });
+    const plot = store.state.districts[0].plots[0];
+    assert.equal(plot.endsAt - plot.startedAt, activityDuration(def.duration * 1000) / 2);
+    assert.equal(store.state.gems, 0);
+    assert.equal(store.state.coins, before - def.cost);
+    const restored = new GameStore(storage, plot.startedAt);
+    assert.equal(restored.state.districts[0].plots[0].endsAt, plot.endsAt);
+    restored.tick(plot.endsAt - 1);
+    assert.equal(restored.state.districts[0].plots[0].status, 'building');
+    restored.tick(plot.endsAt);
+    assert.equal(restored.state.districts[0].plots[0].status, 'built');
+    assert.equal(restored.state.gems, 0);
+  }
+  setMinuteTestTimers(false);
+});
+
+test('failed accelerated builds never deduct coins or gems; ordinary construction needs no gems', () => {
+  const { store } = setup(), def = BUILDINGS[0];
+  const before = store.state.coins;
+  assert.throws(() => store.dispatch({ type: 'place', plotId: 0, buildingId: def.id, orientation: 0, accelerate: true }), /جوهرتين/);
+  assert.equal(store.state.coins, before); assert.equal(store.state.gems, 0);
+  store.state.gems = HALF_TIME_GEMS; store.state.coins = 0;
+  assert.throws(() => store.dispatch({ type: 'place', plotId: 0, buildingId: def.id, orientation: 0, accelerate: true }), /الرصيد غير كافٍ/);
+  assert.equal(store.state.gems, HALF_TIME_GEMS);
+  store.state.coins = before; store.state.gems = 0;
+  store.dispatch({ type: 'place', plotId: 0, buildingId: def.id, orientation: 0 });
+  const plot = store.state.districts[0].plots[0];
+  assert.equal(plot.endsAt - plot.startedAt, activityDuration(def.duration * 1000));
+});
+
+test('district gem reward is granted only on explicit first claim', () => {
+  const { store, storage } = setup();
+  const d = store.state.districts[0];
+  for (const p of d.plots) p.status = 'empty';
+  for (const p of d.projects) { p.status = 'complete'; p.gemRewarded = true; }
+  store.dispatch({ type: 'claim' });
+  assert.equal(store.state.gems, DISTRICT_GEMS);
+  assert.throws(() => store.dispatch({ type: 'claim' }), /بالفعل/);
+  assert.equal(new GameStore(storage, store.state.lastSeen).state.gems, DISTRICT_GEMS);
+});
+
+test('corrupt gem balances and reward markers are rejected', () => {
+  for (const gems of [-1, 1.5, Infinity, '2']) {
+    const state = newGame();
+    assert.throws(() => validateSave({ ...state, gems }));
+  }
+  const state = newGame();
+  Object.assign(state.districts[0].projects[0], { gemRewarded: 'yes' });
+  assert.throws(() => validateSave(state));
+});
 
 class MemoryStorage {
   data = new Map<string,string>();

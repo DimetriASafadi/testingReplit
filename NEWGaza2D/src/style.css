@@ -109,6 +109,13 @@ h1,h2,h3{font-family:var(--display);margin:0;font-weight:700}
 .resource-wood{--resource-light:#a5eb64;--resource-dark:#387c21}
 .resource-other{--resource-light:#61bafd;--resource-dark:#11467c}
 .wallet .resource-icon{width:24px;height:24px}
+.gem-icon{width:24px;height:24px;flex:none;vertical-align:middle}
+.gem-wallet{display:inline-flex;align-items:center;gap:4px}
+.gem-build{width:100%;margin-top:8px;background:linear-gradient(145deg,#6a40ad,#402777);color:#fff;box-shadow:0 3px 0 #231744;flex-wrap:wrap;padding:6px 10px}
+.gem-help{display:block;text-align:center;margin-top:6px;line-height:1.5}
+.project-gems{display:flex;align-items:center;gap:4px;color:#dfc3ff;font-size:.7rem}
+.project-gems .gem-icon{width:18px;height:18px}
+@media(max-width:480px){.wallet .pill{padding-inline:6px;gap:3px;font-size:.72rem}.wallet .gem-icon{width:22px;height:22px}}
 .mat-title{display:flex;align-items:center;gap:8px}
 .mat .resource-icon{width:40px;height:40px}
 @media(max-width:360px){.wallet .resource-icon{width:20px;height:20px}.wallet .pill{gap:4px}}

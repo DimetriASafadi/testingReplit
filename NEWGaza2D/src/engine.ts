@@ -10,6 +10,7 @@ import { buildingAccruedIncome, buildingSaleValue } from './building-disposal';
 import { activityDuration, applyTimingProfile, incomeIntervalLabel, timingProfile } from './game-timing';
 import { districtIncome } from './district-income';
 import { buildingIncomeDetails } from './building-income';
+import { PROJECT_GEMS, DISTRICT_GEMS, HALF_TIME_GEMS } from './gems';
 
 export const SAVE_KEY = 'newgaza2d-save-v1';
 export const factoryRotationBlocked = (state: GameState, plotId: number) =>
@@ -17,7 +18,7 @@ export const factoryRotationBlocked = (state: GameState, plotId: number) =>
 export function newGame(now = Date.now()): GameState {
   const homes = BUILDINGS.filter(b => b.category === 'housing');
   return {
-    version: 1, timerProfile: timingProfile(), coins: 1000000, inventory: { concrete: 0, iron: 0, wood: 0, other: 0, value: 0 },
+    version: 1, timerProfile: timingProfile(), coins: 1000000, gems: 0, inventory: { concrete: 0, iron: 0, wood: 0, other: 0, value: 0 },
     units: [], jobs: [], currentDistrict: null, lastSeen: now, sequence: 0,
     districts: DISTRICTS.map((d, index) => ({
       id: d.id, unlocked: index === 0, claimed: false, camera: null,
@@ -78,6 +79,7 @@ export class GameStore implements GameAPI {
       try { const parsed: unknown = JSON.parse(raw); validateSave(parsed); expandDistrictSave(parsed); expandCitySave(parsed); validateSave(parsed); this.state = parsed }
       catch { throw new Error('تعذر التحقق من ملف الحفظ. لم نحذفه أو نستبدله؛ نزّل نسخة منه قبل اختيار بداية جديدة.') }
     } else this.state = newGame(now);
+    this.state.gems ??= 0;
     balanceFleetDepots(this.state);
     this.tick(now);
     applyTimingProfile(this.state, this.state.lastSeen);
@@ -118,6 +120,12 @@ export class GameStore implements GameAPI {
         const def = definitions.find(v => v.id === p.id)!;
         p.status = def.income && !def.period ? 'ready' : 'complete';
         p.incomeAt = p.endsAt; changed = true;
+      }
+      for (const p of d.projects) {
+        if ((p.status === 'complete' || p.status === 'ready') && !p.gemRewarded) {
+          this.state.gems += PROJECT_GEMS;
+          p.gemRewarded = true; changed = true;
+        }
       }
     }
     for (const j of this.state.jobs) {
@@ -169,8 +177,13 @@ export class GameStore implements GameAPI {
           const p = this.plot(action.plotId), def = building(action.buildingId);
           ensure(p.status === 'empty', 'البناء متاح على الأرض النظيفة فقط');
           ensure(isOrientation(action.orientation), 'اختر إحدى واجهات المبنى الأربع');
+          ensure(action.accelerate === undefined || typeof action.accelerate === 'boolean', 'خيار التسريع غير صالح');
+          if (action.accelerate) {
+            ensure(this.state.gems >= HALF_TIME_GEMS, 'تحتاج إلى جوهرتين لتقليل وقت البناء للنصف');
+            this.state.gems -= HALF_TIME_GEMS;
+          }
           this.pay(def.cost);
-          Object.assign(p, { status: 'building', buildingId: def.id, orientation: action.orientation, startedAt: now, endsAt: now + activityDuration(def.duration * 1000), incomeAt: 0, paidCost: def.cost });
+          Object.assign(p, { status: 'building', buildingId: def.id, orientation: action.orientation, startedAt: now, endsAt: now + activityDuration(def.duration * 1000) / (action.accelerate ? 2 : 1), incomeAt: 0, paidCost: def.cost, accelerated: !!action.accelerate });
           break;
         }
         case 'sellBuilding':
@@ -184,6 +197,7 @@ export class GameStore implements GameAPI {
           this.state.coins += action.type === 'sellBuilding' ? buildingSaleValue(p) : 0;
           Object.assign(p, { status: 'empty', orientation: 0, startedAt: 0, endsAt: 0, incomeAt: 0 });
           delete p.paidCost;
+          delete p.accelerated;
           balanceFleetDepots(this.state);
           break;
         }
@@ -287,6 +301,7 @@ export class GameStore implements GameAPI {
           ensure(!d.claimed, 'استلمت مكافأة هذا الحي بالفعل');
           ensure(d.projects.every(p => p.status === 'complete') && !d.plots.some(p => p.status === 'rubble') && !this.state.jobs.some(j => j.districtId === d.id), 'أزل كل الركام وأكمل مشاريع الحي وحصّل إنتاجها أولًا');
           d.claimed = true; this.state.coins += DISTRICTS[index].reward;
+          this.state.gems += DISTRICT_GEMS;
           if (index + 1 < this.state.districts.length) this.state.districts[index + 1].unlocked = true;
           break;
         }
@@ -294,6 +309,7 @@ export class GameStore implements GameAPI {
       }
        if (action.type === 'buy' || action.type === 'enter') balanceFleetDepots(this.state);
        ensure(Number.isSafeInteger(this.state.coins), 'تجاوز الرصيد الحد المسموح');
+       ensure(Number.isSafeInteger(this.state.gems) && this.state.gems >= 0, 'رصيد الجواهر غير صالح');
     } catch (error) { this.state = snapshot; throw error }
     this.persist(); this.notify();
   }

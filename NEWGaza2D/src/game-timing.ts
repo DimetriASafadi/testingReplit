@@ -29,7 +29,15 @@ export function applyTimingProfile(state: GameState, now: number) {
   };
   for (const d of state.districts) {
     for (const p of d.plots) {
-      if (p.status === 'building') retime(p, building(p.buildingId).duration * 1000);
+      if (p.status === 'building') {
+        retime(p, building(p.buildingId).duration * 1000);
+        if (p.accelerated) {
+          const duration = (p.endsAt - p.startedAt) / 2;
+          const fraction = Math.max(0, Math.min(1, (now - p.startedAt) / Math.max(1, p.endsAt - p.startedAt)));
+          p.startedAt = Math.max(0, now - Math.floor(fraction * duration));
+          p.endsAt = p.startedAt + duration;
+        }
+      }
       if (p.status === 'built' && building(p.buildingId).income > 0) p.incomeAt = convertIncome(p.incomeAt);
     }
     for (const p of d.projects) {
