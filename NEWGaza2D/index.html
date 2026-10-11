@@ -7,13 +7,13 @@
     <meta name="description" content="نيو غزة: لعبة إعادة إعمار سلمية في المتصفح. أزل الأنقاض، ابنِ الأحياء، وأعد الحياة إلى الشوارع." />
     <title>نيو غزة — إعادة إعمار الأحياء</title>
     <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
+    <link rel="preload" href="%BASE_URL%art/new-gaza-start-logo.webp" as="image" fetchpriority="high" />
     <link rel="preload" href="%BASE_URL%fonts/cairo-black.ttf" as="font" type="font/ttf" crossorigin />
   </head>
   <body>
     <div id="boot" role="status" aria-live="polite">
       <div class="boot-card">
-        <div class="boot-mark" aria-hidden="true"></div>
-        <h1>نيو غزة</h1>
+        <img class="boot-logo" src="%BASE_URL%art/new-gaza-start-logo.webp" alt="شعار نيو غزة — NEW GAZA" width="720" height="513" fetchpriority="high" />
         <p id="boot-msg">تحضير المدينة</p>
         <div class="boot-track"><div id="boot-bar"></div></div>
         <p id="boot-err" class="boot-err" hidden></p>
