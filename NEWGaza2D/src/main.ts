@@ -233,7 +233,7 @@ function plotSheet(st: GameState, d: DistrictState, now: number) {
     const income = buildingIncomeDetails(p, incomeNow);
     const ready = income.amount > 0;
     body = `<div class="preview"><img src="${prev(b.id, p.orientation)}" alt=""/></div>
-      ${b.income ? `<dl class="kv" data-sk="income-summary"><dt>دخل الدفعة</dt><dd><span class="num">${fmt(income.perPeriod)}</span> كل ${incomeIntervalLabel()}</dd><dt>الدفعات المتراكمة</dt><dd class="num">${fmt(income.periods)}</dd><dt>المتاح للجمع</dt><dd data-income-total="${income.amount}"><span class="num">${fmt(income.amount)}</span> عملة</dd><dt>الدفعة التالية</dt><dd>بعد <span class="num">${dur(income.nextAt - incomeNow)}</span></dd></dl>
+      ${b.income ? `<dl class="kv" data-sk="income-summary"><dt>دخل الدفعة</dt><dd><span class="num">${fmt(income.perPeriod)}</span> بعد ${incomeIntervalLabel()}</dd><dt>المتاح للجمع</dt><dd data-income-total="${income.amount}"><span class="num">${fmt(income.amount)}</span> عملة</dd><dt>حالة الدخل</dt><dd>${ready ? 'جاهز للجمع · يبدأ العداد بعد الجمع' : `بعد <span class="num">${dur(income.nextAt - incomeNow)}</span>`}</dd></dl>
         ` : `<p class="note">${b.id === 'recycling' ? `مقر الآليات: منه تنطلق وإليه تعود المواد. الآليات المخصصة لهذا المصنع: <b class="num">${fmt(st.units.filter(u => u.depotIds?.[d.id] === p.id).length)}</b>. تتوزع الفرق تلقائيًا عند اكتمال مصنع جديد.` : b.category === 'housing' ? 'مبنى سكني؛ لا ينتج دخلًا.' : 'هذا المبنى لا ينتج دخلًا.'}</p>`}`;
     body += `<div class="row">${b.income ? `<button class="btn gold" data-a="collectB" data-k="collectB" data-income-amount="${income.amount}" ${ready ? '' : 'disabled'}>جمع الدخل · <span class="num">${fmt(income.amount)}</span></button>` : ''}<button class="btn ghost" data-a="rotate-building" data-k="rotate-building" ${factoryRotationBlocked(st, p.id) ? 'disabled' : ''}>${IC.rotate} ${rotateLabel(b.id)}</button></div>${pendingFaceNote(b.id)}`;
     if (factoryRotationBlocked(st, p.id)) body += '<p class="note">يمكن تدوير المصنع بعد عودة آلياته؛ يبقى مدخل الفريق ثابتًا أثناء المهمة.</p>';
@@ -267,7 +267,7 @@ function dialogHtml(st: GameState, now: number): [string, string] {
     const income = buildingAccruedIncome(p, now);
     return [selling ? 'تأكيد بيع المبنى' : 'تأكيد إزالة المبنى',
       `<p>هل تريد ${selling ? 'بيع' : 'إزالة'} <b>${esc(building(p.buildingId).name)}</b> من القطعة <span class="num">${fmt(p.id + 1)}</span>؟</p>
-      <dl class="kv"><dt>${selling ? 'مبلغ البيع · 50%' : 'التعويض عن المبنى'}</dt><dd class="num">${fmt(selling ? buildingSaleValue(p) : 0)}</dd>${income ? `<dt>دخل مكتمل يُجمع تلقائيًا</dt><dd class="num">${fmt(income)}</dd>` : ''}</dl>
+      <dl class="kv"><dt>${selling ? 'مبلغ البيع · 50%' : 'التعويض عن المبنى'}</dt><dd class="num">${fmt(selling ? buildingSaleValue(p) : 0)}</dd>${income ? `<dt>اجمع الدخل أولًا قبل البيع أو الإزالة</dt><dd class="num">${fmt(income)}</dd>` : ''}</dl>
       <p class="note">سيختفي المبنى وتصبح القطعة نظيفة ومتاحة للبناء. ${p.status === 'building' ? 'سيُلغى الإنشاء الحالي نهائيًا. ' : ''}لا يمكن التراجع عن هذه العملية.</p>
       ${p.buildingId === 'recycling' ? `<p class="note">لن تُحذف آلياتك؛ تُوزّع على المصانع المتبقية، أو تبقى محفوظة إلى أن تبني مصنعًا جديدًا.</p>` : ''}
       ${blocked ? '<p role="alert">انتظر عودة جميع آليات هذا المصنع أولًا.</p>' : ''}

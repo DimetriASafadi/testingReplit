@@ -96,7 +96,7 @@ test('existing long counters shorten once without losing progress, earned income
   assert.equal(mp.endsAt - now, 59500);
   const coins = migrated.state.coins;
   migrated.dispatch({ type: 'collectBuilding', plotId: 0 });
-  assert.equal(migrated.state.coins - coins, 2 * building('food_shop').income);
+  assert.equal(migrated.state.coins - coins, building('food_shop').income);
   const reloaded = new GameStore(storage, now + 1000);
   assert.equal(reloaded.state.districts[0].projects.find(p => p.id === 'water')!.endsAt, mp.endsAt);
   validateSave(reloaded.state);

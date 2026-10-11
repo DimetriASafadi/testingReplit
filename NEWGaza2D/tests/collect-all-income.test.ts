@@ -22,19 +22,20 @@ for (const testMode of [true, false]) {
     Object.assign(plot, { status: 'built', buildingId: 'food_shop', startedAt: now - period * 6,
       endsAt: now - period * 5, incomeAt: now - period * 3.25 });
     const shown = buildingIncomeDetails(plot, now);
-    assert.equal(shown.periods, 3);
-    assert.equal(shown.amount, 3 * building(plot.buildingId).income);
-    assert.equal(shown.nextAt - now, period * .75);
+    assert.equal(shown.periods, 1);
+    assert.equal(shown.amount, building(plot.buildingId).income);
+    assert.ok(shown.nextAt <= now);
+    assert.equal(buildingIncomeDetails(plot, now + period * 100).amount, shown.amount);
     assert.equal(districtIncome(d, now).total, shown.amount);
     assert.equal(buildingAccruedIncome(plot, now), shown.amount);
     const before = store.state.coins;
     store.dispatch({ type: 'collectBuilding', plotId: plot.id });
     assert.equal(store.state.coins - before, shown.amount);
     assert.equal(buildingIncomeDetails(plot, now).amount, 0);
-    assert.equal(buildingIncomeDetails(plot, now).nextAt, shown.nextAt);
-    assert.equal(buildingIncomeDetails(plot, shown.nextAt - 1).amount, 0);
-    assert.equal(buildingIncomeDetails(plot, shown.nextAt).amount, shown.perPeriod);
-    assert.equal(buildingIncomeDetails({ ...plot, status: 'building' }, shown.nextAt).amount, 0);
+    assert.equal(buildingIncomeDetails(plot, now).nextAt, now + period);
+    assert.equal(buildingIncomeDetails(plot, now + period - 1).amount, 0);
+    assert.equal(buildingIncomeDetails(plot, now + period).amount, shown.perPeriod);
+    assert.equal(buildingIncomeDetails({ ...plot, status: 'building' }, now + period).amount, 0);
     validateSave(store.state);
   });
 }
@@ -63,14 +64,15 @@ for (const testMode of [true, false]) {
     const inventory = structuredClone(store.state.inventory), outside = structuredClone(other);
     validateSave(store.state);
     const before = store.state.coins, available = districtIncome(d, now);
-    const expected = home.income * 3 + ['commerce', 'farm', 'industry'].reduce((sum, id) => {
-      const def = definitions.find(p => p.id === id)!; return sum + def.income * (def.period ? 2 : 1);
+    const expected = home.income + ['commerce', 'farm', 'industry'].reduce((sum, id) => {
+      const def = definitions.find(p => p.id === id)!; return sum + def.income;
     }, 0);
     assert.equal(available.total, expected);
     assert.equal(available.count, 4);
     store.dispatch({ type: 'collectAllIncome' });
     assert.equal(store.state.coins, before + expected);
-    assert.equal(d.plots[0].incomeAt, now - period / 4);
+    assert.equal(d.plots[0].incomeAt, now);
+    assert.equal(d.projects.find(p => p.id === 'commerce')!.incomeAt, now);
     assert.equal(d.projects.find(p => p.id === 'farm')!.status, 'complete');
     assert.equal(d.projects.find(p => p.id === 'industry')!.status, 'complete');
     assert.deepEqual(store.state.districts[1], outside);
@@ -79,7 +81,7 @@ for (const testMode of [true, false]) {
     assert.throws(() => store.dispatch({ type: 'collectAllIncome' }), /لا يوجد دخل جاهز/);
     const restored = new GameStore(storage, now);
     assert.equal(restored.state.coins, before + expected);
-    assert.throws(() => restored.dispatch({ type: 'collectBuilding', plotId: 0 }), /يتراكم الدخل/);
+    assert.throws(() => restored.dispatch({ type: 'collectBuilding', plotId: 0 }), /يجهز الدخل/);
     restored.tick(now + period / 2);
     assert.equal(districtIncome(restored.state.districts[0], restored.state.lastSeen).plots.length, 1);
     restored.dispatch({ type: 'map' });

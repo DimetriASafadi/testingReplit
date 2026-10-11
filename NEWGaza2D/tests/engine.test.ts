@@ -128,7 +128,7 @@ test('sale respects recorded paid price; legacy buildings remain sellable and ba
   }
 });
 
-test('disposal collects earned income once, rejects changed targets and preserves unrelated buildings', () => {
+test('disposal requires explicit income collection, rejects changed targets and preserves unrelated buildings', () => {
   for (const type of ['sellBuilding','removeBuilding'] as const) {
     const {storage,store}=setup(), def=BUILDINGS.find(b=>b.income>0)!;
     store.dispatch({type:'place',plotId:0,buildingId:def.id,orientation:0});
@@ -137,12 +137,15 @@ test('disposal collects earned income once, rejects changed targets and preserve
     const unrelated=JSON.stringify(store.state.districts[0].plots[1]);
     assert.throws(()=>store.dispatch({type,plotId:0,expected:{buildingId:def.id,startedAt:p.startedAt+1}}),/تغيّر المبنى/);
     const before=store.state.coins;
+    assert.throws(()=>store.dispatch({type,plotId:0}),/اجمع دخل المبنى أولًا/);
+    assert.equal(store.state.coins,before);
+    store.dispatch({type:'collectBuilding',plotId:0});
     store.dispatch({type,plotId:0});
-    assert.equal(store.state.coins,before+2*def.income+(type==='sellBuilding'?Math.floor(def.cost/2):0));
+    assert.equal(store.state.coins,before+def.income+(type==='sellBuilding'?Math.floor(def.cost/2):0));
     assert.equal(JSON.stringify(store.state.districts[0].plots[1]),unrelated);
     store.tick(store.state.lastSeen+7200000);
     assert.equal(new GameStore(storage,store.state.lastSeen).state.coins,store.state.coins);
-    assert.equal(store.state.coins,before+2*def.income+(type==='sellBuilding'?Math.floor(def.cost/2):0));
+    assert.equal(store.state.coins,before+def.income+(type==='sellBuilding'?Math.floor(def.cost/2):0));
     const rubble=store.state.districts[0].plots.find(p=>p.status==='rubble')!;
     assert.throws(()=>store.dispatch({type,plotId:rubble.id}),/للمباني فقط/);
   }

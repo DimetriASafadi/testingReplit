@@ -17,7 +17,7 @@ export function districtIncome(district: DistrictState, now: number) {
     if (!def.period) return project.status === 'ready'
       ? [{ project, periods: 0, period: 0, amount: def.income }] : [];
     const interval = activityDuration(def.period * 1000);
-    const periods = Math.max(0, Math.floor((now - project.incomeAt) / interval));
+    const periods = Number(now >= project.incomeAt + interval);
     return project.status === 'complete' && periods > 0
       ? [{ project, periods, period: interval, amount: periods * def.income }] : [];
   });

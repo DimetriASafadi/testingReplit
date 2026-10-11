@@ -7,7 +7,7 @@ import { availableDepotTeam, balanceFleetDepots } from './fleet-depots';
 import { isOrientation, nextOrientation } from './orientation';
 import { MIN_CAMERA_ZOOM } from './camera-overview';
 import { buildingAccruedIncome, buildingSaleValue } from './building-disposal';
-import { activityDuration, applyTimingProfile, buildingIncomePeriod, incomeIntervalLabel, timingProfile } from './game-timing';
+import { activityDuration, applyTimingProfile, incomeIntervalLabel, timingProfile } from './game-timing';
 import { districtIncome } from './district-income';
 import { buildingIncomeDetails } from './building-income';
 
@@ -180,7 +180,8 @@ export class GameStore implements GameAPI {
           ensure(!action.expected || (p.buildingId === action.expected.buildingId && p.startedAt === action.expected.startedAt),
             'تغيّر المبنى؛ افتح تفاصيله وأكّد العملية مجددًا');
           ensure(!factoryRotationBlocked(this.state, p.id), 'انتظر عودة جميع آليات المصنع قبل بيعه أو إزالته');
-          this.state.coins += buildingAccruedIncome(p, now) + (action.type === 'sellBuilding' ? buildingSaleValue(p) : 0);
+          ensure(buildingAccruedIncome(p, now) === 0, 'اجمع دخل المبنى أولًا قبل بيعه أو إزالته');
+          this.state.coins += action.type === 'sellBuilding' ? buildingSaleValue(p) : 0;
           Object.assign(p, { status: 'empty', orientation: 0, startedAt: 0, endsAt: 0, incomeAt: 0 });
           delete p.paidCost;
           balanceFleetDepots(this.state);
@@ -254,9 +255,9 @@ export class GameStore implements GameAPI {
           if (def.period) {
             ensure(p.status === 'complete', 'لم يكتمل المشروع');
             const period = activityDuration(def.period * 1000);
-            const periods = Math.floor((now - p.incomeAt) / period);
-            ensure(periods > 0, `يتراكم الدخل كل ${incomeIntervalLabel()}`); this.state.coins += periods * def.income;
-            p.incomeAt += periods * period;
+            ensure(now >= p.incomeAt + period, `يجهز الدخل بعد ${incomeIntervalLabel()}`);
+            this.state.coins += def.income;
+            p.incomeAt = now;
           } else {
             ensure(p.status === 'ready', 'الدخل غير جاهز للتحصيل');
             this.state.coins += def.income; p.status = 'complete';
@@ -267,16 +268,16 @@ export class GameStore implements GameAPI {
           const p = this.plot(action.plotId), def = building(p.buildingId);
           ensure(p.status === 'built' && def.income > 0, 'المبنى لا ينتج دخلًا حاليًا');
           const income = buildingIncomeDetails(p, now);
-          ensure(income.periods > 0, `يتراكم الدخل كل ${incomeIntervalLabel()}`);
-          this.state.coins += income.amount; p.incomeAt += income.periods * income.period; break;
+          ensure(income.periods > 0, `يجهز الدخل بعد ${incomeIntervalLabel()}`);
+          this.state.coins += income.amount; p.incomeAt = now; break;
         }
         case 'collectAllIncome': {
           const income = districtIncome(this.district(), now);
           ensure(income.total > 0, 'لا يوجد دخل جاهز للجمع في هذا الحي');
           this.state.coins += income.total;
-          for (const entry of income.plots) entry.plot.incomeAt += entry.periods * buildingIncomePeriod();
+          for (const entry of income.plots) entry.plot.incomeAt = now;
           for (const entry of income.investments) {
-            if (entry.period) entry.project.incomeAt += entry.periods * entry.period;
+            if (entry.period) entry.project.incomeAt = now;
             else entry.project.status = 'complete';
           }
           break;
