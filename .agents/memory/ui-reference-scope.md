@@ -70,3 +70,9 @@ For the standalone 2D game, menus and windows should use dark navy-blue surfaces
 **Why:** The user supplied a navy panel reference with white Arabic labels and small green completion indicators and explicitly requested these colors throughout the menus/windows.
 
 **How to apply:** Keep menu, construction, material, settings and HUD surfaces consistent; reserve green for completion/status indicators and red for destructive/error states. Preserve the uploaded multicolor icon artwork, scene art, Arabic font and existing portrait/landscape layouts. The earlier broader action-color guidance above is not a reason to restore green primary buttons in the 2D game.
+
+مؤشرات المشاريع ومربعات شروط استلام الحي تكون خضراء، حتى قبل الاكتمال، بدرجات تميّز حالة الشرط.
+
+**Why:** المستخدم حدّد هذه المؤشرات في صور القوائم وطلب تحويلها إلى الأخضر؛ اللون الأخضر وحده لا يعني اكتمال الشرط.
+
+**How to apply:** استخدم أخضر هادئًا للشروط غير المكتملة وأخضر أوضح مع علامة التأكيد للمكتملة، دون تغيير شروط التقدم أو تحويل خلفيات القوائم إلى الأخضر.

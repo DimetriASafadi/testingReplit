@@ -46,6 +46,25 @@ dialog::backdrop{background:rgba(3,12,28,.65)}
 .ladder li.claimed button{color:#89d9ac}
 .tag.gold,.dock .badge{color:var(--on-gold)}
 .big-num{color:#a9d6ff}
+.item:is(.idle,.building,.ready,.complete) .st{
+  background:linear-gradient(145deg,#68d99a,#238b55);
+  border:1px solid #8aefb4;
+  box-shadow:0 0 5px rgba(55,206,119,.3),inset 0 1px 1px rgba(255,255,255,.3);
+  flex:none;
+}
+.item.building .st{background:linear-gradient(145deg,#a0f2b8,#35b873)}
+.item.ready .st{background:linear-gradient(145deg,#bdffd2,#44d985);box-shadow:0 0 8px rgba(68,217,133,.5)}
+.item.complete .st{background:linear-gradient(145deg,#57c98b,#21804e)}
+.check i{
+  background:linear-gradient(145deg,#1c5b43,#123c30);
+  border:1px solid #4da578;
+  box-shadow:inset 0 1px 1px rgba(133,235,174,.15);
+}
+.check.ok i{
+  background:linear-gradient(145deg,#52cf89,#248753);
+  border-color:#89edb3;
+  box-shadow:0 0 5px rgba(55,206,119,.25);
+}
 .check.ok i::after{border-color:var(--ink)}
 .audio-row input{accent-color:#7bbcff}
 .dock button,.banner{color:var(--ink)}
