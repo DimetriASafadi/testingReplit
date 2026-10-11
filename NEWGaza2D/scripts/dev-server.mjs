@@ -1,6 +1,7 @@
 import { createServer } from 'vite';
 import { fileURLToPath } from 'node:url';
 import { reclaimGamePort } from './dev-server-ownership.mjs';
+import { withGameStartupLock } from './dev-server-startup-lock.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const port = Number(process.env.PORT);
@@ -21,8 +22,10 @@ async function shutdown() {
 process.once('SIGTERM', shutdown);
 process.once('SIGINT', shutdown);
 
-const replaced = await reclaimGamePort(root, port);
-if (replaced.length) console.log(`Replaced previous game server: ${replaced.join(', ')}`);
-server = await createServer({ root });
-await server.listen();
+await withGameStartupLock(root, port, async () => {
+  const replaced = await reclaimGamePort(root, port);
+  if (replaced.length) console.log(`Replaced previous game server: ${replaced.join(', ')}`);
+  server = await createServer({ root });
+  await server.listen();
+});
 server.printUrls();

@@ -27,8 +27,8 @@ Development startup must safely supersede a verified previous instance rather th
 
 **How to apply:** Before taking over an occupied injected port, verify the listener's owning user, exact game working directory, and allowed server entrypoint. Reject unrelated or unverifiable listeners; terminate only verified predecessors gracefully and wait for port release. This handles duplicate startup, not workspace inactivity.
 
-A port-ownership preflight is not an atomic startup lock.
+A port-ownership preflight is not an atomic startup lock; serialize takeover through successful binding with an OS lock.
 
 **Why:** A subsequent managed start still reported a bind conflict despite the ownership guard, while another instance was serving. Checking a free port before asynchronous server initialization leaves a window in which another start can bind it.
 
-**How to apply:** Treat serialization through successful binding as a separate requirement when addressing simultaneous starts. Keep ownership verification even with serialization, and do not claim the preflight alone eliminates every startup conflict.
+**How to apply:** Hold a shared startup lock across ownership verification, predecessor shutdown, and successful binding. Release it after startup or failure, never unlink its shared inode while contenders can exist, and keep the exact-game ownership checks. OS locking and helper-stdin closure avoid stale locks after process death. This protects concurrent startup, not workspace inactivity or permanent hosting.

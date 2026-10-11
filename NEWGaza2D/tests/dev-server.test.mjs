@@ -7,6 +7,8 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { createConnection } from 'node:net';
 import { listeningInodes, isGameServer, reclaimGamePort } from '../scripts/dev-server-ownership.mjs';
+import { withGameStartupLock } from '../scripts/dev-server-startup-lock.mjs';
+import { setTimeout as delay } from 'node:timers/promises';
 
 test('only listening IPv4/IPv6 sockets on the requested port are selected', () => {
   const table = `sl local_address rem_address st tx_queue tr retrnsmt uid timeout inode
@@ -55,4 +57,29 @@ test('an unrelated listener remains alive and available after a refused takeover
     const socket = createConnection({ host: '127.0.0.1', port });
     await once(socket, 'connect'); socket.destroy();
   });
+});
+
+test('concurrent game starts serialize ownership checks through port binding', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'newgaza-lock-'));
+  let active = 0, peak = 0, completed = 0;
+  try {
+    await Promise.all(Array.from({ length: 4 }, () =>
+      withGameStartupLock(root, 18578, async () => {
+        peak = Math.max(peak, ++active);
+        await delay(60);
+        --active; ++completed;
+      })));
+    assert.equal(peak, 1);
+    assert.equal(completed, 4);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test('failed startup releases the lock for the next attempt', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'newgaza-lock-'));
+  try {
+    await assert.rejects(withGameStartupLock(root, 18578, async () => {
+      throw new Error('fixture startup failure');
+    }), /fixture startup failure/);
+    assert.equal(await withGameStartupLock(root, 18578, async () => 'started'), 'started');
+  } finally { await rm(root, { recursive: true, force: true }); }
 });
