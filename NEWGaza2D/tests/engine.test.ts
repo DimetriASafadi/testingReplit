@@ -12,7 +12,7 @@ import { ORIENTATION_CYCLE, nextOrientation, rotateLotPoint, isOrientation } fro
 import { buildingSaleValue } from '../src/building-disposal';
 import { PROJECT_GEMS, DISTRICT_GEMS, HALF_TIME_GEMS } from '../src/gems';
 import { activityDuration } from '../src/game-timing';
-import { warehouseMotion, truckDeliveryRoute, truckHomeRoute, recyclingBay } from '../src/warehouse-cycle';
+import { warehouseMotion, truckDeliveryRoute, truckHomeRoute, recyclingBay, recyclerGateDemand, recyclerVisitWindow } from '../src/warehouse-cycle';
 import { depotPortal } from '../src/fleet-motion';
 import { unitInJob } from '../src/fleet-depots';
 
@@ -348,7 +348,7 @@ test('new clearing needs an equipment warehouse; legacy recycler-only missions s
   store.dispatch({type:'clear',plotId:2});
   const old = store.state.jobs[0];
   old.originPlotId = old.recyclingPlotId!;
-  for (const key of ['recyclingPlotId','toolsReturnEnd','unloadAt','unloadStartAt','unloadEnd','truckHomeDepartureAt','travelSpeed','delivered'] as const) delete old[key];
+  for (const key of ['recyclingPlotId','toolsReturnEnd','unloadAt','unloadStartAt','unloadEnd','truckHomeDepartureAt','travelSpeed','delivered','insideUnloading'] as const) delete old[key];
   d.plots[1].status = 'empty';
   validateSave(store.state);
   storage.setItem(SAVE_KEY,store.exportSave());
@@ -403,7 +403,7 @@ test('warehouse delivery and empty-return routes are continuous and opaque for a
     for(const boundary of [j.unloadAt!,j.unloadStartAt!,j.unloadEnd!,j.truckHomeDepartureAt!]) {
       const a=warehouseMotion(j,w,p,r,'truck',boundary-1), b=warehouseMotion(j,w,p,r,'truck',boundary);
       assert.ok(Math.hypot(a.position[0]-b.position[0],a.position[1]-b.position[1])<.02);
-      assert.equal(b.visibility,1);
+      assert.equal(b.visibility,0);
     }
     assert.equal(warehouseMotion(j,w,p,r,'truck',j.returnEnd-249).visibility,0);
     validateSave(store.state);
@@ -423,13 +423,52 @@ test('queued trucks wait outside the unloading bay and approach it continuously 
   for(const t of [j.unloadAt!,j.unloadStartAt!]) {
     const a=warehouseMotion(j,w,p,r,'truck',t-1), b=warehouseMotion(j,w,p,r,'truck',t);
     assert.ok(Math.hypot(a.position[0]-b.position[0],a.position[1]-b.position[1]) < .02);
-    assert.equal(b.visibility,1);
+    assert.equal(b.visibility,t===j.unloadStartAt ? 0 : 1);
   }
   const waiting=warehouseMotion(j,w,p,r,'truck',j.unloadAt!);
   assert.equal(waiting.stage,'waiting');
   assert.ok(Math.hypot(waiting.position[0]-recyclingBay(r)[0],waiting.position[1]-recyclingBay(r)[1]) > .6);
   validateSave(store.state);
   assert.equal(new GameStore(storage,store.state.lastSeen).state.jobs[1].unloadQueueDistance,j.unloadQueueDistance);
+  const a=recyclerVisitWindow(first,r), b=recyclerVisitWindow(j,r);
+  assert.ok(a.end<=b.start);
+});
+test('truck passes through the correct factory door, unloads hidden inside, then exits empty on every face', () => {
+  for(const o of ORIENTATION_CYCLE) {
+    const {store,storage}=ready(), d=store.state.districts[0], r=d.plots[0], w=d.plots[1], p=d.plots[2];
+    r.orientation=o;
+    store.dispatch({type:'clear',plotId:2});
+    const j=store.state.jobs[0];
+    assert.equal(j.insideUnloading,true);
+    assert.deepEqual(recyclingBay(r),depotPortal(r).inside);
+    const entry=warehouseMotion(j,w,p,r,'truck',j.unloadStartAt!-300);
+    assert.equal(entry.visibility,1); assert.equal(entry.portal,true); assert.equal(entry.portalPlotId,r.id);
+    assert.equal(recyclerGateDemand(j,r,j.unloadStartAt!-300).open,true);
+    const unloading=warehouseMotion(j,w,p,r,'truck',j.unloadStartAt!+2000);
+    assert.deepEqual(unloading.position,depotPortal(r).inside);
+    assert.equal(unloading.visibility,0); assert.equal(unloading.stage,'unload');
+    assert.equal(recyclerGateDemand(j,r,j.unloadStartAt!+2000).open,false);
+    const exit=warehouseMotion(j,w,p,r,'truck',j.truckHomeDepartureAt!+1000);
+    assert.equal(exit.visibility,1); assert.equal(exit.portal,true); assert.equal(exit.portalPlotId,r.id);
+    assert.equal(recyclerGateDemand(j,r,j.truckHomeDepartureAt!+1000).open,true);
+    const restored=new GameStore(storage,j.unloadStartAt!+2000);
+    assert.equal(restored.state.jobs[0].insideUnloading,true);
+    assert.equal(restored.state.inventory.value,0);
+    restored.tick(j.unloadEnd!); const value=restored.state.inventory.value;
+    restored.tick(j.returnEnd); assert.equal(restored.state.inventory.value,value);
+    validateSave(restored.state);
+  }
+});
+test('previous outdoor unloading saves keep their dock and deadlines instead of jumping into the factory', () => {
+  const {store,storage}=ready(),d=store.state.districts[0];
+  store.dispatch({type:'clear',plotId:2});
+  const j=store.state.jobs[0]; delete j.insideUnloading;
+  storage.setItem(SAVE_KEY,store.exportSave());
+  const restored=new GameStore(storage,store.state.lastSeen), saved=restored.state.jobs[0];
+  assert.equal(saved.returnEnd,j.returnEnd);
+  const motion=warehouseMotion(saved,d.plots[1],d.plots[2],d.plots[0],'truck',j.unloadStartAt!+1000);
+  assert.deepEqual(motion.position,recyclingBay(d.plots[0],false));
+  assert.equal(motion.visibility,1);
 });
 test('two recycling factories share receiving teams departing from the equipment warehouse', () => {
   const { store, storage } = ready();

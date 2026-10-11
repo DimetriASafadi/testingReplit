@@ -182,7 +182,7 @@ function jobDisplay(j: Parameters<typeof jobPhase>[0], now: number) {
   if (j.recyclingPlotId !== undefined && now >= j.workEnd) {
     if (now < j.unloadAt!) return { label: 'الشاحنة محمّلة في الطريق إلى مصنع إعادة التدوير؛ الحفار والجرافة يعودان للمخزن', end: j.unloadAt!, span: j.unloadAt! - j.workEnd };
     if (now < j.unloadStartAt!) return { label: 'الشاحنة تنتظر دور التفريغ في المصنع', end: j.unloadStartAt!, span: j.unloadStartAt! - j.unloadAt! };
-    if (now < j.unloadEnd!) return { label: 'الشاحنة تفرّغ الركام في مصنع إعادة التدوير', end: j.unloadEnd!, span: j.unloadEnd! - j.unloadStartAt! };
+    if (now < j.unloadEnd!) return { label: j.insideUnloading ? 'الشاحنة تفرّغ الركام داخل مصنع إعادة التدوير' : 'الشاحنة تفرّغ الركام في مصنع إعادة التدوير', end: j.unloadEnd!, span: j.unloadEnd! - j.unloadStartAt! };
     if (now < j.truckHomeDepartureAt!) return { label: 'تم التفريغ؛ الشاحنة تنتظر طريق العودة للمخزن', end: j.truckHomeDepartureAt!, span: j.truckHomeDepartureAt! - j.unloadEnd! };
     return { label: 'الشاحنة فارغة في طريق العودة إلى مخزن المعدات', end: j.returnEnd, span: j.returnEnd - j.truckHomeDepartureAt! };
   }

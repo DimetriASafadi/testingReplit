@@ -132,7 +132,7 @@ function timing(j: Job, source: Plot, target: Plot, returning: boolean) {
 export interface ConvoyMotion {
   position: DepotPoint; ahead: DepotPoint; visibility: number; moving: boolean;
   stage: 'waiting' | 'out' | 'work' | 'return' | 'inside' | 'unload'; reverse: boolean;
-  portal: boolean;
+  portal: boolean; portalPlotId?: number;
 }
 /** Arc-distance spacing: same speed on shared roads, not three independent 0..1 lerps. */
 export function convoyMotion(j: Job, source: Plot, target: Plot, kind: EquipmentKind, now: number): ConvoyMotion {

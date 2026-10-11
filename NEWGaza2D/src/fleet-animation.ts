@@ -5,7 +5,7 @@ import { U } from './art';
 import { convoyMotion, gateDemand, workDock } from './fleet-motion';
 import { DepotDoors } from './depot-door';
 import { machineryDepth } from './machinery-depth';
-import { warehouseMotion } from './warehouse-cycle';
+import { warehouseMotion, recyclerGateDemand } from './warehouse-cycle';
 import { unitInJob } from './fleet-depots';
 
 type Pt = [number, number];
@@ -108,8 +108,9 @@ export class FleetAnimation {
     const seen = new Set<string>(); this.activeIds = new Set();
     const depots = district.plots.filter(p => ['recycling','equipment_store'].includes(p.buildingId) && p.status === 'built');
     for (const depot of depots) {
-      const demands = jobs.filter(j => j.originPlotId === depot.id)
-        .map(j => gateDemand(j, depot, district.plots[j.plotId], now)).filter(d => d.open);
+      const demands = jobs.filter(j => j.originPlotId === depot.id || j.recyclingPlotId === depot.id)
+        .map(j => j.originPlotId === depot.id ? gateDemand(j, depot, district.plots[j.plotId], now)
+          : recyclerGateDemand(j,depot,now)).filter(d => d.open);
       this.doors.update(depot, demands.length > 0, now, demands.length ? Math.min(...demands.map(d => d.since)) : now);
     }
     this.doors.retain(new Set(depots.map(p => p.id)));
@@ -168,7 +169,7 @@ export class FleetAnimation {
         this.drive(a, unit, heading, position, dt, loaded);
       }
       if (motion.portal) {
-        const passage = this.doors.passage(source);
+        const passage = this.doors.passage(district.plots[motion.portalPlotId ?? source.id]);
         if (a.a.mask !== passage.mask) a.a.setMask(passage.mask);
         if (a.a.depth < passage.depth) a.a.setDepth(passage.depth);
       } else if (a.a.mask) a.a.clearMask();

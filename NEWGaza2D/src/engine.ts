@@ -4,7 +4,7 @@ import { validateSave } from './save';
 import { factoryWindows, nextFactorySlot, outgoingTravelDuration, returnTravelDuration } from './fleet-motion';
 import { cityLayout, INITIAL_EMPTY } from './city-layout';
 import { availableDepotTeam, balanceFleetDepots, equipmentWarehouses, unitInJob } from './fleet-depots';
-import { truckDeliveryRoute, truckHomeRoute, UNLOAD_DURATION } from './warehouse-cycle';
+import { truckDeliveryRoute, truckHomeRoute, UNLOAD_DURATION, recyclerOpeningLead, recyclerVisitWindow } from './warehouse-cycle';
 import { CONVOY_SPEED, routeLength } from './fleet-motion';
 import { isOrientation, nextOrientation } from './orientation';
 import { MIN_CAMERA_ZOOM } from './camera-overview';
@@ -253,18 +253,20 @@ export class GameStore implements GameAPI {
           job.returnEnd += Math.max(0, returnWait);
           job.recyclingPlotId = processing.id;
           job.toolsReturnEnd = job.returnEnd;
+          job.insideUnloading = true;
           job.travelSpeed = CONVOY_SPEED * (1 + Math.max(0, level - 1) * .35) / 1000;
           job.unloadAt = job.workEnd + 550 + Math.ceil(routeLength(truckDeliveryRoute(processing, p)) / job.travelSpeed);
           const unloadWindows = this.state.jobs.filter(j => j.districtId === d.id && j.recyclingPlotId === processing.id)
-            .map(j => ({ start: j.unloadStartAt!, end: (j.truckHomeDepartureAt ?? j.unloadEnd!) + 700 }));
-          job.unloadStartAt = nextFactorySlot(job.unloadAt, UNLOAD_DURATION, unloadWindows);
+            .map(j => recyclerVisitWindow(j,processing));
+          const lead = recyclerOpeningLead(processing,job.travelSpeed);
+          job.unloadStartAt = nextFactorySlot(job.unloadAt-lead, lead*2+UNLOAD_DURATION+700, unloadWindows)+lead;
           if (job.unloadStartAt > job.unloadAt) {
             const queued = unloadWindows.filter(w => w.end > job.unloadAt!).length;
-            job.unloadQueueDistance = Math.min(1.7 * Math.max(1,queued), routeLength(truckDeliveryRoute(processing,p)) / 2);
+            job.unloadQueueDistance = Math.min(lead*job.travelSpeed + 1.7 * Math.max(1,queued), routeLength(truckDeliveryRoute(processing,p))-.4);
             job.unloadAt -= Math.ceil(job.unloadQueueDistance / job.travelSpeed);
           }
           job.unloadEnd = job.unloadStartAt + UNLOAD_DURATION;
-          const homeDuration = Math.ceil(routeLength(truckHomeRoute(processing, source)) / job.travelSpeed) + 250;
+          const homeDuration = Math.ceil(routeLength(truckHomeRoute(processing, source)) / job.travelSpeed) + 1000;
           const homeGateDuration = Math.ceil(6.2 / job.travelSpeed) + 950;
           const incomingAt = job.unloadEnd + homeDuration - homeGateDuration;
           const ownWindows = factoryWindows({ ...job, returnEnd: job.toolsReturnEnd }, source, p);

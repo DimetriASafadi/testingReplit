@@ -75,6 +75,7 @@ export function validateSave(value: unknown): asserts value is GameState {
     const origin = d!.plots[j.originPlotId];
     require(origin.status === 'built' && origin.buildingId === (j.recyclingPlotId === undefined ? 'recycling' : 'equipment_store'));
     if (j.recyclingPlotId !== undefined) {
+      require(j.insideUnloading === undefined || typeof j.insideUnloading === 'boolean');
       require(integer(j.recyclingPlotId) && j.recyclingPlotId < d!.plots.length);
       const recycler = d!.plots[j.recyclingPlotId];
       require(recycler.status === 'built' && recycler.buildingId === 'recycling');
