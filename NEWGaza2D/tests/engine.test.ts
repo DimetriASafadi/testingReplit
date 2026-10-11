@@ -12,6 +12,9 @@ import { ORIENTATION_CYCLE, nextOrientation, rotateLotPoint, isOrientation } fro
 import { buildingSaleValue } from '../src/building-disposal';
 import { PROJECT_GEMS, DISTRICT_GEMS, HALF_TIME_GEMS } from '../src/gems';
 import { activityDuration } from '../src/game-timing';
+import { warehouseMotion, truckDeliveryRoute, truckHomeRoute, recyclingBay } from '../src/warehouse-cycle';
+import { depotPortal } from '../src/fleet-motion';
+import { unitInJob } from '../src/fleet-depots';
 
 test('gems reward each project once, including offline completions and legacy progress', () => {
   const storage = new MemoryStorage(), now = Date.now() + 600000;
@@ -248,7 +251,7 @@ test('factories with outbound, working or returning teams cannot be sold or remo
     store.tick(job.returnEnd+1);
     store.dispatch({type,plotId:job.originPlotId});
     assert.equal(store.state.units.length,3);
-    assert.ok(store.state.units.every(u=>u.depotIds?.shujaiya===undefined));
+    assert.ok(store.state.units.every(u=>u.depotIds?.shujaiya===job.recyclingPlotId));
     validateSave(store.state);
   }
 });
@@ -301,19 +304,21 @@ function ready() {
   const result = setup(), { store } = result;
   store.dispatch({ type:'place', plotId:0, buildingId:'recycling', orientation:0 });
   store.tick(store.state.lastSeen + 120000);
+  store.dispatch({ type:'place', plotId:1, buildingId:'equipment_store', orientation:0 });
+  store.tick(store.state.districts[0].plots[1].endsAt);
   for (const kind of ['excavator','bulldozer','truck'] as const) store.dispatch({ type:'buy',kind });
   return result;
 }
 test('return travel matches departure ground speed at near/far sites and every upgrade and factory face', () => {
   for (const orientation of ORIENTATION_CYCLE) for (const level of [1,2,4]) for (const far of [false,true]) {
-    const {store,storage}=ready(), d=store.state.districts[0], source=d.plots[0];
+    const {store,storage}=ready(), d=store.state.districts[0], source=d.plots[1];
     source.orientation=orientation;
     for (const u of store.state.units) u.level=level;
     const targets=d.plots.filter(p=>p.status==='rubble');
     targets.sort((a,b)=>(Math.abs(a.x-source.x)+Math.abs(a.y-source.y))-(Math.abs(b.x-source.x)+Math.abs(b.y-source.y)));
     const target=far?targets.at(-1)!:targets[0];
     store.dispatch({type:'clear',plotId:target.id});
-    const j=store.state.jobs[0], outTime=j.arrival-j.departureAt!, backTime=j.returnEnd-j.returnStartAt!;
+    const j=store.state.jobs[0], outTime=j.arrival-j.departureAt!, backTime=j.toolsReturnEnd!-j.returnStartAt!;
     assert.equal(j.workEnd-j.arrival,60000);
     assert.equal(backTime,returnTravelDuration(source,target,outTime));
     const maxLength=(back:boolean)=>Math.max(...(['excavator','bulldozer','truck'] as const).map(k=>routeLength(fleetRoute(source,target,k,back))))+2*CONVOY_GAP;
@@ -337,7 +342,96 @@ function addDepot(store: GameStore, finish = true) {
 function buyTeam(store: GameStore) {
   for (const kind of ['excavator','bulldozer','truck'] as const) store.dispatch({ type:'buy', kind });
 }
-test('two recycling factories share complete teams and use their own independent portals', () => {
+test('new clearing needs an equipment warehouse; legacy recycler-only missions still restore and settle', () => {
+  const {store,storage} = ready();
+  const d = store.state.districts[0];
+  store.dispatch({type:'clear',plotId:2});
+  const old = store.state.jobs[0];
+  old.originPlotId = old.recyclingPlotId!;
+  for (const key of ['recyclingPlotId','toolsReturnEnd','unloadAt','unloadStartAt','unloadEnd','truckHomeDepartureAt','travelSpeed','delivered'] as const) delete old[key];
+  d.plots[1].status = 'empty';
+  validateSave(store.state);
+  storage.setItem(SAVE_KEY,store.exportSave());
+  const restored = new GameStore(storage,store.state.lastSeen);
+  assert.throws(()=>restored.dispatch({type:'clear',plotId:3}),/مخزن معدات/);
+  restored.tick(old.returnEnd);
+  assert.equal(restored.state.jobs.length,0);
+  assert.equal(restored.state.inventory.value,rubbleYield(old.value).value);
+});
+test('truck unloads at recycler before returning empty; tools return independently; cargo is saved exactly once', () => {
+  const {store,storage}=ready(), d=store.state.districts[0];
+  store.dispatch({type:'clear',plotId:2});
+  const j=structuredClone(store.state.jobs[0]), w=d.plots[j.originPlotId], r=d.plots[j.recyclingPlotId!], p=d.plots[j.plotId];
+  assert.equal(w.buildingId,'equipment_store'); assert.equal(r.buildingId,'recycling');
+  assert.deepEqual(truckDeliveryRoute(r,p).at(-1),recyclingBay(r));
+  assert.deepEqual(truckHomeRoute(r,w)[0],recyclingBay(r));
+  assert.deepEqual(truckHomeRoute(r,w).at(-1),depotPortal(w).inside);
+  assert.equal(warehouseMotion(j,w,p,r,'truck',j.unloadStartAt!+1000).stage,'unload');
+  assert.equal(warehouseMotion(j,w,p,r,'truck',j.truckHomeDepartureAt!+1000).stage,'return');
+  const excavator=store.state.units.find(u=>u.kind==='excavator')!, truck=store.state.units.find(u=>u.kind==='truck')!;
+  assert.equal(unitInJob(j,excavator,j.toolsReturnEnd!),false);
+  assert.equal(unitInJob(j,truck,j.toolsReturnEnd!),true);
+  store.tick(j.unloadEnd!-1); assert.equal(store.state.inventory.value,0);
+  store.tick(j.unloadEnd!);
+  const value=rubbleYield(j.value).value;
+  assert.equal(store.state.inventory.value,value);
+  assert.equal(store.state.jobs.length,1);
+  const restored=new GameStore(storage,j.unloadEnd!+1);
+  assert.equal(restored.state.jobs[0].delivered,true);
+  assert.equal(restored.state.inventory.value,value);
+  restored.tick(j.returnEnd);
+  assert.equal(restored.state.inventory.value,value);
+  assert.equal(restored.state.jobs.length,0);
+  validateSave(restored.state);
+});
+test('warehouse and receiving factory cannot be changed while their saved mission is active', () => {
+  const {store}=ready();
+  store.dispatch({type:'clear',plotId:2});
+  const j=store.state.jobs[0];
+  for(const id of [j.originPlotId,j.recyclingPlotId!]) {
+    assert.throws(()=>store.dispatch({type:'rotateBuilding',plotId:id}),/عودة آليات/);
+    assert.throws(()=>store.dispatch({type:'removeBuilding',plotId:id}),/عودة جميع/);
+  }
+});
+test('warehouse delivery and empty-return routes are continuous and opaque for all 16 building faces', () => {
+  for(const wo of ORIENTATION_CYCLE) for(const ro of ORIENTATION_CYCLE) {
+    const {store}=ready(), d=store.state.districts[0];
+    d.plots[1].orientation=wo; d.plots[0].orientation=ro;
+    store.dispatch({type:'clear',plotId:2});
+    const j=store.state.jobs[0], w=d.plots[1], r=d.plots[0], p=d.plots[2];
+    assert.ok(j.unloadEnd!<j.returnEnd);
+    for(const boundary of [j.unloadAt!,j.unloadStartAt!,j.unloadEnd!,j.truckHomeDepartureAt!]) {
+      const a=warehouseMotion(j,w,p,r,'truck',boundary-1), b=warehouseMotion(j,w,p,r,'truck',boundary);
+      assert.ok(Math.hypot(a.position[0]-b.position[0],a.position[1]-b.position[1])<.02);
+      assert.equal(b.visibility,1);
+    }
+    assert.equal(warehouseMotion(j,w,p,r,'truck',j.returnEnd-249).visibility,0);
+    validateSave(store.state);
+  }
+});
+test('queued trucks wait outside the unloading bay and approach it continuously without losing cargo', () => {
+  const {store,storage}=ready(), d=store.state.districts[0];
+  store.dispatch({type:'clear',plotId:2});
+  const first=store.state.jobs[0];
+  // A truck held at the receiving yard must not let the next one park on top of it.
+  first.truckHomeDepartureAt! += 60000; first.returnEnd += 60000;
+  buyTeam(store);
+  store.dispatch({type:'clear',plotId:3});
+  const j=store.state.jobs[1], w=d.plots[j.originPlotId], r=d.plots[j.recyclingPlotId!], p=d.plots[j.plotId];
+  assert.ok(j.unloadQueueDistance! > 0);
+  assert.ok(j.unloadStartAt! > j.unloadAt!);
+  for(const t of [j.unloadAt!,j.unloadStartAt!]) {
+    const a=warehouseMotion(j,w,p,r,'truck',t-1), b=warehouseMotion(j,w,p,r,'truck',t);
+    assert.ok(Math.hypot(a.position[0]-b.position[0],a.position[1]-b.position[1]) < .02);
+    assert.equal(b.visibility,1);
+  }
+  const waiting=warehouseMotion(j,w,p,r,'truck',j.unloadAt!);
+  assert.equal(waiting.stage,'waiting');
+  assert.ok(Math.hypot(waiting.position[0]-recyclingBay(r)[0],waiting.position[1]-recyclingBay(r)[1]) > .6);
+  validateSave(store.state);
+  assert.equal(new GameStore(storage,store.state.lastSeen).state.jobs[1].unloadQueueDistance,j.unloadQueueDistance);
+});
+test('two recycling factories share receiving teams departing from the equipment warehouse', () => {
   const { store, storage } = ready();
   buyTeam(store);
   const second = addDepot(store), d = store.state.districts[0];
@@ -348,13 +442,14 @@ test('two recycling factories share complete teams and use their own independent
   }
   const targets = d.plots.filter(p => p.status === 'rubble').slice(0,2);
   for (const p of targets) store.dispatch({ type:'clear', plotId:p.id });
-  assert.deepEqual(new Set(store.state.jobs.map(j => j.originPlotId)), new Set([0,second]));
+  assert.deepEqual(new Set(store.state.jobs.map(j => j.recyclingPlotId)), new Set([0,second]));
+  assert.ok(store.state.jobs.every(j => j.originPlotId === 1));
   for (const j of store.state.jobs) {
-    assert.ok(j.unitIds.every(id => store.state.units.find(u => u.id === id)!.depotIds![d.id] === j.originPlotId));
+    assert.ok(j.unitIds.every(id => store.state.units.find(u => u.id === id)!.depotIds![d.id] === j.recyclingPlotId));
     for (const id of j.unitIds) {
       const u = store.state.units.find(u => u.id === id)!;
       const source = d.plots[j.originPlotId], target = d.plots[j.plotId];
-      assert.equal(convoyMotion(j, source, target, u.kind, j.returnEnd - 100).visibility, 0);
+      assert.equal(warehouseMotion(j, source, target, d.plots[j.recyclingPlotId!], u.kind, j.returnEnd - 100).visibility, 0);
     }
   }
   validateSave(store.state);
@@ -407,7 +502,7 @@ test('legacy fleet saves acquire balanced depot homes and keep returning jobs at
   storage.setItem(SAVE_KEY, store.exportSave());
   const restored = new GameStore(storage, store.state.lastSeen);
   assert.deepEqual(restored.state.jobs[0], job);
-  for (const id of job.unitIds) assert.equal(restored.state.units.find(u => u.id === id)!.depotIds?.shujaiya, job.originPlotId);
+  for (const id of job.unitIds) assert.equal(restored.state.units.find(u => u.id === id)!.depotIds?.shujaiya, job.recyclingPlotId);
   assert.equal(restored.state.units.filter(u => u.depotIds?.shujaiya === second).length, 3);
   validateSave(restored.state);
   const invalid = structuredClone(restored.state);
@@ -459,7 +554,7 @@ test('multiple teams reserve the factory portal, save queues and settle once aft
   const targets = store.state.districts[0].plots.filter(p => p.status === 'rubble').slice(0, 2);
   for (const target of targets) store.dispatch({ type: 'clear', plotId: target.id });
   assert.equal(store.state.jobs.length, 2);
-  const d = store.state.districts[0], source = d.plots[0];
+  const d = store.state.districts[0], source = d.plots[1];
   const windows = store.state.jobs.flatMap(j => factoryWindows(j, source, d.plots[j.plotId]));
   for (let i = 0; i < windows.length; i++) for (let k = i + 1; k < windows.length; k++)
     assert.ok(windows[i].end <= windows[k].start || windows[k].end <= windows[i].start, JSON.stringify(windows));
@@ -661,6 +756,8 @@ test('complete fourteen-district campaign via real actions and timers, hourly tr
     if(i>0) {
       store.dispatch({type:'place',plotId:0,buildingId:'recycling',orientation:(i%2) as 0|1});
       store.tick(store.state.districts[i].plots[0].endsAt);
+      store.dispatch({type:'place',plotId:1,buildingId:'equipment_store',orientation:0});
+      store.tick(store.state.districts[i].plots[1].endsAt);
     }
     for(const plot of store.state.districts[i].plots.filter(p=>p.status==='rubble')) {
       store.dispatch({type:'clear',plotId:plot.id});

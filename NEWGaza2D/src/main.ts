@@ -9,6 +9,7 @@ import { GameStore, SAVE_KEY, districtProgress, jobPhase, factoryRotationBlocked
 import type { Category, DistrictState, EquipmentKind, GameState, Plot, Orientation } from './model';
 import { BootScene, CityScene } from './scenes/CityScene';
 import { machinePreview } from './fleet-animation';
+import { equipmentWarehouses, unitInJob } from './fleet-depots';
 import { previewUrl, SPR, builtKey } from './realart';
 import { ORIENTATION_CYCLE, ORIENTATION_LABELS, nextOrientation } from './orientation';
 import { patchContent } from './dom-patch';
@@ -82,8 +83,9 @@ const S = () => store.state;
 const cur = (): DistrictState | undefined => S().districts.find(d => d.id === S().currentDistrict);
 const dName = (id: string) => DISTRICTS.find(d => d.id === id)?.name ?? id;
 const hasRecycler = (st: GameState) => st.districts.some(d => d.id === st.currentDistrict && d.plots.some(p => p.buildingId === 'recycling' && p.status === 'built'));
+const hasWarehouse = (st: GameState) => st.districts.some(d => d.id === st.currentDistrict && equipmentWarehouses(d).length > 0);
 const recyclerStarted = (st: GameState) => st.districts.some(d => d.id === st.currentDistrict && d.plots.some(p => p.buildingId === 'recycling' && (p.status === 'built' || p.status === 'building')));
-const busy = (st: GameState) => new Set(st.jobs.flatMap(j => j.unitIds));
+const busy = (st: GameState) => new Set(st.units.filter(u => st.jobs.some(j => unitInJob(j, u, st.lastSeen))).map(u => u.id));
 
 // ---------- focus-preserving region renderer ----------
 const regions = new Map<string, string>();
@@ -139,6 +141,7 @@ function objective(st: GameState, d: DistrictState) {
   const steps = [
     { t: 'اختر أرضًا نظيفة وابنِ مصنع إعادة التدوير (15,000، يستغرق دقيقتين)', ok: recyclerStarted(st) },
     { t: 'انتظر اكتمال المصنع', ok: hasRecycler(st) },
+    { t: 'ابنِ مخزن معدات وانتظر اكتماله ليكون مقر انطلاق الآليات وعودتها', ok: hasWarehouse(st) },
     { t: 'اشترِ فريقًا كاملًا: حفار وجرافة وشاحنة نقل', ok: (['excavator', 'bulldozer', 'truck'] as const).every(k => st.units.some(u => u.kind === k)) },
     { t: 'اختر أرض أنقاض وأرسل الآليات: سفر ثم دقيقة عمل ثم عودة', ok: st.jobs.length > 0 || d.plots.filter(p => p.status === 'rubble').length < 53 },
     { t: 'بِع المواد المستعادة وابدأ مشاريع الحي التسعة', ok: d.projects.some(p => p.status !== 'idle') },
@@ -176,9 +179,16 @@ function renderCity() {
 
 function jobFor(st: GameState, d: DistrictState, p: Plot) { return st.jobs.find(j => j.districtId === d.id && j.plotId === p.id); }
 function jobDisplay(j: Parameters<typeof jobPhase>[0], now: number) {
+  if (j.recyclingPlotId !== undefined && now >= j.workEnd) {
+    if (now < j.unloadAt!) return { label: 'الشاحنة محمّلة في الطريق إلى مصنع إعادة التدوير؛ الحفار والجرافة يعودان للمخزن', end: j.unloadAt!, span: j.unloadAt! - j.workEnd };
+    if (now < j.unloadStartAt!) return { label: 'الشاحنة تنتظر دور التفريغ في المصنع', end: j.unloadStartAt!, span: j.unloadStartAt! - j.unloadAt! };
+    if (now < j.unloadEnd!) return { label: 'الشاحنة تفرّغ الركام في مصنع إعادة التدوير', end: j.unloadEnd!, span: j.unloadEnd! - j.unloadStartAt! };
+    if (now < j.truckHomeDepartureAt!) return { label: 'تم التفريغ؛ الشاحنة تنتظر طريق العودة للمخزن', end: j.truckHomeDepartureAt!, span: j.truckHomeDepartureAt! - j.unloadEnd! };
+    return { label: 'الشاحنة فارغة في طريق العودة إلى مخزن المعدات', end: j.returnEnd, span: j.returnEnd - j.truckHomeDepartureAt! };
+  }
   const ph = jobPhase(j, now);
   if (ph === 'travel' && now < (j.departureAt ?? j.start))
-    return { label: 'انتظار دور الخروج من المصنع', end: j.departureAt!, span: j.departureAt! - j.start };
+    return { label: j.recyclingPlotId === undefined ? 'انتظار دور الخروج من المصنع' : 'انتظار دور الخروج من مخزن المعدات', end: j.departureAt!, span: j.departureAt! - j.start };
   if (ph === 'return' && now < (j.returnStartAt ?? j.workEnd))
     return { label: 'انتظار دور العودة إلى المصنع', end: j.returnStartAt!, span: j.returnStartAt! - j.workEnd };
   return { label: PHASE[ph], end: ph === 'travel' ? j.arrival : ph === 'work' ? j.workEnd : j.returnEnd,
@@ -187,7 +197,7 @@ function jobDisplay(j: Parameters<typeof jobPhase>[0], now: number) {
 function jobHtml(st: GameState, d: DistrictState, p: Plot, now: number) {
   const j = jobFor(st, d, p); if (!j) return '';
   const { label, end, span } = jobDisplay(j, now);
-  return `<div class="note"><b>${label}</b> — متبقٍ <span class="num">${dur(end - now)}</span><div class="meter" style="margin-top:6px"><i style="transform:scaleX(${Math.min(1, 1 - (end - now) / Math.max(1, span))})"></i></div><small>الآليات: ${j.unitIds.map(id => EQUIPMENT[st.units.find(u => u.id === id)?.kind ?? 'truck'].name).join('، ')} — محجوزة حتى العودة. تُضاف المواد عند وصولها للمصنع.</small></div>`;
+  return `<div class="note"><b>${label}</b> — متبقٍ <span class="num">${dur(end - now)}</span><div class="meter" style="margin-top:6px"><i style="transform:scaleX(${Math.min(1, 1 - (end - now) / Math.max(1, span))})"></i></div><small>الآليات: ${j.unitIds.map(id => EQUIPMENT[st.units.find(u => u.id === id)?.kind ?? 'truck'].name).join('، ')} — ${j.recyclingPlotId === undefined ? 'محجوزة حتى العودة. تُضاف المواد عند وصولها للمصنع.' : 'كل آلية تصبح متاحة بعد عودتها للمخزن. تُضاف المواد عند انتهاء تفريغ الشاحنة في المصنع.'}</small></div>`;
 }
 
 const previews = new Map<string, string>();
@@ -205,9 +215,9 @@ function plotSheet(st: GameState, d: DistrictState, now: number) {
     title = `أنقاض ${b.name}`; sub = 'أرض مغطاة بالركام';
     const free = st.units.filter(u => !busy(st).has(u.id));
     const j = jobFor(st, d, p);
-    body = j ? jobHtml(st, d, p, now) : `<p>ترسل الآليات المتاحة من مصنع إعادة التدوير عبر الشوارع. السفر حسب المسافة ومستوى الآلية، ثم <b>60 ثانية عمل</b> في الموقع، ثم العودة محمّلة (30–90 ثانية). تصبح الأرض نظيفة عند انتهاء العمل.</p>
-      ${!hasRecycler(st) ? '<p class="note">يلزم أولًا بناء مصنع إعادة التدوير على أرض نظيفة.</p>' : !st.units.length ? '<p class="note">لا توجد آليات بعد. اشترِ آلية من لوحة الآليات.</p>' : `<p class="note">آليات متاحة: <b class="num">${fmt(free.length)}</b> من ${fmt(st.units.length)}</p>`}
-      <button class="btn gold" data-a="clear" data-k="clear" ${hasRecycler(st) && free.length ? '' : 'disabled'}>إرسال الآليات لإزالة الأنقاض</button>`;
+    body = j ? jobHtml(st, d, p, now) : `<p>تنطلق الآليات من مخزن المعدات عبر الشوارع، ثم <b>60 ثانية عمل</b> في الموقع. يعود الحفار والجرافة للمخزن، وتذهب الشاحنة محمّلة إلى مصنع إعادة التدوير للتفريغ ثم تعود فارغة للمخزن. تصبح الأرض نظيفة عند انتهاء العمل.</p>
+      ${!hasRecycler(st) ? '<p class="note">يلزم أولًا بناء مصنع إعادة التدوير على أرض نظيفة.</p>' : !hasWarehouse(st) ? '<p class="note">ابنِ مخزن معدات مكتملًا ليكون مقر الآليات.</p>' : !st.units.length ? '<p class="note">لا توجد آليات بعد. اشترِ آلية من لوحة الآليات.</p>' : `<p class="note">آليات متاحة: <b class="num">${fmt(free.length)}</b> من ${fmt(st.units.length)}</p>`}
+      <button class="btn gold" data-a="clear" data-k="clear" ${hasRecycler(st) && hasWarehouse(st) && free.length ? '' : 'disabled'}>إرسال الآليات لإزالة الأنقاض</button>`;
   } else if (p.status === 'empty') {
     title = 'أرض نظيفة'; sub = 'جاهزة للبناء';
     const cats = ['all', ...Object.keys(CAT)] as Array<Category | 'all'>;
@@ -224,7 +234,7 @@ function plotSheet(st: GameState, d: DistrictState, now: number) {
         <button class="btn gem-build" data-a="place-half" data-k="place-half" ${st.coins >= pick.cost && st.gems >= 2 ? '' : 'disabled'}>${gemIcon} بناء بنصف الوقت · <span class="num">2</span> جواهر · <span class="num">${dur(activityDuration(pick.duration * 1000) / 2)}</span></button>
         <small class="gem-help">الجواهر إضافية لسعر البناء. رصيدك: <span class="num">${fmt(st.gems)}</span> · كل مشروع أول مرة: <span class="num">3</span> جواهر.</small>${pendingFaceNote(pick.id)}`
       : '<p class="note">اختر مبنى لمعاينة جهاته المتوفرة ثم ابنِه.</p>';
-    body = `<div class="build-detail" data-sk="detail">${!recyclerStarted(st) ? '<p class="note">ابدأ بمصنع إعادة التدوير: هو نقطة انطلاق كل الآليات.</p>' : ''}${detail}</div>
+    body = `<div class="build-detail" data-sk="detail">${!recyclerStarted(st) ? '<p class="note">ابدأ بمصنع إعادة التدوير لاستلام الركام، ثم ابنِ مخزن المعدات لانطلاق الآليات.</p>' : ''}${detail}</div>
       <div class="build-list"><div class="cat-filters" role="tablist" aria-label="فئات المباني">${cats.map(c => `<button role="tab" aria-selected="${ui.cat === c}" data-a="cat" data-id="${c}" data-k="t-${c}">${c === 'all' ? 'كل المباني' : CAT[c]} <span class="cnt num">${fmt(cnt(c))}</span></button>`).join('')}</div>
       <div class="cat-scroll" data-sk="cat"><div class="cat-grid" aria-label="عدد المباني ${fmt(list.length)}">${visible.map(x => `<button class="cat-item" aria-pressed="${ui.pick === x.id}" title="${esc(x.name)}" data-a="pickb" data-id="${x.id}" data-k="b-${x.id}"><img src="${prev(x.id, 0)}" alt="" loading="lazy"/><b>${esc(x.name)}</b><small><span class="num">${fmt(x.cost)}</span> · ${secs(x.duration)}</small></button>`).join('')}</div></div>${pageControls(page,pages,'catalog-page',list.length)}</div>`;
   } else if (p.status === 'building') {
@@ -238,7 +248,7 @@ function plotSheet(st: GameState, d: DistrictState, now: number) {
     const ready = income.amount > 0;
     body = `<div class="preview"><img src="${prev(b.id, p.orientation)}" alt=""/></div>
       ${b.income ? `<dl class="kv" data-sk="income-summary"><dt>دخل الدفعة</dt><dd><span class="num">${fmt(income.perPeriod)}</span> بعد ${incomeIntervalLabel()}</dd><dt>المتاح للجمع</dt><dd data-income-total="${income.amount}"><span class="num">${fmt(income.amount)}</span> عملة</dd><dt>حالة الدخل</dt><dd>${ready ? 'جاهز للجمع · يبدأ العداد بعد الجمع' : `بعد <span class="num">${dur(income.nextAt - incomeNow)}</span>`}</dd></dl>
-        ` : `<p class="note">${b.id === 'recycling' ? `مقر الآليات: منه تنطلق وإليه تعود المواد. الآليات المخصصة لهذا المصنع: <b class="num">${fmt(st.units.filter(u => u.depotIds?.[d.id] === p.id).length)}</b>. تتوزع الفرق تلقائيًا عند اكتمال مصنع جديد.` : b.category === 'housing' ? 'مبنى سكني؛ لا ينتج دخلًا.' : 'هذا المبنى لا ينتج دخلًا.'}</p>`}`;
+        ` : `<p class="note">${b.id === 'recycling' ? `محطة تفريغ الركام: تأتي إليها الشاحنة محمّلة ثم تعود فارغة إلى مخزن المعدات. الآليات المخصصة لخدمة المصنع: <b class="num">${fmt(st.units.filter(u => u.depotIds?.[d.id] === p.id).length)}</b>. تتوزع فرق الخدمة عند اكتمال مصنع جديد.` : b.id === 'equipment_store' ? 'مقر الآليات: تنطلق منه إلى الركام، ويعود إليه الحفار والجرافة مباشرة، والشاحنة بعد تفريغها في المصنع.' : b.category === 'housing' ? 'مبنى سكني؛ لا ينتج دخلًا.' : 'هذا المبنى لا ينتج دخلًا.'}</p>`}`;
     body += `<div class="row">${b.income ? `<button class="btn gold" data-a="collectB" data-k="collectB" data-income-amount="${income.amount}" ${ready ? '' : 'disabled'}>جمع الدخل · <span class="num">${fmt(income.amount)}</span></button>` : ''}<button class="btn ghost" data-a="rotate-building" data-k="rotate-building" ${factoryRotationBlocked(st, p.id) ? 'disabled' : ''}>${IC.rotate} ${rotateLabel(b.id)}</button></div>${pendingFaceNote(b.id)}`;
     if (factoryRotationBlocked(st, p.id)) body += '<p class="note">يمكن تدوير المصنع بعد عودة آلياته؛ يبقى مدخل الفريق ثابتًا أثناء المهمة.</p>';
   }
@@ -273,7 +283,7 @@ function dialogHtml(st: GameState, now: number): [string, string] {
       `<p>هل تريد ${selling ? 'بيع' : 'إزالة'} <b>${esc(building(p.buildingId).name)}</b> من القطعة <span class="num">${fmt(p.id + 1)}</span>؟</p>
       <dl class="kv"><dt>${selling ? 'مبلغ البيع · 50%' : 'التعويض عن المبنى'}</dt><dd class="num">${fmt(selling ? buildingSaleValue(p) : 0)}</dd>${income ? `<dt>اجمع الدخل أولًا قبل البيع أو الإزالة</dt><dd class="num">${fmt(income)}</dd>` : ''}</dl>
       <p class="note">سيختفي المبنى وتصبح القطعة نظيفة ومتاحة للبناء. ${p.status === 'building' ? 'سيُلغى الإنشاء الحالي نهائيًا. ' : ''}لا يمكن التراجع عن هذه العملية.</p>
-      ${p.buildingId === 'recycling' ? `<p class="note">لن تُحذف آلياتك؛ تُوزّع على المصانع المتبقية، أو تبقى محفوظة إلى أن تبني مصنعًا جديدًا.</p>` : ''}
+      ${['recycling','equipment_store'].includes(p.buildingId) ? `<p class="note">لن تُحذف آلياتك. تحتاج المهام الجديدة إلى مخزن معدات ومصنع إعادة تدوير مكتملين، ولا يمكن تغيير مبنى تستخدمه مهمة جارية.</p>` : ''}
       ${blocked ? '<p role="alert">انتظر عودة جميع آليات هذا المصنع أولًا.</p>' : ''}
       <div class="row"><button class="btn ghost" data-a="close-dlg" data-k="cancel-disposal">إلغاء</button><button class="btn ${selling ? 'gold' : 'sumac'}" data-a="confirm-disposal" data-k="confirm-disposal" ${blocked ? 'disabled' : ''}>${selling ? 'تأكيد البيع' : 'تأكيد الإزالة'}</button></div>`];
   }
@@ -403,7 +413,7 @@ document.addEventListener('click', e => {
     }
     case 'place':
     case 'place-half': if (ui.plot != null && ui.pick && act({ type: 'place', plotId: ui.plot, buildingId: ui.pick, orientation: ui.orient, accelerate: t.dataset.a === 'place-half' }, `بدأ إنشاء ${building(ui.pick).name}${t.dataset.a === 'place-half' ? ' بنصف الوقت مقابل جوهرتين' : ''}`)) closePlotSheet(); break;
-    case 'clear': if (ui.plot != null && act({ type: 'clear', plotId: ui.plot }, 'انطلقت الآليات من المصنع')) closePlotSheet(); break;
+    case 'clear': if (ui.plot != null && act({ type: 'clear', plotId: ui.plot }, 'انطلقت الآليات من مخزن المعدات')) closePlotSheet(); break;
     case 'collectB': {
       if (ui.plot != null) {
         const previousCoins = S().coins;

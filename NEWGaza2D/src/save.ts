@@ -73,17 +73,32 @@ export function validateSave(value: unknown): asserts value is GameState {
     const d = s.districts.find(d => d.id === j.districtId);
     require(d?.unlocked && integer(j.plotId) && j.plotId < d!.plots.length && integer(j.originPlotId) && j.originPlotId < d!.plots.length);
     const origin = d!.plots[j.originPlotId];
-    require(origin.buildingId === 'recycling' && origin.status === 'built');
+    require(origin.status === 'built' && origin.buildingId === (j.recyclingPlotId === undefined ? 'recycling' : 'equipment_store'));
+    if (j.recyclingPlotId !== undefined) {
+      require(integer(j.recyclingPlotId) && j.recyclingPlotId < d!.plots.length);
+      const recycler = d!.plots[j.recyclingPlotId];
+      require(recycler.status === 'built' && recycler.buildingId === 'recycling');
+      require([j.toolsReturnEnd,j.unloadAt,j.unloadStartAt,j.unloadEnd,j.truckHomeDepartureAt].every(integer));
+      require(j.toolsReturnEnd! > j.workEnd && j.toolsReturnEnd! <= j.returnEnd);
+      require(j.unloadAt! > j.workEnd && j.unloadStartAt! >= j.unloadAt! && j.unloadEnd! - j.unloadStartAt! === 6000);
+      require(j.truckHomeDepartureAt! >= j.unloadEnd! && j.returnEnd > j.truckHomeDepartureAt!);
+      require(Number.isFinite(j.travelSpeed) && j.travelSpeed! > 0 && typeof j.delivered === 'boolean');
+      require(j.unloadQueueDistance === undefined || (Number.isFinite(j.unloadQueueDistance) && j.unloadQueueDistance > 0));
+    }
     require(Array.isArray(j.unitIds) && j.unitIds.length === 3 && unique(j.unitIds));
     const team = j.unitIds.map(id => s.units.find(u => u.id === id));
     require(team.every(Boolean) && new Set(team.map(u => u!.kind)).size === 3);
-    require(team.every(u => u!.depotIds?.[d!.id] === undefined || u!.depotIds[d!.id] === j.originPlotId));
+    require(team.every(u => u!.depotIds?.[d!.id] === undefined || u!.depotIds[d!.id] === (j.recyclingPlotId ?? j.originPlotId) ||
+      (u!.kind !== 'truck' && j.toolsReturnEnd !== undefined && s.lastSeen >= j.toolsReturnEnd)));
     require([j.start,j.arrival,j.workEnd,j.returnEnd,j.value].every(integer));
     require(j.start <= s.lastSeen && j.start < j.arrival && j.workEnd - j.arrival === 60000 && j.returnEnd > j.workEnd);
     require(j.departureAt === undefined || (integer(j.departureAt) && j.departureAt >= j.start && j.departureAt < j.arrival));
     require(j.returnStartAt === undefined || (integer(j.returnStartAt) && j.returnStartAt >= j.workEnd && j.returnStartAt < j.returnEnd));
     require(typeof j.cleared === 'boolean' && (j.cleared || d!.plots[j.plotId].status === 'rubble'));
-    busy.push(...j.unitIds); sites.push(`${j.districtId}:${j.plotId}`);
+    busy.push(...j.unitIds.filter(id => {
+      const u = s.units.find(u => u.id === id)!;
+      return u.kind === 'truck' || j.toolsReturnEnd === undefined || s.lastSeen < j.toolsReturnEnd;
+    })); sites.push(`${j.districtId}:${j.plotId}`);
   }
   require(new Set(busy).size === busy.length && new Set(sites).size === sites.length);
 }

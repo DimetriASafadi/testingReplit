@@ -3,7 +3,9 @@ import type { Action, DistrictState, GameAPI, GameState, Job, Plot } from './mod
 import { validateSave } from './save';
 import { factoryWindows, nextFactorySlot, outgoingTravelDuration, returnTravelDuration } from './fleet-motion';
 import { cityLayout, INITIAL_EMPTY } from './city-layout';
-import { availableDepotTeam, balanceFleetDepots } from './fleet-depots';
+import { availableDepotTeam, balanceFleetDepots, equipmentWarehouses, unitInJob } from './fleet-depots';
+import { truckDeliveryRoute, truckHomeRoute, UNLOAD_DURATION } from './warehouse-cycle';
+import { CONVOY_SPEED, routeLength } from './fleet-motion';
 import { isOrientation, nextOrientation } from './orientation';
 import { MIN_CAMERA_ZOOM } from './camera-overview';
 import { buildingAccruedIncome, buildingSaleValue } from './building-disposal';
@@ -14,7 +16,7 @@ import { PROJECT_GEMS, DISTRICT_GEMS, HALF_TIME_GEMS } from './gems';
 
 export const SAVE_KEY = 'newgaza2d-save-v1';
 export const factoryRotationBlocked = (state: GameState, plotId: number) =>
-  state.jobs.some(j => j.districtId === state.currentDistrict && j.originPlotId === plotId && j.returnEnd > state.lastSeen);
+  state.jobs.some(j => j.districtId === state.currentDistrict && (j.originPlotId === plotId || j.recyclingPlotId === plotId) && j.returnEnd > state.lastSeen);
 export function newGame(now = Date.now()): GameState {
   const homes = BUILDINGS.filter(b => b.category === 'housing');
   return {
@@ -133,9 +135,10 @@ export class GameStore implements GameAPI {
       if (!j.cleared && now >= j.workEnd) {
         d.plots[j.plotId].status = 'empty'; j.cleared = true; changed = true;
       }
-      if (now >= j.returnEnd) {
+      if (now >= (j.unloadEnd ?? j.returnEnd) && !j.delivered) {
         const yieldStock = rubbleYield(j.value);
         for (const key of ['concrete','iron','wood','other','value'] as const) this.state.inventory[key] += yieldStock[key];
+        j.delivered = true;
         changed = true;
       }
     }
@@ -154,7 +157,7 @@ export class GameStore implements GameAPI {
     ensure(p, 'الموقع غير موجود'); return p;
   }
   private pay(amount: number) { ensure(this.state.coins >= amount, 'الرصيد غير كافٍ'); this.state.coins -= amount }
-  private busy(id: string) { return this.state.jobs.some(j => j.unitIds.includes(id)) }
+  private busy(id: string) { const u = this.state.units.find(u => u.id === id); return !!u && this.state.jobs.some(j => unitInJob(j, u, this.state.lastSeen)) }
   private recycler(d: DistrictState) { return d.plots.find(p => p.buildingId === 'recycling' && p.status === 'built') }
   dispatch(action: Action) {
     this.tick();
@@ -192,7 +195,7 @@ export class GameStore implements GameAPI {
           ensure(p.status === 'built' || p.status === 'building', 'البيع والإزالة متاحان للمباني فقط');
           ensure(!action.expected || (p.buildingId === action.expected.buildingId && p.startedAt === action.expected.startedAt),
             'تغيّر المبنى؛ افتح تفاصيله وأكّد العملية مجددًا');
-          ensure(!factoryRotationBlocked(this.state, p.id), 'انتظر عودة جميع آليات المصنع قبل بيعه أو إزالته');
+          ensure(!factoryRotationBlocked(this.state, p.id), 'انتظر عودة جميع آليات هذا المقر قبل بيعه أو إزالته');
           ensure(buildingAccruedIncome(p, now) === 0, 'اجمع دخل المبنى أولًا قبل بيعه أو إزالته');
           this.state.coins += action.type === 'sellBuilding' ? buildingSaleValue(p) : 0;
           Object.assign(p, { status: 'empty', orientation: 0, startedAt: 0, endsAt: 0, incomeAt: 0 });
@@ -204,7 +207,7 @@ export class GameStore implements GameAPI {
         case 'rotateBuilding': {
           const p = this.plot(action.plotId);
           ensure(p.status === 'building' || p.status === 'built', 'التدوير متاح للمباني فقط');
-          ensure(!factoryRotationBlocked(this.state, p.id), 'انتظر عودة آليات المصنع قبل تدويره حتى لا يتغير مدخلها أثناء المهمة');
+          ensure(!factoryRotationBlocked(this.state, p.id), 'انتظر عودة آليات المهمة قبل تدوير هذا المبنى حتى لا يتغير مدخلها');
           const orientation = action.orientation ?? nextOrientation(p.orientation);
           ensure(isOrientation(orientation), 'اتجاه المبنى غير صالح');
           p.orientation = orientation;
@@ -224,12 +227,13 @@ export class GameStore implements GameAPI {
         case 'clear': {
           const d = this.district(), p = this.plot(action.plotId), recycler = this.recycler(d);
           ensure(recycler, 'يلزم مصنع إعادة تدوير مكتمل في هذا الحي');
+          ensure(equipmentWarehouses(d).length, 'ابنِ مخزن معدات مكتملًا لتنطلق الآليات منه وتعود إليه');
           ensure(p.status === 'rubble', 'هذا الموقع ليس ركامًا');
           ensure(!this.state.jobs.some(j => j.districtId === d.id && j.plotId === p.id), 'يوجد فريق يعمل هنا بالفعل');
            balanceFleetDepots(this.state);
            const assigned = availableDepotTeam(this.state, d, p);
            ensure(assigned, 'يلزم حفار وجرافة وشاحنة متاحة؛ اشترِ المعدات أو انتظر عودة الفريق');
-           const { team, depot: source } = assigned;
+           const { team, warehouse: source, depot: processing } = assigned;
           const level = Math.min(...team.map(u => u.level));
           const travel = outgoingTravelDuration(source, p, level);
           const arrival = now + travel, workEnd = arrival + 60000;
@@ -247,6 +251,27 @@ export class GameStore implements GameAPI {
           const returnWait = nextFactorySlot(incoming.start, incoming.end - incoming.start, windows) - Math.ceil(incoming.start);
           job.returnStartAt = job.workEnd + Math.max(0, returnWait);
           job.returnEnd += Math.max(0, returnWait);
+          job.recyclingPlotId = processing.id;
+          job.toolsReturnEnd = job.returnEnd;
+          job.travelSpeed = CONVOY_SPEED * (1 + Math.max(0, level - 1) * .35) / 1000;
+          job.unloadAt = job.workEnd + 550 + Math.ceil(routeLength(truckDeliveryRoute(processing, p)) / job.travelSpeed);
+          const unloadWindows = this.state.jobs.filter(j => j.districtId === d.id && j.recyclingPlotId === processing.id)
+            .map(j => ({ start: j.unloadStartAt!, end: (j.truckHomeDepartureAt ?? j.unloadEnd!) + 700 }));
+          job.unloadStartAt = nextFactorySlot(job.unloadAt, UNLOAD_DURATION, unloadWindows);
+          if (job.unloadStartAt > job.unloadAt) {
+            const queued = unloadWindows.filter(w => w.end > job.unloadAt!).length;
+            job.unloadQueueDistance = Math.min(1.7 * Math.max(1,queued), routeLength(truckDeliveryRoute(processing,p)) / 2);
+            job.unloadAt -= Math.ceil(job.unloadQueueDistance / job.travelSpeed);
+          }
+          job.unloadEnd = job.unloadStartAt + UNLOAD_DURATION;
+          const homeDuration = Math.ceil(routeLength(truckHomeRoute(processing, source)) / job.travelSpeed) + 250;
+          const homeGateDuration = Math.ceil(6.2 / job.travelSpeed) + 950;
+          const incomingAt = job.unloadEnd + homeDuration - homeGateDuration;
+          const ownWindows = factoryWindows({ ...job, returnEnd: job.toolsReturnEnd }, source, p);
+          const homeWait = Math.max(0, nextFactorySlot(Math.max(incomingAt, job.toolsReturnEnd + 850), homeGateDuration, [...windows, ...ownWindows]) - incomingAt);
+          job.truckHomeDepartureAt = job.unloadEnd + homeWait;
+          job.returnEnd = Math.max(job.toolsReturnEnd, job.truckHomeDepartureAt + homeDuration);
+          job.delivered = false;
           this.state.jobs.push(job);
           break;
         }

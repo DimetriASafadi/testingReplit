@@ -5,6 +5,8 @@ import { U } from './art';
 import { convoyMotion, gateDemand, workDock } from './fleet-motion';
 import { DepotDoors } from './depot-door';
 import { machineryDepth } from './machinery-depth';
+import { warehouseMotion } from './warehouse-cycle';
+import { unitInJob } from './fleet-depots';
 
 type Pt = [number, number];
 type Pose = { tip: number[]; worldTip: number[] };
@@ -104,7 +106,7 @@ export class FleetAnimation {
     const dt = clamp((now - this.previousTime) / 1000, 0, .1); this.previousTime = now;
     const jobs = state.jobs.filter(j => j.districtId === district.id);
     const seen = new Set<string>(); this.activeIds = new Set();
-    const depots = district.plots.filter(p => p.buildingId === 'recycling' && p.status === 'built');
+    const depots = district.plots.filter(p => ['recycling','equipment_store'].includes(p.buildingId) && p.status === 'built');
     for (const depot of depots) {
       const demands = jobs.filter(j => j.originPlotId === depot.id)
         .map(j => gateDemand(j, depot, district.plots[j.plotId], now)).filter(d => d.open);
@@ -112,9 +114,10 @@ export class FleetAnimation {
     }
     this.doors.retain(new Set(depots.map(p => p.id)));
     for (const job of jobs) for (const uid of job.unitIds) {
-      const unit = state.units.find(u => u.id === uid); if (!unit) continue;
+      const unit = state.units.find(u => u.id === uid); if (!unit || !unitInJob(job, unit, now)) continue;
       const source = district.plots[job.originPlotId], plot = district.plots[job.plotId];
-      const motion = convoyMotion(job, source, plot, unit.kind, now);
+      const motion = job.recyclingPlotId === undefined ? convoyMotion(job, source, plot, unit.kind, now)
+        : warehouseMotion(job, source, plot, district.plots[job.recyclingPlotId], unit.kind, now);
       if (motion.visibility <= 0) continue;
       seen.add(uid); this.activeIds.add(uid);
       const a = this.actor(unit);
@@ -149,12 +152,20 @@ export class FleetAnimation {
              this.stones!.setDepth(a.a.depth + .3).emitParticleAt(...a.tip, 3); a.stoneAt = now + 65;
           }
         }
+      } else if (motion.stage === 'unload') {
+        a.heading = 0;
+        const progress = clamp((now - job.unloadStartAt!) / Math.max(1, job.unloadEnd! - job.unloadStartAt!), 0, 1);
+        this.clip(a, unit, 'work', Math.min(1, progress / .8), position, false);
+        if (progress > .3 && progress < .75 && now > a.stoneAt && a.tip) {
+          this.stones!.setDepth(a.a.depth + .3).emitParticleAt(...a.tip, 2); a.stoneAt = now + 120;
+        }
       } else {
         const dx = motion.ahead[0] - position[0], dy = motion.ahead[1] - position[1];
         const heading = motion.moving && Math.hypot(dx, dy) > .00001
           ? Math.atan2(dy, dx) + (motion.reverse ? Math.PI : 0) : a.heading;
         if (!a.pos) a.heading = heading;
-        this.drive(a, unit, heading, position, dt, motion.stage === 'return');
+        const loaded = job.unloadEnd === undefined ? motion.stage === 'return' : now >= job.workEnd && now < job.unloadEnd;
+        this.drive(a, unit, heading, position, dt, loaded);
       }
       if (motion.portal) {
         const passage = this.doors.passage(source);

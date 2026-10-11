@@ -9,7 +9,7 @@ const ORDER: EquipmentKind[] = ['excavator', 'bulldozer', 'truck'];
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
 const routes = new Map<string, readonly DepotPoint[]>();
 const lengths = new WeakMap<readonly DepotPoint[], number>();
-function rounded(points: DepotPoint[]) {
+export function rounded(points: DepotPoint[]) {
   const clean: DepotPoint[] = [];
   for (const p of points) {
     if (clean.length && Math.hypot(p[0] - clean.at(-1)![0], p[1] - clean.at(-1)![1]) < .00001) continue;
@@ -91,8 +91,11 @@ export function fleetRoute(source: Plot, target: Plot, kind: EquipmentKind, retu
   if (routes.size >= 256) routes.delete(routes.keys().next().value!);
   routes.set(key, cached); return cached;
 }
-export const routeLength = (points: readonly DepotPoint[]) => lengths.get(points) ?? points.slice(1)
-  .reduce((n, p, i) => n + Math.hypot(p[0] - points[i][0], p[1] - points[i][1]), 0);
+export function routeLength(points: readonly DepotPoint[]) {
+  const saved = lengths.get(points); if (saved !== undefined) return saved;
+  const length = points.slice(1).reduce((n,p,i) => n + Math.hypot(p[0] - points[i][0], p[1] - points[i][1]), 0);
+  lengths.set(points, length); return length;
+}
 export function routePoint(points: readonly DepotPoint[], distance: number): DepotPoint {
   let d = Math.max(0, distance);
   for (let i = 1; i < points.length; i++) {
@@ -128,7 +131,7 @@ function timing(j: Job, source: Plot, target: Plot, returning: boolean) {
 }
 export interface ConvoyMotion {
   position: DepotPoint; ahead: DepotPoint; visibility: number; moving: boolean;
-  stage: 'waiting' | 'out' | 'work' | 'return' | 'inside'; reverse: boolean;
+  stage: 'waiting' | 'out' | 'work' | 'return' | 'inside' | 'unload'; reverse: boolean;
   portal: boolean;
 }
 /** Arc-distance spacing: same speed on shared roads, not three independent 0..1 lerps. */
@@ -154,7 +157,13 @@ export function convoyMotion(j: Job, source: Plot, target: Plot, kind: Equipment
        && Math.abs(ahead[0] - position[0]) < 1e-8 && ahead[1] < position[1],
      portal: visibility > 0 && (returning ? length - distance : distance) < portalLength + .7 };
 }
-export function gateDemand(j: Job, source: Plot, target: Plot, now: number) {
+export function gateDemand(j: Job, source: Plot, target: Plot, now: number): { open: boolean; since: number } {
+  if (j.toolsReturnEnd !== undefined) {
+    const demand = gateDemand({ ...j, toolsReturnEnd: undefined, returnEnd: j.toolsReturnEnd }, source, target, now);
+    const openAt = Math.max(j.truckHomeDepartureAt!, j.returnEnd - (3.2 / j.travelSpeed! + 250));
+    if (now >= openAt && now < j.returnEnd) return { open: true, since: openAt };
+    return demand;
+  }
   const out = timing(j, source, target, false), back = timing(j, source, target, true);
   const outClose = out.start + out.wait + (2 * CONVOY_GAP + 2.5) / out.speed;
   const backOpen = Math.max(back.start, back.end - (3.2 + 2 * CONVOY_GAP) / back.speed);
@@ -164,6 +173,10 @@ export function gateDemand(j: Job, source: Plot, target: Plot, now: number) {
 }
 export interface FactoryWindow { start: number; end: number }
 export function factoryWindows(j: Job, source: Plot, target: Plot): FactoryWindow[] {
+  if (j.toolsReturnEnd !== undefined) {
+    return [...factoryWindows({ ...j, toolsReturnEnd: undefined, returnEnd: j.toolsReturnEnd }, source, target),
+      ...(j.truckHomeDepartureAt !== undefined ? [{ start: Math.max(j.truckHomeDepartureAt, j.returnEnd - (6.2 / j.travelSpeed! + 950)), end: j.returnEnd + 700 }] : [])];
+  }
   const a = timing(j, source, target, false), b = timing(j, source, target, true);
   return [
     { start: a.start, end: a.start + a.wait + (2 * CONVOY_GAP + 2.5) / a.speed + 700 },

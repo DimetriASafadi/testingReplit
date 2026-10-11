@@ -10,10 +10,13 @@ export type DepotPoint = [number, number];
  */
 export function depotGeometry(p: Plot) {
   const side = p.orientation === 0 || p.orientation === 1 ? 'front' : 'right';
-  const key = `recycling_${side}`;
+  const warehouse = p.buildingId === 'equipment_store';
+  const key = `${warehouse ? 'equip' : 'recycling'}_${side}`;
   const m = (manifest as Record<string, { w: number; h: number; ay: number; ground?: { w: number; h: number } }>)[key];
   const scale = buildingRenderScale(key, m);
-  const aperture = side === 'front'
+  const aperture = warehouse ? (side === 'front'
+    ? { x: 70, y: 116, hw: 26, h: 44, slope: .47 }
+    : { x: 150, y: 119, hw: 21, h: 42, slope: -.56 }) : side === 'front'
     ? { x: 50, y: 101, hw: 13.5, h: 35, slope: .47 }
     : { x: 155, y: 109, hw: 10.5, h: 39, slope: -.56 };
   // Calibration is expressed at 196px sprite width; preserve it if packing shrinks a sheet.
