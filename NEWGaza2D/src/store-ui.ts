@@ -9,7 +9,7 @@ const B = import.meta.env.BASE_URL;
 export const usd = (c: number) => `$${(Math.round(c) / 100).toFixed(2)}`;
 export const PAY_REASON = 'الدفع الحقيقي غير متاح حاليًا: لم تُربط بوابة دفع وتحقق خادمي بعد. لن يُخصم أي مبلغ.';
 const coin = (cls = '') => `<img class="st-ico coin ${cls}" src="${B}art/wheel/coins.webp" alt="" aria-hidden="true" draggable="false"/>`;
-const gem = (cls = '') => `<img class="st-ico gem ${cls}" src="${B}art/wheel/gem.webp" alt="" aria-hidden="true" draggable="false"/>`;
+const gem = (cls = '') => `<img class="st-ico gem ${cls}" src="${B}art/gem.svg" alt="" aria-hidden="true" draggable="false"/>`;
 const n = (v: number) => `<bdi class="num" dir="ltr">${fmt(v)}</bdi>`;
 const price = (c: number) => `<bdi class="st-price num" dir="ltr">${usd(c)}</bdi>`;
 const lock = `<svg class="st-lock" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3" fill="none"/></svg>`;
