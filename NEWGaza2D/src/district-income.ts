@@ -2,6 +2,7 @@ import { projects } from './catalog';
 import { buildingIncomeDetails } from './building-income';
 import { activityDuration } from './game-timing';
 import type { DistrictState } from './model';
+import { projectIncome } from './economy';
 
 /** Only earned income: neither inventory sales nor district completion rewards. */
 export function districtIncome(district: DistrictState, now: number) {
@@ -15,11 +16,11 @@ export function districtIncome(district: DistrictState, now: number) {
     const def = definitions.find(d => d.id === project.id);
     if (!def || def.income <= 0) return [];
     if (!def.period) return project.status === 'ready'
-      ? [{ project, periods: 0, period: 0, amount: def.income }] : [];
+      ? [{ project, periods: 0, period: 0, amount: projectIncome(district,def) }] : [];
     const interval = activityDuration(def.period * 1000);
     const periods = Number(now >= project.incomeAt + interval);
     return project.status === 'complete' && periods > 0
-      ? [{ project, periods, period: interval, amount: periods * def.income }] : [];
+      ? [{ project, periods, period: interval, amount: periods * projectIncome(district,def) }] : [];
   });
   return {
     plots, investments,

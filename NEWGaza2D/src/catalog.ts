@@ -14,6 +14,8 @@ const rows: Array<[BuildingDef['category'], string[], string[], number[], number
  ['farm',['wheat','citrus','olive','vegetables','strawberry','cattle','palms','corn','protective_trees','ornamental_trees'],['أرض قمح','أرض حمضيات','أرض زيتون','أرض خضروات','أرض فراولة','مزرعة أبقار','أرض نخيل','أرض ذرة','أشجار حماية','أشجار زينة'],[1,1,1,1,1,1,1,1,1,1],[500,700,900,1100,1300,1500,1700,1900,2100,2300]],
  ['commerce',['food_shop','clothes_shop','shoe_shop','traditional_mall','modern_mall','municipality'],['محل أغذية','محل ملابس','محل أحذية','مجمع تجاري تقليدي','مجمع تجاري حديث','بلدية المنطقة'],[1,1,1,3,3,3],[3000,6000,9000,12000,15000,18000]],
  ['leisure',['zoo','falafel','shawarma','western_food','luxury_restaurant','cafe','snack_kiosk'],['حديقة حيوان','مطعم فلافل','مطعم شاورما','مطعم وجبات غربية','مطعم فاخر','كافيه','كشك مسليات'],[1,1,1,1,1,1,1],[20000,2000,3000,4000,5000,6000,7000]],
+ ['services',['school','hospital','mosque','church'],['مدرسة تعليمية','مستشفى طبي','مسجد','كنيسة'],[3,4,2,2],[12000,20000,10000,10000]],
+ ['leisure',['sports_club','recreation_park'],['نادي رياضي','منتزه ترفيهي'],[2,1],[8000,6000]],
 ];
 // Economic producers only; category membership alone can include public services or decoration.
 const incomeBuildings = new Set([
@@ -21,6 +23,7 @@ const incomeBuildings = new Set([
  'wheat','citrus','olive','vegetables','strawberry','cattle','palms','corn',
  'food_shop','clothes_shop','shoe_shop','traditional_mall','modern_mall',
  'falafel','shawarma','western_food','luxury_restaurant','cafe','snack_kiosk',
+ 'sports_club','recreation_park',
 ]);
 export const BUILDINGS: BuildingDef[] = rows.flatMap(([category,ids,names,floors,costs]) => ids.map((id,i)=>({
  id,name:names[i],category,floors:floors[i],cost:costs[i],duration:60+floors[i]*30,income:incomeBuildings.has(id)?Math.max(100,Math.floor(costs[i]/12)):0,

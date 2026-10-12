@@ -5,6 +5,7 @@ import { BUILDINGS, building, projects } from '../src/catalog';
 import { activityDuration, buildingIncomePeriod, setMinuteTestTimers } from '../src/game-timing';
 import { validateSave } from '../src/save';
 import { outgoingTravelDuration, returnTravelDuration } from '../src/fleet-motion';
+import { projectIncome } from '../src/economy';
 
 class MemoryStorage {
   value: string | null = null;
@@ -13,6 +14,7 @@ class MemoryStorage {
 }
 function setup() {
   const storage = new MemoryStorage(), store = new GameStore(storage);
+  store.state.coins=1000000;store.state.districts[0].difficulty='easy';
   store.dispatch({ type: 'enter', districtId: 'shujaiya' });
   return { store, storage };
 }
@@ -29,7 +31,7 @@ test('every building, infrastructure project and recurring period takes one minu
       store.tick(p.incomeAt + 60000);
       const coins = store.state.coins;
       store.dispatch({ type: 'collectBuilding', plotId: p.id });
-      assert.equal(store.state.coins - coins, b.income);
+      assert.equal(store.state.coins - coins, Math.floor(b.income*.7));
     }
     validateSave(store.state);
   }
@@ -47,7 +49,7 @@ test('every building, infrastructure project and recurring period takes one minu
         if (def.period) store.tick(p.incomeAt + 60000);
         const before = store.state.coins;
         store.dispatch({ type: 'collectProject', projectId: def.id });
-        assert.equal(store.state.coins - before, def.income);
+        assert.equal(store.state.coins - before, projectIncome(d,def));
       }
     }
     validateSave(store.state);
@@ -98,7 +100,7 @@ test('existing long counters shorten once without losing progress, earned income
   assert.equal(mp.endsAt - now, 59500);
   const coins = migrated.state.coins;
   migrated.dispatch({ type: 'collectBuilding', plotId: 0 });
-  assert.equal(migrated.state.coins - coins, building('food_shop').income);
+  assert.equal(migrated.state.coins - coins, Math.floor(building('food_shop').income*.7));
   const reloaded = new GameStore(storage, now + 1000);
   assert.equal(reloaded.state.districts[0].projects.find(p => p.id === 'water')!.endsAt, mp.endsAt);
   validateSave(reloaded.state);

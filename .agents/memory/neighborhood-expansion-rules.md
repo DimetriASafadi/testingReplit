@@ -22,6 +22,12 @@ The requested school, hospital, mosque and church have no income; sports club an
 
 **How to apply:** Configure values centrally, preserve ongoing saved deadlines, and do not assume provisional balance numbers are final user-approved settings.
 
+Difficulty reduces the profit of repeatable investments, not their returned principal. An already-earned building payout keeps its old value until collected; rebalance its next cycle instead.
+
+**Why:** Scaling the full investment payout can turn the hard-mode farming loop into a loss, blocking progression; changing an earned payout also recreates the user's displayed-versus-collected income complaint.
+
+**How to apply:** Maintain these guarantees when the user later supplies final difficulty ratios or investment prices.
+
 The requested wheel has a two-hour free cooldown and rare large prizes. Real-money purchasing and rewarded-ad repeats are preparation only until providers are connected; gem-to-coin exchange should actually work.
 
 **Why:** The user explicitly postponed payment and advertising connections while requesting their interfaces now.

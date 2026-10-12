@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { projectIncome } from '../src/economy';
 import { GameStore } from '../src/engine';
 import { BUILDINGS, building, projects } from '../src/catalog';
 import { buildingIncomePeriod, activityDuration, setMinuteTestTimers } from '../src/game-timing';
@@ -34,7 +35,7 @@ for (const testMode of [true, false]) {
     assert.equal(buildingIncomeDetails(plot, now).amount, 0);
     assert.equal(buildingIncomeDetails(plot, now).nextAt, now + period);
     assert.equal(buildingIncomeDetails(plot, now + period - 1).amount, 0);
-    assert.equal(buildingIncomeDetails(plot, now + period).amount, shown.perPeriod);
+    assert.equal(buildingIncomeDetails(plot, now + period).amount, Math.floor(shown.perPeriod*.45));
     assert.equal(buildingIncomeDetails({ ...plot, status: 'building' }, now + period).amount, 0);
     validateSave(store.state);
   });
@@ -65,7 +66,7 @@ for (const testMode of [true, false]) {
     validateSave(store.state);
     const before = store.state.coins, available = districtIncome(d, now);
     const expected = home.income + ['commerce', 'farm', 'industry'].reduce((sum, id) => {
-      const def = definitions.find(p => p.id === id)!; return sum + def.income;
+      const def = definitions.find(p => p.id === id)!; return sum + projectIncome(d,def);
     }, 0);
     assert.equal(available.total, expected);
     assert.equal(available.count, 4);
@@ -95,6 +96,7 @@ test('only economic producers earn income; saved homes cannot pay through any co
     'wheat','citrus','olive','vegetables','strawberry','cattle','palms','corn',
     'food_shop','clothes_shop','shoe_shop','traditional_mall','modern_mall',
     'falafel','shawarma','western_food','luxury_restaurant','cafe','snack_kiosk',
+    'sports_club','recreation_park',
   ];
   assert.deepEqual(BUILDINGS.filter(b => b.income > 0).map(b => b.id).sort(), producers.sort());
   setMinuteTestTimers(true);

@@ -17,7 +17,7 @@ test('published four-face sprites share parcel/scale; six pending types retain t
   const sprites = manifest as Record<string, { w: number; h: number; ay: number; ground?: { w: number; h: number } }>;
   const fronts = Object.keys(sprites).filter(k => k.endsWith('_front') && !['ind_front', 'shop_front'].includes(k));
   fronts.push('farm_cattle');
-  assert.equal(fronts.length, 42);
+  assert.equal(fronts.length, 48);
   const pending: string[] = [];
   for (const front of fronts) {
     const stem = front === 'farm_cattle' ? 'cattle' : front.replace(/_front$/, '');

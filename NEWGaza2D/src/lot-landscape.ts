@@ -5,6 +5,7 @@ import { TEX_W, U, makeCanvas } from './art';
 import { roundRect, seeded } from './ground';
 import type { Orientation } from './model';
 import { rotateLotPoint } from './orientation';
+import { dressParcel, drawKerbParking, drawSidewalk, parcelFlavor } from './parcel-dressing';
 
 type Pt = [number, number];
 export type YardKind = 'garden' | 'patio' | 'service';
@@ -19,14 +20,14 @@ const pr = (lx: number, ly: number): Pt => [TEX_W / 2 + (lx - ly) * U, ANCHOR + 
 /** photo canopy clumps cut from the existing SPR tree sprites: [sprite, cx, cy, radius] */
 const CLUMPS: [string, number, number, number][] = [['orn_front', 92, 37, 26], ['orn_front', 152, 52, 24], ['citrus_front', 100, 44, 24], ['olive_front', 92, 34, 18]];
 
-export function lotYardKey(yard: YardKind, factor: number, orient: Orientation, level: YardLevel, n: number, flavor='default') {
+export function lotYardKey(yard: YardKind | 'none', factor: number, orient: Orientation, level: YardLevel, n: number, flavor='default') {
   return `yard:${yard}:${Math.round(factor * 100)}:${orient}:${level}:${n % 3}:${flavor}`;
 }
 
-export function lotLandscape(scene: Phaser.Scene, yard: YardKind, factor: number, orient: Orientation, level: YardLevel, n: number, buildingId=''): LotYard {
+export function lotLandscape(scene: Phaser.Scene, yard: YardKind | 'none', factor: number, orient: Orientation, level: YardLevel, n: number, buildingId=''): LotYard {
   n %= 3; // cache variants must not depend on which plot was built first
-  const dining=['falafel','shawarma','western_food','cafe','luxury_restaurant','snack_kiosk'].includes(buildingId);
-  const flavor=dining?'dining':yard==='service'?'civic':yard==='patio'?'retail':'garden';
+  const flavor=parcelFlavor(buildingId,yard), dining=flavor==='dining';
+  const dressed=!['garden','retail','dining'].includes(flavor);
   const key = lotYardKey(yard, factor, orient, level, n,flavor), fkey = key + ':f';
   if (scene.textures.exists(key)) return { back: key, front: scene.textures.exists(fkey) ? fkey : undefined };
   const tex = (k: string) => scene.textures.exists(k) ? scene.textures.get(k).getSourceImage() as HTMLImageElement : null;
@@ -39,7 +40,7 @@ export function lotLandscape(scene: Phaser.Scene, yard: YardKind, factor: number
     if (img) { const k = U * tile / 1024; x.setTransform(k, k / 2, -k, k / 2, TEX_W / 2 + n * 29, ANCHOR - 17 * n); x.fillStyle = x.createPattern(img, 'repeat')!; x.fillRect(-4000, -4000, 8000, 8000); x.setTransform(1, 0, 0, 1, 0, 0); }
     x.fillStyle = tint; x.fillRect(0, 0, TEX_W, 470); x.restore();
   };
-  const h0 = factor * 0.55, a = h0 - 0.1, patio = yard !== 'garden', service = yard === 'service';
+  const full = yard === 'none', h0 = factor * 0.55, a = h0 - 0.1, patio = yard !== 'garden', service = yard === 'service';
   // soil bed under the whole lot, feathered into the dusty skirt
   tile(roundRect(-EDGE, -EDGE, EDGE, EDGE, 0.22).map(m), 'g:earth', 4, level ? .5 : .42, 'rgba(165,148,120,.2)', 3);
   tile(roundRect(-EDGE + .1, -EDGE + .1, EDGE - .1, EDGE - .1, 0.2).map(m), 'g:sand', 4, .32, 'rgba(190,172,140,.12)', 4);
@@ -60,15 +61,19 @@ export function lotLandscape(scene: Phaser.Scene, yard: YardKind, factor: number
       tile(roundRect(-EDGE+.06,-EDGE+.06,EDGE-.06,EDGE-.06,.2).map(m),'g:gravel',3,.32,'rgba(182,177,159,.16)',2);
       feather(x);
     }
-    for (const poly of [path, pad]) if (poly.length) {
+    if (!full) for (const poly of [path, pad]) if (poly.length) {
       const q = poly.map(gate).map(m);
       tile(q, 'g:sand', 2.2, .95, 'rgba(236,226,204,.38)');
       x.save(); trace(q); x.strokeStyle = 'rgba(96,80,60,.38)'; x.lineWidth = 1.4; x.stroke(); x.restore();
     }
+    // integrated sidewalk on the parcel boundary: flat, so vehicle/door access is unchanged
+    drawSidewalk(x, EDGE - .02, .13, tex('exp:paver'));
   }
   const front: Pt[] = [];
-  if (level === 2) {
-    if(patio){
+  if (level === 2 && full && flavor === 'housing') drawKerbParking(x, m([.7, .7]), n);
+  if (level === 2 && !full) {
+    if(dressed) dressParcel(x, m, flavor, EDGE - .12, n);
+    else if(patio){
       // Small, shaded furnishings at the free plot corners. The placement
       // rotates with the actual entrance, not with the camera.
       const [px,py]=pr(...m([-.72,.68]));

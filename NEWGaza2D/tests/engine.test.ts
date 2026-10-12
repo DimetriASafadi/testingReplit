@@ -15,6 +15,8 @@ import { activityDuration } from '../src/game-timing';
 import { warehouseMotion, truckDeliveryRoute, truckHomeRoute, recyclingBay, recyclerGateDemand, recyclerVisitWindow } from '../src/warehouse-cycle';
 import { depotPortal } from '../src/fleet-motion';
 import { unitInJob } from '../src/fleet-depots';
+import { roadsFor } from '../src/roads';
+import { projectIncome, STARTING_COINS } from '../src/economy';
 
 test('gems reward each project once, including offline completions and legacy progress', () => {
   const storage = new MemoryStorage(), now = Date.now() + 600000;
@@ -79,10 +81,12 @@ test('failed accelerated builds never deduct coins or gems; ordinary constructio
 test('district gem reward is granted only on explicit first claim', () => {
   const { store, storage } = setup();
   const d = store.state.districts[0];
-  for (const p of d.plots) p.status = 'empty';
+  for (const p of d.plots) p.status = 'built';
+  d.pavedRoads=roadsFor(d.id).map(r=>r.id);
   for (const p of d.projects) { p.status = 'complete'; p.gemRewarded = true; }
   store.dispatch({ type: 'claim' });
   assert.equal(store.state.gems, DISTRICT_GEMS);
+  store.dispatch({type:'enter',districtId:d.id});
   assert.throws(() => store.dispatch({ type: 'claim' }), /بالفعل/);
   assert.equal(new GameStore(storage, store.state.lastSeen).state.gems, DISTRICT_GEMS);
 });
@@ -168,6 +172,8 @@ test('factory orientation cannot change under an active convoy, but unlocks once
 });
 function setup() {
   const storage = new MemoryStorage(), store = new GameStore(storage);
+  store.state.coins=1000000;
+  for(const d of store.state.districts){d.difficulty='easy';d.difficultyChosen=true;}
   store.dispatch({ type:'enter', districtId:'shujaiya' });
   return { storage, store };
 }
@@ -227,11 +233,11 @@ test('disposal requires explicit income collection, rejects changed targets and 
     assert.equal(store.state.coins,before);
     store.dispatch({type:'collectBuilding',plotId:0});
     store.dispatch({type,plotId:0});
-    assert.equal(store.state.coins,before+def.income+(type==='sellBuilding'?Math.floor(def.cost/2):0));
+    assert.equal(store.state.coins,before+Math.floor(def.income*.7)+(type==='sellBuilding'?Math.floor(def.cost/2):0));
     assert.equal(JSON.stringify(store.state.districts[0].plots[1]),unrelated);
     store.tick(store.state.lastSeen+7200000);
     assert.equal(new GameStore(storage,store.state.lastSeen).state.coins,store.state.coins);
-    assert.equal(store.state.coins,before+def.income+(type==='sellBuilding'?Math.floor(def.cost/2):0));
+    assert.equal(store.state.coins,before+Math.floor(def.income*.7)+(type==='sellBuilding'?Math.floor(def.cost/2):0));
     const rubble=store.state.districts[0].plots.find(p=>p.status==='rubble')!;
     assert.throws(()=>store.dispatch({type,plotId:rubble.id}),/للمباني فقط/);
   }
@@ -553,7 +559,8 @@ test('each district keeps a separate depot assignment for the shared campaign fl
   buyTeam(store); addDepot(store);
   const previous = store.state.units.map(u => u.depotIds!.shujaiya);
   const first = store.state.districts[0];
-  for (const p of first.plots) if (p.status === 'rubble') p.status = 'empty';
+  for (const p of first.plots) p.status = 'built';
+  first.pavedRoads=roadsFor(first.id).map(r=>r.id);
   for (const p of first.projects) p.status = 'complete';
   store.dispatch({ type:'claim' });
   store.dispatch({ type:'enter', districtId:'tuffah' });
@@ -613,7 +620,7 @@ test('multiple teams reserve the factory portal, save queues and settle once aft
 test('fresh campaign: million once, thirteen districts, dense ruins, no placed recycler', () => {
   const state = newGame();
   validateSave(state);
-  assert.equal(state.coins,1000000);
+  assert.equal(state.coins,STARTING_COINS);
   assert.equal(state.districts.length,14);
   assert.equal(state.districts.filter(d=>d.unlocked).length,1);
   assert.equal(state.districts[0].plots.length,144);
@@ -641,7 +648,7 @@ test('all catalog entries support building and income, costs use money only', ()
     store.tick(store.state.districts[0].plots[0].endsAt+3600000);
     if(def.income) {
       store.dispatch({type:'collectBuilding',plotId:0});
-      assert.equal(store.state.coins,1000000-def.cost+def.income);
+      assert.equal(store.state.coins,1000000-def.cost+Math.floor(def.income*.7));
       assert.throws(()=>store.dispatch({type:'collectBuilding',plotId:0}));
     }
     validateSave(store.state);
@@ -707,17 +714,18 @@ test('infrastructure prerequisites and real-time repeatable investments', () => 
   assert.equal(p.endsAt-p.startedAt,300000);
   assert.throws(()=>store.dispatch({type:'collectProject',projectId:'farm'}));
   store.tick(p.endsAt);store.dispatch({type:'collectProject',projectId:'farm'});
-  assert.equal(store.state.coins,1001000);
+  assert.equal(store.state.coins,1000700);
   assert.throws(()=>store.dispatch({type:'collectProject',projectId:'farm'}));
   store.dispatch({type:'project',projectId:'farm'});
-  assert.equal(store.state.coins,1000500);
+  assert.equal(store.state.coins,1000200);
 });
 test('district completion reward only once, ordered unlocking, finale present', () => {
   const {store,storage}=setup();
   assert.throws(()=>store.dispatch({type:'enter',districtId:'tuffah'}));
   assert.throws(()=>store.dispatch({type:'claim'}));
   const d=store.state.districts[0];
-  for(const p of d.plots)p.status='empty';
+  for(const p of d.plots)p.status='built';
+  d.pavedRoads=roadsFor(d.id).map(r=>r.id);
   for(const p of d.projects)p.status='complete';
   store.dispatch({type:'claim'});
   assert.equal(store.state.coins,1100000);
@@ -751,7 +759,7 @@ test('storage errors are surfaced without claiming saved success', () => {
   const storage={getItem:()=>null,setItem:()=>{throw new Error('quota')}};
   const store=new GameStore(storage);
   assert.match(store.storageError!,/لم يُحفظ/);
-  assert.equal(JSON.parse(store.exportSave()).coins,1000000);
+  assert.equal(JSON.parse(store.exportSave()).coins,STARTING_COINS);
 });
 test('former district saves expand once without losing earned final-chapter access', () => {
   for (const finalClaimed of [false, true]) {
@@ -813,9 +821,14 @@ test('complete fourteen-district campaign via real actions and timers, hourly tr
         store.tick(store.state.lastSeen+def.period*1000);
         const balance=store.state.coins;
         store.dispatch({type:'collectProject',projectId:def.id});
-        assert.equal(store.state.coins,balance+def.income);
+        assert.equal(store.state.coins,balance+projectIncome(store.state.districts[i],def));
       }
     }
+    // The old clearing campaign now also requires rebuilt parcels and local roads.
+    for(const p of store.state.districts[i].plots.filter(p=>p.status==='empty')){
+      store.dispatch({type:'place',plotId:p.id,buildingId:'wheat',orientation:0});store.tick(p.endsAt);
+    }
+    store.state.districts[i].pavedRoads=roadsFor(district.id).map(r=>r.id);
     const balance=store.state.coins;
     store.dispatch({type:'claim'});
     assert.equal(store.state.coins,balance+district.reward);

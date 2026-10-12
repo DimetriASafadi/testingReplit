@@ -68,12 +68,12 @@ test('legacy expansion retains money, buildings, job deadlines, equipment and ea
   assert.equal(SAVE_KEY,'newgaza2d-save-v1');
 });
 
-test('expanded progress uses the actual rubble count and validates new edge plots', () => {
+test('expanded progress requires rebuilt parcels and validates new edge plots', () => {
   const s=newGame(100000),d=s.districts[0];
-  assert.equal(districtProgress(d),0);
+  assert.ok(districtProgress(d)<2);
   for(const p of d.plots) p.status='empty';
   for(const p of d.projects) p.status='complete';
-  assert.equal(districtProgress(d),100);
+  assert.ok(districtProgress(d)<100);
   validateSave(s);
   d.plots[143].x+=.01;
   assert.throws(()=>validateSave(s));

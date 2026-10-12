@@ -8,7 +8,7 @@ export interface SprMeta { w: number; h: number; ay: number; ground?: { w: numbe
 export const SPR = manifest as Record<string, SprMeta>;
 export const SPRITE_KEYS = Object.keys(SPR);
 export const GROUND_KEYS = ['earth', 'sand', 'asphalt', 'gravel', 'water'] as const;
-const ART_VERSION = 'four-faces-fixed-sun-20261008';
+const ART_VERSION = 'civic-six-20261023';
 export const sprUrl = (k: string) => `${import.meta.env.BASE_URL}art/realistic/s/${k}.webp?v=${ART_VERSION}`;
 export const groundUrl = (k: string) => `${import.meta.env.BASE_URL}art/realistic/ground-${k}.jpg?v=${ART_VERSION}`;
 
@@ -17,6 +17,7 @@ const KEY: Record<string, string> = {
   small_house: 'smallhouse', medium_house: 'house', villa: 'villa', housing_4: 'apt4', housing_6: 'h6', housing_complex: 'complex', modern_housing: 'modern', traditional_housing: 'trad', housing_tower: 'tower', tourist_villa: 'tourist',
   food_shop: 'foodshop', clothes_shop: 'clothes', shoe_shop: 'shoe', traditional_mall: 'tmall', modern_mall: 'mmall', municipality: 'muni',
   zoo: 'zoo', falafel: 'falafel', shawarma: 'shawarma', western_food: 'western', luxury_restaurant: 'luxury', cafe: 'cafe', snack_kiosk: 'kiosk',
+  school: 'school', hospital: 'hospital', sports_club: 'club', recreation_park: 'rpark', mosque: 'mosque', church: 'church',
   wheat: 'wheat', citrus: 'citrus', olive: 'olive', vegetables: 'veg', strawberry: 'straw', cattle: 'cattle', palms: 'palms', corn: 'corn', protective_trees: 'trees', ornamental_trees: 'orn',
 };
 export const isFarm = (id: string) => building(id).category === 'farm' || id === 'zoo';
@@ -26,7 +27,10 @@ export function builtKey(id: string, orient: Orientation) {
   if (k === 'cattle' && !orient) return 'farm_cattle';
   return `${k}_${side}`;
 }
+/** construction archetype for the civic/leisure additions (independent of catalog category) */
+const CIVIC_CONSTRUCT: Record<string, string> = { school: 'shop_c', hospital: 'apt_c', mosque: 'shop_c', church: 'house_c', sports_club: 'shop_c', recreation_park: 'house_c' };
 export function constructKey(id: string, stage: number) {
+  if (CIVIC_CONSTRUCT[id]) return `${CIVIC_CONSTRUCT[id]}${stage}`;
   const d = building(id); let base = 'house_c';
   if (id === 'housing_tower') base = 'tower_c'; else if (d.category === 'industry' || d.category === 'equipment') base = 'ind_c';
   else if (d.category === 'commerce' || d.category === 'leisure') base = 'shop_c'; else if (d.floors >= 4) base = 'apt_c';

@@ -23,8 +23,11 @@ import { cityLayout } from '../city-layout';
 import { CanvasContacts, nativeTouchIds, releaseStaleTouches } from '../canvas-contacts';
 import { gameAudio } from '../game-audio';
 import { installGroundTiles } from '../ground-tiles';
+import { RoadAnimation } from '../road-animation';
+import { roadAt } from '../roads';
+import { preloadExpansionArt } from '../expansion-art';
 
-export interface CityHooks { getState(): GameState; onSelect(plotId: number | null): void; onCamera(c: { x: number; y: number; zoom: number }): void; onWorldState?(state: 'loading' | 'ready' | 'error', message?: string): void }
+export interface CityHooks { getState(): GameState; onSelect(plotId: number | null): void; onRoadSelect?(roadId:string):void; onCamera(c: { x: number; y: number; zoom: number }): void; onWorldState?(state: 'loading' | 'ready' | 'error', message?: string): void }
 
 const iso = (lx: number, ly: number) => ({ x: (lx - ly) * U, y: (lx + ly) * U / 2 });
 const unIso = (wx: number, wy: number) => ({ lx: wy / U + wx / (2 * U), ly: wy / U - wx / (2 * U) });
@@ -45,6 +48,7 @@ export class CityScene extends Phaser.Scene {
   private views = new Map<number, PlotView>();
   private siteAnimation!: SiteAnimation;
   private fleetAnimation!: FleetAnimation;
+  private roadAnimation!: RoadAnimation;
   private sel!: Phaser.GameObjects.Graphics;
   private layer!: Phaser.GameObjects.Container;
   private selected: number | null = null;
@@ -67,7 +71,8 @@ export class CityScene extends Phaser.Scene {
     this.hooks = this.registry.get('hooks');
     this.siteAnimation = new SiteAnimation(this, iso, SC);
     this.fleetAnimation = new FleetAnimation(this);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { this.siteAnimation.destroy(); this.fleetAnimation.destroy(); });
+    this.roadAnimation = new RoadAnimation(this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { this.siteAnimation.destroy(); this.fleetAnimation.destroy(); this.roadAnimation.reset(); });
     this.cameras.main.setBackgroundColor(TERRAIN_BACKDROP);
     this.input.addPointer(1);
     if (!this.textures.exists('dot')) { const g = this.make.graphics({}, false); g.fillStyle(0xe8dcc4, 1).fillCircle(4, 4, 4); g.generateTexture('dot', 8, 8); g.destroy(); }
@@ -129,6 +134,7 @@ export class CityScene extends Phaser.Scene {
   private buildWorld(st: GameState) {
     this.resetGestures();
     this.siteAnimation.resetDistrict(); this.fleetAnimation.resetDistrict();
+    this.roadAnimation.reset();
     this.occlusion.clear(); this.occlusionAt = 0;
     this.clearingStages.clear(); this.clearingAt = 0;
     const oldTex = [...this.groundTextures, ...this.roadTextures];
@@ -204,7 +210,7 @@ export class CityScene extends Phaser.Scene {
     this.drawSel(d.plots);
     const rp = d.projects.find(p => p.id === 'road');
     const rs = !rp || rp.status === 'idle' ? 0 : rp.status === 'building' ? 1 + Math.min(2, Math.floor(3 * Phaser.Math.Clamp((now - rp.startedAt) / Math.max(1, rp.endsAt - rp.startedAt), 0, 0.999))) : 4;
-    if (rs !== this.roadStage) { this.roadStage = rs; this.drawRoads(rs); }
+    if (rs !== this.roadStage) { this.roadStage = rs; this.drawRoads(0); }
     this.syncSites(d, now);
   }
 
@@ -453,8 +459,8 @@ export class CityScene extends Phaser.Scene {
 
   /** compact buildings only: bounded courtyard on the free part of the lot; removed for ruins/empty plots */
   private syncYard(v: PlotView, p: Plot, c: { x: number; y: number }, fp: { factor: number; yard: string } | null, level: 0 | 1 | 2, orient: Orientation) {
-    if (!fp || fp.yard === 'none') { v.yard?.destroy(); v.yardFront?.destroy(); v.yard = v.yardFront = undefined; return; }
-    const y = lotLandscape(this, fp.yard as 'garden' | 'patio' | 'service', fp.factor, orient, level, p.id,p.buildingId);
+    if (!fp || building(p.buildingId).category==='farm' || p.buildingId==='zoo') { v.yard?.destroy(); v.yardFront?.destroy(); v.yard = v.yardFront = undefined; return; }
+    const y = lotLandscape(this, fp.yard as 'none'|'garden'|'patio'|'service', fp.factor, orient, level, p.id,p.buildingId);
     if (!v.yard) v.yard = this.add.image(c.x, c.y, y.back).setOrigin(0.5, ANCHOR_LOT / TEX_H).setDepth(-200000).setScale(SC); else v.yard.setTexture(y.back);
     if (y.front) { if (!v.yardFront) v.yardFront = this.add.image(c.x, c.y, y.front).setOrigin(0.5, ANCHOR_LOT / TEX_H).setDepth(c.y + 2).setScale(SC); else v.yardFront.setTexture(y.front); }
     else { v.yardFront?.destroy(); v.yardFront = undefined; }
@@ -493,8 +499,9 @@ export class CityScene extends Phaser.Scene {
     for (const p of d.plots) { const v = this.views.get(p.id); if (p.status === 'building' && v?.bar) { const c = iso(p.x + 1, p.y + 1); const f = Phaser.Math.Clamp((now - p.startedAt) / Math.max(1, p.endsAt - p.startedAt), 0, 1); v.bar.clear().fillStyle(0x2b2320, 0.75).fillRoundedRect(c.x - 40, c.y + 30, 80, 9, 4).fillStyle(0xf2d06b).fillRoundedRect(c.x - 38, c.y + 32, 76 * f, 5, 2);  } }
     this.siteAnimation.update([...d.plots, ...this.projectPlots], now);
     this.fleetAnimation.update(st, now, this.roadStage);
+    this.roadAnimation.update(d,now);
     const cam=this.cameras.main;
-    if(gameAudio.due())gameAudio.city(st,[...d.plots,...this.projectPlots],this.fleetAnimation.soundSources(st),
+    if(gameAudio.due())gameAudio.city(st,[...d.plots,...this.projectPlots],[...this.fleetAnimation.soundSources(st),...this.roadAnimation.sounds],
       {x:cam.midPoint.x,y:cam.midPoint.y,zoom:cam.zoom},now);
     this.revealWorkingFleet(now);
   }
@@ -562,6 +569,8 @@ export class CityScene extends Phaser.Scene {
       const w = this.cameras.main.getWorldPoint(p.x, p.y); const { lx, ly } = unIso(w.x, w.y);
       const st = this.hooks.getState(); const d = st.districts.find(x => x.id === this.district);
       const hit = d?.plots.find(q => lx >= q.x + 0.3 && lx <= q.x + 1.7 && ly >= q.y + 0.3 && ly <= q.y + 1.7) ?? null;
+      const road=!hit&&d?roadAt(d.id,lx,ly):undefined;
+      if(road){this.select(null);this.hooks.onRoadSelect?.(road.id);this.down=null;return;}
       if (!hit && this.selected !== null) { this.down = null; return; }
       this.select(hit?.id ?? null); this.hooks.onSelect(hit?.id ?? null);
     }
@@ -618,6 +627,7 @@ export class BootScene extends Phaser.Scene {
     for (const id of ENVIRONMENT_IDS) this.load.image('env:' + id, environmentUrl(id));
     preloadMachinery(this);
     preloadClearing(this);
+    preloadExpansionArt(this);
   }
   create() {
     if (this.failedFiles.size) {

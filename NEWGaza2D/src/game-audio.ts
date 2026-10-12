@@ -6,7 +6,7 @@ import { ThemeMusic, type MusicPhase } from './theme-music';
 
 interface Preferences { enabled: boolean; master: number; effects: number; ambience: number }
 interface Voice { source: AudioBufferSourceNode; gain: GainNode; pan: StereoPannerNode; filter: BiquadFilterNode }
-export interface FleetSound { id: string; kind: 'truck'|'excavator'|'bulldozer'; x: number; y: number; working: boolean }
+export interface FleetSound { id: string; kind: 'truck'|'excavator'|'bulldozer'|'paver'; x: number; y: number; working: boolean }
 const PREF_KEY='newgaza2d-audio-v1', DEFS=new Map(BUILDINGS.map(b=>[b.id,b]));
 const ground=(p: Plot)=>({x:(p.x-p.y)*64,y:(p.x+p.y+2)*32});
 const defaults=():Preferences=>({enabled:true,master:.7,effects:.8,ambience:.5});
@@ -163,8 +163,9 @@ export class GameAudio {
     }
     sources.push(...groups.values());
     for(const a of fleet){
-      sources.push({id:`engine:${a.id}`,clip:a.kind,x:a.x,y:a.y,volume:a.working&&a.kind==='truck'?.075:.22});
-      if(a.working&&a.kind!=='truck'){
+      sources.push({id:`engine:${a.id}`,clip:a.kind==='paver'?'bulldozer':a.kind,x:a.x,y:a.y,volume:a.working&&a.kind==='truck'?.075:.22});
+      if(a.working&&a.kind==='paver')sources.push({id:`paving:${a.id}`,clip:'construction',x:a.x,y:a.y,volume:.13});
+      if(a.working&&a.kind!=='truck'&&a.kind!=='paver'){
         const job=state.jobs.find(j=>j.unitIds.includes(a.id));
         const phase=((Math.max(0,now-(job?.arrival??now)-900))%7200)/7200;
         sources.push({id:`rubble:${a.id}`,clip:'rubble',x:a.x,y:a.y,volume:phase<.42||phase>.68?.2:.04});
