@@ -2,40 +2,6 @@
 button.pill,button.chip{border:0;font:inherit;color:var(--ink);cursor:pointer;touch-action:manipulation}
 button.pill:focus-visible,button.chip:focus-visible{outline:2px solid #f2b632;outline-offset:2px}
 
-.wheel-fab{position:fixed;left:12px;top:calc(env(safe-area-inset-top) + 74px);z-index:5;width:58px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;border:1px solid var(--line);border-radius:16px;background:#0f2a4a;color:var(--ink);font:inherit;font-size:.68rem;box-shadow:0 6px 16px rgba(4,14,30,.35);cursor:pointer;touch-action:manipulation}
-.wheel-fab svg{width:36px;height:36px}
-.wheel-fab svg circle{fill:#1d4f86;stroke:#f4f7fc;stroke-width:2}
-.wheel-fab svg line{stroke:#f4f7fc;stroke-width:1.2;opacity:.7}
-.wheel-fab svg .hub{fill:#f2b632;stroke:none}
-.wheel-fab.ready{border-color:#f2b632}
-.wheel-fab.ready svg{animation:fab-nudge 2.4s ease-in-out infinite}
-@keyframes fab-nudge{0%,80%,100%{transform:rotate(0)}88%{transform:rotate(-14deg)}94%{transform:rotate(8deg)}}
-/* Portrait phones: HUD wraps to ~112px, objective spans full width, zoom sits at top 170px left.
-   Park the wheel directly under the zoom stack. */
-@media(max-width:800px){.wheel-fab{top:calc(env(safe-area-inset-top) + 288px);width:52px;padding:5px 3px}.wheel-fab svg{width:30px;height:30px}}
-/* Phone landscape: zoom and dock live on the right column; top-left under the top bar is free. */
-@media(max-height:520px) and (orientation:landscape){.wheel-fab{top:calc(var(--topbar,56px) + 4px);left:max(8px,env(safe-area-inset-left));width:50px;padding:4px 3px}.wheel-fab svg{width:26px;height:26px}
-  body:has(.banner) .wheel-fab{top:calc(var(--topbar,56px) + 64px)}}
-@media(max-height:360px) and (orientation:landscape){.wheel-fab{flex-direction:row;width:auto;gap:4px}}
-/* Never float over an open plot sheet. */
-body:has(.sheet) .wheel-fab{display:none}
-
-.wheel-stage{position:relative;width:min(64vw,250px,38dvh);aspect-ratio:1;margin:4px auto 8px}
-.wheel-host,.wheel-disc{position:absolute;inset:0}
-.wheel-disc{will-change:transform}
-.wheel-disc svg{width:100%;height:100%;display:block;filter:drop-shadow(0 8px 14px rgba(4,14,30,.4))}
-.wheel-disc .rim{fill:#0b2240;stroke:#f2b632;stroke-width:3}
-.wheel-disc .hub{fill:#f2b632;stroke:#0b2240;stroke-width:3}
-.wheel-disc .wl{font:900 15px "Cairo Black Numbers","Cairo Black",sans-serif;fill:#f4f7fc}
-.wheel-disc .wu{font:700 9px "Cairo",sans-serif;fill:#d6e4f5}
-.wheel-disc .dk{fill:#0b2240}
-.wheel-pointer{position:absolute;top:-6px;left:50%;z-index:2;width:0;height:0;transform:translateX(-50%);border-inline:12px solid transparent;border-top:22px solid #e86a5a;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4))}
-.wheel-status,.wheel-timer{text-align:center;margin:4px 0;min-height:1.5em}
-.wheel-timer{font-size:.85rem;color:var(--ink-2)}
-.odds{margin:6px 0;font-size:.82rem}
-.odds summary{cursor:pointer;font-weight:700}
-.odds ol{list-style:none;padding:0;margin:6px 0;display:grid;grid-template-columns:1fr 1fr;gap:4px 12px}
-.odds li{display:flex;justify-content:space-between;border-bottom:1px dashed var(--line);padding:2px 0}
 .note.unavailable{font-size:.78rem;opacity:.85}
 
 .diff-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
@@ -61,11 +27,11 @@ body:has(.sheet) .wheel-fab{display:none}
 .celebration-card b{font-size:1.6rem}
 .celebration.still .celebration-card{animation:none}
 @keyframes cel-in{from{transform:scale(.7);opacity:0}to{transform:none;opacity:1}}
-@media(prefers-reduced-motion:reduce){.wheel-fab.ready svg{animation:none}.celebration-card{animation:none}}
+@media(prefers-reduced-motion:reduce){.celebration-card{animation:none}}
 
 .dlg-footer .row{flex-wrap:wrap}
 .dlg-footer .row .btn{flex:1 1 140px;min-height:44px;white-space:normal}
-@media(max-height:520px) and (orientation:landscape){.wheel-stage{width:min(34dvh,150px)}.diff-card{padding:8px 4px}.odds ol{grid-template-columns:repeat(4,1fr)}}
+@media(max-height:520px) and (orientation:landscape){.diff-card{padding:8px 4px}}
 .paver-card{display:flex;gap:12px;align-items:center;padding:10px;border-radius:12px;background:linear-gradient(135deg,rgba(242,182,50,.16),rgba(29,79,134,.12));border:1px solid rgba(242,182,50,.35);margin:8px 0}
 .paver-card img{width:112px;height:auto;flex:none;filter:drop-shadow(3px 5px 3px rgba(20,16,10,.35))}
 .paver-card p{margin:4px 0 0;font-size:.85em;opacity:.85}

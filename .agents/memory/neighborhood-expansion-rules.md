@@ -33,3 +33,9 @@ The requested wheel has a two-hour free cooldown and rare large prizes. Real-mon
 **Why:** The user explicitly postponed payment and advertising connections while requesting their interfaces now.
 
 **How to apply:** Clearly disable unconnected external purchase/ad options; never simulate payment success or watched ads. Before commercial activation, add authoritative verification rather than trusting local saves.
+
+The supplied wheel artwork guides its appearance, but the user chose to retain the existing 150-coin reward while adding iron and wood, rather than copying the reference's reward list exactly.
+
+**Why:** The explicit choice was “إضافة الحديد والخشب مع إبقاء 150 عملة”; the reference has fewer sectors than the accepted game wheel.
+
+**How to apply:** Do not remove the retained coin prize when refining the reference-based art. Preserve the meaning of saved reward indices when adding further prizes.

@@ -1,0 +1,93 @@
+/* Luck wheel — illustrated casual-game look over a painted Gaza coast. */
+.wheel-fab{position:fixed;left:12px;top:calc(env(safe-area-inset-top) + 74px);z-index:5;width:60px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:5px 4px 6px;border:2px solid #f5c033;border-radius:18px;background:linear-gradient(#24418a,#132656);color:#fff6d8;font:inherit;font-size:.68rem;font-weight:800;box-shadow:0 6px 14px rgba(4,14,30,.4),inset 0 1px 0 rgba(255,255,255,.25);cursor:pointer;touch-action:manipulation}
+.wheel-fab:focus-visible{outline:2px solid #fff2a8;outline-offset:2px}
+.wf-wheel{position:relative;display:block;width:40px;height:40px;border-radius:50%;background:radial-gradient(circle,#ffe27a 0 58%,#f5c033 60%,#b9700e 80%,#ffd85a);box-shadow:0 2px 3px rgba(0,0,0,.4)}
+.wf-disc{position:absolute;inset:4px;border-radius:50%;box-shadow:inset 0 0 4px rgba(0,0,0,.45)}
+.wf-hub{position:absolute;inset:14px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#fff2a8,#e59a12);box-shadow:0 0 0 1.5px #7a3c10}
+.wf-pin{position:absolute;left:50%;top:-4px;width:10px;height:11px;transform:translateX(-50%);background:linear-gradient(#ff6a5a,#a8101c);clip-path:polygon(0 0,100% 0,50% 100%);border-radius:2px}
+.wheel-fab.ready{animation:wf-glow 2.4s ease-in-out infinite}
+.wheel-fab.ready .wf-disc{animation:fab-nudge 2.4s ease-in-out infinite}
+@keyframes fab-nudge{0%,80%,100%{transform:rotate(0)}88%{transform:rotate(-24deg)}94%{transform:rotate(10deg)}}
+@keyframes wf-glow{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@media(max-width:800px){.wheel-fab{top:calc(env(safe-area-inset-top) + 288px);width:54px}.wf-wheel{width:34px;height:34px}.wf-hub{inset:12px}}
+@media(max-height:520px) and (orientation:landscape){.wheel-fab{top:calc(var(--topbar,56px) + 4px);left:max(8px,env(safe-area-inset-left));width:50px;padding:4px 3px}.wf-wheel{width:28px;height:28px}.wf-hub{inset:10px}
+  body:has(.banner) .wheel-fab{top:calc(var(--topbar,56px) + 64px)}}
+@media(max-height:360px) and (orientation:landscape){.wheel-fab{flex-direction:row;width:auto;gap:4px}}
+body:has(.sheet) .wheel-fab{display:none}
+
+/* ---- modal shell ---- */
+dialog.wheel-modal{width:min(560px,calc(100vw - 16px));max-width:none;max-height:calc(100dvh - 16px);padding:0;overflow:hidden;border:3px solid #f5c033;border-radius:24px;color:#fff6d8;
+  background:linear-gradient(rgba(10,24,64,.35),rgba(10,24,64,.15) 40%,rgba(30,20,8,.4));box-shadow:0 24px 60px rgba(4,10,30,.6)}
+dialog.wheel-modal>.dlg-head,dialog.wheel-modal>.dlg-tabs{display:none}
+dialog.wheel-modal .dlg-body{padding:0;max-height:calc(100dvh - 22px);overflow-y:auto;overflow-x:hidden;background:none}
+dialog.wheel-modal .dlg-footer{display:none}
+.wz{position:relative;background-size:cover;background-position:center;padding:12px 14px 16px;display:flex;flex-direction:column;gap:6px}
+.wz-head{position:relative;display:flex;flex-direction:column;align-items:center;padding:0 52px}
+.wz-plank{position:relative;padding:6px 26px 8px;border-radius:14px;background:repeating-linear-gradient(90deg,rgba(0,0,0,.06) 0 3px,transparent 3px 11px),linear-gradient(#a8662c,#7a4318 60%,#5c3010);border:3px solid #3e1f08;box-shadow:inset 0 2px 0 rgba(255,220,160,.35),0 5px 0 #3e1f08,0 8px 14px rgba(0,0,0,.4)}
+.wz-plank::before,.wz-plank::after{content:"";position:absolute;top:50%;width:26px;height:22px;margin-top:-11px;background:radial-gradient(ellipse at 30% 40%,#8fe06a,#2e8a2a);border-radius:0 80% 0 80%}
+.wz-plank::before{right:-22px}.wz-plank::after{left:-22px;transform:scaleX(-1)}
+.wz-plank b{display:block;font:900 clamp(1.5rem,6.4vw,2.2rem)/1.1 "Cairo Black","Cairo",sans-serif;color:#ffd84a;-webkit-text-stroke:1.5px #5a2a06;paint-order:stroke fill;text-shadow:0 3px 0 #5a2a06,0 5px 6px rgba(0,0,0,.4)}
+.wz-ribbon{margin:8px 0 0;padding:3px 18px;border-radius:12px;background:linear-gradient(#2a56b8,#163584);border:2px solid #f5c033;font-weight:800;font-size:.85rem;color:#fff;box-shadow:0 3px 8px rgba(0,0,0,.35)}
+.wz-close{position:absolute;top:0;inset-inline-end:0;width:46px;height:46px;border-radius:50%;border:3px solid #fff;background:radial-gradient(circle at 40% 30%,#ff7a6a,#d01c22 60%,#8a0c12);box-shadow:0 4px 0 #6a0a0e,0 6px 12px rgba(0,0,0,.4);cursor:pointer;display:grid;place-items:center;touch-action:manipulation}
+.wz-close svg{width:24px;height:24px;stroke:#fff;stroke-width:3.4;stroke-linecap:round;fill:none}
+.wz-close:active{transform:translateY(2px)}
+.wz-close:focus-visible,.wz-spin:focus-visible{outline:3px solid #fff2a8;outline-offset:3px}
+.wz-main{display:flex;flex-direction:column;align-items:center;gap:6px}
+.wz-side{display:flex;flex-direction:column;align-items:stretch;width:100%;max-width:400px;gap:4px}
+
+/* ---- wheel ---- */
+.wheel-stage{position:relative;width:min(84vw,56dvh,400px);aspect-ratio:1;margin:6px auto 2px;flex:none}
+.wz-ring,.wheel-host{position:absolute}
+.wz-ring{inset:0}.wz-ring svg{width:100%;height:100%;display:block;filter:drop-shadow(0 10px 14px rgba(0,0,0,.45))}
+.wheel-host{inset:9.3%}
+.wheel-disc{position:absolute;inset:0;will-change:transform}
+.wheel-disc svg{width:100%;height:100%;display:block;overflow:visible}
+.wheel-disc .gl{fill:none;stroke:rgba(255,255,255,.28);stroke-width:2}
+.wheel-disc .sep line{stroke:#ffe9a0;stroke-width:1.6}
+.wheel-disc .inner-shade{fill:none;stroke:rgba(0,0,0,.35);stroke-width:2}
+.wheel-disc .wl{font:900 11px "Cairo Black Numbers","Cairo Black","Cairo",sans-serif;fill:#fff;stroke:#2a1604;stroke-width:2.2px;paint-order:stroke fill}
+.wheel-disc .wu{font:800 5.5px "Cairo",sans-serif;fill:#fff;stroke:rgba(30,15,4,.8);stroke-width:1.3px;paint-order:stroke fill}
+.wheel-disc .rb rect{fill:#2a1604;stroke:#ffd84a;stroke-width:.6}
+.wheel-disc .rb text{font:800 4.3px "Cairo",sans-serif;fill:#ffd84a}
+.bulb{fill:url(#wr-bulb)}
+.bulb.b{animation:bulb 1.2s steps(1) infinite}
+.bulb.a{animation:bulb 1.2s steps(1) .6s infinite}
+.wz.spinning .bulb{animation-duration:.3s}
+@keyframes bulb{0%{opacity:1}50%{opacity:.45}}
+.wz-hub{position:absolute;left:50%;top:50%;width:25%;aspect-ratio:1;transform:translate(-50%,-50%);z-index:2;filter:drop-shadow(0 4px 6px rgba(0,0,0,.5))}
+.wz-hub svg,.wheel-pointer svg{width:100%;height:100%;display:block}
+.wheel-pointer{position:absolute;left:50%;top:-3%;width:12%;aspect-ratio:40/52;transform:translateX(-50%);z-index:3;filter:drop-shadow(0 4px 4px rgba(0,0,0,.45))}
+.wz.spinning .wheel-pointer{animation:tick .14s ease-in-out infinite alternate}
+@keyframes tick{to{transform:translateX(-50%) rotate(-7deg)}}
+
+/* ---- controls ---- */
+.wheel-status,.wheel-timer{text-align:center;margin:0;min-height:1.4em;text-shadow:0 1px 3px rgba(0,0,0,.8)}
+.wheel-status{padding:6px 10px;border-radius:12px;background:rgba(14,28,70,.72);border:1px solid rgba(245,192,51,.5)}
+.wheel-status b{color:#ffd84a}
+.wheel-timer{font-size:.85rem;color:#ffeec0;font-weight:700}
+.wz-spin{display:flex;align-items:center;justify-content:center;gap:10px;min-height:58px;margin:4px 0;border-radius:30px;border:3px solid #7a3c08;background:linear-gradient(#fff2a0,#f7c22e 45%,#e08a0a);color:#4a2006;font:900 1.45rem "Cairo Black","Cairo",sans-serif;box-shadow:inset 0 2px 0 rgba(255,255,255,.7),0 5px 0 #7a3c08,0 9px 16px rgba(0,0,0,.4);cursor:pointer;touch-action:manipulation}
+.wz-spin svg{width:30px;height:30px;fill:none;stroke:#4a2006;stroke-width:2.8;stroke-linecap:round;stroke-linejoin:round}
+.wz-spin:active:not(:disabled){transform:translateY(3px);box-shadow:inset 0 2px 0 rgba(255,255,255,.7),0 2px 0 #7a3c08}
+.wz-spin:disabled{filter:saturate(.35) brightness(.9);cursor:not-allowed;font-size:1.1rem}
+.wz.is-ready .wz-spin{animation:pulse 1.8s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.03)}}
+.wz .odds{margin:2px 0;font-size:.82rem;padding:6px 10px;border-radius:12px;background:rgba(14,28,70,.72)}
+.wz .odds summary{cursor:pointer;font-weight:800;color:#ffd84a}
+.wz .odds ol{list-style:none;padding:0;margin:6px 0 0;display:grid;grid-template-columns:1fr 1fr;gap:3px 12px}
+.wz .odds li{display:flex;align-items:center;gap:6px;border-bottom:1px dashed rgba(255,255,255,.2);padding:2px 0}
+.wz .odds li i{width:9px;height:9px;border-radius:3px;flex:none}
+.wz .odds li span{flex:1}
+.wz .note.unavailable{font-size:.74rem;opacity:.85;margin:0;text-align:center;text-shadow:0 1px 2px #000}
+
+@media(max-height:520px) and (orientation:landscape){
+  dialog.wheel-modal{width:min(820px,calc(100vw - 16px))}
+  .wz{padding:8px 12px 10px;gap:2px}
+  .wz-plank{padding:2px 20px 4px}.wz-plank b{font-size:1.3rem}.wz-ribbon{display:none}
+  .wz-close{width:40px;height:40px}
+  .wz-main{flex-direction:row;justify-content:center;gap:16px;align-items:center}
+  .wheel-stage{width:min(calc(100dvh - 90px),300px);margin:4px 0}
+  .wz-side{max-width:340px}
+  .wz-spin{min-height:48px;font-size:1.2rem}
+  .wz .odds ol{grid-template-columns:1fr 1fr}
+}
+@media(prefers-reduced-motion:reduce){.wheel-fab.ready,.wheel-fab.ready .wf-disc,.bulb,.wz.is-ready .wz-spin,.wz.spinning .wheel-pointer{animation:none}}

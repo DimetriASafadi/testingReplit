@@ -1,7 +1,7 @@
 import './expansion-ui.css';
 import type { DistrictState, GameState } from './model';
 import { DIFFICULTIES, PAVER_COST, ROAD_COST, difficultyOf, workDuration } from './economy';
-import { WHEEL_PRIZES, WHEEL_SPIN_MS, COIN_PACKS, GEM_PACKS, commerceProvider, rewardedAdProvider } from './rewards';
+import { COIN_PACKS, GEM_PACKS, commerceProvider } from './rewards';
 import { roadsFor, roadMid, streetFor } from './roads';
 import { formatNumber as fmt } from './number-format';
 
@@ -16,9 +16,7 @@ export function clock(ms: number) {
   const p = (n: number) => String(n).padStart(2, '0');
   return h ? `${h}:${p(m)}:${p(x)}` : `${p(m)}:${p(x)}`;
 }
-const SEG = WHEEL_PRIZES.length, STEP = 360 / SEG;
 const PAY_REASON = 'الدفع الحقيقي غير متاح حاليًا: لم تُربط بوابة دفع وتحقق خادمي بعد. لن يُخصم أي مبلغ.';
-const AD_REASON = 'مشاهدة إعلان غير متاحة حاليًا: لم يُربط مزود إعلانات يتحقق من المشاهدة الكاملة.';
 
 // ---------- difficulty ----------
 export function difficultyHtml(d: DistrictState, name: string, picked: string) {
@@ -33,62 +31,8 @@ export function difficultyHtml(d: DistrictState, name: string, picked: string) {
     <div class="row"><button class="btn gold" data-a="diff-confirm" data-k="diff-confirm" ${picked ? '' : 'disabled'}>${picked ? `بدء الحي بمستوى ${DIFFICULTIES[picked as keyof typeof DIFFICULTIES].name}` : 'اختر مستوى أولًا'}</button></div>`;
 }
 
-// ---------- wheel ----------
-export const wheelSpinning = (st: GameState, now: number) => !!st.wheel?.startedAt && now < st.wheel.startedAt + WHEEL_SPIN_MS;
-export const wheelReady = (st: GameState, now: number) => !wheelSpinning(st, now) && now >= (st.wheel?.nextAt ?? 0);
-export function wheelButton(st: GameState, now: number) {
-  const ready = wheelReady(st, now), spin = wheelSpinning(st, now);
-  return `<button class="wheel-fab ${ready ? 'ready' : ''}" data-a="dlg" data-id="wheel" data-k="wheel-fab" aria-label="دولاب الحظ${ready ? '، دوران مجاني متاح' : ''}">
-    <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17"/>${Array.from({ length: SEG }, (_, i) => { const a = (i * STEP - 90) * Math.PI / 180; return `<line x1="20" y1="20" x2="${(20 + 17 * Math.cos(a)).toFixed(2)}" y2="${(20 + 17 * Math.sin(a)).toFixed(2)}"/>`; }).join('')}<circle cx="20" cy="20" r="4" class="hub"/></svg>
-    <span>${spin ? 'يدور' : ready ? 'مجاني' : `<bdi class="num">${clock((st.wheel?.nextAt ?? 0) - now)}</bdi>`}</span></button>`;
-}
-function wheelSvg() {
-  const r = 100, pal = ['#f4f7fc', '#1d4f86', '#f4f7fc', '#2c6aa8', '#f2b632', '#4ea0e0', '#f4f7fc', '#173f6b'];
-  const segs = WHEEL_PRIZES.map((p, i) => {
-    const a0 = (i * STEP - STEP / 2 - 90) * Math.PI / 180, a1 = (i * STEP + STEP / 2 - 90) * Math.PI / 180;
-    const d = `M0 0L${(r * Math.cos(a0)).toFixed(2)} ${(r * Math.sin(a0)).toFixed(2)}A${r} ${r} 0 0 1 ${(r * Math.cos(a1)).toFixed(2)} ${(r * Math.sin(a1)).toFixed(2)}Z`;
-    const light = pal[i] === '#f4f7fc' || pal[i] === '#f2b632';
-    const label = p.coins ? fmt(p.coins) : p.gems ? fmt(p.gems) : '0';
-    const unit = p.coins ? 'عملة' : p.gems ? 'جوهرة' : 'حظ أوفر';
-    return `<path d="${d}" fill="${pal[i]}"/><g transform="rotate(${i * STEP})"><text y="-66" text-anchor="middle" class="wl ${light ? 'dk' : ''}">${label}</text><text y="-50" text-anchor="middle" class="wu ${light ? 'dk' : ''}">${unit}</text></g>`;
-  }).join('');
-  return `<svg viewBox="-104 -104 208 208" aria-hidden="true"><circle r="103" class="rim"/>${segs}<circle r="16" class="hub"/></svg>`;
-}
-let disc: HTMLDivElement | null = null, raf = 0;
-const ease = (t: number) => 1 - Math.pow(1 - t, 4);
-/** Rotation derived purely from the persisted spin, so re-renders never restart it. */
-function discAngle(st: GameState, now: number) {
-  const w = st.wheel; if (!w?.startedAt) return 0;
-  const final = 360 * 6 - w.result * STEP;
-  const t = Math.min(1, (now - w.startedAt) / WHEEL_SPIN_MS);
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  return reduce ? (t >= 1 ? final : final - 90 * (1 - t)) : final * ease(t);
-}
-export function mountWheel(root: ParentNode, getState: () => GameState) {
-  const host = root.querySelector<HTMLElement>('[data-wheel-host]');
-  if (!host) { cancelAnimationFrame(raf); raf = 0; return; }
-  if (!disc) { disc = document.createElement('div'); disc.className = 'wheel-disc'; disc.innerHTML = wheelSvg(); }
-  if (disc.parentElement !== host) host.appendChild(disc);
-  const frame = () => {
-    const st = getState(), now = Date.now();
-    disc!.style.transform = `rotate(${discAngle(st, now)}deg)`;
-    raf = wheelSpinning(st, now) ? requestAnimationFrame(frame) : 0;
-  };
-  if (!raf) frame();
-}
-export function wheelHtml(st: GameState, now: number) {
-  const w = st.wheel, spin = wheelSpinning(st, now), ready = wheelReady(st, now);
-  const shown = w?.startedAt && !spin ? WHEEL_PRIZES[w.result] : null;
-  const prizeName = (p: typeof WHEEL_PRIZES[number]) => p.coins ? `${fmt(p.coins)} عملة` : p.gems ? `${fmt(p.gems)} ${p.gems > 2 ? 'جواهر' : 'جوهرة'}` : 'لا جائزة';
-  const odds = WHEEL_PRIZES.map(p => `<li><span>${prizeName(p)}</span><bdi class="num">${fmt(p.weight)}%</bdi></li>`).join('');
-  return `<div class="wheel-stage"><div class="wheel-pointer" aria-hidden="true"></div><div class="wheel-host" data-wheel-host></div></div>
-    <p class="wheel-status" role="status">${spin ? 'الدولاب يدور… الجائزة محددة ومحفوظة مسبقًا.' : shown ? `آخر نتيجة: <b>${prizeName(shown)}</b>${shown.coins || shown.gems ? ' · أُضيفت إلى رصيدك' : ''}` : 'دوران مجاني كل ساعتين.'}</p>
-    <p class="wheel-timer">${ready ? 'الدوران المجاني متاح الآن' : spin ? '&nbsp;' : `الدوران التالي بعد <bdi class="num">${clock((w?.nextAt ?? 0) - now)}</bdi>`}</p>
-    <details class="odds"><summary>الاحتمالات</summary><ol>${odds}</ol></details>
-    <div class="row"><button class="btn gold" data-a="spin" data-k="spin" ${ready ? '' : 'disabled'}>${spin ? 'يدور…' : ready ? 'تدوير مجاني' : 'انتظر العداد'}</button>
-    <button class="btn ghost" data-a="noop" data-k="wheel-ad" disabled title="${AD_REASON}">إعادة الدوران بإعلان · غير متاح</button></div>
-    ${rewardedAdProvider ? '' : `<p class="note unavailable">${AD_REASON}</p>`}`;
-}
+// ---------- wheel (art + logic in wheel-art.ts) ----------
+export { wheelSpinning, wheelReady, wheelButton, mountWheel, wheelHtml } from './wheel-art';
 
 // ---------- stores ----------
 export function coinStoreHtml(st: GameState) {

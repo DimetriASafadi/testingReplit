@@ -53,7 +53,7 @@ test('wallet transactions persist before success and reject duplicates/failed st
 });
 test('wheel weighted results, persisted reward and two-hour cooldown',()=>{
  assert.equal(WHEEL_PRIZES.reduce((s,p)=>s+p.weight,0),100);
- assert.equal(wheelResult(0),0);assert.equal(wheelResult(.99),7);
+ assert.equal(wheelResult(0),0);assert.equal(wheelResult(.99),9);
  const{store,storage}=setup();const before=store.state.coins;
  store.dispatch({type:'spin'});const w=store.state.wheel!;
  assert.equal(store.state.coins,before+WHEEL_PRIZES[w.result].coins);
@@ -63,6 +63,24 @@ test('wheel weighted results, persisted reward and two-hour cooldown',()=>{
  assert.throws(()=>reloaded.dispatch({type:'spin'}));
  reloaded.tick(w.nextAt);reloaded.dispatch({type:'spin'});
  validateSave(reloaded.state);
+});
+test('all ten wheel prizes credit exactly once including saleable iron and wood, retaining legacy indices',()=>{
+ const random=Math.random;
+ try {
+  let weight=0;
+  for(const [i,p] of WHEEL_PRIZES.entries()){
+   Math.random=()=> (weight+p.weight/2)/100;
+   const {store,storage}=setup(),before=structuredClone(store.state);
+   store.dispatch({type:'spin'});const w=store.state.wheel!;
+   assert.equal(w.result,i);assert.equal(store.state.coins,before.coins+p.coins);assert.equal(store.state.gems,before.gems+p.gems);
+   assert.equal(store.state.inventory.iron,before.inventory.iron+p.iron);assert.equal(store.state.inventory.wood,before.inventory.wood+p.wood);
+   assert.equal(store.state.inventory.value,before.inventory.value+p.iron*60+p.wood*35);
+   validateSave(store.state);const restored=new GameStore(storage,w.startedAt+5000);assert.deepEqual(restored.state.inventory,store.state.inventory);
+   assert.throws(()=>restored.dispatch({type:'spin'}));assert.deepEqual(restored.state.inventory,store.state.inventory);
+   weight+=p.weight;
+  }
+  assert.equal(WHEEL_PRIZES[7].coins,150);assert.equal(WHEEL_PRIZES[4].weight,2);assert.equal(WHEEL_PRIZES[5].weight,1);
+ }finally{Math.random=random;}
 });
 test('legacy progress retains rewards, deadlines and wallet; only rebuilt paved district reaches 100',()=>{
  const s=newGame(Date.now()+100000);delete s.expansionVersion;s.coins=123456;s.currentDistrict=s.districts[0].id;

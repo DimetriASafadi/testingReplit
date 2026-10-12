@@ -220,7 +220,9 @@ export class GameStore implements GameAPI {
           ensure(!this.state.wheel || now>=this.state.wheel.nextAt,'انتظر انتهاء وقت دولاب الحظ');
           const result=wheelResult(Math.random()),prize=WHEEL_PRIZES[result];
           this.state.wheel={nextAt:now+WHEEL_COOLDOWN,result,startedAt:now};
-          this.state.coins+=prize.coins;this.state.gems+=prize.gems;break;
+          this.state.coins+=prize.coins;this.state.gems+=prize.gems;
+          this.state.inventory.iron+=prize.iron;this.state.inventory.wood+=prize.wood;
+          this.state.inventory.value+=prize.iron*60+prize.wood*35;break;
         }
         case 'exchange': {
           ensure(Number.isInteger(action.pack)&&COIN_PACKS[action.pack],'الباقة غير موجودة');

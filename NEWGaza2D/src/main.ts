@@ -367,6 +367,7 @@ function renderDialog() {
   const layout = dialogLayout(body, ui.dialogTab, ui.dialogPage);
   const html = `<div class="dlg-head"><h2 id="dlg-t">${t}</h2><button class="icon-btn" data-a="close-dlg" data-k="close-dlg" aria-label="إغلاق">${IC.close}</button></div>${layout.tabs}<div class="dlg-body" data-sk="dlg">${layout.body}</div>${layout.footer ? `<footer class="dlg-footer">${layout.footer}</footer>` : ''}`;
   if (regions.get('dlg') !== html) { const f = document.activeElement as HTMLElement | null; const k = f && dlg.contains(f) ? f.dataset.k : undefined; const pos = snap(dlg); patchContent(dlg, html); regions.set('dlg', html); restore(dlg, pos); if (k) (dlg.querySelector(`[data-k="${CSS.escape(k)}"]`) as HTMLElement | null)?.focus({ preventScroll: true }); }
+  dlg.classList.toggle('wheel-modal', ui.dialog === 'wheel');
   mountWheel(dlg, S);
   if (!dlg.open) dlg.showModal();
 }
@@ -379,7 +380,7 @@ function expansionChecks() {
   const w = st.wheel;
   if (w?.startedAt && !wheelSpinning(st, now) && announcedSpin.has(-w.startedAt)) {
     announcedSpin.delete(-w.startedAt); announcedSpin.add(w.startedAt);
-    const p = WHEEL_PRIZES[w.result]; toast(p.coins ? `ربحت ${fmt(p.coins)} عملة` : p.gems ? `ربحت ${fmt(p.gems)} جواهر` : 'حظًا أوفر في الدورة القادمة');
+    const p = WHEEL_PRIZES[w.result]; toast(p.coins ? `ربحت ${fmt(p.coins)} عملة` : p.gems ? `ربحت ${fmt(p.gems)} جواهر` : p.iron ? `ربحت ${fmt(p.iron)} وحدة حديد` : p.wood ? `ربحت ${fmt(p.wood)} وحدة خشب` : 'حظًا أوفر في الدورة القادمة');
   }
   if (d && !d.claimed && !d.celebrated && !celebratedNow.has(d.id) && districtComplete(d)) {
     celebratedNow.add(d.id); celebrate(dName(d.id)); gameAudio.click(true);
