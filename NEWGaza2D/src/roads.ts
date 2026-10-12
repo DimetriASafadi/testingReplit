@@ -1,5 +1,5 @@
 import { cityLayout } from './city-layout';
-import type { DistrictState, Plot } from './model';
+import type { DistrictState, Plot, RoadWork } from './model';
 export type Point = [number,number];
 export interface RoadSegment {id:string;a:Point;b:Point}
 const cache = new Map<string,RoadSegment[]>();
@@ -20,6 +20,16 @@ export function roadsFor(id:string) {
  cache.set(id,roads);return roads;
 }
 export const roadMid = (r:RoadSegment):Point => [(r.a[0]+r.b[0])/2,(r.a[1]+r.b[1])/2];
+/** A street is one continuous grid line, not an individual selectable slice. */
+export function streetFor(id:string,roadId:string) {
+ const r=roadsFor(id).find(r=>r.id===roadId);if(!r)return [];
+ const vertical=r.a[0]===r.b[0];
+ return roadsFor(id).filter(q=>vertical?q.a[0]===q.b[0]&&q.a[0]===r.a[0]:q.a[1]===q.b[1]&&q.a[1]===r.a[1]);
+}
+export function workRoad(id:string,w:Pick<RoadWork,'roadId'|'roadIds'>):RoadSegment {
+ const all=w.roadIds?streetFor(id,w.roadId):roadsFor(id).filter(r=>r.id===w.roadId);
+ return {id:w.roadId,a:all[0].a,b:all[all.length-1].b};
+}
 export function roadAt(id:string,x:number,y:number) {
  return roadsFor(id).find(r=> Math.abs(r.a[0]-r.b[0])<.001
   ? Math.abs(x-r.a[0])<.36 && y>=r.a[1] && y<=r.b[1]

@@ -2,7 +2,7 @@ import './expansion-ui.css';
 import type { DistrictState, GameState } from './model';
 import { DIFFICULTIES, PAVER_COST, ROAD_COST, difficultyOf, workDuration } from './economy';
 import { WHEEL_PRIZES, WHEEL_SPIN_MS, COIN_PACKS, GEM_PACKS, commerceProvider, rewardedAdProvider } from './rewards';
-import { roadsFor, roadMid } from './roads';
+import { roadsFor, roadMid, streetFor } from './roads';
 import { formatNumber as fmt } from './number-format';
 
 /* Shared expansion surfaces: difficulty, wheel, stores, roads, celebration.
@@ -132,21 +132,22 @@ export function paverSection(st: GameState, hasAsphalt: boolean, now: number) {
 export function roadHtml(st: GameState, d: DistrictState, roadId: string, hasAsphalt: boolean, now: number) {
   const r = roadsFor(d.id).find(x => x.id === roadId);
   if (!r) return '<p>المقطع غير موجود.</p><button class="btn" data-a="close-dlg">إغلاق</button>';
-  const paved = d.pavedRoads?.includes(roadId), work = d.roadWorks?.find(w => w.roadId === roadId);
+  const street=streetFor(d.id,roadId),ids=new Set(street.map(r=>r.id)),pending=street.filter(r=>!d.pavedRoads?.includes(r.id)),cost=ROAD_COST*pending.length;
+  const paved = pending.length===0, work = d.roadWorks?.find(w => (w.roadIds??[w.roadId]).some(id=>ids.has(id)));
   const free = (st.pavers ?? []).filter(p => !paverBusy(st, p.id, now));
   const [mx, my] = roadMid(r), total = roadsFor(d.id).length, done = d.pavedRoads?.length ?? 0;
-  const head = `<dl class="kv"><dt>الموقع</dt><dd><bdi class="num">${fmt(Math.round(mx))}, ${fmt(Math.round(my))}</bdi> · ${Math.abs(r.a[0] - r.b[0]) < .001 ? 'مقطع طولي' : 'مقطع عرضي'}</dd><dt>شوارع الحي المسفلتة</dt><dd class="num">${fmt(done)}/${fmt(total)}</dd>`;
-  if (paved) return `${head}<dt>الحالة</dt><dd>مسفلت</dd></dl><p class="note">اكتملت سفلتة هذا المقطع.</p>`;
+  const head = `<dl class="kv"><dt>الموقع</dt><dd><bdi class="num">${fmt(Math.round(mx))}, ${fmt(Math.round(my))}</bdi> · ${Math.abs(r.a[0] - r.b[0]) < .001 ? 'شارع طولي كامل' : 'شارع عرضي كامل'}</dd><dt>أجزاء هذا الشارع المنجزة</dt><dd class="num">${fmt(street.length-pending.length)}/${fmt(street.length)}</dd><dt>مقاطع الحي المسفلتة</dt><dd class="num">${fmt(done)}/${fmt(total)}</dd>`;
+  if (paved&&!work) return `${head}<dt>الحالة</dt><dd>مسفلت بالكامل</dd></dl><p class="note">اكتملت سفلتة الشارع من بدايته إلى نهايته.</p>`;
   if (work) { const ph = roadWorkPhase(work, now);
     return `${head}<dt>الحالة</dt><dd>${ph.label}</dd><dt>متبقٍ</dt><dd class="num">${clock(ph.end - now)}</dd></dl><div class="meter"><i style="transform:scaleX(${Math.min(1, 1 - (ph.end - now) / Math.max(1, ph.span))})"></i></div><p class="note">لا يُخصم الثمن مرة أخرى ولا يمنع العمل وصول الآليات للأراضي.</p>`; }
   const reqs = [
     { ok: hasAsphalt, t: 'مصنع أسفلت مكتمل في الحي' },
     { ok: free.length > 0, t: `آلية سفلتة متاحة (${fmt(free.length)}/${fmt(st.pavers?.length ?? 0)})` },
-    { ok: st.coins >= ROAD_COST, t: `الرصيد يكفي التكلفة ${fmt(ROAD_COST)}` },
+    { ok: st.coins >= cost, t: `الرصيد يكفي التكلفة ${fmt(cost)}` },
   ];
-  return `${head}<dt>التكلفة</dt><dd class="num">${fmt(ROAD_COST)}</dd><dt>مدة العمل في الموقع</dt><dd><bdi class="num">${clock(workDuration(d, 60_000))}</bdi> + الذهاب والعودة</dd><dt>الصعوبة</dt><dd>${difficultyOf(d).name}</dd></dl>
+  return `${head}<dt>التكلفة</dt><dd class="num">${fmt(cost)}</dd><dt>مدة العمل في الموقع</dt><dd><bdi class="num">${clock(workDuration(d, 60_000*pending.length))}</bdi> + الذهاب والعودة</dd><dt>الصعوبة</dt><dd>${difficultyOf(d).name}</dd></dl><p class="note">سفلتة الشارع كاملًا من البداية للنهاية. التكلفة للأجزاء غير المنجزة فقط: ${fmt(ROAD_COST)} لكل جزء.</p>
     ${reqs.map(q => `<div class="check ${q.ok ? 'ok' : ''}"><i></i>${q.t}</div>`).join('')}
-    <div class="row">${(st.pavers?.length ?? 0) === 0 ? `<button class="btn ghost" data-a="dlg" data-id="fleet" data-k="road-fleet">شراء آلية سفلتة</button>` : ''}<button class="btn gold" data-a="pave" data-id="${esc(roadId)}" data-k="pave" ${reqs.every(q => q.ok) ? '' : 'disabled'}>سفلتة المقطع · <span class="num">${fmt(ROAD_COST)}</span></button></div>`;
+    <div class="row">${(st.pavers?.length ?? 0) === 0 ? `<button class="btn ghost" data-a="dlg" data-id="fleet" data-k="road-fleet">شراء آلية سفلتة</button>` : ''}<button class="btn gold" data-a="pave" data-id="${esc(roadId)}" data-k="pave" ${reqs.every(q => q.ok) ? '' : 'disabled'}>سفلتة الشارع كاملًا · <span class="num">${fmt(cost)}</span></button></div>`;
 }
 
 // ---------- celebration ----------

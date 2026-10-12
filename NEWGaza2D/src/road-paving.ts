@@ -52,7 +52,7 @@ export function pavingPlan(roadX: number[], roadY: number[], segments: RoadSegme
   for (const list of lines.values()) {
     list.sort((a, b) => a.s0 - b.s0);
     const { axis, fixed } = list[0];
-    const kind = (s: number): EndKind => !isNode(axis, s) ? 'joint' : nodePaved(...nodeXY(axis, fixed, s)) ? 'node' : 'open';
+    const kind = (s: number): EndKind => !isNode(axis, s) ? 'joint' : nodePaved(...nodeXY(axis, fixed, s)) || (arm(axis,fixed,s,1)&&arm(axis,fixed,s,-1)) ? 'node' : 'open';
     let cur: { s0: number; s1: number } | null = null;
     const close = () => { if (cur) runs.push(finish(axis, fixed, cur.s0, cur.s1, kind(cur.s0), kind(cur.s1), crossOf(axis))); cur = null; };
     for (const g of list) {

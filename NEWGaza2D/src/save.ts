@@ -3,7 +3,7 @@ import type { GameState } from './model';
 import { cityLayout, LOT_COUNT } from './city-layout';
 import { isOrientation } from './orientation';
 import { MIN_CAMERA_ZOOM } from './camera-overview';
-import { roadsFor } from './roads';
+import { roadsFor, streetFor } from './roads';
 import { isDifficulty, PAVER_COST } from './economy';
 import { WHEEL_COOLDOWN, WHEEL_PRIZES } from './rewards';
 
@@ -48,6 +48,7 @@ export function validateSave(value: unknown): asserts value is GameState {
       require(Array.isArray(d.roadWorks)&&new Set(d.roadWorks.map(w=>w.roadId)).size===d.roadWorks.length);
       for(const w of d.roadWorks){
         require(roadIds.has(w.roadId)&&s.pavers?.some(p=>p.id===w.machineId));
+        if(w.roadIds!==undefined){const street=new Set(streetFor(d.id,w.roadId).map(r=>r.id));require(Array.isArray(w.roadIds)&&w.roadIds.length>0&&new Set(w.roadIds).size===w.roadIds.length&&w.roadIds.every(id=>street.has(id)));}
         require(integer(w.factoryId)&&d.plots[w.factoryId]?.status==='built'&&d.plots[w.factoryId]?.buildingId==='asphalt');
         require([w.start,w.arrival,w.workEnd,w.returnEnd].every(integer)&&w.start<=s.lastSeen&&w.arrival>w.start&&w.workEnd>w.arrival&&w.returnEnd>w.workEnd);
         require(Array.isArray(w.route)&&w.route.length>=2&&w.route.every(p=>Array.isArray(p)&&p.length===2&&p.every(n=>Number.isFinite(n)&&Math.abs(n)<200)));

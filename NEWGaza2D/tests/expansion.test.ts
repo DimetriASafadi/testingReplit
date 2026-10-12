@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { GameStore, SAVE_KEY, districtProgress, newGame } from '../src/engine';
-import { roadsFor, pavingRoute, along } from '../src/roads';
+import { roadsFor, pavingRoute, along, streetFor, workRoad } from '../src/roads';
 import { validateSave } from '../src/save';
 import { WHEEL_COOLDOWN, WHEEL_PRIZES, wheelResult } from '../src/rewards';
 import { projectIncome, workDuration } from '../src/economy';
@@ -20,13 +20,26 @@ test('road factory, equipment, charge, offline paving and return survive reload 
  Object.assign(d.plots[0],{status:'built',buildingId:'asphalt'});
  store.dispatch({type:'buyPaver'});const before=store.state.coins;
  store.dispatch({type:'pave',roadId:r.id});const w=d.roadWorks![0];
- assert.equal(before-store.state.coins,120);assert.throws(()=>store.dispatch({type:'pave',roadId:r.id}));
+ const street=streetFor(d.id,r.id);
+ assert.equal(before-store.state.coins,120*street.length);assert.throws(()=>store.dispatch({type:'pave',roadId:street.at(-1)!.id}));
+ assert.deepEqual(workRoad(d.id,w).a,street[0].a);assert.deepEqual(workRoad(d.id,w).b,street.at(-1)!.b);
  assert.throws(()=>store.dispatch({type:'rotateBuilding',plotId:0}));
  const restored=new GameStore(storage,w.workEnd);
- assert.deepEqual(restored.state.districts[0].pavedRoads,[r.id]);
+ assert.deepEqual(restored.state.districts[0].pavedRoads,street.map(r=>r.id));
  restored.tick(w.returnEnd);assert.equal(restored.state.districts[0].roadWorks!.length,0);
- restored.tick(w.returnEnd+1000);assert.equal(restored.state.districts[0].pavedRoads!.length,1);
+ restored.tick(w.returnEnd+1000);assert.equal(restored.state.districts[0].pavedRoads!.length,street.length);
  validateSave(restored.state);
+});
+test('whole street skips already paved costs and retains legacy single-segment jobs',()=>{
+ const {store,storage}=setup(),d=store.state.districts[0],street=streetFor(d.id,roadsFor(d.id)[0].id);
+ Object.assign(d.plots[0],{status:'built',buildingId:'asphalt'});store.dispatch({type:'buyPaver'});
+ d.pavedRoads=[street[0].id];const before=store.state.coins;
+ store.dispatch({type:'pave',roadId:street[0].id});
+ assert.equal(before-store.state.coins,120*(street.length-1));assert.equal(d.roadWorks![0].roadIds!.length,street.length-1);
+ const w=d.roadWorks![0];validateSave(store.state);
+ const bad=structuredClone(store.state);bad.districts[0].roadWorks![0].roadIds!.push(roadsFor(d.id).find(r=>!street.includes(r))!.id);assert.throws(()=>validateSave(bad));
+ const legacy=structuredClone(store.state);delete legacy.districts[0].roadWorks![0].roadIds;legacy.districts[0].pavedRoads=[];storage.setItem('newgaza2d-save-v1',JSON.stringify(legacy));
+ const restored=new GameStore(storage,w.workEnd);assert.deepEqual(restored.state.districts[0].pavedRoads,[w.roadId]);
 });
 test('wallet transactions persist before success and reject duplicates/failed storage',()=>{
  const{store,storage,setFail}=setup();store.state.gems=20;

@@ -300,7 +300,7 @@ function dialogHtml(st: GameState, now: number): [string, string] {
   if (ui.dialog === 'coins') return ['متجر المال', coinStoreHtml(st)];
   if (ui.dialog === 'gems') return ['متجر الجواهر', gemStoreHtml(st)];
   if (ui.dialog === 'exchange') return ['تأكيد التحويل', exchangeHtml(st, ui.exchangePack)];
-  if (ui.dialog === 'road') { const d = cur(); if (!d || !ui.road) return ['', '']; return ['سفلتة مقطع شارع', roadHtml(st, d, ui.road, hasAsphalt(d), now)]; }
+  if (ui.dialog === 'road') { const d = cur(); if (!d || !ui.road) return ['', '']; return ['سفلتة شارع كامل', roadHtml(st, d, ui.road, hasAsphalt(d), now)]; }
   if(ui.dialog==='audio'){
     const p=gameAudio.prefs;
     const rows=([['master','الصوت العام'],['effects','الآليات والعمل والأزرار'],['ambience','أجواء المدينة والطبيعة']] as const)

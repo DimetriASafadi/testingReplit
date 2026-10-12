@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { DistrictState } from './model';
-import { along, roadsFor, type RoadSegment } from './roads';
+import { along, roadsFor, workRoad, type RoadSegment } from './roads';
 import { U } from './art';
 import { paverTexture, tentTexture, TENT_ORIGIN, PAVER_ORIGIN, PAVER_SCALE } from './expansion-art';
 import { districtProgress } from './engine';
@@ -129,7 +129,8 @@ export class RoadAnimation {
   this.work!.clear();this.fx!.clear();
   for(const w of d.roadWorks??[]){
    if(now>=w.returnEnd)continue;
-   const r=roadsFor(d.id).find(r=>r.id===w.roadId);if(!r)continue;live.add(w.machineId);
+   if(!roadsFor(d.id).some(r=>r.id===w.roadId))continue;
+   const r=workRoad(d.id,w);live.add(w.machineId);
    const working=now>=w.arrival&&now<w.workEnd;
    const len=Math.hypot(r.b[0]-r.a[0],r.b[1]-r.a[1]);
    // machine travels from (screed at road start) to (screed at road end) so mat fully covers the segment
@@ -138,7 +139,11 @@ export class RoadAnimation {
    const workStart:P=[r.a[0]+ux*SCREED,r.a[1]+uy*SCREED],workFinish:P=[r.b[0]+ux*SCREED,r.b[1]+uy*SCREED];
    const m=now<w.arrival?along([...w.route,workStart],(now-w.start)/(w.arrival-w.start)):working?{p:[workStart[0]+ux*f*len,workStart[1]+uy*f*len] as P,angle:Math.atan2(uy,ux)}:along([workFinish,r.b,...w.route.slice().reverse()],(now-w.workEnd)/(w.returnEnd-w.workEnd));
    if(now<w.arrival)this.cones(this.work!,r);
-   if(working){this.freshMat(this.work!,r,f,now);this.cones(this.work!,r);}
+   if(working){
+    if(w.roadIds){const pending=new Set(w.roadIds);for(const part of roadsFor(d.id).filter(q=>pending.has(q.id))){const start=Math.hypot(part.a[0]-r.a[0],part.a[1]-r.a[1]),size=Math.hypot(part.b[0]-part.a[0],part.b[1]-part.a[1]);this.freshMat(this.work!,part,Math.max(0,Math.min(1,(f*len-start)/size)),now);}}
+    else this.freshMat(this.work!,r,f,now);
+    this.cones(this.work!,r);
+   }
    const p=iso(...m.p),key=paverTexture(this.scene,m.angle);
    const ca=Math.cos(m.angle),sa=Math.sin(m.angle);
    let a=this.actors.get(w.machineId);

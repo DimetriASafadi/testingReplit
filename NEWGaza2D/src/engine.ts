@@ -15,7 +15,7 @@ import { buildingIncomeDetails } from './building-income';
 import { PROJECT_GEMS, DISTRICT_GEMS, HALF_TIME_GEMS } from './gems';
 import { difficultyOf, isDifficulty, PAVER_COST, projectIncome, ROAD_COST, STARTING_COINS, workDuration } from './economy';
 import { COIN_PACKS, WHEEL_COOLDOWN, WHEEL_PRIZES, wheelResult } from './rewards';
-import { roadsFor, pavingRoute, pathLength } from './roads';
+import { roadsFor, pavingRoute, pathLength, streetFor } from './roads';
 
 export const SAVE_KEY = 'newgaza2d-save-v1';
 export const factoryRotationBlocked = (state: GameState, plotId: number) =>
@@ -139,7 +139,7 @@ export class GameStore implements GameAPI {
     now = Math.max(now, this.state.lastSeen);
     let changed = false;
     for (const d of this.state.districts) {
-      for(const w of d.roadWorks??[])if(now>=w.workEnd && !d.pavedRoads!.includes(w.roadId)){d.pavedRoads!.push(w.roadId);changed=true;}
+      for(const w of d.roadWorks??[])if(now>=w.workEnd)for(const id of w.roadIds??[w.roadId])if(!d.pavedRoads!.includes(id)){d.pavedRoads!.push(id);changed=true;}
       if(d.roadWorks?.some(w=>now>=w.returnEnd)){d.roadWorks=d.roadWorks.filter(w=>now<w.returnEnd);changed=true;}
       for (const p of d.plots) if (p.status === 'building' && now >= p.endsAt) {
         p.status = 'built'; p.incomeAt = p.endsAt; changed = true;
@@ -203,16 +203,18 @@ export class GameStore implements GameAPI {
           this.pay(PAVER_COST);(this.state.pavers??=[]).push({id:`paver-${++this.state.sequence}`,cost:PAVER_COST});break;
         }
         case 'pave': {
-          const d=this.district(),road=roadsFor(d.id).find(r=>r.id===action.roadId);
-          ensure(road,'مقطع الشارع غير موجود');
-          ensure(!d.pavedRoads?.includes(road.id)&&!d.roadWorks?.some(w=>w.roadId===road.id),'هذا المقطع مسفلت أو قيد العمل بالفعل');
+          const d=this.district(),street=streetFor(d.id,action.roadId);
+          ensure(street.length,'الشارع غير موجود');
+          const ids=new Set(street.map(r=>r.id)),pending=street.filter(r=>!d.pavedRoads?.includes(r.id));
+          ensure(pending.length&&!d.roadWorks?.some(w=>(w.roadIds??[w.roadId]).some(id=>ids.has(id))),'الشارع مسفلت أو قيد العمل بالفعل');
+          const road={id:action.roadId,a:street[0].a,b:street[street.length-1].b};
           const factory=d.plots.filter(p=>p.status==='built'&&p.buildingId==='asphalt').sort((a,b)=>pathLength(pavingRoute(d,a,road))-pathLength(pavingRoute(d,b,road)))[0];
           ensure(factory,'يلزم مصنع أسفلت مكتمل');
           const machine=this.state.pavers?.find(m=>!this.state.districts.some(d=>d.roadWorks?.some(w=>w.machineId===m.id)));
-          ensure(machine,'اشترِ آلية سفلتة أو انتظر عودتها');this.pay(ROAD_COST);
+          ensure(machine,'اشترِ آلية سفلتة أو انتظر عودتها');this.pay(ROAD_COST*pending.length);
           const route=pavingRoute(d,factory,road),travel=Math.max(1500,Math.ceil(pathLength(route)/CONVOY_SPEED*1000));
-          const arrival=now+travel,workEnd=arrival+workDuration(d,60000);
-          (d.roadWorks??=[]).push({roadId:road.id,factoryId:factory.id,machineId:machine.id,start:now,arrival,workEnd,returnEnd:workEnd+travel+Math.ceil(pathLength([road.a,road.b])/CONVOY_SPEED*1000),route});break;
+          const arrival=now+travel,workEnd=arrival+workDuration(d,60000*pending.length);
+          (d.roadWorks??=[]).push({roadId:road.id,roadIds:pending.map(r=>r.id),factoryId:factory.id,machineId:machine.id,start:now,arrival,workEnd,returnEnd:workEnd+travel+Math.ceil(pathLength([road.a,road.b])/CONVOY_SPEED*1000),route});break;
         }
         case 'spin': {
           ensure(!this.state.wheel || now>=this.state.wheel.nextAt,'انتظر انتهاء وقت دولاب الحظ');
