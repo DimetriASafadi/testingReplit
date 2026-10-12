@@ -1,7 +1,6 @@
 import './expansion-ui.css';
 import type { DistrictState, GameState } from './model';
 import { DIFFICULTIES, PAVER_COST, ROAD_COST, difficultyOf, workDuration } from './economy';
-import { COIN_PACKS, GEM_PACKS, commerceProvider } from './rewards';
 import { roadsFor, roadMid, streetFor } from './roads';
 import { formatNumber as fmt } from './number-format';
 
@@ -16,7 +15,6 @@ export function clock(ms: number) {
   const p = (n: number) => String(n).padStart(2, '0');
   return h ? `${h}:${p(m)}:${p(x)}` : `${p(m)}:${p(x)}`;
 }
-const PAY_REASON = 'الدفع الحقيقي غير متاح حاليًا: لم تُربط بوابة دفع وتحقق خادمي بعد. لن يُخصم أي مبلغ.';
 
 // ---------- difficulty ----------
 export function difficultyHtml(d: DistrictState, name: string, picked: string) {
@@ -34,28 +32,8 @@ export function difficultyHtml(d: DistrictState, name: string, picked: string) {
 // ---------- wheel (art + logic in wheel-art.ts) ----------
 export { wheelSpinning, wheelReady, wheelButton, mountWheel, wheelHtml } from './wheel-art';
 
-// ---------- stores ----------
-export function coinStoreHtml(st: GameState) {
-  return `<p>حوّل جواهرك إلى عملات فورًا، أو اشترِ لاحقًا عند تفعيل الدفع.</p>
-    <div class="list">${COIN_PACKS.map((p, i) => `<div class="item pack"><span class="pack-amt"><bdi class="num">${fmt(p.coins)}</bdi><small>عملة</small></span>
-      <div class="pack-buy"><button class="btn gold sm" data-a="exch-ask" data-id="${i}" data-k="exch-${i}" ${st.gems >= p.gems ? '' : 'disabled'}>${st.gems >= p.gems ? '' : 'غير كافٍ · '}<bdi class="num">${fmt(p.gems)}</bdi> جواهر</button>
-      <button class="btn ghost sm" data-a="noop" disabled title="${PAY_REASON}">${cents(p.cents)} · غير متاح حاليًا</button></div></div>`).join('')}</div>
-    <p class="note">رصيد الجواهر: <bdi class="num">${fmt(st.gems)}</bdi></p>${commerceProvider ? '' : `<p class="note unavailable">${PAY_REASON}</p>`}`;
-}
-export function gemStoreHtml(st: GameState) {
-  return `<p>الجواهر تُكسب من إنجاز المشاريع واستلام الأحياء ودولاب الحظ.</p>
-    <div class="list">${GEM_PACKS.map(p => `<div class="item pack"><span class="pack-amt gem"><bdi class="num">${fmt(p.gems)}</bdi><small>جوهرة</small></span>
-      <div class="pack-buy"><button class="btn ghost sm" data-a="noop" disabled title="${PAY_REASON}">${cents(p.cents)} · غير متاح حاليًا</button></div></div>`).join('')}</div>
-    <p class="note">رصيدك: <bdi class="num">${fmt(st.gems)}</bdi> جوهرة</p>${commerceProvider ? '' : `<p class="note unavailable">${PAY_REASON}</p>`}`;
-}
-export function exchangeHtml(st: GameState, pack: number) {
-  const p = COIN_PACKS[pack]; if (!p) return '<p>الباقة غير موجودة.</p>';
-  const ok = st.gems >= p.gems;
-  return `<p>تحويل <b><bdi class="num">${fmt(p.gems)}</bdi> جواهر</b> إلى <b><bdi class="num">${fmt(p.coins)}</bdi> عملة</b>؟</p>
-    <dl class="kv"><dt>الجواهر بعد التحويل</dt><dd class="num">${fmt(Math.max(0, st.gems - p.gems))}</dd><dt>العملات بعد التحويل</dt><dd class="num">${fmt(st.coins + (ok ? p.coins : 0))}</dd></dl>
-    ${ok ? '<p class="note">تُنفّذ العملية مرة واحدة حتى عند النقر المتكرر.</p>' : '<p class="note" role="alert">رصيد الجواهر غير كافٍ.</p>'}
-    <div class="row"><button class="btn ghost" data-a="dlg" data-id="coins" data-k="exch-cancel">رجوع</button><button class="btn gold" data-a="exch-confirm" data-k="exch-confirm" ${ok ? '' : 'disabled'}>تأكيد التحويل</button></div>`;
-}
+// ---------- stores (store-ui.ts) ----------
+export { coinStoreHtml, gemStoreHtml, exchangeHtml, usd } from './store-ui';
 
 // ---------- roads & paver ----------
 export const paverBusy = (st: GameState, id: string, now: number) => st.districts.some(d => d.roadWorks?.some(w => w.machineId === id && w.returnEnd > now));
