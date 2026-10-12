@@ -245,9 +245,14 @@ export class CityScene extends Phaser.Scene {
     const each = (fn: (c: number, v: boolean) => void) => { layout.roadX.forEach(c => fn(c, true)); layout.roadY.forEach(c => fn(c, false)); };
     const at = (c: number, v: boolean, s: number, o: number): [number, number] => v ? [c + o, s] : [s, c + o];
     if (stage === 0) {
-      each((c, v) => { P.fill(strip(c, v, 0.34), 'sand', 8, 0.35); P.fill(strip(c, v, 0.27), 'asphalt', 7, 0.96); });
+      { const lines: [number, boolean][] = []; each((c, v) => lines.push([c, v]));
+        // single-path unions: crossings share one surface, no stacked strip alpha
+        P.fillMany(lines.map(([c, v]) => strip(c, v, 0.42)), 'sand', 8, 0.18);
+        P.fillMany(lines.map(([c, v]) => strip(c, v, 0.34)), 'sand', 8, 0.3);
+        P.fillMany(lines.map(([c, v]) => strip(c, v, 0.27)), 'asphalt', 7, 0.96); }
+      const nearCross = (v: boolean, s: number) => (v ? layout.roadY : layout.roadX).some(k => Math.abs(k - s) < .4);
       each((c, v) => { for (let s = .12; s < max; s += .42) {
-        if (r() > .3) for (const edge of [-.29, .29])
+        if (r() > .3 && !nearCross(v, s) && !nearCross(v, s + .26)) for (const edge of [-.29, .29])
           P.stroke(at(c, v, s, edge), at(c, v, s + .26, edge), 'rgba(185,180,168,.48)', 2.4);
       } });
       each((c, v) => { for (let s = 0; s < max; s += 0.5) { const t = r(); const [x, y] = at(c, v, s + r() * 0.4, (r() - 0.5) * 0.4);

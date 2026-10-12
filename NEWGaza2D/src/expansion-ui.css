@@ -66,3 +66,8 @@ body:has(.sheet) .wheel-fab{display:none}
 .dlg-footer .row{flex-wrap:wrap}
 .dlg-footer .row .btn{flex:1 1 140px;min-height:44px;white-space:normal}
 @media(max-height:520px) and (orientation:landscape){.wheel-stage{width:min(34dvh,150px)}.diff-card{padding:8px 4px}.odds ol{grid-template-columns:repeat(4,1fr)}}
+.paver-card{display:flex;gap:12px;align-items:center;padding:10px;border-radius:12px;background:linear-gradient(135deg,rgba(242,182,50,.16),rgba(29,79,134,.12));border:1px solid rgba(242,182,50,.35);margin:8px 0}
+.paver-card img{width:112px;height:auto;flex:none;filter:drop-shadow(3px 5px 3px rgba(20,16,10,.35))}
+.paver-card p{margin:4px 0 0;font-size:.85em;opacity:.85}
+.paver-thumb{width:44px;height:auto;filter:drop-shadow(1px 2px 1px rgba(20,16,10,.35))}
+.item:has(.paver-thumb){grid-template-columns:auto auto 1fr auto}

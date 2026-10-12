@@ -9,6 +9,12 @@ The buildable square is a land parcel, not a requirement to enlarge every buildi
 
 **How to apply:** Preserve that accepted small-house yard approach and adapt accessories to each building's use, rather than putting generic gardens around every industry or shop.
 
+Use the whole available land parcel around the building, not only the small painted platform attached to its sprite.
+
+**Why:** The user repeated this request after the initial landscaping update, showing an apartment and villa with large empty bands between their furnished platforms and the roads.
+
+**How to apply:** Judge coverage in the actual city against neighboring roads; use parking, planting and service areas appropriate to the building while leaving entrance routes clear.
+
 The user expanded rotation from front/rear to four genuine faces of every building. All views must represent the same architecture, floor count, materials and accessories, not mirrored pictures. Ground must blend into the district, and sunlight must not turn with the building.
 
 **Why:** The user identified inconsistent sizes, detached-looking floor platforms and opposing shadows in screenshots, and specifically asked for all building types, not only those pictured.

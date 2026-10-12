@@ -24,6 +24,16 @@ export class Painter {
     c.restore();
     if (tint) { c.save(); this.path(poly); c.fillStyle = tint; c.fill(); c.restore(); }
   }
+  /** fill several polygons as ONE path: overlaps (road crossings) get single alpha, no doubled seams */
+  fillMany(polys: Pt[][], tex: string, T: number, alpha = 1) {
+    const img = this.imgs[tex]; const c = this.ctx; c.save(); c.beginPath();
+    for (const poly of polys) poly.forEach(([x, y], i) => { const [a, b] = this.pt(x, y); i ? c.lineTo(a, b) : c.moveTo(a, b); });
+    c.globalAlpha = alpha;
+    if (!img) { c.fillStyle = '#a89878'; c.fill(); c.restore(); return; }
+    let pat = this.pats.get(tex); if (!pat) { pat = c.createPattern(img, 'repeat')!; this.pats.set(tex, pat); }
+    c.clip(); const sc = (T * U / 1024) * GK; const [ex, ey] = this.pt(0, 0);
+    c.setTransform(sc, sc / 2, -sc, sc / 2, ex, ey); c.fillStyle = pat; c.fillRect(-9000, -9000, 18000, 18000); c.restore();
+  }
   shade(poly: Pt[], col: string) { const c = this.ctx; c.save(); this.path(poly); c.fillStyle = col; c.fill(); c.restore(); }
   stroke(a: Pt, b: Pt, col: string, wpx: number) { const c = this.ctx; const [x0, y0] = this.pt(...a), [x1, y1] = this.pt(...b); c.save(); c.strokeStyle = col; c.lineWidth = wpx; c.lineCap = 'round'; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); c.restore(); }
 }

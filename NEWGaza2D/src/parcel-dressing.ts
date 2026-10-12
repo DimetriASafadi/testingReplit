@@ -3,7 +3,10 @@
 // All drawing is in the yard canvas space of lot-landscape (plot centre TEX_W/2, 380).
 // Light is fixed from the upper left: shadows always fall to +x/+y on screen.
 import type Phaser from 'phaser';
-import { TEX_W, U, makeCanvas } from './art';
+import { U, makeCanvas } from './art';
+import { YARD_W, YARD_EDGE } from './lot-geometry';
+export { YARD_W, YARD_EDGE };
+const TEX_W = YARD_W;
 import { seeded } from './ground';
 import type { Orientation } from './model';
 import { rotateLotPoint } from './orientation';
@@ -89,10 +92,10 @@ export function car(x: CanvasRenderingContext2D, p: Pt, along: 'x' | 'y', col: s
 /** Full-lot housing: kerbside parallel parking in the free band between the
  * building footprint (~.77) and the sidewalk, on the two screen-front edges only
  * (never under the building), skipping the rotated entrance. */
-export function drawKerbParking(x: CanvasRenderingContext2D, entry: Pt, n: number) {
+export function drawKerbParking(x: CanvasRenderingContext2D, entry: Pt, n: number, edge = 1.0) {
   const r = seeded(n * 53 + 11), cols = ['#e8e3d6', '#c9c2b0', '#8a2f28', '#3f5560', '#d7cfb8', '#5d6a4e', '#b9b4a6'];
-  const B = .87, spots: [Pt, 'x' | 'y'][] = [];
-  for (const t of [-.62, -.26, .1, .46]) { spots.push([[t, B], 'x']); spots.push([[B, t], 'y']); }
+  const B = edge - .26, spots: [Pt, 'x' | 'y'][] = [];
+  for (const t of [-.9, -.54, -.18, .18, .54, .9]) { spots.push([[t, B], 'x']); spots.push([[B, t], 'y']); }
   for (const [p, along] of spots) {
     if (Math.hypot(p[0] - entry[0], p[1] - entry[1]) < .5 || r() < .3) continue;
     car(x, p, along, cols[Math.floor(r() * cols.length)]);
@@ -166,15 +169,27 @@ export function drawServiceYard(x: CanvasRenderingContext2D, m: (p: Pt) => Pt, c
 }
 
 /** Draw the accessory set for a flavor in the free parcel corners (lot coordinates before orientation). */
-export function dressParcel(x: CanvasRenderingContext2D, m: (p: Pt) => Pt, flavor: ParcelFlavor, edge: number, n: number) {
+export function dressParcel(x: CanvasRenderingContext2D, m: (p: Pt) => Pt, flavor: ParcelFlavor, edge: number, n: number, full = false) {
   const I = edge - .2;
+  if (full) { // only the outer band beyond the ~.8 building footprint is free
+    const B = edge - .1;
+    switch (flavor) {
+      case 'industry': drawTanks(x, m, [-B, B - .35]); drawServiceYard(x, m, [-B + .05, -.1]); drawPallets(x, m, [B - .5, -B]); break;
+      case 'civic': case 'leisure': drawBench(x, m, [-B, .2]); drawBench(x, m, [.2, -B]); drawBikes(x, m, [-B, -.4]); break;
+      case 'school': drawShadeSeating(x, m, [-B, .3]); break;
+      case 'medical': drawAmbulanceBay(x, m, [-B + .05, .45]); break;
+      case 'worship': drawFountain(x, m, [-B, -.5]); break;
+      default: break;
+    }
+    return;
+  }
   switch (flavor) {
     case 'school': drawCourt(x, m, [-I + .22, I - .12], .2); break;
     case 'medical': drawAmbulanceBay(x, m, [I - .22, I - .08]); drawParking(x, m, [-I, -I + .02], [-I + .55, -I + .02], 3, n); break;
     case 'worship': drawFountain(x, m, [-I + .12, I - .1]); break;
     case 'housing': case 'civic': drawParking(x, m, [-I, I - .02], [-I + .6, I - .02], 4, n); break;
-    case 'industry': drawServiceYard(x, m, [-I + .15, I - .1]); break;
-    case 'leisure': drawShadeSeating(x, m, [-I + .15, I - .1]); break;
+    case 'industry': drawServiceYard(x, m, [-I + .15, I - .1]); drawTanks(x, m, [-I + .1, -I + .2]); drawPallets(x, m, [I - .1, -I + .1]); break;
+    case 'leisure': drawShadeSeating(x, m, [-I + .15, I - .1]); drawBench(x, m, [I - .1, -I + .2]); drawBikes(x, m, [-I + .1, -I + .3]); break;
     default: break;
   }
 }
@@ -216,3 +231,39 @@ export function tentAlpha(fadeAt: number, progress: number) {
 }
 
 export function orientMapper(orient: Orientation) { return (p: Pt): Pt => rotateLotPoint(p, orient); }
+
+/** Pallet stacks on a concrete apron. Sun upper-left: shadows to +x/+y. */
+export function drawPallets(x: CanvasRenderingContext2D, m: (p: Pt) => Pt, c: Pt) {
+  const q = ([[c[0]-.16,c[1]-.12],[c[0]+.16,c[1]-.12],[c[0]+.16,c[1]+.12],[c[0]-.16,c[1]+.12]] as Pt[]).map(m);
+  x.save(); x.beginPath(); q.forEach((p,i)=>{const [a,b]=pr(...p); i?x.lineTo(a,b):x.moveTo(a,b);}); x.closePath(); x.fillStyle='rgba(168,162,148,.6)'; x.fill(); x.restore();
+  const [px,py]=pr(...m(c)); shadow(x,px+2,py,14,4);
+  for (const d of [-7,6]) for (let k=0;k<2+(d>0?1:0);k++){ x.fillStyle=k%2?'#9a8158':'#b49a6c'; x.fillRect(px+d-5,py-3-k*3,10,3); x.fillStyle='rgba(60,45,30,.4)'; x.fillRect(px+d-5,py-1-k*3,10,.8); }
+}
+/** Two vertical water/fuel tanks with a lit left face. */
+export function drawTanks(x: CanvasRenderingContext2D, m: (p: Pt) => Pt, c: Pt) {
+  for (const o of [[0,0],[.16,.06]] as Pt[]) { const [px,py]=pr(...m([c[0]+o[0],c[1]+o[1]])); shadow(x,px+6,py+1,9,4,.25);
+    const g=x.createLinearGradient(px-6,0,px+6,0); g.addColorStop(0,'#d8d4c8'); g.addColorStop(1,'#8f8b80');
+    x.fillStyle=g; x.fillRect(px-6,py-18,12,18); x.beginPath(); x.ellipse(px,py,6,2.6,0,0,Math.PI); x.fill();
+    x.fillStyle='#e6e2d6'; x.beginPath(); x.ellipse(px,py-18,6,2.6,0,0,Math.PI*2); x.fill(); x.fillStyle='rgba(70,64,54,.5)'; x.fillRect(px-6,py-10,12,.8); }
+}
+/** Bench pair. */
+export function drawBench(x: CanvasRenderingContext2D, m: (p: Pt) => Pt, c: Pt) {
+  const [px,py]=pr(...m(c)); shadow(x,px+3,py+1,9,3,.18);
+  x.fillStyle='#8a7354'; x.fillRect(px-8,py-5,16,2.4); x.fillStyle='#6b5a43'; x.fillRect(px-8,py-8,16,1.6); x.fillStyle='#4f483e'; x.fillRect(px-7,py-3,1,3); x.fillRect(px+6,py-3,1,3);
+}
+/** Bike rack with three parked bicycles. */
+export function drawBikes(x: CanvasRenderingContext2D, m: (p: Pt) => Pt, c: Pt) {
+  const [px,py]=pr(...m(c)); shadow(x,px+3,py+1,12,3,.15); x.lineWidth=1;
+  for (let i=0;i<3;i++){ const bx=px-8+i*7; x.strokeStyle='#3d3a34'; for(const w of [-2.5,2.5]){x.beginPath();x.ellipse(bx+w,py-3,2.4,2.4,0,0,Math.PI*2);x.stroke();}
+    x.strokeStyle=['#8a2f28','#3f5560','#5d6a4e'][i]; x.beginPath(); x.moveTo(bx-2.5,py-3); x.lineTo(bx,py-6); x.lineTo(bx+2.5,py-3); x.stroke(); }
+}
+/** Planted beds along the inside of the garden wall, filling the extended yard. */
+export function drawPlanters(x: CanvasRenderingContext2D, m: (p: Pt) => Pt, edge: number, house: number, n: number) {
+  const r = seeded(n * 17 + 3), E = edge;
+  const bed = (q: Pt[]) => { x.save(); x.beginPath(); q.map(m).forEach((p,i)=>{const [a,b]=pr(...p); i?x.lineTo(a,b):x.moveTo(a,b);}); x.closePath();
+    x.fillStyle='rgba(104,86,58,.55)'; x.fill(); x.strokeStyle='rgba(214,200,170,.8)'; x.lineWidth=1.2; x.stroke(); x.clip();
+    for (let i=0;i<40;i++){ const [a,b]=pr(...m([q[0][0]+(q[2][0]-q[0][0])*r(), q[0][1]+(q[2][1]-q[0][1])*r()])); x.fillStyle=['#6f7d4a','#86915a','#5b6b3d','#a3a466'][i%4]; x.beginPath(); x.ellipse(a,b-1.5,2.6,1.6,0,0,Math.PI*2); x.fill(); }
+    x.restore(); };
+  const w = .14, lo = -E + .02, hi = Math.max(house + .05, E - .5);
+  bed([[lo,lo],[hi,lo],[hi,lo+w],[lo,lo+w]]); bed([[lo,lo+w],[lo+w,lo+w],[lo+w,hi],[lo,hi]]);
+}

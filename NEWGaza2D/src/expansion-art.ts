@@ -23,7 +23,7 @@ const PAVER_DIRS = ['se', 'sw', 'nw', 'ne'] as const;
 /** Ground contact centre inside every paver machine frame. */
 export const PAVER_ORIGIN = { x: .5, y: .74 } as const;
 /** Native frame width 126-128 px; scale .6-.7 suits a road lane at default zoom. */
-export const PAVER_SCALE = .62;
+export const PAVER_SCALE = .72;
 /**
  * Machine sprite key for a ground-plane travel angle in RADIANS (Math.atan2(dy, dx) in lot/world
  * coordinates, as returned by roads.along). Snapped to the four road axes:
