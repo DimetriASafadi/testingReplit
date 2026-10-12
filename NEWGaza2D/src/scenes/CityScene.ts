@@ -172,6 +172,9 @@ export class CityScene extends Phaser.Scene {
     if (!this.hooks || !this.sys.isActive()) return;
     const st = this.hooks.getState();
     if (!st.currentDistrict) return;
+    // Difficulty is a lightweight pre-entry step. Do not rasterize terrain,
+    // upload textures or build all plot views behind its interactive dialog.
+    if (!st.districts.find(d => d.id === st.currentDistrict)?.difficultyChosen) return;
     if (st.currentDistrict !== this.district || !this.worldReady) {
       if (this.worldQueued || (this.worldError && st.currentDistrict === this.district)) return;
       this.worldQueued = true; this.worldReady = false; this.worldError = false;
@@ -181,6 +184,11 @@ export class CityScene extends Phaser.Scene {
         this.worldQueued = false;
         const current = this.hooks.getState();
         if (!current.currentDistrict || !this.sys.isActive()) { this.hooks.onWorldState?.('ready'); return; }
+        // The player may have changed districts since this frame was queued.
+        if (!current.districts.find(d => d.id === current.currentDistrict)?.difficultyChosen) {
+          this.hooks.onWorldState?.('ready');
+          return;
+        }
         try {
           this.district = current.currentDistrict; this.selected = null;
           this.buildWorld(current);
