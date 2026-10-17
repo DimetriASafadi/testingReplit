@@ -287,6 +287,7 @@ test('reset commits a valid fresh save and later ticks cannot restore old progre
   assert.notEqual(store.state, previous);
   assert.equal(store.state.currentDistrict, null);
   assert.equal(store.state.jobs.length, 0);
+  assert.equal(store.state.coins,500_000);
   assert.equal(store.state.coins, newGame(now).coins);
   store.tick(now + 3000);
   const restored = new GameStore(storage, now + 4000);
@@ -617,9 +618,10 @@ test('multiple teams reserve the factory portal, save queues and settle once aft
   invalid.jobs[0].departureAt = invalid.jobs[0].arrival;
   assert.throws(() => validateSave(invalid));
 });
-test('fresh campaign: million once, thirteen districts, dense ruins, no placed recycler', () => {
+test('fresh campaign starts with 500,000 coins, thirteen districts, dense ruins, no placed recycler', () => {
   const state = newGame();
   validateSave(state);
+  assert.equal(STARTING_COINS,500_000);
   assert.equal(state.coins,STARTING_COINS);
   assert.equal(state.districts.length,14);
   assert.equal(state.districts.filter(d=>d.unlocked).length,1);

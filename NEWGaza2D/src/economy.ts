@@ -7,7 +7,7 @@ export const DIFFICULTIES = {
   medium: { name:'متوسط', income:.45, time:1.15 },
   hard: { name:'صعب', income:.25, time:1.3 },
 } as const;
-export const STARTING_COINS = 100000;
+export const STARTING_COINS = 500000;
 export const PAVER_COST = 10000;
 export const ROAD_COST = 120;
 export const difficultyOf = (d: DistrictState) => DIFFICULTIES[d.difficulty ?? 'medium'];
