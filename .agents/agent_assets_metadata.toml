@@ -1017,6 +1017,7 @@ uri = "file://NEWGaza2D/public/audio/complete.mp3"
 type = "audio"
 title = "sound_effect"
 description = "Generated sound effect: A short refined warm rewarding game completion sound: delicate wooden percussion followed by a gentle bright bell chord, uplifting but understated, original city rebuilding ga…"
+logical_id = "6ad203c6-e152-48c8-815a-ed9df9635fc6"
 
 [[outputs]]
 id = "HT27XhD8fpWg3_VZFxND7"
@@ -1024,6 +1025,7 @@ uri = "file://NEWGaza2D/public/audio/excavator.mp3"
 type = "audio"
 title = "sound_effect"
 description = "Generated sound effect: Seamless isolated sound loop of a modern excavator diesel engine idling and gently revving, with subtle hydraulic pump whine. Professional clean game foley, warm realistic mac…"
+logical_id = "3f99b77e-9ff0-4569-ba5d-d6256dbfeedd"
 
 [[outputs]]
 id = "1JKEQBA_MrqhGialSOygZ"
@@ -1031,6 +1033,7 @@ uri = "file://NEWGaza2D/public/audio/bulldozer.mp3"
 type = "audio"
 title = "sound_effect"
 description = "Generated sound effect: Seamless isolated loop of a heavy tracked bulldozer crawling slowly, low diesel rumble and restrained metallic caterpillar track clatter. Clean realistic game foley, no speech…"
+logical_id = "64e42875-f4d0-4808-9df8-c583e74c7b57"
 
 [[outputs]]
 id = "LjN4-E8PGU5aSHbycooUf"
@@ -1038,6 +1041,7 @@ uri = "file://NEWGaza2D/public/audio/farm.mp3"
 type = "audio"
 title = "sound_effect"
 description = "Generated sound effect: Seamless loop of a peaceful Mediterranean garden and farm: soft leaf rustle, sparse small songbirds and gentle outdoor breeze. Natural realistic understated ambience, no voice…"
+logical_id = "913878e3-7f5d-48a2-8152-c2f7a9cfbbb0"
 
 [[outputs]]
 id = "Ji10eJ-9cjV1HbDQHBxNu"
@@ -1045,6 +1049,7 @@ uri = "file://NEWGaza2D/public/audio/construction.mp3"
 type = "audio"
 title = "sound_effect"
 description = "Generated sound effect: Seamless loop of a small building construction site: varied gentle hammer taps, hand tools, concrete mixing and occasional light metal scaffold clink. Warm realistic sound, no…"
+logical_id = "709eabb4-d63f-46e4-b799-f99a54bfd84e"
 
 [[outputs]]
 id = "KP9vIK-vk7fk641S8U7rL"
@@ -1052,6 +1057,7 @@ uri = "file://NEWGaza2D/public/audio/neighborhood.mp3"
 type = "audio"
 title = "sound_effect"
 description = "Generated sound effect: Seamless loop of a quiet restored Mediterranean residential neighborhood: distant soft traffic, light breeze, a few small birds and a faint household outdoor ambience, no inte…"
+logical_id = "5cdb0746-23d8-4142-b189-d15707c8328a"
 
 [[outputs]]
 id = "5ACMIGRJFn-zCdJCQrP3t"
@@ -1059,6 +1065,7 @@ uri = "file://NEWGaza2D/public/audio/rubble.mp3"
 type = "audio"
 title = "sound_effect"
 description = "Generated sound effect: Seamless loop of excavator earthwork: gravel and concrete rubble shifting, a bucket scraping gently and dropping small stones into a steel tipper bed, restrained realistic imp…"
+logical_id = "f7296a0e-5e6a-4043-ac58-f9d81803636b"
 
 [[outputs]]
 id = "-Zk_kQDHve6CPZAFT2yem"
@@ -1066,6 +1073,7 @@ uri = "file://NEWGaza2D/public/audio/truck.mp3"
 type = "audio"
 title = "sound_effect"
 description = "Generated sound effect: Seamless isolated loop of a loaded tipper truck diesel engine moving slowly on a neighborhood road, steady soft engine and tire texture. Clean realistic game sound, no horn, n…"
+logical_id = "97761316-e8f8-46c6-8abd-e0a763c0bac3"
 
 [[outputs]]
 id = "b52frtnnQ4b1Hy3VBvysP"
@@ -1073,6 +1081,7 @@ uri = "file://NEWGaza2D/public/audio/coast.mp3"
 type = "audio"
 title = "sound_effect"
 description = "Generated sound effect: Seamless loop of soft Mediterranean waves lapping a sandy beach, gentle breeze and a sparse distant gull. Calm realistic ambience for a city rebuilding game, no music, no voic…"
+logical_id = "1d8b2e92-c49d-4364-b309-dd4fbe56f40e"
 
 [[outputs]]
 id = "y7MCJlKt96H3BbPYCU8vd"
@@ -1080,3 +1089,18 @@ uri = "file://NEWGaza2D/public/audio/industry.mp3"
 type = "audio"
 title = "sound_effect"
 description = "Generated sound effect: Seamless loop of a working recycling and light industrial factory: smooth motor conveyor hum, softly rattling material sorting and subtle machinery. Clean restrained city buil…"
+logical_id = "7993b191-7b89-4957-89b8-7ad61ed214d5"
+
+[[outputs]]
+id = "nVkJgJAARlUZSJ5PmDRdy"
+uri = "file://generated-artifacts/new-gaza2d-debug.apk"
+type = "unspecified"
+title = "نيو غزة — APK تجريبي لأندرويد"
+description = "نسخة Android تجريبية موقعة للتثبيت على الهاتف. ملفات اللعبة مضمّنة داخل التطبيق لتعمل دون اتصال."
+logical_id = "97c72d9d-61e4-4e66-aa79-5014f4240042"
+content_hash = "sha256:3865cdd4ff1758b739ac5a12efa9f0a0b358832f8e5ebb25c5d5581903f5af11"
+size = 24051506
+mtime_ms = 1792509684477
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/97c72d9d-61e4-4e66-aa79-5014f4240042/52d50b78-cd66-41e7-96af-aab561e1269e"
+storage_version_token = "1792509821642481"
+content_type = "application/octet-stream"

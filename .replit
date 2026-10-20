@@ -2,7 +2,7 @@ modules = ["nodejs-24", "dotnet-7.0", "python-base-3.13", "java-graalvm22.3"]
 
 [nix]
 channel = "stable-25_05"
-packages = ["blender", "freetype", "lcms2", "libimagequant", "libjpeg", "libtiff", "libwebp", "libxcrypt", "openjpeg", "tcl", "tk", "zlib", "android-tools", "openjdk17"]
+packages = ["blender", "freetype", "lcms2", "libimagequant", "libjpeg", "libtiff", "libwebp", "libxcrypt", "openjpeg", "tcl", "tk", "zlib", "android-tools", "openjdk17", "openjdk21"]
 
 [deployment]
 router = "application"
