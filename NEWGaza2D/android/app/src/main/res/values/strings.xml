@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">نيو غزة</string>
+    <string name="title_activity_main">نيو غزة</string>
+    <string name="package_name">com.newgaza.citygame</string>
+    <string name="custom_url_scheme">com.newgaza.citygame</string>
+</resources>

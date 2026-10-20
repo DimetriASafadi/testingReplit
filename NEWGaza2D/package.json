@@ -7,13 +7,20 @@
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "serve": "vite preview --host 0.0.0.0",
+    "android:sync": "PORT=5173 BASE_PATH=/ vite build && cap sync android",
+    "android:apk": "pnpm run android:sync && cd android && ./gradlew assembleDebug",
     "typecheck": "tsc --noEmit",
     "test": "node tests/run.mjs"
   },
   "devDependencies": {
+    "@capacitor/cli": "7.6.9",
     "@types/node": "catalog:",
     "phaser": "^3.90.0",
     "typescript": "~5.9.3",
     "vite": "catalog:"
+  },
+  "dependencies": {
+    "@capacitor/android": "7.6.9",
+    "@capacitor/core": "7.6.9"
   }
 }

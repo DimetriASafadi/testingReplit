@@ -106,3 +106,8 @@ __pycache__/
 /tools/font_sources/*.otf
 /testingReplic/MapData/GazaBasemap-source.json.gz
 /testingReplic/.plastic/
+/generated-artifacts/
+/NEWGaza2D/android/.gradle/
+/NEWGaza2D/android/local.properties
+/NEWGaza2D/android/build/
+/NEWGaza2D/android/app/build/

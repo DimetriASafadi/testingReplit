@@ -4,3 +4,8 @@
 # No need to store the pnpm store twice.
 .local
 /tmp/
+/generated-artifacts/
+NEWGaza2D/android/.gradle/
+NEWGaza2D/android/local.properties
+NEWGaza2D/android/build/
+NEWGaza2D/android/app/build/
