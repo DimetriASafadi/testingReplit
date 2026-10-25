@@ -3,6 +3,9 @@ import type { DistrictState, GameState } from './model';
 import { DIFFICULTIES, PAVER_COST, ROAD_COST, difficultyOf, workDuration } from './economy';
 import { roadsFor, roadMid, streetFor } from './roads';
 import { formatNumber as fmt } from './number-format';
+import { actualWorkDuration, STREET_WORK_MS } from './construction-rules';
+import { localUnit, roadUnitBusy, warehousePlots } from './warehouse-capacity';
+import { unitInJob } from './fleet-depots';
 
 /* Shared expansion surfaces: difficulty, wheel, stores, roads, celebration.
    Everything here is pure HTML for the stable dom-patch renderer, except the
@@ -38,6 +41,15 @@ export { coinStoreHtml, gemStoreHtml, exchangeHtml, usd } from './store-ui';
 // ---------- roads & paver ----------
 export const paverBusy = (st: GameState, id: string, now: number) => st.districts.some(d => d.roadWorks?.some(w => w.machineId === id && w.returnEnd > now));
 export function roadWorkPhase(w: NonNullable<DistrictState['roadWorks']>[number], now: number) {
+  const p=w.preparation;
+  if(p){
+    if(now<w.arrival)return {label:'الجرافة في الطريق من مخزن المعدات',end:w.arrival,span:w.arrival-w.start};
+    if(now<p.sandEnd)return {label:'الجرافة تجهز الطريق الرملي',end:p.sandEnd,span:p.sandEnd-w.arrival};
+    if(now<p.aggregateEnd)return {label:'تسوية طبقة البيسكورس',end:p.aggregateEnd,span:p.aggregateEnd-p.sandEnd};
+    if(now<p.asphaltStart)return {label:'ماكينة السفلتة قادمة من المصنع',end:p.asphaltStart,span:p.asphaltStart-p.aggregateEnd};
+    if(now<w.workEnd)return {label:'فرد الأسفلت على كامل الشارع',end:w.workEnd,span:w.workEnd-p.asphaltStart};
+    return {label:'عودة الآليات إلى مقراتها',end:w.returnEnd,span:w.returnEnd-w.workEnd};
+  }
   return now < w.arrival ? { label: 'آلية السفلتة في الطريق من مصنع الأسفلت', end: w.arrival, span: w.arrival - w.start }
     : now < w.workEnd ? { label: 'تفرد الأسفلت على المقطع', end: w.workEnd, span: w.workEnd - w.arrival }
     : { label: 'عائدة إلى مصنع الأسفلت', end: w.returnEnd, span: w.returnEnd - w.workEnd };
@@ -63,11 +75,12 @@ export function roadHtml(st: GameState, d: DistrictState, roadId: string, hasAsp
   if (work) { const ph = roadWorkPhase(work, now);
     return `${head}<dt>الحالة</dt><dd>${ph.label}</dd><dt>متبقٍ</dt><dd class="num">${clock(ph.end - now)}</dd></dl><div class="meter"><i style="transform:scaleX(${Math.min(1, 1 - (ph.end - now) / Math.max(1, ph.span))})"></i></div><p class="note">لا يُخصم الثمن مرة أخرى ولا يمنع العمل وصول الآليات للأراضي.</p>`; }
   const reqs = [
+    { ok: st.units.some(u=>u.kind==='bulldozer'&&localUnit(u,d)&&warehousePlots(d).some(p=>p.id===u.home?.warehouseId)&&!roadUnitBusy(st,u.id)&&!st.jobs.some(j=>unitInJob(j,u,now))), t:'جرافة متاحة في مخزن معدات الحي' },
     { ok: hasAsphalt, t: 'مصنع أسفلت مكتمل في الحي' },
     { ok: free.length > 0, t: `آلية سفلتة متاحة (${fmt(free.length)}/${fmt(st.pavers?.length ?? 0)})` },
     { ok: st.coins >= cost, t: `الرصيد يكفي التكلفة ${fmt(cost)}` },
   ];
-  return `${head}<dt>التكلفة</dt><dd class="num">${fmt(cost)}</dd><dt>مدة العمل في الموقع</dt><dd><bdi class="num">${clock(workDuration(d, 60_000*pending.length))}</bdi> + الذهاب والعودة</dd><dt>الصعوبة</dt><dd>${difficultyOf(d).name}</dd></dl><p class="note">سفلتة الشارع كاملًا من البداية للنهاية. التكلفة للأجزاء غير المنجزة فقط: ${fmt(ROAD_COST)} لكل جزء.</p>
+  return `${head}<dt>التكلفة</dt><dd class="num">${fmt(cost)}</dd><dt>مدة العمل في الموقع</dt><dd><bdi class="num">${clock(actualWorkDuration(d, STREET_WORK_MS))}</bdi> + سفر الآليات</dd><dt>الصعوبة</dt><dd>${difficultyOf(d).name}</dd></dl><p class="note">رمل ثم بيسكورس ثم أسفلت، من بداية الشارع إلى نهايته. المدة الأساسية 8 دقائق للمراحل مجتمعة وتزيد حسب الصعوبة. التكلفة للأجزاء غير المنجزة فقط: ${fmt(ROAD_COST)} لكل جزء.</p>
     ${reqs.map(q => `<div class="check ${q.ok ? 'ok' : ''}"><i></i>${q.t}</div>`).join('')}
     <div class="row">${(st.pavers?.length ?? 0) === 0 ? `<button class="btn ghost" data-a="dlg" data-id="fleet" data-k="road-fleet">شراء آلية سفلتة</button>` : ''}<button class="btn gold" data-a="pave" data-id="${esc(roadId)}" data-k="pave" ${reqs.every(q => q.ok) ? '' : 'disabled'}>سفلتة الشارع كاملًا · <span class="num">${fmt(cost)}</span></button></div>`;
 }
@@ -78,7 +91,7 @@ export function celebrate(name: string) {
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const box = document.createElement('div'); box.className = 'celebration' + (reduce ? ' still' : '');
   box.setAttribute('role', 'status');
-  box.innerHTML = `<canvas aria-hidden="true"></canvas><div class="celebration-card"><small>اكتمل الإعمار</small><b>${esc(name)}</b><span>الحي جاهز للاستلام</span></div>`;
+  box.innerHTML = `<canvas aria-hidden="true"></canvas><div class="celebration-card"><small>تم إنجاز الحي</small><b>${esc(name)}</b><span>الحي جاهز للاستلام</span></div>`;
   document.body.appendChild(box);
   const life = reduce ? 3200 : 4600;
   setTimeout(() => box.classList.add('out'), life - 500); setTimeout(() => box.remove(), life);

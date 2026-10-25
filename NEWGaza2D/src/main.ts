@@ -14,6 +14,9 @@ import type { Category, DistrictState, EquipmentKind, GameState, Plot, Orientati
 import { BootScene, CityScene } from './scenes/CityScene';
 import { machinePreview } from './fleet-animation';
 import { equipmentWarehouses, unitInJob } from './fleet-depots';
+import { actualWorkDuration, clearingSeconds } from './construction-rules';
+import { roadUnitBusy } from './warehouse-capacity';
+import { fleetPurchaseHtml, streetsHtml } from './reconstruction-ui';
 import { previewUrl, SPR, builtKey } from './realart';
 import { ORIENTATION_CYCLE, ORIENTATION_LABELS, nextOrientation } from './orientation';
 import { patchContent } from './dom-patch';
@@ -43,7 +46,7 @@ function showCityStatus(status: 'loading' | 'ready' | 'error', message = '') {
 }
 const esc = (s: string) => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 function dur(ms: number) { const s = Math.max(0, Math.ceil(ms / 1000)); const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60; return h ? `${fmt(h)} س ${fmt(m)} د` : m ? `${fmt(m)} د ${fmt(x)} ث` : `${fmt(x)} ث`; }
-const secs = (s: number) => dur(cur()?workDuration(cur()!,s*1000):activityDuration(s * 1000));
+const secs = (s: number) => dur(cur()?actualWorkDuration(cur()!,s*1000):s*1000);
 const gemIcon = `<img class="gem-icon" src="${import.meta.env.BASE_URL}art/gem.svg" alt="" />`;
 const resourceIcon = (name: 'iron' | 'concrete' | 'wood' | 'coins' | 'other') =>
   `<img class="resource-icon resource-${name}" src="${import.meta.env.BASE_URL}art/ui-resources/${name}.webp" width="160" height="160" alt="" aria-hidden="true" draggable="false"/>`;
@@ -92,7 +95,7 @@ const dName = (id: string) => DISTRICTS.find(d => d.id === id)?.name ?? id;
 const hasRecycler = (st: GameState) => st.districts.some(d => d.id === st.currentDistrict && d.plots.some(p => p.buildingId === 'recycling' && p.status === 'built'));
 const hasWarehouse = (st: GameState) => st.districts.some(d => d.id === st.currentDistrict && equipmentWarehouses(d).length > 0);
 const recyclerStarted = (st: GameState) => st.districts.some(d => d.id === st.currentDistrict && d.plots.some(p => p.buildingId === 'recycling' && (p.status === 'built' || p.status === 'building')));
-const busy = (st: GameState) => new Set(st.units.filter(u => st.jobs.some(j => unitInJob(j, u, st.lastSeen))).map(u => u.id));
+const busy = (st: GameState) => new Set(st.units.filter(u => roadUnitBusy(st,u.id) || st.jobs.some(j => unitInJob(j, u, st.lastSeen))).map(u => u.id));
 
 // ---------- focus-preserving region renderer ----------
 const regions = new Map<string, string>();
@@ -150,8 +153,8 @@ function objective(st: GameState, d: DistrictState) {
     { t: 'انتظر اكتمال المصنع', ok: hasRecycler(st) },
     { t: 'ابنِ مخزن معدات وانتظر اكتماله ليكون مقر انطلاق الآليات وعودتها', ok: hasWarehouse(st) },
     { t: 'اشترِ فريقًا كاملًا: حفار وجرافة وشاحنة نقل', ok: (['excavator', 'bulldozer', 'truck'] as const).every(k => st.units.some(u => u.kind === k)) },
-    { t: 'اختر أرض أنقاض وأرسل الآليات: سفر ثم دقيقة عمل ثم عودة', ok: st.jobs.length > 0 || d.plots.filter(p => p.status === 'rubble').length < 53 },
-    { t: 'بِع المواد المستعادة وابدأ مشاريع الحي التسعة', ok: d.projects.some(p => p.status !== 'idle') },
+    { t: 'اختر أرض أنقاض وأرسل الآليات: سفر ثم إزالة حسب حجم الركام والصعوبة ثم عودة', ok: st.jobs.length > 0 || d.plots.filter(p => p.status === 'rubble').length < 53 },
+    { t: 'بِع المواد المستعادة وابدأ مشاريع الحي', ok: d.projects.some(p => p.status !== 'idle') },
   ];
   const next = steps.find(s => !s.ok); if (!next) return '';
   return `<div class="objective" role="region" aria-label="الهدف الحالي"><div style="display:flex;gap:8px"><h3>الهدف: ${esc(next.t)}</h3><button class="icon-btn" style="width:32px;height:32px;box-shadow:none;margin-inline-start:auto;flex:none" data-a="hide-obj" aria-label="إخفاء الهدف">${IC.close}</button></div><ol>${steps.map(s => `<li class="${s.ok ? 'done' : ''}">${esc(s.t)}</li>`).join('')}</ol></div>`;
@@ -223,7 +226,7 @@ function plotSheet(st: GameState, d: DistrictState, now: number) {
     title = `أنقاض ${b.name}`; sub = 'أرض مغطاة بالركام';
     const free = st.units.filter(u => !busy(st).has(u.id));
     const j = jobFor(st, d, p);
-    body = j ? jobHtml(st, d, p, now) : `<p>تنطلق الآليات من مخزن المعدات عبر الشوارع، ثم <b>60 ثانية عمل</b> في الموقع. يعود الحفار والجرافة للمخزن، وتذهب الشاحنة محمّلة إلى مصنع إعادة التدوير للتفريغ ثم تعود فارغة للمخزن. تصبح الأرض نظيفة عند انتهاء العمل.</p>
+    body = j ? jobHtml(st, d, p, now) : `<p>تنطلق الآليات من مخزن المعدات عبر الشوارع، ثم <b class="num">${dur(actualWorkDuration(d,clearingSeconds(building(p.buildingId).floors)*1000))}</b> عمل في الموقع حسب الحجم والصعوبة. يعود الحفار والجرافة للمخزن، وتذهب الشاحنة محمّلة إلى مصنع إعادة التدوير للتفريغ ثم تعود فارغة للمخزن. تصبح الأرض نظيفة عند انتهاء العمل.</p>
       ${!hasRecycler(st) ? '<p class="note">يلزم أولًا بناء مصنع إعادة التدوير على أرض نظيفة.</p>' : !hasWarehouse(st) ? '<p class="note">ابنِ مخزن معدات مكتملًا ليكون مقر الآليات.</p>' : !st.units.length ? '<p class="note">لا توجد آليات بعد. اشترِ آلية من لوحة الآليات.</p>' : `<p class="note">آليات متاحة: <b class="num">${fmt(free.length)}</b> من ${fmt(st.units.length)}</p>`}
       <button class="btn gold" data-a="clear" data-k="clear" ${hasRecycler(st) && hasWarehouse(st) && free.length ? '' : 'disabled'}>إرسال الآليات لإزالة الأنقاض</button>`;
   } else if (p.status === 'empty') {
@@ -239,7 +242,7 @@ function plotSheet(st: GameState, d: DistrictState, now: number) {
     const detail = pick ? `<button class="btn ghost catalog-back" data-a="back-catalog" data-k="back-catalog">رجوع إلى المباني والتصنيفات</button><div class="bd-top" data-sk="detail-top"><div class="preview"><span class="ori">${ORIENTATION_LABELS[ui.orient]}</span><img src="${prev(pick.id, ui.orient)}" alt="معاينة ${esc(pick.name)}: ${ORIENTATION_LABELS[ui.orient]}"/></div>
         <div class="bd-info"><h3>${esc(pick.name)}</h3><small>${CAT[pick.category]}</small><dl class="kv"><dt>التكلفة</dt><dd class="num">${fmt(pick.cost)}</dd><dt>المدة</dt><dd>${secs(pick.duration)}</dd><dt>الطوابق</dt><dd class="num">${fmt(pick.floors)}</dd><dt>الدخل</dt><dd>${pick.income ? `<span class="num">${fmt(Math.floor(pick.income * difficultyOf(d).income))}</span> كل ${incomeIntervalLabel()}` : 'لا يوجد'}</dd></dl></div></div>
         <div class="row bd-actions"><button class="btn ghost" data-a="rot" data-k="rot" aria-label="${rotateLabel(pick.id)}">${IC.rotate} ${rotateLabel(pick.id)}</button><button class="btn gold" data-a="place" data-k="place" ${st.coins >= pick.cost ? '' : 'disabled'}>${st.coins >= pick.cost ? 'بناء عادي' : 'الرصيد غير كافٍ'}</button></div>
-        <button class="btn gem-build" data-a="place-half" data-k="place-half" ${st.coins >= pick.cost && st.gems >= 2 ? '' : 'disabled'}>${gemIcon} بناء بنصف الوقت · <span class="num">2</span> جواهر · <span class="num">${dur(workDuration(d,pick.duration * 1000) / 2)}</span></button>
+        <button class="btn gem-build" data-a="place-half" data-k="place-half" ${st.coins >= pick.cost && st.gems >= 2 ? '' : 'disabled'}>${gemIcon} بناء بنصف الوقت · <span class="num">2</span> جواهر · <span class="num">${dur(actualWorkDuration(d,pick.duration * 1000) / 2)}</span></button>
         <small class="gem-help">الجواهر إضافية لسعر البناء. رصيدك: <span class="num">${fmt(st.gems)}</span> · كل مشروع أول مرة: <span class="num">3</span> جواهر.</small>${pendingFaceNote(pick.id)}`
       : '<p class="note">اختر مبنى لمعاينة جهاته المتوفرة ثم ابنِه.</p>';
     body = `<div class="build-detail" data-sk="detail">${!recyclerStarted(st) ? '<p class="note">ابدأ بمصنع إعادة التدوير لاستلام الركام، ثم ابنِ مخزن المعدات لانطلاق الآليات.</p>' : ''}${detail}</div>
@@ -248,7 +251,7 @@ function plotSheet(st: GameState, d: DistrictState, now: number) {
   } else if (p.status === 'building') {
     title = b.name; sub = `قيد الإنشاء · ${ORIENTATION_LABELS[p.orientation]}`;
     const f = Math.min(1, (now - p.startedAt) / Math.max(1, p.endsAt - p.startedAt));
-    body = `<div class="meter"><i style="transform:scaleX(${f})"></i></div><dl class="kv"><dt>المرحلة</dt><dd>${f < 0.3 ? 'الأساسات وحديد التسليح' : f < 0.68 ? 'الهيكل والسقالات' : 'الجدران والتشطيب'}</dd><dt>متبقٍ</dt><dd class="num">${dur(p.endsAt - now)}</dd><dt>المدة الكلية</dt><dd>${secs(b.duration)}</dd></dl><p class="note">البناء يستمر بالوقت الحقيقي حتى عند إغلاق اللعبة.</p>`;
+    body = `<div class="meter"><i style="transform:scaleX(${f})"></i></div><dl class="kv"><dt>المرحلة</dt><dd>${f < 0.3 ? 'الأساسات وحديد التسليح' : f < 0.68 ? 'الهيكل والسقالات' : 'الجدران والتشطيب'}</dd><dt>متبقٍ</dt><dd class="num">${dur(p.endsAt - now)}</dd><dt>المدة الكلية</dt><dd>${dur(p.endsAt-p.startedAt)}</dd></dl><p class="note">البناء يستمر بالوقت الحقيقي حتى عند إغلاق اللعبة.</p>`;
   } else {
     title = b.name; sub = `${CAT[b.category]} · ${ORIENTATION_LABELS[p.orientation]}`;
     const incomeNow = Math.max(now, st.lastSeen);
@@ -300,7 +303,7 @@ function dialogHtml(st: GameState, now: number): [string, string] {
   if (ui.dialog === 'coins') return ['متجر المال', coinStoreHtml(st)];
   if (ui.dialog === 'gems') return ['متجر الجواهر', gemStoreHtml(st)];
   if (ui.dialog === 'exchange') return ['تأكيد التحويل', exchangeHtml(st, ui.exchangePack)];
-  if (ui.dialog === 'road') { const d = cur(); if (!d || !ui.road) return ['', '']; return ['سفلتة شارع كامل', roadHtml(st, d, ui.road, hasAsphalt(d), now)]; }
+  if (ui.dialog === 'road') { const d = cur(); if (!d) return ['', '']; return ['الطريق الرئيسي · تطوير الشوارع', ui.road?roadHtml(st, d, ui.road, hasAsphalt(d), now):streetsHtml(d)]; }
   if(ui.dialog==='audio'){
     const p=gameAudio.prefs;
     const rows=([['master','الصوت العام'],['effects','الآليات والعمل والأزرار'],['ambience','أجواء المدينة والطبيعة']] as const)
@@ -314,8 +317,8 @@ function dialogHtml(st: GameState, now: number): [string, string] {
   if (ui.dialog === 'fleet') {
     const b = busy(st);
     return ['الآليات', `${!hasRecycler(st) ? '<p class="note">شراء الآليات يتطلب مصنع إعادة تدوير مكتملًا.</p>' : ''}
-      <h3>شراء</h3><div class="list">${(Object.keys(EQUIPMENT) as EquipmentKind[]).map(k => `<div class="item"><img src="${machinePreview(k)}" data-veh="${k}" alt=""/><div><h3>${EQUIPMENT[k].name}</h3><p>السعر <span class="num">${fmt(EQUIPMENT[k].cost)}</span></p></div><button class="btn sm" data-a="buy" data-id="${k}" data-k="buy-${k}" ${hasRecycler(st) && st.coins >= EQUIPMENT[k].cost ? '' : 'disabled'}>شراء</button></div>`).join('')}</div>
-      <h3>أسطولك (${fmt(st.units.length)})</h3>${d ? `<p class="note">الآليات حسب المصنع: ${d.plots.filter(p => p.buildingId === 'recycling' && p.status === 'built').map(p => `قطعة ${fmt(p.id + 1)}: ${fmt(st.units.filter(u => u.depotIds?.[d.id] === p.id).length)}`).join(' · ') || 'لا يوجد مصنع مكتمل'}</p>` : ''}${st.units.length ? `<div class="list">${st.units.map(u => { const cost = Math.floor(u.purchasePrice / 2); return `<div class="item"><span class="st" style="background:${b.has(u.id) ? 'var(--ochre)' : 'var(--olive)'}"></span><div><h3>${EQUIPMENT[u.kind].name} · مستوى <span class="num">${fmt(u.level)}</span>/3</h3><p>${b.has(u.id) ? 'في مهمة' : 'متاحة'} · الترقية تسرّع السفر وتزيد الحمولة، العمل يبقى 60 ثانية</p></div><button class="btn ghost sm" data-a="upg" data-id="${u.id}" data-k="u-${u.id}" ${u.level >= 3 || st.coins < cost ? 'disabled' : ''}>${u.level >= 3 ? 'أقصى مستوى' : `ترقية <span class="num">${fmt(cost)}</span>`}</button></div>`; }).join('')}</div>` : '<p class="note">لا توجد آليات بعد.</p>'}
+      <h3>شراء</h3>${fleetPurchaseHtml(st,d,hasRecycler(st))}
+      <h3>أسطولك (${fmt(st.units.length)})</h3>${st.units.length ? `<div class="list">${st.units.map(u => { const cost = Math.floor(u.purchasePrice / 2); return `<div class="item"><span class="st" style="background:${b.has(u.id) ? 'var(--ochre)' : 'var(--olive)'}"></span><div><h3>${EQUIPMENT[u.kind].name} · مستوى <span class="num">${fmt(u.level)}</span>/4</h3><p>${b.has(u.id) ? 'في مهمة' : 'متاحة'} · ${u.home?esc(dName(u.home.districtId)):'بانتظار مخزن'} · الترقية تسرّع السفر، ولا تختصر وقت العمل</p></div><button class="btn ghost sm" data-a="upg" data-id="${u.id}" data-k="u-${u.id}" ${b.has(u.id)||u.level >= 4 || st.coins < cost ? 'disabled' : ''}>${u.level >= 4 ? 'أقصى مستوى' : `ترقية <span class="num">${fmt(cost)}</span>`}</button></div>`; }).join('')}</div>` : '<p class="note">لا توجد آليات بعد.</p>'}
       ${paverSection(st, !!d && hasAsphalt(d), now)}
       <h3>المهام الجارية</h3>${(() => { const rw = st.districts.flatMap(x => (x.roadWorks ?? []).filter(w => w.returnEnd > now).map(w => ({ x, w }))); return rw.length ? `<p class="note">سفلتة جارية: ${rw.map(({ x, w }) => `${esc(dName(x.id))} · ${roadWorkPhase(w, now).label} · ${dur(roadWorkPhase(w, now).end - now)}`).join(' — ')}</p>` : ''; })()}${st.jobs.length ? `<div class="list">${st.jobs.map(j => { const { label, end } = jobDisplay(j, now); return `<div class="item building"><span class="st"></span><div><h3>${esc(dName(j.districtId))} · قطعة <span class="num">${fmt(j.plotId + 1)}</span></h3><p>${label} · متبقٍ <span class="num">${dur(end - now)}</span></p></div><span></span></div>`; }).join('')}</div>` : '<p class="note">لا توجد مهام الآن.</p>'}`];
   }
@@ -327,9 +330,9 @@ function dialogHtml(st: GameState, now: number): [string, string] {
   }
   if (ui.dialog === 'projects' && d) {
     const defs = projects(d.id === 'rashid');
-    return ['مشاريع الحي', `<p class="note">${MINUTE_TEST_TIMERS ? 'وضع الاختبار: دقيقة أساسية للعمل تزداد حسب الصعوبة.' : 'تسعة مشاريع بالوقت الحقيقي.'} الزراعة والورشة تُكرَّر بعد الجمع، والسوق يدرّ دخلًا كل ${incomeIntervalLabel()}.</p><div class="list">${defs.map(def => { const ps = d.projects.find(x => x.id === def.id)!; const pre = def.prerequisite ? d.projects.find(x => x.id === def.prerequisite) : null; const locked = pre && pre.status !== 'complete';
+    return ['مشاريع الحي', `<button class="btn gold" data-a="roads" data-k="main-road">الطريق الرئيسي · تجهيز وسفلتة الشوارع</button><p class="note">مدد البناء والإزالة والسفلتة حسب الحجم والصعوبة. ${MINUTE_TEST_TIMERS ? 'بقية المشاريع تحتفظ بمؤقت الاختبار الحالي.' : ''} الزراعة والورشة تُكرَّر بعد الجمع، والسوق يدرّ دخلًا كل ${incomeIntervalLabel()}.</p><div class="list">${defs.map(def => { const ps = d.projects.find(x => x.id === def.id)!; const pre = def.prerequisite ? d.projects.find(x => x.id === def.prerequisite) : null; const locked = pre && pre.status !== 'complete';
       const repeat = def.id === 'farm' || def.id === 'industry'; let btn = '', info = '';
-      if (ps.status === 'idle') { info = locked ? `يتطلب: ${esc(defs.find(x => x.id === def.prerequisite)!.name)}` : `<span class="num">${fmt(def.cost)}</span> · ${secs(def.duration)}${def.income ? ` · عائد <span class="num">${fmt(projectIncome(d, def))}</span>` : ''}`; btn = `<button class="btn sm" data-a="proj" data-id="${def.id}" data-k="p-${def.id}" ${locked || st.coins < def.cost ? 'disabled' : ''}>بدء</button>`; }
+      if (ps.status === 'idle') { info = locked ? `يتطلب: ${esc(defs.find(x => x.id === def.prerequisite)!.name)}` : `<span class="num">${fmt(def.cost)}</span> · ${dur(workDuration(d,def.duration*1000))}${def.income ? ` · عائد <span class="num">${fmt(projectIncome(d, def))}</span>` : ''}`; btn = `<button class="btn sm" data-a="proj" data-id="${def.id}" data-k="p-${def.id}" ${locked || st.coins < def.cost ? 'disabled' : ''}>بدء</button>`; }
       else if (ps.status === 'building') { info = `قيد التنفيذ · متبقٍ <span class="num">${dur(ps.endsAt - now)}</span>`; }
       else if (ps.status === 'ready') { info = `جاهز · عائد <span class="num">${fmt(projectIncome(d, def))}</span>`; btn = `<button class="btn gold sm" data-a="cproj" data-id="${def.id}" data-k="c-${def.id}">جمع</button>`; }
       else { if (def.period && ps.incomeAt) { const next = ps.incomeAt + activityDuration(def.period * 1000); const r = now >= next; info = r ? 'الدخل جاهز للجمع' : `الدخل التالي بعد <span class="num">${dur(next - now)}</span>`; btn = `<button class="btn gold sm" data-a="cproj" data-id="${def.id}" data-k="c-${def.id}" ${r ? '' : 'disabled'}>جمع</button>`; } else if (repeat) { info = 'مكتمل · يمكن تكرار الدورة'; btn = `<button class="btn ghost sm" data-a="proj" data-id="${def.id}" data-k="p-${def.id}" ${st.coins < def.cost ? 'disabled' : ''}>دورة جديدة</button>`; } else info = 'مكتمل'; }
@@ -499,7 +502,9 @@ document.addEventListener('click', e => {
       break;
     }
     case 'buy-paver': act({ type: 'buyPaver' }, 'تم شراء آلية سفلتة'); break;
-    case 'pave': if (act({ type: 'pave', roadId: id }, 'انطلقت آلية السفلتة من مصنع الأسفلت')) { ui.dialog = null; ui.road = null; } break;
+    case 'roads': ui.road=null;ui.dialog='road';ui.dialogPage=0;resetScroll('dlg');break;
+    case 'road-pick': ui.road=id;ui.dialog='road';ui.dialogPage=0;resetScroll('dlg');break;
+    case 'pave': if (act({ type: 'pave', roadId: id }, 'انطلقت الجرافة لتجهيز الشارع قبل السفلتة')) { ui.dialog = null; ui.road = null; } break;
     case 'noop': break;
     case 'dlg': resetScroll('dlg'); ui.dialogTab = 0; ui.dialogPage = 0; ui.dialog = id as typeof ui.dialog; break;
     case 'close-dlg': if (ui.dialog === 'difficulty') break; ui.dialog = null; dlg.close(); return;

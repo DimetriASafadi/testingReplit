@@ -1,4 +1,5 @@
 import type { BuildingDef, EquipmentKind, ProjectDef } from './model';
+import { constructionSeconds } from './construction-rules';
 export const EQUIPMENT: Record<EquipmentKind, { name: string; cost: number }> = {
   excavator: { name: 'حفار', cost: 8000 }, bulldozer: { name: 'جرافة', cost: 5000 }, truck: { name: 'شاحنة نقل', cost: 6000 },
 };
@@ -16,6 +17,8 @@ const rows: Array<[BuildingDef['category'], string[], string[], number[], number
  ['leisure',['zoo','falafel','shawarma','western_food','luxury_restaurant','cafe','snack_kiosk'],['حديقة حيوان','مطعم فلافل','مطعم شاورما','مطعم وجبات غربية','مطعم فاخر','كافيه','كشك مسليات'],[1,1,1,1,1,1,1],[20000,2000,3000,4000,5000,6000,7000]],
  ['services',['school','hospital','mosque','church'],['مدرسة تعليمية','مستشفى طبي','مسجد','كنيسة'],[3,4,2,2],[12000,20000,10000,10000]],
  ['leisure',['sports_club','recreation_park'],['نادي رياضي','منتزه ترفيهي'],[2,1],[8000,6000]],
+ ['industry',['wood_factory'],['مصنع أخشاب'],[2],[12000]],
+ ['commerce',['household_shop'],['متجر أدوات منزلية'],[1],[6500]],
 ];
 // Economic producers only; category membership alone can include public services or decoration.
 const incomeBuildings = new Set([
@@ -23,10 +26,10 @@ const incomeBuildings = new Set([
  'wheat','citrus','olive','vegetables','strawberry','cattle','palms','corn',
  'food_shop','clothes_shop','shoe_shop','traditional_mall','modern_mall',
  'falafel','shawarma','western_food','luxury_restaurant','cafe','snack_kiosk',
- 'sports_club','recreation_park',
+ 'sports_club','recreation_park','wood_factory','household_shop',
 ]);
 export const BUILDINGS: BuildingDef[] = rows.flatMap(([category,ids,names,floors,costs]) => ids.map((id,i)=>({
- id,name:names[i],category,floors:floors[i],cost:costs[i],duration:60+floors[i]*30,income:incomeBuildings.has(id)?Math.max(100,Math.floor(costs[i]/12)):0,
+ id,name:names[i],category,floors:floors[i],cost:costs[i],duration:constructionSeconds(id,category,floors[i]),income:incomeBuildings.has(id)?Math.max(100,Math.floor(costs[i]/12)):0,
 })));
 export function building(id:string): BuildingDef { const def=BUILDINGS.find(b=>b.id===id); if(!def)throw new Error('نوع المبنى غير معروف'); return def }
 export function projects(finale=false): ProjectDef[] {
@@ -40,5 +43,6 @@ export function projects(finale=false): ProjectDef[] {
   {id:'farm',name:'زراعة موسمية',cost:500,duration:300,income:1500,period:0},
   {id:'commerce',name:finale?'فندق الضيافة الساحلي':'سوق الحي',cost:finale?60000:10000,duration:finale?14400:3600,prerequisite:'services',income:finale?8000:3000,period:3600},
   {id:'industry',name:'دفعة ورشة التدوير',cost:3000,duration:900,prerequisite:'power',income:4500,period:0},
+  {id:'flag',name:'سارية علم فلسطين',cost:3000,duration:300,income:0,period:0},
  ];
 }

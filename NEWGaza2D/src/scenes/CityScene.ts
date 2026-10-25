@@ -26,6 +26,7 @@ import { installGroundTiles } from '../ground-tiles';
 import { RoadAnimation } from '../road-animation';
 import { roadAt } from '../roads';
 import { preloadExpansionArt } from '../expansion-art';
+import { DistrictLife } from '../district-life';
 
 export interface CityHooks { getState(): GameState; onSelect(plotId: number | null): void; onRoadSelect?(roadId:string):void; onCamera(c: { x: number; y: number; zoom: number }): void; onWorldState?(state: 'loading' | 'ready' | 'error', message?: string): void }
 
@@ -49,6 +50,7 @@ export class CityScene extends Phaser.Scene {
   private siteAnimation!: SiteAnimation;
   private fleetAnimation!: FleetAnimation;
   private roadAnimation!: RoadAnimation;
+  private districtLife!: DistrictLife;
   private sel!: Phaser.GameObjects.Graphics;
   private layer!: Phaser.GameObjects.Container;
   private selected: number | null = null;
@@ -72,7 +74,8 @@ export class CityScene extends Phaser.Scene {
     this.siteAnimation = new SiteAnimation(this, iso, SC);
     this.fleetAnimation = new FleetAnimation(this);
     this.roadAnimation = new RoadAnimation(this);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { this.siteAnimation.destroy(); this.fleetAnimation.destroy(); this.roadAnimation.reset(); });
+    this.districtLife = new DistrictLife(this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { this.siteAnimation.destroy(); this.fleetAnimation.destroy(); this.roadAnimation.reset(); this.districtLife.reset(); });
     this.cameras.main.setBackgroundColor(TERRAIN_BACKDROP);
     this.input.addPointer(1);
     if (!this.textures.exists('dot')) { const g = this.make.graphics({}, false); g.fillStyle(0xe8dcc4, 1).fillCircle(4, 4, 4); g.generateTexture('dot', 8, 8); g.destroy(); }
@@ -135,6 +138,7 @@ export class CityScene extends Phaser.Scene {
     this.resetGestures();
     this.siteAnimation.resetDistrict(); this.fleetAnimation.resetDistrict();
     this.roadAnimation.reset();
+    this.districtLife.reset();
     this.occlusion.clear(); this.occlusionAt = 0;
     this.clearingStages.clear(); this.clearingAt = 0;
     const oldTex = [...this.groundTextures, ...this.roadTextures];
@@ -513,6 +517,7 @@ export class CityScene extends Phaser.Scene {
     this.siteAnimation.update([...d.plots, ...this.projectPlots], now);
     this.fleetAnimation.update(st, now, this.roadStage);
     this.roadAnimation.update(d,now);
+    this.districtLife.update(d, now);
     const cam=this.cameras.main;
     if(gameAudio.due())gameAudio.city(st,[...d.plots,...this.projectPlots],[...this.fleetAnimation.soundSources(st),...this.roadAnimation.sounds],
       {x:cam.midPoint.x,y:cam.midPoint.y,zoom:cam.zoom},now);

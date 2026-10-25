@@ -5,7 +5,10 @@ export type WorkerRole = 'walk' | 'carry' | 'hammer' | 'sow' | 'water' | 'harves
 export const WK_FRAMES = 8;
 const SKIN = ['#b98862', '#8f6240', '#d1a37b'], SHIRT = ['#3f5f73', '#7a6a4a', '#8c4a3a'], VEST = ['#e0762a', '#d9b42a', '#e0762a'], HELM = ['#e8b020', '#e9e4d6', '#d95a24'];
 
-export function drawWorker(ctx: CanvasRenderingContext2D, role: WorkerRole, frame: number, variant: number): { x: number; y: number } {
+export type Outfit = 'worker' | 'civilian';
+const CIV_TOP = ['#6d7f5a', '#9a5a4a', '#4f6a86', '#b38a52', '#5d4e6e'], CIV_HEAD = ['#2a211b', '#e9e1cf', '#3b2b20', '#7a2f36', '#2f3c4a'];
+export function drawWorker(ctx: CanvasRenderingContext2D, role: WorkerRole, frame: number, variant: number, outfit: Outfit = 'worker'): { x: number; y: number } {
+  const civ = outfit === 'civilian', cv = variant % 5;
   const v = variant % 3; const p = (frame / WK_FRAMES) * Math.PI * 2;
   const still = role === 'hammer' || role === 'harvest' || role === 'pick'; const ph = still ? 0 : p;
   const L1 = 15, L2 = 15, A1 = 12, A2 = 11;
@@ -44,7 +47,7 @@ export function drawWorker(ctx: CanvasRenderingContext2D, role: WorkerRole, fram
     else if (role === 'harvest') { const k = Math.sin(p); a = far ? 1.4 : 1.2 + k * 0.6; b = a + 0.5 + (far ? 0 : Math.max(0, k) * 0.5); }
     else { const k = Math.sin(p); const strike = far ? 0.3 : (k > 0 ? -2.3 + k * 0.1 : 1.5 + k * 1.1); a = far ? 0.9 : strike; b = far ? 1.6 : a + 0.5; }
     const e = [sh[0] + Math.sin(a) * A1, sh[1] + Math.cos(a) * A1]; const h = [e[0] + Math.sin(b) * A2, e[1] + Math.cos(b) * A2];
-    limb([sh, e, h], 5, SHIRT[v], '#aab7c2'); ctx.fillStyle = SKIN[v]; ctx.beginPath(); ctx.arc(h[0], h[1], 2.8, 0, Math.PI * 2); ctx.fill();
+    limb([sh, e, h], 5, civ ? CIV_TOP[cv] : SHIRT[v], '#aab7c2'); ctx.fillStyle = SKIN[v]; ctx.beginPath(); ctx.arc(h[0], h[1], 2.8, 0, Math.PI * 2); ctx.fill();
     if (role === 'hammer' && !far) { ctx.strokeStyle = '#4a3a2a'; ctx.lineWidth = 2.2; const ex = h[0] + Math.sin(b) * 9, ey = h[1] + Math.cos(b) * 9; ctx.beginPath(); ctx.moveTo(h[0], h[1]); ctx.lineTo(ex, ey); ctx.stroke(); ctx.fillStyle = '#5b5e63'; ctx.fillRect(ex - 4, ey - 2.5, 8, 5); }
     return h;
   };
@@ -53,15 +56,18 @@ export function drawWorker(ctx: CanvasRenderingContext2D, role: WorkerRole, fram
   ctx.save(); ctx.translate(hipX, hipY); ctx.rotate(lean);
   const g = ctx.createLinearGradient(-6, 0, 7, 0); g.addColorStop(0, '#2e2a26'); g.addColorStop(0, SHIRT[v]); g.addColorStop(1, '#1e2a33');
   ctx.fillStyle = g; ctx.strokeStyle = 'rgba(25,18,12,.85)'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.roundRect(-6.5, -torso, 13, torso + 2, 4); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = VEST[v]; ctx.fillRect(-6, -torso + 2, 12, torso - 7); ctx.fillStyle = 'rgba(235,235,215,.85)'; ctx.fillRect(-6, -torso + 10, 12, 2.2); ctx.fillRect(-6, -torso + 17, 12, 2.2);
+  if (civ) { ctx.fillStyle = CIV_TOP[cv]; ctx.fillRect(-6, -torso + 1, 12, torso - 2); if (cv % 2) { ctx.fillStyle = CIV_TOP[cv]; ctx.beginPath(); ctx.moveTo(-7, -2); ctx.lineTo(7, -2); ctx.lineTo(9, 14); ctx.lineTo(-9, 14); ctx.closePath(); ctx.fill(); ctx.stroke(); } }
+  else { ctx.fillStyle = VEST[v]; ctx.fillRect(-6, -torso + 2, 12, torso - 7); ctx.fillStyle = 'rgba(235,235,215,.85)'; ctx.fillRect(-6, -torso + 10, 12, 2.2); ctx.fillRect(-6, -torso + 17, 12, 2.2); }
   ctx.fillStyle = '#4a3a2a'; ctx.fillRect(-6.5, -4, 13, 2.4);
   ctx.restore();
   drawLeg(legs[0], false);
   // head, helmet
   ctx.fillStyle = SKIN[v]; ctx.strokeStyle = 'rgba(25,18,12,.8)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(neck[0] + 2, neck[1] - 5, 5.2, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  if (civ) { ctx.fillStyle = CIV_HEAD[cv]; ctx.beginPath(); if (cv % 2) { ctx.arc(neck[0] + 1.6, neck[1] - 5.6, 6, Math.PI * .85, Math.PI * 2.15); ctx.lineTo(neck[0] - 3, neck[1] + 1); } else ctx.arc(neck[0] + 1.6, neck[1] - 6.6, 5.4, Math.PI, 0); ctx.closePath(); ctx.fill(); }
+  else {
   ctx.fillStyle = HELM[v]; ctx.beginPath(); ctx.arc(neck[0] + 1.6, neck[1] - 6.6, 5.9, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
   ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.beginPath(); ctx.arc(neck[0] - 0.4, neck[1] - 9, 2.4, Math.PI, Math.PI * 1.7); ctx.fill();
-  ctx.fillStyle = HELM[v]; ctx.fillRect(neck[0] + 1, neck[1] - 6.8, 9, 1.8); ctx.strokeRect(neck[0] + 1, neck[1] - 6.8, 9, 1.8);
+  ctx.fillStyle = HELM[v]; ctx.fillRect(neck[0] + 1, neck[1] - 6.8, 9, 1.8); ctx.strokeRect(neck[0] + 1, neck[1] - 6.8, 9, 1.8); }
   const h = arm(false);
   if (role === 'water') { ctx.fillStyle = '#6f7f86'; ctx.strokeStyle = 'rgba(25,18,12,.8)'; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.roundRect(h[0] - 6, h[1] - 2, 12, 10, 2); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.moveTo(h[0] + 5, h[1]); ctx.lineTo(h[0] + 14, h[1] + 4); ctx.stroke(); }
   if (role === 'sow' && frame % 4 < 2) { ctx.fillStyle = '#d8c27a'; for (let i = 0; i < 3; i++) ctx.fillRect(h[0] + 3 + i * 3, h[1] + 4 + (i % 2) * 3, 1.6, 1.6); }

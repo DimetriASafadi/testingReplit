@@ -15,6 +15,12 @@ Each warehouse should hold only three complete equipment teams: three bulldozers
 
 **How to apply:** Count each equipment kind separately against local completed warehouses; protect existing saved equipment rather than deleting it.
 
+Equipment warehouse capacity is local ownership, not a global fleet multiplied by every district's warehouse count. Legacy active trips keep their departure home and excess equipment stays owned.
+
+**Why:** Otherwise opening another district duplicates storage capacity for the same vehicles and undermines the user's requirement to build another warehouse for more equipment.
+
+**How to apply:** Keep the saved owner district when adding later fleet transfers; transfers should be explicit and capacity-checked, not automatic on district entry.
+
 The requested district-life additions are a wood factory, household-goods shop, workers leaving/returning to their building, street lighting as part of the electricity project, more peripheral tents with moving residents, and a Palestinian flagpole project. Residents begin entering completed residential buildings from outside only at 40% district progress and increase gradually. Western coastal districts, particularly Shati and Sheikh Ijlin, should have Rashid Street or sea on their geographic west.
 
 **Why:** The user wants visible population return and district-specific Gaza surroundings, not identical peripheral decoration.

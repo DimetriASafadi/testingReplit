@@ -8,12 +8,12 @@ export interface SprMeta { w: number; h: number; ay: number; ground?: { w: numbe
 export const SPR = manifest as Record<string, SprMeta>;
 export const SPRITE_KEYS = Object.keys(SPR);
 export const GROUND_KEYS = ['earth', 'sand', 'asphalt', 'gravel', 'water'] as const;
-const ART_VERSION = 'civic-six-20261023';
+const ART_VERSION = 'life-wood-20261025';
 export const sprUrl = (k: string) => `${import.meta.env.BASE_URL}art/realistic/s/${k}.webp?v=${ART_VERSION}`;
 export const groundUrl = (k: string) => `${import.meta.env.BASE_URL}art/realistic/ground-${k}.jpg?v=${ART_VERSION}`;
 
 const KEY: Record<string, string> = {
-  work: 'work', equipment_store: 'equip', recycling: 'recycling', glass: 'glass', cement: 'cement', steel: 'steel', asphalt: 'asphalt', food_factory: 'food_factory', water_treatment: 'water',
+  work: 'work', equipment_store: 'equip', recycling: 'recycling', glass: 'glass', cement: 'cement', steel: 'steel', asphalt: 'asphalt', food_factory: 'food_factory', water_treatment: 'water', wood_factory: 'wood', household_shop: 'hshop',
   small_house: 'smallhouse', medium_house: 'house', villa: 'villa', housing_4: 'apt4', housing_6: 'h6', housing_complex: 'complex', modern_housing: 'modern', traditional_housing: 'trad', housing_tower: 'tower', tourist_villa: 'tourist',
   food_shop: 'foodshop', clothes_shop: 'clothes', shoe_shop: 'shoe', traditional_mall: 'tmall', modern_mall: 'mmall', municipality: 'muni',
   zoo: 'zoo', falafel: 'falafel', shawarma: 'shawarma', western_food: 'western', luxury_restaurant: 'luxury', cafe: 'cafe', snack_kiosk: 'kiosk',

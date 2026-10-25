@@ -1,5 +1,6 @@
 import type { DistrictState, EquipmentKind, GameState, Plot, Unit } from './model';
 import type { Job } from './model';
+import { assignWarehouseHomes, localUnit, roadUnitBusy } from './warehouse-capacity';
 
 export const equipmentWarehouses = (d: DistrictState) =>
   d.plots.filter(p => p.buildingId === 'equipment_store' && p.status === 'built');
@@ -13,6 +14,7 @@ export const recyclingDepots = (d: DistrictState) =>
 /** Balance each kind so complete clearing teams remain together. Busy teams
  * keep their original portal until their return is actually complete. */
 export function balanceFleetDepots(state: GameState): void {
+  assignWarehouseHomes(state);
   for (const d of state.districts) {
     const depots = recyclingDepots(d);
     if (!depots.length) {
@@ -24,7 +26,7 @@ export function balanceFleetDepots(state: GameState): void {
       .flatMap(j => j.unitIds.filter(id => unitInJob(j, state.units.find(u => u.id === id)!, state.lastSeen))
         .map(id => [id, j.recyclingPlotId ?? j.originPlotId] as const)));
     for (const kind of ['excavator', 'bulldozer', 'truck'] as EquipmentKind[]) {
-      const units = state.units.filter(u => u.kind === kind);
+      const units = state.units.filter(u => u.kind === kind && localUnit(u, d));
       const counts = new Map(depots.map(p => [p.id, 0]));
       const quota = new Map(depots.map((p, i) => [p.id,
         Math.floor(units.length / depots.length) + (i < units.length % depots.length ? 1 : 0)]));
@@ -50,18 +52,17 @@ export function balanceFleetDepots(state: GameState): void {
 }
 
 export function availableDepotTeam(state: GameState, d: DistrictState, target: Plot) {
-  const busy = new Set(state.units.filter(u => state.jobs.some(j => unitInJob(j, u, state.lastSeen))).map(u => u.id));
-  const candidates = recyclingDepots(d).map(depot => ({
+  const busy = new Set(state.units.filter(u => roadUnitBusy(state, u.id) || state.jobs.some(j => unitInJob(j, u, state.lastSeen))).map(u => u.id));
+  const candidates = equipmentWarehouses(d).flatMap(warehouse => recyclingDepots(d).map(depot => ({
+    warehouse,
     depot,
     team: (['excavator', 'bulldozer', 'truck'] as EquipmentKind[]).map(kind =>
-      state.units.find(u => u.kind === kind && !busy.has(u.id) && u.depotIds?.[d.id] === depot.id)),
+      state.units.find(u => u.kind === kind && localUnit(u,d) && (!u.home || u.home.warehouseId === warehouse.id) && !busy.has(u.id) && u.depotIds?.[d.id] === depot.id)),
     active: state.jobs.filter(j => j.districtId === d.id && (j.recyclingPlotId ?? j.originPlotId) === depot.id).length,
     distance: Math.abs(target.x - depot.x) + Math.abs(target.y - depot.y),
-  })).filter(v => v.team.every(Boolean));
+  }))).filter(v => v.team.every(Boolean));
   candidates.sort((a, b) => a.active - b.active || a.distance - b.distance || a.depot.id - b.depot.id);
   const chosen = candidates[0];
-  const warehouse = equipmentWarehouses(d).sort((a,b) =>
-    Math.hypot(a.x - (chosen?.depot.x ?? target.x), a.y - (chosen?.depot.y ?? target.y)) -
-    Math.hypot(b.x - (chosen?.depot.x ?? target.x), b.y - (chosen?.depot.y ?? target.y)) || a.id - b.id)[0];
+  const warehouse = chosen?.warehouse;
   return chosen && warehouse ? { depot: chosen.depot, warehouse, team: chosen.team as Unit[] } : null;
 }

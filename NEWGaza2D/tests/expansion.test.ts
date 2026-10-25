@@ -6,11 +6,17 @@ import { validateSave } from '../src/save';
 import { WHEEL_COOLDOWN, WHEEL_PRIZES, wheelResult } from '../src/rewards';
 import { projectIncome, workDuration } from '../src/economy';
 import { projects } from '../src/catalog';
+import { building } from '../src/catalog';
+import { actualWorkDuration } from '../src/construction-rules';
 const setup=()=>{
  let raw:string|null=null;let fail=false;
  const storage={getItem:()=>raw,setItem:(_k:string,v:string)=>{if(fail)throw Error('quota');raw=v;}};
  const store=new GameStore(storage,Date.now()+100000);
  store.dispatch({type:'enter',districtId:'shujaiya'});
+ const d=store.state.districts[0];
+ Object.assign(d.plots[1],{status:'built',buildingId:'equipment_store'});
+ Object.assign(d.plots[2],{status:'built',buildingId:'recycling'});
+ store.dispatch({type:'buy',kind:'bulldozer'});
  return{store,storage,setFail:()=>fail=true};
 };
 test('road factory, equipment, charge, offline paving and return survive reload exactly once',()=>{
@@ -38,7 +44,7 @@ test('whole street skips already paved costs and retains legacy single-segment j
  assert.equal(before-store.state.coins,120*(street.length-1));assert.equal(d.roadWorks![0].roadIds!.length,street.length-1);
  const w=d.roadWorks![0];validateSave(store.state);
  const bad=structuredClone(store.state);bad.districts[0].roadWorks![0].roadIds!.push(roadsFor(d.id).find(r=>!street.includes(r))!.id);assert.throws(()=>validateSave(bad));
- const legacy=structuredClone(store.state);delete legacy.districts[0].roadWorks![0].roadIds;legacy.districts[0].pavedRoads=[];storage.setItem('newgaza2d-save-v1',JSON.stringify(legacy));
+ const legacy=structuredClone(store.state);delete legacy.districts[0].roadWorks![0].roadIds;delete legacy.districts[0].roadWorks![0].preparation;legacy.districts[0].pavedRoads=[];storage.setItem('newgaza2d-save-v1',JSON.stringify(legacy));
  const restored=new GameStore(storage,w.workEnd);assert.deepEqual(restored.state.districts[0].pavedRoads,[w.roadId]);
 });
 test('wallet transactions persist before success and reject duplicates/failed storage',()=>{
@@ -98,7 +104,7 @@ test('difficulty selected once changes only new timers and retains profitable re
  const d=store.state.districts[0],farm=projects(false).find(p=>p.id==='farm')!;
  assert.ok(projectIncome(d,farm)>farm.cost);
  store.dispatch({type:'place',plotId:0,buildingId:'school',orientation:0});
- assert.equal(d.plots[0].endsAt-d.plots[0].startedAt,workDuration(d,60000));
+ assert.equal(d.plots[0].endsAt-d.plots[0].startedAt,actualWorkDuration(d,building('school').duration*1000));
 });
 test('pavers leave interior lots along parcel seams, never neighbouring building interiors',()=>{
  const d=newGame().districts[0],road=roadsFor(d.id)[0];

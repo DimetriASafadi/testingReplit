@@ -61,7 +61,7 @@ export function validateSave(value: unknown): asserts value is GameState {
     require(d.unlocked === (i === 0 || predecessor.claimed) ||
       (d.id === 'rashid' && d.unlocked && predecessor?.id === 'shati' && predecessor.unlocked));
     require(d.camera === null || (typeof d.camera === 'object' && Number.isFinite(d.camera.x) && Number.isFinite(d.camera.y) && d.camera.zoom >= MIN_CAMERA_ZOOM && d.camera.zoom <= 4));
-    require(Array.isArray(d.plots) && [64, LOT_COUNT].includes(d.plots.length) && Array.isArray(d.projects) && d.projects.length === 9);
+    require(Array.isArray(d.plots) && [64, LOT_COUNT].includes(d.plots.length) && Array.isArray(d.projects) && [9,10].includes(d.projects.length));
     const legacy = d.plots.length === 64;
     if (!legacy) require([cityLayout(d.id), cityLayout(d.id,1)].some(layout =>
       d.plots.every((p,j) => p && p.x === layout.cells[j].x && p.y === layout.cells[j].y)));
@@ -93,6 +93,12 @@ export function validateSave(value: unknown): asserts value is GameState {
       require(p?.status === 'built' && p.buildingId === 'recycling');
     }
   }
+  for (const u of s.units) if (u.home !== undefined) {
+    require(u.home && typeof u.home === 'object' && integer(u.home.warehouseId));
+    const d=s.districts.find(d=>d.id===u.home!.districtId);
+    // Sold warehouses may retain ownership without a usable departure point.
+    require(d && u.home.warehouseId < d.plots.length);
+  }
   require(s.currentDistrict === null || s.districts.some(d => d.id === s.currentDistrict && d.unlocked));
   const busy: string[] = [];
   const sites: string[] = [];
@@ -119,7 +125,7 @@ export function validateSave(value: unknown): asserts value is GameState {
     require(team.every(u => u!.depotIds?.[d!.id] === undefined || u!.depotIds[d!.id] === (j.recyclingPlotId ?? j.originPlotId) ||
       (u!.kind !== 'truck' && j.toolsReturnEnd !== undefined && s.lastSeen >= j.toolsReturnEnd)));
     require([j.start,j.arrival,j.workEnd,j.returnEnd,j.value].every(integer));
-    require(j.start <= s.lastSeen && j.start < j.arrival && [60000,69000,78000].includes(j.workEnd - j.arrival) && j.returnEnd > j.workEnd);
+    require(j.start <= s.lastSeen && j.start < j.arrival && [60000,69000,78000,120000,138000,156000,180000,207000,234000].includes(j.workEnd - j.arrival) && j.returnEnd > j.workEnd);
     require(j.departureAt === undefined || (integer(j.departureAt) && j.departureAt >= j.start && j.departureAt < j.arrival));
     require(j.returnStartAt === undefined || (integer(j.returnStartAt) && j.returnStartAt >= j.workEnd && j.returnStartAt < j.returnEnd));
     require(typeof j.cleared === 'boolean' && (j.cleared || d!.plots[j.plotId].status === 'rubble'));
@@ -131,4 +137,15 @@ export function validateSave(value: unknown): asserts value is GameState {
   require(new Set(busy).size === busy.length && new Set(sites).size === sites.length);
   const pavingBusy=s.districts.flatMap(d=>(d.roadWorks??[]).map(w=>w.machineId));
   require(new Set(pavingBusy).size===pavingBusy.length);
+  const preparationBusy:string[]=[];
+  for(const d of s.districts)for(const w of d.roadWorks??[])if(w.preparation){
+    const p=w.preparation;
+    require(s.units.some(u=>u.id===p.unitId&&u.kind==='bulldozer'));
+    require(integer(p.warehouseId)&&d.plots[p.warehouseId]?.status==='built'&&d.plots[p.warehouseId]?.buildingId==='equipment_store');
+    require([p.sandEnd,p.aggregateEnd,p.asphaltStart,p.dozerReturnEnd].every(integer));
+    require(w.arrival<p.sandEnd&&p.sandEnd<p.aggregateEnd&&p.aggregateEnd<p.asphaltStart&&p.asphaltStart<w.workEnd&&p.dozerReturnEnd>p.aggregateEnd&&p.dozerReturnEnd<=w.returnEnd);
+    require(Array.isArray(p.route)&&p.route.length>=2&&p.route.every(q=>Array.isArray(q)&&q.length===2&&q.every(n=>Number.isFinite(n)&&Math.abs(n)<200)));
+    if(s.lastSeen<p.dozerReturnEnd)preparationBusy.push(p.unitId);
+  }
+  require(new Set([...busy,...preparationBusy]).size===busy.length+preparationBusy.length);
 }

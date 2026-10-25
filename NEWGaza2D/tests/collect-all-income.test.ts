@@ -96,7 +96,7 @@ test('only economic producers earn income; saved homes cannot pay through any co
     'wheat','citrus','olive','vegetables','strawberry','cattle','palms','corn',
     'food_shop','clothes_shop','shoe_shop','traditional_mall','modern_mall',
     'falafel','shawarma','western_food','luxury_restaurant','cafe','snack_kiosk',
-    'sports_club','recreation_park',
+    'sports_club','recreation_park','wood_factory','household_shop',
   ];
   assert.deepEqual(BUILDINGS.filter(b => b.income > 0).map(b => b.id).sort(), producers.sort());
   setMinuteTestTimers(true);

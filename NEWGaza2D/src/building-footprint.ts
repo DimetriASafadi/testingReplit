@@ -9,6 +9,7 @@ const COMPACT: Record<string, Readonly<BuildingFootprint>> = {
   villa: { factor: .84, yard: 'garden' },
   tourist: { factor: .84, yard: 'garden' },
   kiosk: { factor: .62, yard: 'patio' },
+  wood: { factor: .78, yard: 'service' }, hshop: { factor: .64, yard: 'patio' },
   foodshop: { factor: .64, yard: 'patio' },
   clothes: { factor: .60, yard: 'patio' },
   shoe: { factor: .58, yard: 'patio' },
@@ -29,7 +30,7 @@ const COMPACT: Record<string, Readonly<BuildingFootprint>> = {
  * shop must not have an apartment tower's height merely because its PNG is tall. */
 const HEIGHTS: Record<string, number> = {
   smallhouse: 82, house: 124, villa: 137, tourist: 118,
-  foodshop: 78, clothes: 76, shoe: 76, falafel: 76, shawarma: 78,
+  wood: 92, hshop: 84, foodshop: 78, clothes: 76, shoe: 76, falafel: 76, shawarma: 78,
   western: 84, kiosk: 78, cafe: 86, luxury: 127,
   muni: 145, tmall: 164, mmall: 164,
   school: 118, hospital: 176, mosque: 172, church: 136, club: 112, rpark: 124,

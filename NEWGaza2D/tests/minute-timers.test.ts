@@ -6,6 +6,7 @@ import { activityDuration, buildingIncomePeriod, setMinuteTestTimers } from '../
 import { validateSave } from '../src/save';
 import { outgoingTravelDuration, returnTravelDuration } from '../src/fleet-motion';
 import { projectIncome } from '../src/economy';
+import { clearingSeconds } from '../src/construction-rules';
 
 class MemoryStorage {
   value: string | null = null;
@@ -18,12 +19,12 @@ function setup() {
   store.dispatch({ type: 'enter', districtId: 'shujaiya' });
   return { store, storage };
 }
-test('every building, infrastructure project and recurring period takes one minute in test mode', () => {
+test('construction uses production times while unrelated projects and income retain their minute profile', () => {
   assert.equal(buildingIncomePeriod(), 60000);
   for (const b of BUILDINGS) {
     const { store } = setup(), p = store.state.districts[0].plots[0];
     store.dispatch({ type: 'place', plotId: p.id, buildingId: b.id, orientation: 0 });
-    assert.equal(p.endsAt - p.startedAt, 60000);
+    assert.equal(p.endsAt - p.startedAt, b.duration*1000);
     store.tick(p.endsAt - 1); assert.equal(p.status, 'building');
     store.tick(p.endsAt); assert.equal(p.status, 'built');
     if (b.income) {
@@ -55,7 +56,7 @@ test('every building, infrastructure project and recurring period takes one minu
     validateSave(store.state);
   }
 });
-test('convoy travel follows route distance while clearing takes a minute, with offline settlement exactly once', () => {
+test('convoy travel follows route distance while clearing uses size, with offline settlement exactly once', () => {
   const { store, storage } = setup(), d = store.state.districts[0], p = d.plots[0];
   store.dispatch({ type: 'place', plotId: 0, buildingId: 'recycling', orientation: 0 });
   store.tick(p.endsAt);
@@ -68,7 +69,7 @@ test('convoy travel follows route distance while clearing takes a minute, with o
   const travel = outgoingTravelDuration(d.plots[1], target);
   assert.equal(j.arrival - j.departureAt!, travel);
   assert.ok(travel < 60000);
-  assert.equal(j.workEnd - j.arrival, 60000);
+  assert.equal(j.workEnd - j.arrival, clearingSeconds(building(target.buildingId).floors)*1000);
   assert.equal(j.toolsReturnEnd! - j.returnStartAt!, returnTravelDuration(d.plots[1], target, travel));
   const restored = new GameStore(storage, j.workEnd);
   assert.equal(restored.state.districts[0].plots[target.id].status, 'empty');
@@ -80,7 +81,7 @@ test('convoy travel follows route distance while clearing takes a minute, with o
   assert.equal(again.state.inventory.value, value);
   validateSave(again.state);
 });
-test('existing long counters shorten once without losing progress, earned income or resetting on reload', () => {
+test('existing counters retain deadlines and earned income without resetting on reload', () => {
   setMinuteTestTimers(false);
   const { store, storage } = setup(), d = store.state.districts[0];
   store.dispatch({ type: 'place', plotId: 0, buildingId: 'food_shop', orientation: 0 });
@@ -96,8 +97,8 @@ test('existing long counters shorten once without losing progress, earned income
   setMinuteTestTimers(true);
   const migrated = new GameStore(storage, now);
   const mp = migrated.state.districts[0].projects.find(p => p.id === 'water')!;
-  assert.equal(mp.endsAt - mp.startedAt, 60000);
-  assert.equal(mp.endsAt - now, 59500);
+  assert.equal(mp.endsAt - mp.startedAt, 3600000);
+  assert.equal(mp.endsAt - now, 3570000);
   const coins = migrated.state.coins;
   migrated.dispatch({ type: 'collectBuilding', plotId: 0 });
   assert.equal(migrated.state.coins - coins, Math.floor(building('food_shop').income*.7));

@@ -17,6 +17,8 @@ import { depotPortal } from '../src/fleet-motion';
 import { unitInJob } from '../src/fleet-depots';
 import { roadsFor } from '../src/roads';
 import { projectIncome, STARTING_COINS } from '../src/economy';
+import { clearingSeconds } from '../src/construction-rules';
+import { building } from '../src/catalog';
 
 test('gems reward each project once, including offline completions and legacy progress', () => {
   const storage = new MemoryStorage(), now = Date.now() + 600000;
@@ -50,7 +52,7 @@ test('half-time building costs two gems, keeps money cost and persists its deadl
     const before = store.state.coins;
     store.dispatch({ type: 'place', plotId: 0, buildingId: def.id, orientation: 2, accelerate: true });
     const plot = store.state.districts[0].plots[0];
-    assert.equal(plot.endsAt - plot.startedAt, activityDuration(def.duration * 1000) / 2);
+    assert.equal(plot.endsAt - plot.startedAt, def.duration * 1000 / 2);
     assert.equal(store.state.gems, 0);
     assert.equal(store.state.coins, before - def.cost);
     const restored = new GameStore(storage, plot.startedAt);
@@ -75,7 +77,7 @@ test('failed accelerated builds never deduct coins or gems; ordinary constructio
   store.state.coins = before; store.state.gems = 0;
   store.dispatch({ type: 'place', plotId: 0, buildingId: def.id, orientation: 0 });
   const plot = store.state.districts[0].plots[0];
-  assert.equal(plot.endsAt - plot.startedAt, activityDuration(def.duration * 1000));
+  assert.equal(plot.endsAt - plot.startedAt, def.duration * 1000);
 });
 
 test('district gem reward is granted only on explicit first claim', () => {
@@ -326,7 +328,7 @@ test('return travel matches departure ground speed at near/far sites and every u
     const target=far?targets.at(-1)!:targets[0];
     store.dispatch({type:'clear',plotId:target.id});
     const j=store.state.jobs[0], outTime=j.arrival-j.departureAt!, backTime=j.toolsReturnEnd!-j.returnStartAt!;
-    assert.equal(j.workEnd-j.arrival,60000);
+    assert.equal(j.workEnd-j.arrival,clearingSeconds(building(target.buildingId).floors)*1000);
     assert.equal(backTime,returnTravelDuration(source,target,outTime));
     const maxLength=(back:boolean)=>Math.max(...(['excavator','bulldozer','truck'] as const).map(k=>routeLength(fleetRoute(source,target,k,back))))+2*CONVOY_GAP;
     const outSpeed=maxLength(false)/(outTime-750),backSpeed=maxLength(true)/(backTime-550-250);
@@ -418,10 +420,12 @@ test('warehouse delivery and empty-return routes are continuous and opaque for a
 });
 test('queued trucks wait outside the unloading bay and approach it continuously without losing cargo', () => {
   const {store,storage}=ready(), d=store.state.districts[0];
+  // Equal rubble size keeps the two deliveries competing for the same bay.
+  d.plots[3].buildingId=d.plots[2].buildingId;
   store.dispatch({type:'clear',plotId:2});
   const first=store.state.jobs[0];
   // A truck held at the receiving yard must not let the next one park on top of it.
-  first.truckHomeDepartureAt! += 60000; first.returnEnd += 60000;
+  first.truckHomeDepartureAt! += 180000; first.returnEnd += 180000;
   buyTeam(store);
   store.dispatch({type:'clear',plotId:3});
   const j=store.state.jobs[1], w=d.plots[j.originPlotId], r=d.plots[j.recyclingPlotId!], p=d.plots[j.plotId];
@@ -526,6 +530,9 @@ test('a newly completed depot redistributes idle teams without changing an activ
 test('three depots distribute uneven equipment counts by kind, with stable idle assignments', () => {
   const { store } = ready();
   addDepot(store); addDepot(store);
+  const empty=store.state.districts[0].plots.find(p=>p.status==='empty')!;
+  store.dispatch({type:'place',plotId:empty.id,buildingId:'equipment_store',orientation:0});
+  store.tick(empty.endsAt);
   for (let i=0; i<3; i++) buyTeam(store);
   store.dispatch({ type:'buy', kind:'truck' });
   const d = store.state.districts[0], depots = d.plots.filter(p => p.status === 'built' && p.buildingId === 'recycling');
@@ -555,7 +562,7 @@ test('legacy fleet saves acquire balanced depot homes and keep returning jobs at
   invalid.units[0].depotIds!.shujaiya = 2;
   assert.throws(() => validateSave(invalid));
 });
-test('each district keeps a separate depot assignment for the shared campaign fleet', () => {
+test('district equipment retains its owned home rather than duplicating capacity in another district', () => {
   const { store, storage } = ready();
   buyTeam(store); addDepot(store);
   const previous = store.state.units.map(u => u.depotIds!.shujaiya);
@@ -567,7 +574,7 @@ test('each district keeps a separate depot assignment for the shared campaign fl
   store.dispatch({ type:'enter', districtId:'tuffah' });
   store.dispatch({ type:'place', plotId:0, buildingId:'recycling', orientation:0 });
   store.tick(store.state.districts[1].plots[0].endsAt);
-  assert.ok(store.state.units.every(u => u.depotIds?.tuffah === 0));
+  assert.ok(store.state.units.every(u => u.home?.districtId === 'shujaiya' && u.depotIds?.tuffah === undefined));
   assert.deepEqual(store.state.units.map(u => u.depotIds!.shujaiya), previous);
   validateSave(store.state);
   assert.deepEqual(new GameStore(storage, store.state.lastSeen).state.units, store.state.units);
@@ -656,11 +663,11 @@ test('all catalog entries support building and income, costs use money only', ()
     validateSave(store.state);
   }
 });
-test('clear sequence: travel -> sixty seconds work -> empty plot -> returned saleable materials', () => {
+test('clear sequence: travel -> size-based work -> empty plot -> returned saleable materials', () => {
   const {store,storage}=ready(), coins=store.state.coins;
   store.dispatch({type:'clear',plotId:2});
   const j={...store.state.jobs[0]};
-  assert.equal(j.workEnd-j.arrival,60000);
+  assert.equal(j.workEnd-j.arrival,clearingSeconds(building(store.state.districts[0].plots[2].buildingId).floors)*1000);
   assert.throws(()=>store.dispatch({type:'clear',plotId:2}));
   assert.throws(()=>store.dispatch({type:'clear',plotId:3}));
   store.tick(j.arrival-1);
@@ -807,6 +814,7 @@ test('complete fourteen-district campaign via real actions and timers, hourly tr
       store.tick(store.state.districts[i].plots[0].endsAt);
       store.dispatch({type:'place',plotId:1,buildingId:'equipment_store',orientation:0});
       store.tick(store.state.districts[i].plots[1].endsAt);
+      buyTeam(store);
     }
     for(const plot of store.state.districts[i].plots.filter(p=>p.status==='rubble')) {
       store.dispatch({type:'clear',plotId:plot.id});

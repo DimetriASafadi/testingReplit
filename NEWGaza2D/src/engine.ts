@@ -16,11 +16,13 @@ import { PROJECT_GEMS, DISTRICT_GEMS, HALF_TIME_GEMS } from './gems';
 import { difficultyOf, isDifficulty, PAVER_COST, projectIncome, ROAD_COST, STARTING_COINS, workDuration } from './economy';
 import { COIN_PACKS, WHEEL_COOLDOWN, WHEEL_PRIZES, wheelResult } from './rewards';
 import { roadsFor, pavingRoute, pathLength, streetFor } from './roads';
+import { actualWorkDuration, clearingSeconds, STREET_WORK_MS, STREET_STAGE_SHARES } from './construction-rules';
+import { purchaseWarehouse, roadUnitBusy, localUnit } from './warehouse-capacity';
 
 export const SAVE_KEY = 'newgaza2d-save-v1';
 export const factoryRotationBlocked = (state: GameState, plotId: number) =>
   state.jobs.some(j => j.districtId === state.currentDistrict && (j.originPlotId === plotId || j.recyclingPlotId === plotId) && j.returnEnd > state.lastSeen) ||
-  !!state.districts.find(d=>d.id===state.currentDistrict)?.roadWorks?.some(w=>w.factoryId===plotId && w.returnEnd>state.lastSeen);
+  !!state.districts.find(d=>d.id===state.currentDistrict)?.roadWorks?.some(w=>(w.factoryId===plotId || w.preparation?.warehouseId===plotId) && w.returnEnd>state.lastSeen);
 export function newGame(now = Date.now()): GameState {
   const homes = BUILDINGS.filter(b => b.category === 'housing');
   return {
@@ -63,6 +65,9 @@ export function districtComplete(d:DistrictState) {
    roadsFor(d.id).every(r=>paved.has(r.id)) && !d.roadWorks?.length;
 }
 export function migrateExpansion(state:GameState){
+  for (const d of state.districts) if (!d.projects.some(p => p.id === 'flag')) {
+    d.projects.push({ id:'flag', status:d.claimed?'complete':'idle', startedAt:0, endsAt:0, incomeAt:0, gemRewarded:d.claimed });
+  }
  if(state.expansionVersion===1)return;
  state.pavers??=[];state.exchanges??=[];
  for(const d of state.districts){
@@ -184,7 +189,7 @@ export class GameStore implements GameAPI {
     ensure(p, 'الموقع غير موجود'); return p;
   }
   private pay(amount: number) { ensure(this.state.coins >= amount, 'الرصيد غير كافٍ'); this.state.coins -= amount }
-  private busy(id: string) { const u = this.state.units.find(u => u.id === id); return !!u && this.state.jobs.some(j => unitInJob(j, u, this.state.lastSeen)) }
+  private busy(id: string) { const u = this.state.units.find(u => u.id === id); return roadUnitBusy(this.state,id) || (!!u && this.state.jobs.some(j => unitInJob(j, u, this.state.lastSeen))) }
   private recycler(d: DistrictState) { return d.plots.find(p => p.buildingId === 'recycling' && p.status === 'built') }
   dispatch(action: Action) {
     this.tick();
@@ -211,10 +216,20 @@ export class GameStore implements GameAPI {
           const factory=d.plots.filter(p=>p.status==='built'&&p.buildingId==='asphalt').sort((a,b)=>pathLength(pavingRoute(d,a,road))-pathLength(pavingRoute(d,b,road)))[0];
           ensure(factory,'يلزم مصنع أسفلت مكتمل');
           const machine=this.state.pavers?.find(m=>!this.state.districts.some(d=>d.roadWorks?.some(w=>w.machineId===m.id)));
-          ensure(machine,'اشترِ آلية سفلتة أو انتظر عودتها');this.pay(ROAD_COST*pending.length);
+          ensure(machine,'اشترِ آلية سفلتة أو انتظر عودتها');
+          balanceFleetDepots(this.state);
+          const dozer=this.state.units.find(u=>u.kind==='bulldozer'&&localUnit(u,d)&&!this.busy(u.id)&&equipmentWarehouses(d).some(p=>p.id===u.home?.warehouseId));
+          ensure(dozer,'يلزم جرافة متاحة في مخزن معدات هذا الحي لتجهيز الطريق');
+          const warehouse=d.plots[dozer.home!.warehouseId];
+          this.pay(ROAD_COST*pending.length);
           const route=pavingRoute(d,factory,road),travel=Math.max(1500,Math.ceil(pathLength(route)/CONVOY_SPEED*1000));
-          const arrival=now+travel,workEnd=arrival+workDuration(d,60000*pending.length);
-          (d.roadWorks??=[]).push({roadId:road.id,roadIds:pending.map(r=>r.id),factoryId:factory.id,machineId:machine.id,start:now,arrival,workEnd,returnEnd:workEnd+travel+Math.ceil(pathLength([road.a,road.b])/CONVOY_SPEED*1000),route});break;
+          const dozerRoute=pavingRoute(d,warehouse,road),dozerTravel=Math.max(1500,Math.ceil(pathLength(dozerRoute)/CONVOY_SPEED*1000));
+          const total=actualWorkDuration(d,STREET_WORK_MS),arrival=now+dozerTravel;
+          const sandEnd=arrival+Math.round(total*STREET_STAGE_SHARES.sand),aggregateEnd=sandEnd+Math.round(total*STREET_STAGE_SHARES.aggregate);
+          const asphaltStart=aggregateEnd+travel,workEnd=asphaltStart+(total-(aggregateEnd-arrival)),dozerReturnEnd=aggregateEnd+dozerTravel;
+          const returnEnd=Math.max(dozerReturnEnd,workEnd+travel+Math.ceil(pathLength([road.a,road.b])/CONVOY_SPEED*1000));
+          (d.roadWorks??=[]).push({roadId:road.id,roadIds:pending.map(r=>r.id),factoryId:factory.id,machineId:machine.id,start:now,arrival,workEnd,returnEnd,route,
+            preparation:{unitId:dozer.id,warehouseId:warehouse.id,route:dozerRoute,sandEnd,aggregateEnd,asphaltStart,dozerReturnEnd}});break;
         }
         case 'spin': {
           ensure(!this.state.wheel || now>=this.state.wheel.nextAt,'انتظر انتهاء وقت دولاب الحظ');
@@ -254,7 +269,7 @@ export class GameStore implements GameAPI {
             this.state.gems -= HALF_TIME_GEMS;
           }
           this.pay(def.cost);
-          Object.assign(p, { status: 'building', buildingId: def.id, orientation: action.orientation, startedAt: now, endsAt: now + Math.round(workDuration(this.district(),def.duration * 1000) / (action.accelerate ? 2 : 1)), incomeAt: 0, paidCost: def.cost, accelerated: !!action.accelerate, incomeFactor:difficultyOf(this.district()).income });
+          Object.assign(p, { status: 'building', buildingId: def.id, orientation: action.orientation, startedAt: now, endsAt: now + Math.round(actualWorkDuration(this.district(),def.duration * 1000) / (action.accelerate ? 2 : 1)), incomeAt: 0, paidCost: def.cost, accelerated: !!action.accelerate, incomeFactor:difficultyOf(this.district()).income });
           break;
         }
         case 'sellBuilding':
@@ -283,8 +298,11 @@ export class GameStore implements GameAPI {
         }
         case 'buy': {
           ensure(this.recycler(this.district()), 'ابنِ مصنع إعادة التدوير وانتظر اكتماله أولًا');
+          balanceFleetDepots(this.state);
+          const d=this.district(),warehouse=purchaseWarehouse(this.state,d,action.kind);
+          ensure(warehouse,'سعة المخازن ممتلئة لهذا النوع؛ ابنِ مخزن معدات جديدًا (3 آليات من كل نوع لكل مخزن)');
           const def = EQUIPMENT[action.kind]; ensure(def, 'نوع الآلية غير صالح'); this.pay(def.cost);
-          this.state.units.push({ id: `unit-${++this.state.sequence}`, kind: action.kind, level: 1, purchasePrice: def.cost }); break;
+          this.state.units.push({ id: `unit-${++this.state.sequence}`, kind: action.kind, level: 1, purchasePrice: def.cost,home:{districtId:d.id,warehouseId:warehouse.id} }); break;
         }
         case 'upgrade': {
           const u = this.state.units.find(v => v.id === action.unitId);
@@ -304,7 +322,7 @@ export class GameStore implements GameAPI {
            const { team, warehouse: source, depot: processing } = assigned;
           const level = Math.min(...team.map(u => u.level));
           const travel = outgoingTravelDuration(source, p, level);
-           const arrival = now + travel, workEnd = arrival + workDuration(d,60000);
+           const arrival = now + travel, workEnd = arrival + actualWorkDuration(d,clearingSeconds(building(p.buildingId).floors)*1000);
           const returning = returnTravelDuration(source, p, travel);
           const job: Job = { id: `job-${++this.state.sequence}`, districtId: d.id, plotId: p.id,
             unitIds: team.map(u => u.id), start: now, arrival, workEnd, returnEnd: workEnd + returning,

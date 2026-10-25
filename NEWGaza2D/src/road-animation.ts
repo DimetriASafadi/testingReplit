@@ -7,6 +7,7 @@ import { districtProgress } from './engine';
 import type { FleetSound } from './game-audio';
 import { cityLayout } from './city-layout';
 import { pavingPlan, runOutline, nodeOutlines, ROAD_HALF, type PavingPlan } from './road-paving';
+import { RoadPreparationAnimation } from './road-preparation-animation';
 
 const iso=(x:number,y:number)=>({x:(x-y)*U,y:(x+y)*U/2});
 type P=[number,number];
@@ -28,9 +29,10 @@ export class RoadAnimation {
  private tents:Phaser.GameObjects.Image[]=[];
  private nextProgress=0;
  private tentAlpha=1;
+ private preparation?:RoadPreparationAnimation;
  sounds:FleetSound[]=[];
  constructor(private scene:Phaser.Scene){}
- reset(){this.pavement?.destroy();this.pavement=undefined;if(this.pavedKey&&this.scene.textures.exists(this.pavedKey))this.scene.textures.remove(this.pavedKey);this.pavedKey='';this.work?.destroy();this.fx?.destroy();for(const a of this.actors.values()){a.img.destroy();a.under.destroy();a.over.destroy();}for(const t of this.tents)t.destroy();this.actors.clear();this.tents=[];this.did='';this.signature='';this.sounds=[];}
+ reset(){this.preparation?.destroy();this.preparation=undefined;this.pavement?.destroy();this.pavement=undefined;if(this.pavedKey&&this.scene.textures.exists(this.pavedKey))this.scene.textures.remove(this.pavedKey);this.pavedKey='';this.work?.destroy();this.fx?.destroy();for(const a of this.actors.values()){a.img.destroy();a.under.destroy();a.over.destroy();}for(const t of this.tents)t.destroy();this.actors.clear();this.tents=[];this.did='';this.signature='';this.sounds=[];}
  private quad(r:RoadSegment,f0:number,f1:number,w=HALF){
   const dx=r.b[0]-r.a[0],dy=r.b[1]-r.a[1],len=Math.hypot(dx,dy),ox=-dy/len*w,oy=dx/len*w;
   const s=[r.a[0]+dx*f0,r.a[1]+dy*f0],e=[r.a[0]+dx*f1,r.a[1]+dy*f1];
@@ -114,8 +116,8 @@ export class RoadAnimation {
   if(this.did!==d.id){
    this.reset();this.did=d.id;this.work=this.scene.add.graphics().setDepth(-798900);this.fx=this.scene.add.graphics().setDepth(4e5);
    const max=cityLayout(d.id).extent;
-   for(let i=0;i<14;i++){
-    const t=(i+1)/15,point=i%2?iso(-3.5-(i%3)*1.6,t*max):iso(t*max,-4-(i%3)*1.4);
+    for(let i=0;i<28;i++){
+     const t=(i+1)/29,point=i%2?iso(-3.5-(i%3)*1.6,t*max):iso(t*max,-4-(i%3)*1.4);
     const img=this.scene.add.image(point.x,point.y,tentTexture(this.scene,i)).setOrigin(TENT_ORIGIN.x,TENT_ORIGIN.y).setScale(.85+(i%3)*.08).setDepth(point.y);
     this.tents.push(img);
    }
@@ -125,20 +127,24 @@ export class RoadAnimation {
   if(now>=this.nextProgress){this.nextProgress=now+500;this.tentAlpha=Math.pow(1-districtProgress(d)/100,1.2);}
   const target=this.tentAlpha;
   for(const t of this.tents)t.setAlpha(Math.abs(t.alpha-target)<.005?target:t.alpha+(target-t.alpha)*.045);
-  const live=new Set<string>();this.sounds=[];
+   this.preparation??=new RoadPreparationAnimation(this.scene);
+   this.preparation.update(d,now);
+   const live=new Set<string>();this.sounds=[...this.preparation.sounds];
   this.work!.clear();this.fx!.clear();
   for(const w of d.roadWorks??[]){
    if(now>=w.returnEnd)continue;
    if(!roadsFor(d.id).some(r=>r.id===w.roadId))continue;
+    const departure=w.preparation?.aggregateEnd??w.start,arrival=w.preparation?.asphaltStart??w.arrival;
+    if(now<departure)continue;
    const r=workRoad(d.id,w);live.add(w.machineId);
-   const working=now>=w.arrival&&now<w.workEnd;
+    const working=now>=arrival&&now<w.workEnd;
    const len=Math.hypot(r.b[0]-r.a[0],r.b[1]-r.a[1]);
    // machine travels from (screed at road start) to (screed at road end) so mat fully covers the segment
-   const f=Math.max(0,Math.min(1,(now-w.arrival)/(w.workEnd-w.arrival)));
+    const f=Math.max(0,Math.min(1,(now-arrival)/(w.workEnd-arrival)));
    const ux=(r.b[0]-r.a[0])/len,uy=(r.b[1]-r.a[1])/len;
    const workStart:P=[r.a[0]+ux*SCREED,r.a[1]+uy*SCREED],workFinish:P=[r.b[0]+ux*SCREED,r.b[1]+uy*SCREED];
-   const m=now<w.arrival?along([...w.route,workStart],(now-w.start)/(w.arrival-w.start)):working?{p:[workStart[0]+ux*f*len,workStart[1]+uy*f*len] as P,angle:Math.atan2(uy,ux)}:along([workFinish,r.b,...w.route.slice().reverse()],(now-w.workEnd)/(w.returnEnd-w.workEnd));
-   if(now<w.arrival)this.cones(this.work!,r);
+    const m=now<arrival?along([...w.route,workStart],(now-departure)/(arrival-departure)):working?{p:[workStart[0]+ux*f*len,workStart[1]+uy*f*len] as P,angle:Math.atan2(uy,ux)}:along([workFinish,r.b,...w.route.slice().reverse()],(now-w.workEnd)/(w.returnEnd-w.workEnd));
+    if(now<arrival)this.cones(this.work!,r);
    if(working){
     if(w.roadIds){const pending=new Set(w.roadIds);for(const part of roadsFor(d.id).filter(q=>pending.has(q.id))){const start=Math.hypot(part.a[0]-r.a[0],part.a[1]-r.a[1]),size=Math.hypot(part.b[0]-part.a[0],part.b[1]-part.a[1]);this.freshMat(this.work!,part,Math.max(0,Math.min(1,(f*len-start)/size)),now);}}
     else this.freshMat(this.work!,r,f,now);
