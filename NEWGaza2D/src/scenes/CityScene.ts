@@ -27,6 +27,7 @@ import { RoadAnimation } from '../road-animation';
 import { roadAt } from '../roads';
 import { preloadExpansionArt } from '../expansion-art';
 import { DistrictLife } from '../district-life';
+import { PIXEL_DENSITY as DENSITY } from '../render-quality';
 
 export interface CityHooks { getState(): GameState; onSelect(plotId: number | null): void; onRoadSelect?(roadId:string):void; onCamera(c: { x: number; y: number; zoom: number }): void; onWorldState?(state: 'loading' | 'ready' | 'error', message?: string): void }
 
@@ -66,6 +67,8 @@ export class CityScene extends Phaser.Scene {
   private clearingStages = new Map<number, number>();
   private clearingAt = 0;
   private minimumZoom = 0.35;
+  private animationAt = 0;
+  private textureSweepAt = 0;
 
   constructor() { super('city'); }
 
@@ -109,7 +112,7 @@ export class CityScene extends Phaser.Scene {
       const wasOverview = cam.zoom <= this.minimumZoom * 1.02;
       viewportWidth = size.width; viewportHeight = size.height;
       this.minimumZoom = this.overview().zoom;
-      cam.setZoom(wasOverview ? this.minimumZoom : Phaser.Math.Clamp(cam.zoom, this.minimumZoom, MAX_CITY_ZOOM));
+      cam.setZoom(wasOverview ? this.minimumZoom : Phaser.Math.Clamp(cam.zoom, this.minimumZoom, MAX_CITY_ZOOM * DENSITY));
       this.syncCameraBounds();
       cam.centerOn(x, y);
       if (wasOverview && this.district) this.centerOverview();
@@ -164,12 +167,12 @@ export class CityScene extends Phaser.Scene {
     cam.setBounds(this.frame.ox - 120, this.frame.oy - 120, this.frame.w / GK + 240, this.frame.h / GK + 240);
     this.minimumZoom = this.overview().zoom;
     if (d.camera) {
-      cam.setZoom(Phaser.Math.Clamp(d.camera.zoom, this.minimumZoom, MAX_CITY_ZOOM));
+      cam.setZoom(Phaser.Math.Clamp(d.camera.zoom * DENSITY, this.minimumZoom, MAX_CITY_ZOOM * DENSITY));
       this.syncCameraBounds();
       cam.centerOn(d.camera.x, d.camera.y);
       if (cam.zoom <= this.minimumZoom * 1.02) this.centerOverview();
     }
-    else { cam.setZoom(Phaser.Math.Clamp(Math.min(this.scale.width / (max * U * 2.0), this.scale.height / (max * U * 1.1)), 0.45, 1)); this.syncCameraBounds(); cam.centerOn(c.x, c.y); }
+    else { cam.setZoom(Phaser.Math.Clamp(Math.min(this.scale.width / (max * U * 2.0), this.scale.height / (max * U * 1.1)), 0.45 * DENSITY, DENSITY)); this.syncCameraBounds(); cam.centerOn(c.x, c.y); }
   }
 
   sync() {
@@ -510,6 +513,10 @@ export class CityScene extends Phaser.Scene {
 
   update() {
     const st = this.hooks?.getState(); if (!this.worldReady || !st?.currentDistrict || st.currentDistrict !== this.district) return;
+    const frameTime=performance.now();
+    if(document.hidden || frameTime<this.animationAt)return;
+    this.animationAt=frameTime+1000/30-((frameTime-this.animationAt)%(1000/30));
+    if(frameTime>=this.textureSweepAt){this.textureSweepAt=frameTime+5000;this.releaseUnusedStages();}
     const d = st.districts.find(x => x.id === this.district)!; const now = Date.now();
     if (now >= this.clearingAt) { this.clearingAt = now + 160; this.syncClearing(st, now, true); }
     // construction progress bars
@@ -520,7 +527,7 @@ export class CityScene extends Phaser.Scene {
     this.districtLife.update(d, now);
     const cam=this.cameras.main;
     if(gameAudio.due())gameAudio.city(st,[...d.plots,...this.projectPlots],[...this.fleetAnimation.soundSources(st),...this.roadAnimation.sounds],
-      {x:cam.midPoint.x,y:cam.midPoint.y,zoom:cam.zoom},now);
+      {x:cam.midPoint.x,y:cam.midPoint.y,zoom:cam.zoom/DENSITY},now);
     this.revealWorkingFleet(now);
   }
   private revealWorkingFleet(now: number) {
@@ -599,11 +606,12 @@ export class CityScene extends Phaser.Scene {
     const hud = document.querySelector('.hud-top')?.getBoundingClientRect();
     const dock = document.querySelector('.dock')?.getBoundingClientRect();
     const sideDock = !!dock && dock.height > dock.width;
-    return districtOverview(this.maxL * U, cam.width, cam.height, {
-      left: 14, right: sideDock ? cam.width - dock!.left + 12 : 14,
+    const overview=districtOverview(this.maxL * U, cam.width/DENSITY, cam.height/DENSITY, {
+      left: 14, right: sideDock ? cam.width/DENSITY - dock!.left + 12 : 14,
       top: Math.max(sideDock ? 64 : 112, (hud?.bottom ?? 0) + 12),
-      bottom: sideDock ? 14 : dock ? cam.height - dock.top + 12 : 112,
+      bottom: sideDock ? 14 : dock ? cam.height/DENSITY - dock.top + 12 : 112,
     });
+    return {...overview,zoom:overview.zoom*DENSITY};
   }
   private centerOverview() {
     const o = this.overview(), c = iso(this.maxL / 2, this.maxL / 2);
@@ -619,14 +627,23 @@ export class CityScene extends Phaser.Scene {
   }
   private setCityZoom(zoom: number) {
     this.minimumZoom = this.overview().zoom;
-    this.cameras.main.setZoom(Phaser.Math.Clamp(zoom, this.minimumZoom, MAX_CITY_ZOOM));
+    this.cameras.main.setZoom(Phaser.Math.Clamp(zoom, this.minimumZoom, MAX_CITY_ZOOM * DENSITY));
     this.syncCameraBounds();
     if (this.cameras.main.zoom <= this.minimumZoom * 1.001) this.centerOverview();
   }
   zoomBy(f: number) { this.setCityZoom(this.cameras.main.zoom * f); }
   saveCam() {
     const cam = this.cameras.main;
-    this.hooks.onCamera({ x: Math.round(cam.scrollX + cam.width / 2), y: Math.round(cam.scrollY + cam.height / 2), zoom: Math.round(cam.zoom * 10000) / 10000 });
+    this.hooks.onCamera({ x: Math.round(cam.scrollX + cam.width / 2), y: Math.round(cam.scrollY + cam.height / 2), zoom: Math.round(cam.zoom / DENSITY * 10000) / 10000 });
+  }
+  private releaseUnusedStages() {
+    const used=new Set<string>();
+    for(const child of this.children.list)if(child instanceof Phaser.GameObjects.Image)used.add(child.texture.key);
+    for(const key of this.textures.getTextureKeys()){
+      if((key.startsWith('construction:')||key.startsWith('clearing:'))&&!used.has(key)){
+        this.textures.remove(key);delete SPR[key];
+      }
+    }
   }
   focusPlot(id: number) { const st = this.hooks.getState(); const p = st.districts.find(x => x.id === this.district)?.plots.find(q => q.id === id); if (p) { const c = iso(p.x + 1, p.y + 1); this.cameras.main.pan(c.x, c.y - 40, 500, Phaser.Math.Easing.Sine.InOut); } }
 }

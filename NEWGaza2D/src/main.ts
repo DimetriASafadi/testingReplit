@@ -27,6 +27,7 @@ import { districtIncome } from './district-income';
 import { buildingIncomeDetails } from './building-income';
 import { formatNumber as fmt, formatCompactNumber } from './number-format';
 import { AdsController } from './ads/controller';
+import { PIXEL_DENSITY as DENSITY } from './render-quality';
 import { isAdPlacement } from './ads/config';
 
 const app = document.getElementById('app')!;
@@ -402,7 +403,8 @@ function expansionChecks() {
 // ---------- master render ----------
 let scene: CityScene | null = null;
 // Consent update is asynchronous and never blocks the opening game screen.
-ads.initialize();
+// Native consent/ad initialization is deferred until the player requests an ad.
+// Offline startup must never depend on a network SDK.
 function render() {
   const st = S();
   if(!st.currentDistrict)cityLoading=false;
@@ -541,7 +543,9 @@ document.addEventListener('input',e=>{
 
 // ---------- Phaser ----------
 const game = new Phaser.Game({
-  type: Phaser.AUTO, parent: stage, backgroundColor: '#d9c39a', scale: { mode: Phaser.Scale.RESIZE, width: window.innerWidth, height: window.innerHeight },
+  type: Phaser.AUTO, parent: stage, backgroundColor: '#d9c39a',
+  scale: { mode: Phaser.Scale.NONE, zoom: 1 / DENSITY, width: Math.round(window.innerWidth * DENSITY), height: Math.round(window.innerHeight * DENSITY) },
+  loader: { maxParallelDownloads: 4, timeout: 20000, maxRetries: 2 },
   scene: [BootScene, CityScene], render: { antialias: true }, input: { activePointers: 3 },
 });
 // Development-only inspection for the isolated art regression browser.
@@ -576,6 +580,9 @@ let viewportFrame = 0, previousPageSize = pageSize(), previousDialogPageSize = d
 const refreshViewport = () => {
   cancelAnimationFrame(viewportFrame);
   viewportFrame = requestAnimationFrame(() => {
+    game.scale.resize(Math.round(window.innerWidth * DENSITY), Math.round(window.innerHeight * DENSITY));
+    game.canvas.style.width=`${window.innerWidth}px`;
+    game.canvas.style.height=`${window.innerHeight}px`;
     const size = pageSize();
     if (size !== previousPageSize) {
       // Keep the same catalog/list position when the number of visible rows
@@ -593,5 +600,7 @@ const refreshViewport = () => {
 };
 window.addEventListener('resize', refreshViewport);
 window.visualViewport?.addEventListener('resize', refreshViewport);
-setInterval(() => { store.tick(Date.now()); render(); }, 500);
+// tick already notifies the UI. Do not rebuild it twice every half second.
+setInterval(() => { if(!document.hidden)store.tick(Date.now()); }, 500);
+document.addEventListener('visibilitychange', () => { store.tick(Date.now()); });
 render();

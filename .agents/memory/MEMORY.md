@@ -33,3 +33,4 @@
 - [Neighborhood expansion](neighborhood-expansion-rules.md) — full-lot landscaping, full-rebuild completion, paving, new income exceptions, and deferred payment/ad connections.
 - [Reconstruction rules](reconstruction-product-rules.md) — difficulty-based durations, eight-minute staged streets, three-team warehouses and population return at 40%.
 - [Rewarded ad scope](rewarded-ad-scope.md) — user explicitly wants Android and browser, real test inventory first, and centralized production identifiers.
+- [Mobile render budget](mobile-render-budget.md) — keep saved zoom density-independent; evict unused procedural stages instead of degrading all artwork.
