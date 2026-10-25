@@ -18,6 +18,9 @@ export default defineConfig({
     strictPort: true,
     allowedHosts: true,
     fs: { strict: true },
+    // Capacitor/Gradle copy an entire built web app under android/. Those
+    // generated HTML/JS files must not trigger reloads of the live game.
+    watch: { ignored: ["**/android/**", "**/dist/**", "**/generated-artifacts/**"] },
   },
   preview: { host: "0.0.0.0", port, strictPort: true, allowedHosts: true },
 });
