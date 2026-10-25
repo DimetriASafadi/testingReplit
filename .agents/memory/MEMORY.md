@@ -31,3 +31,4 @@
 - [Neighborhood overview](2d-camera-overview.md) — maximum zoom-out should show roughly 85% or more of the playable neighborhood on phones in both orientations.
 - [Startup first paint](2d-startup-first-paint.md) — boot styling must be available before the game module loads; the logo belongs only in the opening loading screen.
 - [Neighborhood expansion](neighborhood-expansion-rules.md) — full-lot landscaping, full-rebuild completion, paving, new income exceptions, and deferred payment/ad connections.
+- [Reconstruction rules](reconstruction-product-rules.md) — difficulty-based durations, eight-minute staged streets, three-team warehouses and population return at 40%.
