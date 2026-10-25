@@ -47,7 +47,7 @@ export function ruinKey(id: string, variant: number) {
 /** project sites: [archetype used for construction/finished sprite] */
 const SITE: Record<string, string> = { water: 'water', power: 'ind', housing: 'apt4', park: 'orn', services: 'muni', farm: 'wheat', commerce: 'mmall', industry: 'steel' };
 export function siteKey(projectId: string, stage: 0 | 1 | 2, q: number): string | null {
-  if (stage === 0) return null; const a = SITE[projectId] ?? 'ind';
+  const a = SITE[projectId]; if (stage === 0 || !a) return null;
   if (stage === 2) return `${a}_front`;
   return a === 'water' || a === 'ind' || a === 'steel' ? `ind_c${q}` : a === 'apt4' ? `apt_c${q}` : a === 'mmall' || a === 'muni' ? `shop_c${q}` : `house_c${q}`;
 }

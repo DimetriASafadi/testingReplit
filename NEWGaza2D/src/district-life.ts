@@ -19,6 +19,24 @@ const MAX_STAFF = 8, MAX_RESIDENTS = 16, MAX_LAMPS = 44, MAX_BOATS = 4;
 const STAFF_IDS = new Set(['work', 'equipment_store', 'recycling', 'glass', 'cement', 'steel', 'asphalt', 'food_factory', 'water_treatment', 'wood_factory', 'household_shop']);
 const HOUSING_IDS = new Set(['small_house', 'medium_house', 'villa', 'housing_4', 'housing_6', 'housing_complex', 'modern_housing', 'traditional_housing', 'housing_tower', 'tourist_villa']);
 const PERSON_SCALE = .3;
+interface LifeArt { key: string; url: string; ox: number; oy: number; scale: number; poleTop?: number }
+const ART_BASE = `${import.meta.env.BASE_URL}art/life/`;
+// Generated masters live in art-src/new; runtime WebP measured: lamp foot at 84% height,
+// plaza pole foot at 55.7% and finial at 9.8% of the 360px frame.
+// Anchors measured from alpha bboxes of the 1024px masters (see docs/life-art-audit.md).
+const LAMP_ART: LifeArt = { key: 'life:lamp-art', url: ART_BASE + 'streetlamp.webp?v=2', ox: .508, oy: .88, scale: .34 };
+// Plaza: anchor = pole foot (512,570); finial top at y=94.
+const PLAZA_ART: LifeArt = { key: 'life:flag-plaza', url: ART_BASE + 'flagplaza.webp?v=2', ox: .5, oy: .557, scale: .6, poleTop: .095 };
+// Foundation site: diamond centre (511,540) of a 982px-wide pad, scaled to the plaza's footprint.
+const SITE_ART: LifeArt = { key: 'life:flag-site', url: ART_BASE + 'flagsite.webp?v=2', ox: .5, oy: .53, scale: .51 };
+// Roadside date palm: planter centre (512,880) of 1024 master.
+const PALM_ART: LifeArt = { key: 'life:palm', url: ART_BASE + 'palm.webp?v=1', ox: .5, oy: .86, scale: .3 };
+const BOAT_ART: LifeArt = { key: 'life:boat-art', url: ART_BASE + 'boat.webp?v=2', ox: .5, oy: .55, scale: .3 };
+// Low-rise fringe house: ground diamond centre (512,780).
+const HOUSE_ART: LifeArt = { key: 'life:lowrise', url: ART_BASE + 'lowrise.webp?v=2', ox: .5, oy: .76, scale: .5 };
+export function preloadLifeArt(scene: Phaser.Scene) {
+  for(const art of [LAMP_ART,PLAZA_ART,SITE_ART,BOAT_ART,HOUSE_ART,PALM_ART])scene.load.image(art.key,art.url);
+}
 const hash = (n: number) => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
 
 /** Shared exterior tent placement (lot coordinates). RoadAnimation should use this so people and tents agree. */
@@ -68,6 +86,10 @@ export class DistrictLife {
   private fringe?: Phaser.GameObjects.Graphics;
   private boats: Phaser.GameObjects.Image[] = [];
   private flag?: Phaser.GameObjects.Graphics;
+  private plaza?: Phaser.GameObjects.Image;
+  private flagSite?: Phaser.GameObjects.Image;
+  private flagCrew: Walker[] = [];
+  private houses: Phaser.GameObjects.Image[] = [];
   private flagAt: P2 = [0, 0];
   private staffSig = '';
   private progressAt = 0; private progress = 0;
@@ -89,13 +111,21 @@ export class DistrictLife {
     w.img.setTexture(this.personTex(w.outfit, w.v, frame)).setPosition(s.x, s.y).setDepth(s.y + .5).setFlipX(dir < 0).setAlpha(alpha).setVisible(alpha > .02);
   }
 
+  /** Load a generated life sprite once (runtime WebP), then run apply. Procedural fallback stays until then. */
+  private art(a: LifeArt, apply: () => void) {
+    // BootScene loads all bespoke art before gameplay (including offline APK).
+    // Never silently substitute a different object when a required asset fails.
+    if (!this.scene.textures.exists(a.key)) throw new Error(`Missing district artwork: ${a.key}`);
+    apply();
+  }
+
   reset() {
     for (const w of [...this.staff, ...this.residents]) w.img.destroy();
     for (const l of this.lamps) l.destroy();
     for (const b of this.boats) b.destroy();
-    this.fringe?.destroy(); this.flag?.destroy();
+    this.fringe?.destroy(); this.flag?.destroy(); this.plaza?.destroy(); this.flagSite?.destroy(); for (const w of this.flagCrew) w.img.destroy(); for (const h of this.houses) h.destroy();
     this.staff = []; this.residents = []; this.lamps = []; this.lampOrder = []; this.boats = [];
-    this.fringe = undefined; this.flag = undefined; this.did = ''; this.staffSig = ''; this.lampLit = -1; this.progressAt = 0;
+    this.fringe = undefined; this.flag = undefined; this.plaza = undefined; this.flagSite = undefined; this.flagCrew = []; this.houses = []; this.did = ''; this.staffSig = ''; this.lampLit = -1; this.progressAt = 0;
   }
 
   private build(d: DistrictState) {
@@ -126,10 +156,19 @@ export class DistrictLife {
       const s = iso(lx, ly);
       this.lamps.push(this.scene.add.image(s.x, s.y, lampKey).setOrigin(.5, 61 / 64).setScale(.62).setDepth(s.y).setVisible(false));
     }
+    this.art(LAMP_ART, () => this.lamps.forEach(l => l.setTexture(LAMP_ART.key).setOrigin(LAMP_ART.ox, LAMP_ART.oy).setScale(LAMP_ART.scale)));
     this.lampOrder = this.lamps.map((_, i) => i).sort((a, b) => hash(a + env.seed) - hash(b + env.seed));
     // Flag at the district's outer corner, clear of the tent rows and the coast road.
     this.flagAt = [max + 1.2, -1.4];
-    this.flag = this.scene.add.graphics().setDepth(iso(this.flagAt[0], this.flagAt[1]).y).setVisible(false);
+    const fd = iso(this.flagAt[0], this.flagAt[1]);
+    this.flag = this.scene.add.graphics().setDepth(fd.y + 1).setVisible(false);
+    this.art(PLAZA_ART, () => {
+      this.plaza = this.scene.add.image(fd.x, fd.y, PLAZA_ART.key).setOrigin(PLAZA_ART.ox, PLAZA_ART.oy).setScale(PLAZA_ART.scale).setDepth(fd.y).setVisible(false);
+    });
+    this.art(SITE_ART, () => {
+      this.flagSite = this.scene.add.image(fd.x, fd.y, SITE_ART.key).setOrigin(SITE_ART.ox, SITE_ART.oy).setScale(SITE_ART.scale).setDepth(fd.y - 2).setVisible(false);
+    });
+    this.flagCrew = [this.person('worker', 1), this.person('worker', 2)];
     this.paintFringe(env, max);
   }
 
@@ -145,15 +184,19 @@ export class DistrictLife {
       line([a + .05, y0], [a + .05, y1], 0xd8d0bc, 1.6, .8); line([b - .05, y0], [b - .05, y1], 0xd8d0bc, 1.6, .8);
       const mid = (a + b) / 2;
       for (let s = y0; s < y1; s += .7) line([mid, s], [mid, s + .32], 0xf0e6c8, 1.6, .9);
-      // promenade kerb + palms stubs on the sea side
+      // promenade kerb and individual date palms on the sea side
       quad([[a - .55, y0], [a - .18, y0], [a - .18, y1], [a - .55, y1]], 0xd9cfb8, .9);
-      for (let s = y0 + 1; s < y1; s += 3.1) { const p = iso(a - .36, s); g.fillStyle(0x6b5a3e, 1).fillRect(p.x - 1, p.y - 14, 2.4, 14); g.fillStyle(0x4e6b3a, 1).fillEllipse(p.x, p.y - 15, 14, 6); g.fillStyle(0x5f7f45, 1).fillEllipse(p.x + 2, p.y - 16, 8, 3.4); }
+      this.art(PALM_ART, () => { for (let k = 0, s = y0 + 1; s < y1; s += 3.1, k++) { const p = iso(a - .36, s);
+        // soft contact shadow toward lower right (sun upper left), then the generated palm
+        g.fillStyle(0x1e1a14, .22).fillEllipse(p.x + 6, p.y + 1, 22, 6);
+        this.houses.push(this.scene.add.image(p.x, p.y, PALM_ART.key).setOrigin(PALM_ART.ox, PALM_ART.oy).setScale(PALM_ART.scale * (.92 + hash(k + 5) * .16)).setDepth(p.y)); } });
       const boatKey = this.tex('life:boat', 46, 22, x => {
         x.fillStyle = 'rgba(10,30,40,.25)'; x.beginPath(); x.ellipse(23, 18, 20, 3.2, 0, 0, Math.PI * 2); x.fill();
         x.fillStyle = '#e9e2d0'; x.beginPath(); x.moveTo(3, 10); x.lineTo(43, 10); x.lineTo(37, 17); x.lineTo(8, 17); x.closePath(); x.fill();
         x.fillStyle = '#2f6f8f'; x.fillRect(6, 13, 34, 2.4); x.fillStyle = '#b44a2e'; x.fillRect(18, 4, 9, 6); x.fillStyle = '#5a4630'; x.fillRect(29, 1, 1.4, 9);
       });
       for (let i = 0; i < MAX_BOATS; i++) { const s = iso(-6.5 - (i % 2) * 2.4, max * (.15 + i * .23)); this.boats.push(this.scene.add.image(s.x, s.y, boatKey).setScale(.9).setDepth(-7.8e5).setFlipX(i % 2 === 1)); }
+      this.art(BOAT_ART, () => this.boats.forEach(b => b.setTexture(BOAT_ART.key).setOrigin(BOAT_ART.ox, BOAT_ART.oy).setScale(BOAT_ART.scale)));
     } else if (env.fringe === 'greenhouses') {
       // The former opaque pale roof quads looked like missing ground tiles.
       // Keep the agricultural fringe, but blend soil and sparse crops into the
@@ -181,9 +224,11 @@ export class DistrictLife {
     } else if (env.fringe === 'orchard-walls') {
       for (const ly of [2, max * .45, max * .8]) { line([max + 2.6, ly], [max + 8, ly], 0xb9a888, 3, .9); line([max + 2.6, ly], [max + 2.6, ly + 3], 0xb9a888, 3, .9); }
     } else if (env.fringe === 'low-rise') {
-      for (let i = 0; i < 7; i++) { const x0 = max + 3 + (i % 2) * 1.6, y0 = .5 + i * (max / 7), s = iso(x0, y0), h = 10 + hash(i + env.seed) * 16;
-        quad([[x0, y0], [x0 + 1.1, y0], [x0 + 1.1, y0 + 1.1], [x0, y0 + 1.1]], 0x8f8170, .55);
-        g.fillStyle(0xcfc3aa, .9).fillRect(s.x - 14, s.y + 4 - h, 14, h); g.fillStyle(0xb5a88e, .9).fillRect(s.x, s.y + 4 - h, 14, h); }
+      // Generated low-rise Gaza houses (flat roofs, tanks, solar heaters); seeded spacing and mirroring per district.
+      const spots: P2[] = [];
+      for (let i = 0; i < 7; i++) spots.push([max + 3.6 + (i % 2) * 1.6 + hash(i + env.seed) * .5, 1 + i * (max / 7)]);
+      this.art(HOUSE_ART, () => { for (const [i, [x0, y0]] of spots.entries()) { const s = iso(x0, y0);
+        this.houses.push(this.scene.add.image(s.x, s.y, HOUSE_ART.key).setOrigin(HOUSE_ART.ox, HOUSE_ART.oy).setScale(HOUSE_ART.scale * (.9 + hash(i + 9) * .2)).setFlipX(hash(i + env.seed * 3) > .5).setDepth(s.y)); } });
     }
   }
 
@@ -276,15 +321,45 @@ export class DistrictLife {
 
   private drawFlag(f: number, now: number) {
     const g = this.flag; if (!g) return;
-    g.clear(); if (f <= 0) { g.setVisible(false); return; } g.setVisible(true);
-    const s = iso(this.flagAt[0], this.flagAt[1]), H = 96;
+    const base = iso(this.flagAt[0], this.flagAt[1]);
+    g.clear();
+    const building = f > 0 && f < 1, done = f >= 1;
+    this.flagSite?.setVisible(building); this.plaza?.setVisible(done);
+    // Construction phase: dedicated foundation site (formwork, rebar, paving stock) with two crew pacing it. No pole, no cloth yet.
+    this.flagCrew.forEach((w, i) => {
+      if (!building) { w.img.setVisible(false); return; }
+      const ph = (now / 5200 + i * .5) % 2, k = ph < 1 ? ph : 2 - ph;
+      const a: P2 = i ? [this.flagAt[0] + .55, this.flagAt[1] - .5] : [this.flagAt[0] - .6, this.flagAt[1] + .45];
+      const b: P2 = i ? [this.flagAt[0] + .55, this.flagAt[1] + .35] : [this.flagAt[0] + .2, this.flagAt[1] + .45];
+      const at = lerp(a, b, Phaser.Math.Easing.Sine.InOut(k)), sa = iso(a[0], a[1]), sb = iso(b[0], b[1]);
+      this.pose(w, at, (ph < 1 ? 1 : -1) * (sb.x >= sa.x ? 1 : -1), Math.abs(k - .5) < .44, now);
+    });
+    if (f <= 0) { g.setVisible(false); return; }
+    g.setVisible(true);
+    if (building) {
+      g.fillStyle(0x2b2320, .75).fillRoundedRect(base.x - 30, base.y + 40, 60, 6, 3).fillStyle(0xf2d06b).fillRoundedRect(base.x - 29, base.y + 41, 58 * f, 4, 2);
+      return;
+    }
+    if (this.plaza) {
+      // Pole foot of the generated plaza is the anchor; flag is fully hoisted to the finial.
+      const fh = this.plaza.frame.height, sc = PLAZA_ART.scale;
+      const H = (PLAZA_ART.oy - PLAZA_ART.poleTop!) * fh * sc;
+      this.drawCloth(g, base.x, base.y - H, H, 1, now, 1);
+      return;
+    }
+    const s = base, H = 96;
     g.fillStyle(0x1e1a14, .28).fillEllipse(s.x + 26, s.y + 6, 70, 9);
     g.fillStyle(0xbfb49c, 1).fillRect(s.x - 9, s.y - 3, 18, 6); g.fillStyle(0x9d927b, 1).fillRect(s.x - 9, s.y + 1, 18, 3);
     g.fillStyle(0x8e9399, 1).fillRect(s.x - 1.4, s.y - H, 2.8, H); g.fillStyle(0xd6dadf, 1).fillRect(s.x - 1, s.y - H, 1, H); g.fillStyle(0xd9b44a, 1).fillCircle(s.x, s.y - H - 2, 2.6);
-    // Raised along the pole during construction.
-    const top = s.y - H + 2 + (1 - f) * (H - 34), W = 46, FH = 26, N = 12;
+    this.drawCloth(g, s.x, s.y - H, H, 1, now, 1);
+  }
+
+  /** Animated Palestinian flag hoisted on a pole whose top is at (x, topY). */
+  private drawCloth(g: Phaser.GameObjects.Graphics, x: number, topY: number, H: number, f: number, now: number, k: number) {
+    const s = { x }; const W = 46 * k, FH = 26 * k, N = 12;
+    const top = topY + 2 + (1 - f) * Math.max(0, H - FH - 8);
     const wave = (u: number) => Math.sin(u * 5.2 - now / 260) * 3.2 * u + Math.sin(u * 9 - now / 170) * .9 * u;
-    const pt = (u: number, v: number) => new Phaser.Math.Vector2(s.x + 1.4 + u * W, top + v * FH + wave(u));
+    const pt = (u: number, v: number) => new Phaser.Math.Vector2(s.x + 1.4 + u * W, top + v * FH + wave(u) * k);
     const band = (v0: number, v1: number, col: number) => {
       const pts: Phaser.Math.Vector2[] = [];
       for (let i = 0; i <= N; i++) pts.push(pt(i / N, v0));

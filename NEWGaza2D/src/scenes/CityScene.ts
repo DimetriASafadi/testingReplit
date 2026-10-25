@@ -26,11 +26,13 @@ import { installGroundTiles } from '../ground-tiles';
 import { RoadAnimation } from '../road-animation';
 import { roadAt } from '../roads';
 import { preloadExpansionArt } from '../expansion-art';
-import { DistrictLife } from '../district-life';
+import { DistrictLife, preloadLifeArt } from '../district-life';
 import { PIXEL_DENSITY as DENSITY } from '../render-quality';
 
 export interface CityHooks { getState(): GameState; onSelect(plotId: number | null): void; onRoadSelect?(roadId:string):void; onCamera(c: { x: number; y: number; zoom: number }): void; onWorldState?(state: 'loading' | 'ready' | 'error', message?: string): void }
 
+// Projects with a dedicated parcel-free site sprite. Others (flag pole) are drawn by DistrictLife; never fall back to a factory.
+const SITE_PROJECTS = new Set(['water', 'power', 'housing', 'park', 'services', 'farm', 'commerce', 'industry']);
 const iso = (lx: number, ly: number) => ({ x: (lx - ly) * U, y: (lx + ly) * U / 2 });
 const unIso = (wx: number, wy: number) => ({ lx: wy / U + wx / (2 * U), ly: wy / U - wx / (2 * U) });
 const DRAG = 9; const ANCHOR_LOT = 380; const SC = ART_SC;
@@ -307,7 +309,7 @@ export class CityScene extends Phaser.Scene {
 
   private siteSpots() { const m = this.maxL; return [[m + 1, 1], [m + 1, 5], [m + 1, 9], [m + 1, 13], [1, m + 1], [5, m + 1], [9, m + 1], [13, m + 1]] as [number, number][]; }
   private syncSites(d: { id: string; projects: { id: string; status: string; startedAt: number; endsAt: number }[] }, now: number) {
-    const defs = projects(d.id === 'rashid').filter(p => p.id !== 'road'); const spots = this.siteSpots();
+    const defs = projects(d.id === 'rashid').filter(p => p.id !== 'road' && p.id !== 'flag' && SITE_PROJECTS.has(p.id)); const spots = this.siteSpots();
     this.projectPlots = [];
     defs.forEach((def, i) => {
       const ps = d.projects.find(p => p.id === def.id); if (!ps) return;
@@ -317,8 +319,8 @@ export class CityScene extends Phaser.Scene {
       const sk = siteKey(def.id, stage as 0 | 1 | 2, q);
       const projectBuilding: Record<string, string> = { water: 'water_treatment', power: 'work', housing: 'housing_4', park: 'ornamental_trees', services: 'municipality', farm: 'wheat', commerce: 'modern_mall', industry: 'steel' };
       if (stage === 1) this.projectPlots.push({ id: 1000 + i, x: lx - 1, y: ly - 1, status: 'building',
-        buildingId: projectBuilding[def.id] ?? 'work', orientation: 0, startedAt: ps.startedAt, endsAt: ps.endsAt, incomeAt: 0 });
-      const tk = stage === 1 ? this.constructionTex(projectBuilding[def.id] ?? 'work', 0, q) : sk ? 's:' + sk : this.skirtTex(i % 3, true);
+        buildingId: projectBuilding[def.id], orientation: 0, startedAt: ps.startedAt, endsAt: ps.endsAt, incomeAt: 0 });
+      const tk = stage === 1 ? this.constructionTex(projectBuilding[def.id], 0, q) : sk ? 's:' + sk : this.skirtTex(i % 3, true);
       let v = this.sites.get(def.id);
       if (!v) { const img = this.place(tk, c.x, c.y, c.y);
         const label = this.add.text(c.x, c.y + 44, '', {
@@ -663,6 +665,7 @@ export class BootScene extends Phaser.Scene {
     preloadMachinery(this);
     preloadClearing(this);
     preloadExpansionArt(this);
+    preloadLifeArt(this);
   }
   create() {
     if (this.failedFiles.size) {

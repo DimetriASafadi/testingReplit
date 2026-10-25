@@ -27,6 +27,12 @@ The requested district-life additions are a wood factory, household-goods shop, 
 
 **How to apply:** Preserve the 40% threshold and real entrances; do not treat these requested additions as already implemented.
 
+Any newly requested object that needs artwork must receive appropriate bespoke art, not an unrelated existing building as a placeholder.
+
+**Why:** The user explicitly called out the Palestinian flagpole being represented by a strange building and requested an audit of all reconstruction/life additions. This is a standing rule for future additions too.
+
+**How to apply:** Audit both construction and completed states, catalog/project previews and scene mappings; generate missing professional sprites consistent with the game's accepted identity and integrate them into gameplay. Existing high-quality matching artwork may be retained; never silently fall back to an industrial building for an unknown project.
+
 The user requested hiding payment/purchase options in monetization interfaces in favor of watching ads.
 
 **Why:** This replaces the previous direction to expose future cash-purchase offers.
