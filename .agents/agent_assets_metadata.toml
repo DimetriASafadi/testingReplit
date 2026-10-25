@@ -1118,3 +1118,17 @@ mtime_ms = 1792921782438
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/ad983a6e-22c5-48e6-bb1e-a0575d9334d8/dec196a4-0309-40d5-91f8-1c4474416455"
 storage_version_token = "1792921878365123"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "YOxI8Nk2w3QVvgORqlILb"
+uri = "file://generated-artifacts/android/NewGaza-offline-1.2.apk"
+type = "unspecified"
+title = "نيو غزة — Android Offline 1.2"
+description = "APK محدث يشمل إصلاح المساحات البيضاء وتحسين بدء التشغيل، مع تحسينات الأداء ودقة الهاتف السابقة. الحجم 27.25 MB. تم التحقق من البناء والتوقيع وتضمين 304 ملفات محلية؛ لم يُختبر على هاتف فعلي هنا."
+logical_id = "d0596cc8-db9a-49bc-b572-85bc59a83e56"
+content_hash = "sha256:2b1787afcd0cd9be29a941c801b88ce4eccfefc25bce89da6d17a1934f733691"
+size = 28573520
+mtime_ms = 1792923333985
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/d0596cc8-db9a-49bc-b572-85bc59a83e56/a6e8bb54-faca-46bf-8d21-fdcbad92c2e4"
+storage_version_token = "1792923371286187"
+content_type = "application/octet-stream"
