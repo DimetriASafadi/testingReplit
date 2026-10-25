@@ -155,9 +155,29 @@ export class DistrictLife {
       });
       for (let i = 0; i < MAX_BOATS; i++) { const s = iso(-6.5 - (i % 2) * 2.4, max * (.15 + i * .23)); this.boats.push(this.scene.add.image(s.x, s.y, boatKey).setScale(.9).setDepth(-7.8e5).setFlipX(i % 2 === 1)); }
     } else if (env.fringe === 'greenhouses') {
-      for (let i = 0; i < 6; i++) { const x0 = max + 3.2 + (i % 2) * 2.2, y0 = 1 + Math.floor(i / 2) * (max / 3.2);
-        quad([[x0, y0], [x0 + 1.7, y0], [x0 + 1.7, y0 + 3.4], [x0, y0 + 3.4]], 0xdfe6dc, .78);
-        for (let s = y0 + .3; s < y0 + 3.4; s += .45) line([x0, s], [x0 + 1.7, s], 0x9aa79a, 1, .7); }
+      // The former opaque pale roof quads looked like missing ground tiles.
+      // Keep the agricultural fringe, but blend soil and sparse crops into the
+      // existing terrain instead of covering it with featureless white sheets.
+      for (let i = 0; i < 6; i++) {
+        const x0 = max + 3.2 + (i % 2) * 2.2, y0 = 1 + Math.floor(i / 2) * (max / 3.2);
+        for(let band=0;band<4;band++){
+          const inset=band*.12;
+          quad([[x0+inset,y0+inset],[x0+1.7-inset,y0+inset],
+            [x0+1.7-inset,y0+3.4-inset],[x0+inset,y0+3.4-inset]],0x887c58,.055);
+        }
+        for(let row=0;row<7;row++){
+          const y=y0+.35+row*.43;
+          for(let plant=0;plant<7;plant++){
+            const n=i*101+row*11+plant,t=hash(n);
+            const x=x0+.22+plant*.2;
+            line([x,y],[x+.12,y],0x736a47,.8,.18);
+            if(t<.22)continue;
+            const p=iso(x+.03,y+(hash(n+73)-.5)*.07);
+            g.fillStyle(t>.65?0x657044:0x727748,.22+t*.17)
+              .fillEllipse(p.x,p.y,2.2+t*2,1.3+t);
+          }
+        }
+      }
     } else if (env.fringe === 'orchard-walls') {
       for (const ly of [2, max * .45, max * .8]) { line([max + 2.6, ly], [max + 8, ly], 0xb9a888, 3, .9); line([max + 2.6, ly], [max + 2.6, ly + 3], 0xb9a888, 3, .9); }
     } else if (env.fringe === 'low-rise') {
