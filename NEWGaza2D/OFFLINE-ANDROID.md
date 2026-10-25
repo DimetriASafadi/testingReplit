@@ -1,13 +1,22 @@
-# Android offline test build — 1.3
+# Android offline test build — 1.4
 
-This is a debug-signed test APK with the same application ID, `com.newgaza.citygame`, and versionCode 4. It bundles the game rather than opening the development URL. Install over the previous build when Android accepts the signature; **do not uninstall to bypass a signature error without first exporting the old game's save**. Browser and Android saves are separate.
+This is a debug-signed test APK with the same application ID, `com.newgaza.citygame`, and versionCode 5. It bundles the game rather than opening the development URL. Install over the previous build when Android accepts the signature; **do not uninstall to bypass a signature error without first exporting the old game's save**. Browser and Android saves are separate.
 
 ## Current package
+- Paving and road preparation ground details are rasterized into short-section sprites, updated only when progress changes (at most five times per second). Vehicle animation is still independent at 30 Hz; gameplay timers are unchanged.
+- Completed paving uses GPU tiles no larger than 1024px, with a single union blur on the CPU instead of blurring every shoulder polygon. Offscreen paver/dozer effects are skipped and unused ground textures are destroyed.
+- TypeScript and 134 tests passed, including repeated-cache, viewport re-entry, clock adjustment and 100 reset-cycle tests. These are regression checks, not Android FPS measurements.
 - Includes the latest flag construction site and completed plaza, streetlamp, fishing boat, low-rise house and roadside palm artwork. Assets load with the initial game loader, not a remote development URL.
 - Includes the earlier startup recovery and agricultural-ground fixes from 1.2, as well as the performance improvements below.
 - This is a new package for phone testing, not a claim that every device or every gameplay state has been tested.
 
-## Package verification — 1.3
+## Package verification — 1.4
+- Android build succeeded; APK signature verified and signing certificate matches 1.3, so it can update that test build without uninstalling it.
+- All 310 public files and 314 built web files match the APK byte-for-byte; no remote game URL and no performance fixture are included.
+- An isolated browser renderer fixture showed three streets with pavers and road preparation, and exercised finished paving plus repeated resets. It ran with Canvas, not a phone's WebGL GPU. This is not an Android FPS or long-session stability test.
+- No Android phone/emulator was available for device measurements.
+
+## Earlier package verification — 1.3
 - Android build succeeded; package version is 1.3-offline / versionCode 4.
 - APK signature verified and the signing certificate matches 1.2.
 - All 310 public files and all 314 built web files match the APK byte-for-byte, including the six new artwork files.

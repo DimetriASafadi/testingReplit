@@ -1146,3 +1146,17 @@ mtime_ms = 1792925719697
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/0ce0103a-fcf3-4616-a2b3-85c5d8ab6139/f3085ad8-5e48-44d0-bf7c-4aa8cf1c9c7f"
 storage_version_token = "1792925745211495"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "682Fo9rCeaGe1hbR7JgPW"
+uri = "file://generated-artifacts/android/NewGaza-offline-1.4.apk"
+type = "unspecified"
+title = "نيو غزة 1.4 — إصلاح ثقل السفلتة"
+description = "APK أوفلاين محدثة بإصلاحات إعادة رسم أسطح الطرق، تحرير الصور المؤقتة وتقليل مؤثرات الآليات خارج الشاشة. التوقيع مطابق للنسخة 1.3 للتحديث دون حذف التطبيق."
+logical_id = "cbae144b-d572-4c9d-bf6a-3e02198c6283"
+content_hash = "sha256:db00c7729c785d0fe38374e8ca9d1f559c134991d2a428d6ee72e8d726c95e05"
+size = 28639612
+mtime_ms = 1792934300117
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/cbae144b-d572-4c9d-bf6a-3e02198c6283/6fb20875-1eed-47ff-b732-72fb7ea20bde"
+storage_version_token = "1792934347202068"
+content_type = "application/octet-stream"

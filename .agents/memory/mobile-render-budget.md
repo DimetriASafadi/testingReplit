@@ -14,3 +14,9 @@ Treat completed procedural construction/clearing stages as disposable, but never
 **Why:** Long sessions can retain obsolete stage canvases and GPU copies. Making all artwork lower-resolution hides the memory problem by degrading visual quality.
 
 **How to apply:** Prefer bounded working sets over globally blurred sprites. Verify actual Android/WebGL behavior separately from a desktop Canvas test.
+
+Procedural ground performance must account for replayed draw commands, not only object counts or texture allocation counts.
+
+**Why:** The paving machine was associated with severe phone slowdowns even with a bounded number of actors: retained Graphics can replay thousands of grain/ellipse commands each render. Static-looking terrain is not automatically cheap.
+
+**How to apply:** Separate ground-detail refresh from smooth vehicle/effect animation. Prefer bounded, mobile-sized raster sections for slowly changing surfaces; keep effects local to active machinery and verify cleanup across repeated jobs and district changes.
