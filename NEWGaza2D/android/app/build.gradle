@@ -1,14 +1,24 @@
 apply plugin: 'com.android.application'
+def adConfig = new groovy.json.JsonSlurper().parse(rootProject.file('../ads.config.json'))
+def adAppId = adConfig.testMode ? adConfig.android.testAppId : adConfig.android.appId
+if (!adAppId || !(adAppId ==~ /ca-app-pub-\d+~\d+/)) {
+    throw new GradleException('Set android.appId in ads.config.json before building production ads')
+}
 
 android {
     namespace "com.newgaza.citygame"
     compileSdk rootProject.ext.compileSdkVersion
+    buildFeatures { buildConfig true }
     defaultConfig {
         applicationId "com.newgaza.citygame"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+        manifestPlaceholders = [admobAppId: adAppId]
+        buildConfigField 'boolean', 'ADS_TEST_MODE', "${adConfig.testMode}"
+        buildConfigField 'boolean', 'ADS_UNDER_AGE', "${adConfig.android.underAgeOfConsent}"
+        buildConfigField 'boolean', 'ADS_CHILD_DIRECTED', "${adConfig.android.childDirected}"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -36,6 +46,9 @@ dependencies {
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation project(':capacitor-android')
+    // Stable GMA release compatible with this project's minSdk23/compileSdk35.
+    implementation 'com.google.android.gms:play-services-ads:24.7.0'
+    implementation 'com.google.android.ump:user-messaging-platform:3.2.0'
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"

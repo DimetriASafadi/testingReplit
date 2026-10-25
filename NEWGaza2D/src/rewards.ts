@@ -27,8 +27,4 @@ export const GEM_PACKS = [{gems:10,cents:5},{gems:50,cents:25},{gems:100,cents:5
 export interface CommerceProvider {
  createCheckout(productId:string):Promise<{url:string}>;
 }
-export interface RewardedAdProvider {
- requestVerifiedReward():Promise<{serverReceiptId:string}>;
-}
 export const commerceProvider: CommerceProvider|null = null;
-export const rewardedAdProvider: RewardedAdProvider|null = null;

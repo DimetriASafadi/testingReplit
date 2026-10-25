@@ -1,0 +1,17 @@
+{
+  "testMode": true,
+  "rewards": { "coins": 1000, "gems": 1, "cooldownMs": 60000 },
+  "android": {
+    "testAppId": "ca-app-pub-3940256099942544~3347511713",
+    "testRewardedUnitId": "ca-app-pub-3940256099942544/5224354917",
+    "appId": "",
+    "rewardedUnitId": "",
+    "underAgeOfConsent": true,
+    "childDirected": true
+  },
+  "web": {
+    "testAdUnitPath": "/22639388115/rewarded_web_example",
+    "adUnitPath": "",
+    "cmpScriptUrl": ""
+  }
+}

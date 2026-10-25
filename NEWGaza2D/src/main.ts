@@ -26,6 +26,8 @@ import { buildingAccruedIncome, buildingSaleValue } from './building-disposal';
 import { districtIncome } from './district-income';
 import { buildingIncomeDetails } from './building-income';
 import { formatNumber as fmt, formatCompactNumber } from './number-format';
+import { AdsController } from './ads/controller';
+import { isAdPlacement } from './ads/config';
 
 const app = document.getElementById('app')!;
 const stage = document.getElementById('stage')!;
@@ -65,6 +67,11 @@ const PHASE = { travel: 'في الطريق عبر الشوارع', work: 'تعم
 let store: GameStore;
 try { store = new GameStore(); }
 catch (e) { showRecovery(e instanceof Error ? e.message : String(e)); throw e; }
+const ads=new AdsController(store,busy=>{
+  app.inert=busy;stage.inert=busy;gameAudio.pauseForAd(busy);
+  if(scene?.input)scene.input.enabled=!busy;
+  if(busy)dlg?.close();else render();
+},toast);
 
 function showRecovery(msg: string) {
   document.getElementById('boot')?.classList.add('done');
@@ -365,6 +372,7 @@ function dialogHtml(st: GameState, now: number): [string, string] {
   return ['', ''];
 }
 function renderDialog() {
+  if(ads.busy){if(dlg.open)dlg.close();return;}
   if (!ui.dialog) { if (dlg.open) dlg.close(); return; }
   const [t, body] = dialogHtml(S(), Date.now()); if (!t) { dlg.close(); return; }
   const layout = dialogLayout(body, ui.dialogTab, ui.dialogPage);
@@ -393,6 +401,8 @@ function expansionChecks() {
 
 // ---------- master render ----------
 let scene: CityScene | null = null;
+// Consent update is asynchronous and never blocks the opening game screen.
+ads.initialize();
 function render() {
   const st = S();
   if(!st.currentDistrict)cityLoading=false;
@@ -417,10 +427,13 @@ function closePlotSheet() {
   scene?.select(null);
 }
 document.addEventListener('click', e => {
+  if(ads.busy)return;
   const t = (e.target as HTMLElement).closest<HTMLElement>('[data-a]'); if (!t || (t as HTMLButtonElement).disabled) return;
   if(!['enter','map','place','clear','buy','upg','sell','proj','cproj','collectB','collect-all','claim','spin','exch-confirm','buy-paver','pave','diff-confirm'].includes(t.dataset.a??''))gameAudio.click();
   const id = t.dataset.id ?? ''; const st = S();
   switch (t.dataset.a) {
+    case 'reward-ad': if(isAdPlacement(id))ads.request(id);return;
+    case 'ad-privacy': void ads.privacy();return;
     case 'audio-toggle': gameAudio.setPreference('enabled',!gameAudio.prefs.enabled); break;
     case 'audio-test': void gameAudio.unlock().then(()=>gameAudio.click(true)); break;
     case 'audio-retry': gameAudio.retry(); break;

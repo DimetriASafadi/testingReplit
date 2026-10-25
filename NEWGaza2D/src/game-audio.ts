@@ -25,6 +25,7 @@ export class GameAudio {
   private district: string|null=null;
   private previous=new Map<string,string>();
   private hidden=false;
+  private adPaused=false;
   private uiAt=0;
   private completeAt=-10;
   private oneShots=new Set<AudioScheduledSourceNode>();
@@ -46,7 +47,7 @@ export class GameAudio {
     });
   }
   async unlock(){
-    if(!this.prefs.enabled||this.hidden)return;
+    if(!this.prefs.enabled||this.hidden||this.adPaused)return;
     try{
       if(!this.context){
         this.context=new AudioContext();
@@ -96,17 +97,22 @@ export class GameAudio {
   }
   retry(){this.theme.retry();this.loading=undefined;void this.unlock();}
   musicPhase(phase:MusicPhase){this.theme.setPhase(phase);}
+  pauseForAd(paused:boolean){
+    this.adPaused=paused;
+    if(paused){this.theme.pause();this.stopAll();void this.context?.suspend();}
+    else if(!this.hidden&&this.prefs.enabled)void this.unlock();
+  }
   due(){return performance.now()>=this.nextAt;}
   setPreference(key:keyof Preferences,value:number|boolean){
     if(key==='enabled')this.prefs.enabled=Boolean(value);
     else this.prefs[key]=Math.max(0,Math.min(1,Number(value)));
     try{localStorage.setItem(PREF_KEY,JSON.stringify(this.prefs));}catch{this.status='تعذّر حفظ إعدادات الصوت';}
-    if(key==='enabled')this.theme.setEnabled(this.prefs.enabled);
+    if(key==='enabled')this.theme.setEnabled(this.prefs.enabled&&!this.adPaused);
     if(key==='master')this.theme.setMaster(this.prefs.master);
     this.master?.gain.setTargetAtTime(this.prefs.enabled?this.prefs.master:0,this.context!.currentTime,.035);
     if(!this.prefs.enabled)this.stopAll();else void this.unlock();
   }
-  private available(){return this.prefs.enabled&&!this.hidden&&this.context?.state==='running';}
+  private available(){return this.prefs.enabled&&!this.hidden&&!this.adPaused&&this.context?.state==='running';}
   private stopAll(){
     for(const id of [...this.voices.keys()])this.stop(id);
     for(const source of this.oneShots){this.oneShots.delete(source);source.stop();}

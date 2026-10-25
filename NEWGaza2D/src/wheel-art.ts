@@ -1,6 +1,8 @@
 import './wheel-art.css';
 import type { GameState } from './model';
-import { WHEEL_PRIZES, WHEEL_SPIN_MS, rewardedAdProvider } from './rewards';
+import { WHEEL_PRIZES, WHEEL_SPIN_MS } from './rewards';
+import { ADS } from './ads/config';
+import { adUnavailable } from './ads/ledger';
 import { formatNumber as fmt } from './number-format';
 
 /* Illustrated, fully vector "Luck Wheel": gold bulb ring, jewel pointer, star hub,
@@ -11,7 +13,6 @@ type Prize = { coins: number; gems: number; iron?: number; wood?: number; weight
 const P = (i: number) => WHEEL_PRIZES[i] as unknown as Prize;
 const SEG = WHEEL_PRIZES.length, STEP = 360 / SEG;
 const ART = () => `${import.meta.env.BASE_URL}art/wheel/`;
-const AD_REASON = 'مشاهدة إعلان غير متاحة حاليًا: لم يُربط مزود إعلانات يتحقق من المشاهدة الكاملة.';
 const COLORS: [string, string][] = [
   ['#2f6fe0', '#173c9c'], ['#3dbb4c', '#1d7a2c'], ['#8a3fe0', '#4f1d9a'], ['#f7b21c', '#c77606'], ['#e8343a', '#9c1220'],
   ['#14b3b0', '#0a6f74'], ['#ec3d9c', '#a3166a'], ['#f47c1c', '#b8480a'], ['#5f7d98', '#33495e'], ['#6a4fd8', '#3a2690'],
@@ -31,14 +32,14 @@ function meta(p: Prize) {
 const rare = (p: Prize) => p.weight <= 2 && (p.coins >= 1000 || p.gems >= 5);
 
 export const wheelSpinning = (st: GameState, now: number) => !!st.wheel?.startedAt && now < st.wheel.startedAt + WHEEL_SPIN_MS;
-export const wheelReady = (st: GameState, now: number) => !wheelSpinning(st, now) && now >= (st.wheel?.nextAt ?? 0);
+export const wheelReady = (st: GameState, now: number) => !wheelSpinning(st, now) && (now >= (st.wheel?.nextAt ?? 0) || !!st.ads?.spinCredits);
 
 export function wheelButton(st: GameState, now: number) {
   const ready = wheelReady(st, now), spin = wheelSpinning(st, now);
   const cone = COLORS.slice(0, SEG).map((c, i) => `${c[0]} ${(i * STEP - STEP / 2).toFixed(1)}deg ${(i * STEP + STEP / 2).toFixed(1)}deg`).join(',');
   return `<button class="wheel-fab ${ready ? 'ready' : ''}" data-a="dlg" data-id="wheel" data-k="wheel-fab" aria-label="دولاب الحظ${ready ? '، دوران مجاني متاح' : ''}">
     <i class="wf-wheel" aria-hidden="true"><i class="wf-disc" style="background:conic-gradient(from ${-STEP / 2}deg,${cone})"></i><i class="wf-hub"></i><i class="wf-pin"></i></i>
-    <span>${spin ? 'يدور' : ready ? 'مجاني' : `<bdi class="num">${clock((st.wheel?.nextAt ?? 0) - now)}</bdi>`}</span></button>`;
+    <span>${spin ? 'يدور' : ready ? st.ads?.spinCredits?'دورة إضافية':'مجاني' : `<bdi class="num">${clock((st.wheel?.nextAt ?? 0) - now)}</bdi>`}</span></button>`;
 }
 
 const pt = (r: number, deg: number) => { const a = (deg - 90) * Math.PI / 180; return `${(r * Math.cos(a)).toFixed(2)} ${(r * Math.sin(a)).toFixed(2)}`; };
@@ -100,6 +101,7 @@ export function mountWheel(root: ParentNode, getState: () => GameState) {
 }
 
 export function wheelHtml(st: GameState, now: number) {
+  const adReason=adUnavailable(st,'wheel',Math.max(now,st.lastSeen));
   const w = st.wheel, spin = wheelSpinning(st, now), ready = wheelReady(st, now);
   const shown = w?.startedAt && !spin ? P(w.result) : null;
   const sm = shown ? meta(shown) : null;
@@ -112,9 +114,11 @@ export function wheelHtml(st: GameState, now: number) {
       <div class="wz-hub">${hubSvg()}</div><div class="wheel-pointer">${pointerSvg()}</div></div>
     <div class="wz-side">
       <p class="wheel-status" role="status">${spin ? 'الدولاب يدور… الجائزة محددة ومحفوظة مسبقًا.' : sm && shown ? `آخر نتيجة: <b>${sm.name}</b>${sm.n ? ' · أُضيفت إلى رصيدك' : ''}` : 'دوران مجاني كل ساعتين.'}</p>
-      <p class="wheel-timer">${ready ? 'الدوران المجاني متاح الآن' : spin ? '&nbsp;' : `الدوران التالي بعد <bdi class="num">${clock((w?.nextAt ?? 0) - now)}</bdi>`}</p>
+      <p class="wheel-timer">${ready ? st.ads?.spinCredits?'دورة إضافية محفوظة وجاهزة للاستخدام':'الدوران المجاني متاح الآن' : spin ? '&nbsp;' : `الدوران التالي بعد <bdi class="num">${clock((w?.nextAt ?? 0) - now)}</bdi>`}</p>
       <button class="wz-spin" data-a="spin" data-k="spin" ${ready ? '' : 'disabled'}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 01-14 5M4 12a8 8 0 0114-5M18 3v4h-4M6 21v-4h4"/></svg><span>${spin ? 'يدور…' : ready ? 'أدر الآن' : 'انتظر العداد'}</span></button>
       <details class="odds"><summary>الاحتمالات</summary><ol>${odds}</ol></details>
-      ${rewardedAdProvider ? '' : `<p class="note unavailable">${AD_REASON}</p>`}
+      ${!ready&&!spin?`<button class="btn gold" data-a="reward-ad" data-id="wheel" ${adReason?'disabled':''}>شاهد إعلانًا · دورة إضافية</button><p class="ad-status">${adReason||'لا تؤخر الدورة الإضافية موعد دورانك المجاني.'}</p>`:''}
+      ${ADS.testMode?'<p class="note">وضع إعلانات الاختبار</p>':''}
+      <button class="btn ghost ad-privacy" data-a="ad-privacy">خصوصية الإعلانات</button>
     </div></div></div>`;
 }

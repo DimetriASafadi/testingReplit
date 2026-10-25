@@ -6,6 +6,7 @@ import { MIN_CAMERA_ZOOM } from './camera-overview';
 import { roadsFor, streetFor } from './roads';
 import { isDifficulty, PAVER_COST } from './economy';
 import { WHEEL_COOLDOWN, WHEEL_PRIZES } from './rewards';
+import { isAdPlacement } from './ads/config';
 
 /** Reject damaged domain data; leave the original storage entry untouched. */
 export function validateSave(value: unknown): asserts value is GameState {
@@ -17,7 +18,14 @@ export function validateSave(value: unknown): asserts value is GameState {
   require(s.gems === undefined || integer(s.gems));
   require(s.expansionVersion===undefined || s.expansionVersion===1);
   require(s.exchanges===undefined || (Array.isArray(s.exchanges)&&s.exchanges.every(x=>typeof x==='string'&&x.length>=8&&x.length<=100)&&new Set(s.exchanges).size===s.exchanges.length));
-  if(s.wheel)require(integer(s.wheel.startedAt)&&s.wheel.startedAt<=s.lastSeen&&s.wheel.nextAt===s.wheel.startedAt+WHEEL_COOLDOWN&&integer(s.wheel.result)&&!!WHEEL_PRIZES[s.wheel.result]);
+  if(s.wheel)require(integer(s.wheel.startedAt)&&s.wheel.startedAt<=s.lastSeen&&integer(s.wheel.nextAt)&&
+    (s.wheel.bonus===true?s.wheel.nextAt>s.wheel.startedAt&&s.wheel.nextAt<=s.wheel.startedAt+WHEEL_COOLDOWN:s.wheel.bonus===undefined&&s.wheel.nextAt===s.wheel.startedAt+WHEEL_COOLDOWN)&&integer(s.wheel.result)&&!!WHEEL_PRIZES[s.wheel.result]);
+  if(s.ads!==undefined){
+    const a=s.ads;require(a&&typeof a==='object'&&!Array.isArray(a)&&integer(a.nextAt)&&[0,1].includes(a.spinCredits));
+    const id=(v:unknown)=>typeof v==='string'&&/^ad-[1-9]\d*$/.test(v)&&Number(v.slice(3))<=s.sequence;
+    require(a.lastClaimId===undefined||id(a.lastClaimId));
+    if(a.pending){const p=a.pending;require(id(p.id)&&p.id!==a.lastClaimId&&isAdPlacement(p.placement)&&['requested','earned'].includes(p.status)&&integer(p.createdAt)&&p.createdAt<=s.lastSeen);}
+  }
   if(s.pavers!==undefined){
     require(Array.isArray(s.pavers));
     require(new Set(s.pavers.map(p=>p.id)).size===s.pavers.length);

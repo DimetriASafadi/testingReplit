@@ -18,6 +18,8 @@ import { COIN_PACKS, WHEEL_COOLDOWN, WHEEL_PRIZES, wheelResult } from './rewards
 import { roadsFor, pavingRoute, pathLength, streetFor } from './roads';
 import { actualWorkDuration, clearingSeconds, STREET_WORK_MS, STREET_STAGE_SHARES } from './construction-rules';
 import { purchaseWarehouse, roadUnitBusy, localUnit } from './warehouse-capacity';
+import { beginAd, cancelAd, markAdEarned, recoverAd, settleEarnedAd } from './ads/ledger';
+import type { AdPlacement } from './ads/config';
 
 export const SAVE_KEY = 'newgaza2d-save-v1';
 export const factoryRotationBlocked = (state: GameState, plotId: number) =>
@@ -115,6 +117,7 @@ export class GameStore implements GameAPI {
     balanceFleetDepots(this.state);
     this.tick(now);
     applyTimingProfile(this.state, this.state.lastSeen);
+    recoverAd(this.state, this.state.lastSeen);
     this.persist();
   }
   subscribe(fn: () => void) { this.listeners.add(fn); return () => { this.listeners.delete(fn) } }
@@ -133,6 +136,23 @@ export class GameStore implements GameAPI {
     this.notify(); return true;
   }
   private notify() { for (const fn of this.listeners) fn() }
+  /** Atomic local transitions. Only ad adapters call earned; this is not a server receipt. */
+  private adTransition<T>(change: () => T): T {
+    this.tick();
+    const previous = structuredClone(this.state);
+    try {
+      const result = change();
+      if (!this.persist()) throw Error(this.storageError!);
+      this.notify(); return result;
+    } catch (e) { this.state = previous; this.notify(); throw e; }
+  }
+  beginRewardedAd(p: AdPlacement) { return this.adTransition(() => beginAd(this.state, p, this.state.lastSeen)); }
+  earnedRewardedAd(id: string) {
+    // Durable grant marker first; a reload after this write can finish the credit.
+    this.adTransition(() => markAdEarned(this.state, id));
+    return this.adTransition(() => settleEarnedAd(this.state, this.state.lastSeen));
+  }
+  cancelRewardedAd(id: string) { this.adTransition(() => cancelAd(this.state, id)); }
   private persist() {
     try {
       this.storage.setItem(SAVE_KEY, JSON.stringify(this.state));
@@ -232,9 +252,12 @@ export class GameStore implements GameAPI {
             preparation:{unitId:dozer.id,warehouseId:warehouse.id,route:dozerRoute,sandEnd,aggregateEnd,asphaltStart,dozerReturnEnd}});break;
         }
         case 'spin': {
-          ensure(!this.state.wheel || now>=this.state.wheel.nextAt,'انتظر انتهاء وقت دولاب الحظ');
+          ensure(!this.state.wheel || now>=this.state.wheel.startedAt+4500,'انتظر انتهاء دوران الدولاب');
+          const bonus=!!this.state.wheel && now<this.state.wheel.nextAt;
+          ensure(!bonus || (this.state.ads?.spinCredits??0)>0,'انتظر انتهاء وقت دولاب الحظ');
+          if(bonus)this.state.ads!.spinCredits--;
           const result=wheelResult(Math.random()),prize=WHEEL_PRIZES[result];
-          this.state.wheel={nextAt:now+WHEEL_COOLDOWN,result,startedAt:now};
+          this.state.wheel={nextAt:bonus?this.state.wheel!.nextAt:now+WHEEL_COOLDOWN,result,startedAt:now,...(bonus?{bonus:true}:{})};
           this.state.coins+=prize.coins;this.state.gems+=prize.gems;
           this.state.inventory.iron+=prize.iron;this.state.inventory.wood+=prize.wood;
           this.state.inventory.value+=prize.iron*60+prize.wood*35;break;
