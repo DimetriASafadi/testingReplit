@@ -1,6 +1,17 @@
-# Android offline test build — 1.1
+# Android offline test build — 1.3
 
-This is a debug-signed test APK with the same application ID, `com.newgaza.citygame`, and versionCode 2. It bundles the game rather than opening the development URL. Install over the previous build when Android accepts the signature; **do not uninstall to bypass a signature error without first exporting the old game's save**. Browser and Android saves are separate.
+This is a debug-signed test APK with the same application ID, `com.newgaza.citygame`, and versionCode 4. It bundles the game rather than opening the development URL. Install over the previous build when Android accepts the signature; **do not uninstall to bypass a signature error without first exporting the old game's save**. Browser and Android saves are separate.
+
+## Current package
+- Includes the latest flag construction site and completed plaza, streetlamp, fishing boat, low-rise house and roadside palm artwork. Assets load with the initial game loader, not a remote development URL.
+- Includes the earlier startup recovery and agricultural-ground fixes from 1.2, as well as the performance improvements below.
+- This is a new package for phone testing, not a claim that every device or every gameplay state has been tested.
+
+## Package verification — 1.3
+- Android build succeeded; package version is 1.3-offline / versionCode 4.
+- APK signature verified and the signing certificate matches 1.2.
+- All 310 public files and all 314 built web files match the APK byte-for-byte, including the six new artwork files.
+- No remote `server.url` is configured. No new Android device/emulator test was performed for this package.
 
 ## Changes
 - Phone framebuffer uses up to 2× pixel density, capped to a 2.5-million-pixel budget when the logical viewport is below that budget; very large displays never fall below 1×.
@@ -10,7 +21,7 @@ This is a debug-signed test APK with the same application ID, `com.newgaza.cityg
 - Removed the duplicate UI render following every timer tick. Hidden-page polling pauses; visibility changes reconcile timers.
 - Local asset loading has bounded concurrency, timeouts and retries. Ad initialization is deferred until voluntarily requested, not part of offline startup.
 
-## Verification on 2026-10-25
+## Earlier verification on 2026-10-25 (1.1)
 - TypeScript and 128 tests passed.
 - Android SDK35/Java21 debug APK compiled successfully.
 - Compared all 304 public assets byte-for-byte against the APK: no missing or altered files.
