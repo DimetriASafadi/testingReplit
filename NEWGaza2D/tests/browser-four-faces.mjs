@@ -9,7 +9,7 @@ const openSavedCity = async () => {
 };
 try {
   await b.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 3 });
-  const appUrl = process.env.BROWSER_TEST_URL || 'http://localhost:80/';
+   const appUrl = process.env.BROWSER_TEST_URL || 'http://localhost:5173/';
   await b.send('Page.navigate', { url: appUrl });
   await b.until("document.querySelector('#boot.done')");
   await b.evaluate(`(async()=>{
@@ -32,17 +32,17 @@ try {
       return [first,stem+'_right',stem+'_back',stem+'_left'];};
     return C.BUILDINGS.map(d=>{const keys=quartet(d.id);return {id:d.id,keys,full:keys.every(k=>!!R.SPR[k])};});
   })()`);
-  assert.equal(inventory.filter(x => x.full).length, 49);
+   assert.equal(inventory.filter(x => x.full).length, 50);
   const familyFaces = await b.evaluate(`(async()=>{
     const C=await import('/src/catalog.ts'),R=await import('/src/realart.ts'),sc=window.__newgazaArtScene;
     const district=sc.hooks.getState().districts.find(d=>d.id==='shujaiya');
-    return [['cement','cement'],['citrus','citrus'],['vegetables','veg'],['traditional_housing','trad'],['protective_trees','trees']].map(([id,stem])=>{
+     return [['cement','cement'],['citrus','citrus'],['vegetables','veg'],['traditional_housing','trad'],['protective_trees','trees'],['cattle','cattle']].map(([id,stem])=>{
       const p=district.plots.find(p=>p.buildingId===id),first=R.builtKey(id,0),keys=[first,stem+'_right',stem+'_back',stem+'_left'];
       return {id,stem,orientation:p.orientation,expected:'s:'+R.builtKey(id,p.orientation),
         actual:sc.views.get(p.id)?.img.texture.key,loaded:keys.every(k=>sc.textures.exists('s:'+k))};
     });
   })()`);
-  assert.equal(familyFaces.length, 5);
+   assert.equal(familyFaces.length, 6);
   for (const face of familyFaces) {
     assert.ok(face.loaded, `${face.id}: all four face textures loaded after reopening`);
     assert.equal(face.actual, face.expected, `${face.id}: saved orientation rendered after reopening`);
@@ -100,5 +100,5 @@ try {
   await openSavedCity();
   assert.equal((await snapshot()).o, 2);
   assert.deepEqual(b.errors, []);
-  console.log('PASS: 49 true quartets; five new families loaded in a crowded saved city after reload; phone previews; construction/built rotation; constant size; timers/costs; landscape controls.');
+   console.log('PASS: 50 true quartets; six new families loaded in a crowded saved city after reload; phone previews; construction/built rotation; constant size; timers/costs; landscape controls.');
 } finally { b.close(); }

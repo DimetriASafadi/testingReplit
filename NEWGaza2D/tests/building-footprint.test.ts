@@ -13,7 +13,7 @@ test('compact houses leave usable land while apartments and factories keep their
   assert.equal(buildingFootprint('smallhouse_front').yard, 'garden');
   assert.equal(buildingFootprint('kiosk_front').yard, 'patio');
 });
-test('published four-face sprites share parcel/scale; only cattle remains pending', () => {
+test('published four-face sprites share parcel/scale across every family', () => {
   const sprites = manifest as Record<string, { w: number; h: number; ay: number; ground?: { w: number; h: number } }>;
   const fronts = Object.keys(sprites).filter(k => k.endsWith('_front') && !['ind_front', 'shop_front'].includes(k));
   fronts.push('farm_cattle');
@@ -41,8 +41,7 @@ test('published four-face sprites share parcel/scale; only cattle remains pendin
       assert.equal(buildingRenderScale(key, sprites[key]), buildingRenderScale(front, sprites[front]), key);
     }
   }
-  // Do not register incomplete art merely to inflate the quartet count.
-  assert.deepEqual(pending.sort(), ['cattle']);
+  assert.deepEqual(pending, []);
 });
 test('single-floor retail has modest roof height and furnished land in both orientations',()=>{
   for(const stem of ['foodshop','clothes','shoe','falafel','shawarma','western','cafe','kiosk']){

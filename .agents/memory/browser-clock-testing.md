@@ -20,3 +20,9 @@ For hand-advanced Phaser visual fixtures, freeze the engine's cached scene-updat
 **Why:** Phaser retains its update callback. Live ticks can overwrite manually selected future poses after data assertions pass, leaving screenshots that show a different state.
 
 **How to apply:** Control both update paths inside the isolated fixture and inspect the captured image, not just actor coordinates; restore the original save and reload afterward.
+
+Browser tests that import `/src/*.ts` need the Vite development server, not the managed artifact preview.
+
+**Why:** The artifact preview serves a prebuilt bundle and returns its HTML fallback for source-module URLs, so dynamic imports fail even though the game renders normally.
+
+**How to apply:** Start Vite on port 5173 for these isolated tests and set `BROWSER_TEST_URL` to that server; leave the managed preview workflow unchanged.
