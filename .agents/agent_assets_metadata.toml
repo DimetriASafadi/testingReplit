@@ -1174,3 +1174,17 @@ mtime_ms = 1793004750197
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/60043dc8-cf8d-498e-9479-51d156598c1f/3a00b900-f2f2-4b80-9dbd-ec20730d5e91"
 storage_version_token = "1793005376092268"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "D1m51h6PxNJDY_EPrQDQ2"
+uri = "file://NEWGaza2D/android/app/build/outputs/apk/debug/app-debug.apk"
+type = "unspecified"
+title = "New Gaza 2D — Android APK 1.6"
+description = "تحديث تجريبي APK (versionCode 7)، قابل للتثبيت فوق 1.5 مع الحفاظ على الحفظ. تحققنا من التوقيع ومحتويات الحزمة."
+logical_id = "c8167f2d-71b0-422c-928e-afeed74bce79"
+content_hash = "sha256:cb5f64c7d47b54cfc64be35b0dea81dcc9a9dfca49b90d09afbcc5c9a64b2235"
+size = 28799295
+mtime_ms = 1793013471878
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/c8167f2d-71b0-422c-928e-afeed74bce79/b73156bf-9ff8-427d-a8fb-de273636869f"
+storage_version_token = "1793013638784848"
+content_type = "application/octet-stream"

@@ -1,6 +1,6 @@
-# Android offline test build — 1.5
+# Android offline test build — 1.6
 
-This is a debug-signed test APK with the same application ID, `com.newgaza.citygame`, and versionCode 6. It bundles the game rather than opening the development URL. Install over the previous build when Android accepts the signature; **do not uninstall to bypass a signature error without first exporting the old game's save**. Browser and Android saves are separate.
+This is a debug-signed test APK with the same application ID, `com.newgaza.citygame`, and versionCode 7. It bundles the game rather than opening the development URL. Install over the previous build when Android accepts the signature; **do not uninstall to bypass a signature error without first exporting the old game's save**. Browser and Android saves are separate.
 
 ## Current package
 - Dense saved districts rebuild their parcels in yielding batches with loading progress. Transparent yard padding is removed from stored textures without changing the ground anchor or reducing the source building resolution.
@@ -10,6 +10,7 @@ This is a debug-signed test APK with the same application ID, `com.newgaza.cityg
 - Incomplete legacy view families no longer stop a district from reopening: the same building uses an available view, with an explicit warning, without changing its saved orientation. This is recovery behavior, not newly authored missing-angle art.
 - Paving and road preparation ground details are rasterized into short-section sprites, updated only when progress changes (at most five times per second). Vehicle animation is still independent at 30 Hz; gameplay timers are unchanged.
 - Completed paving uses GPU tiles no larger than 1024px, with a union shoulder blur per tile instead of blurring every shoulder polygon. Offscreen paver/dozer effects are skipped and unused ground textures are destroyed.
+- Includes the completed four-direction art for cement, citrus, vegetables, traditional housing, protective trees, and cattle farms from the latest project updates.
 - Regression coverage includes repeated-cache, viewport re-entry, clock adjustment and 100 reset-cycle tests.
 - Includes the latest flag construction site and completed plaza, streetlamp, fishing boat, low-rise house and roadside palm artwork. Assets load with the initial game loader, not a remote development URL.
 - Includes the earlier startup recovery and agricultural-ground fixes from 1.2, as well as the performance improvements below.
@@ -21,6 +22,14 @@ This is a debug-signed test APK with the same application ID, `com.newgaza.cityg
 - All 310 public files and 314 built web files match the APK byte-for-byte.
 - No remote game server URL and no isolated dense-city fixture are included.
 - No physical Android handset/emulator benchmark was performed.
+
+## Package verification — 1.6
+- Android build succeeded: versionName 1.6-offline, versionCode 7, package `com.newgaza.citygame`.
+- APK signature verified and matches the 1.5 test APK, so Android can install it as an in-place update.
+- All 322 public files and 326 built web files match the APK byte-for-byte; all 12 newly completed side-view sprites are present.
+- No development URL or performance fixture is packaged.
+- TypeScript passed and all 141 regression tests passed.
+- APK is debug-signed for testing. No physical Android device/emulator was available for installation or runtime verification.
 
 ## Earlier package verification — 1.4
 - Android build succeeded; APK signature verified and signing certificate matches 1.3, so it can update that test build without uninstalling it.
