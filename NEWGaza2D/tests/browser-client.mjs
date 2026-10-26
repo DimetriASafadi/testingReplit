@@ -1,6 +1,6 @@
 import { writeFileSync } from 'node:fs';
 export async function browser(width=1440,height=900) {
-  const pages=await (await fetch('http://localhost:9222/json/list')).json();
+  const pages=await (await fetch(process.env.NEWGAZA_CDP_URL??'http://localhost:9222/json/list')).json();
   const page=pages.find(p=>p.type==='page');
   const ws=new WebSocket(page.webSocketDebuggerUrl), pending=new Map(), errors=[];
   let seq=0;
@@ -30,7 +30,13 @@ export async function browser(width=1440,height=900) {
     throw new Error('Timed out: '+expression);
   };
   await send('Page.enable');await send('Runtime.enable');
-  await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false});
+  width=Number(process.env.NEWGAZA_VIEWPORT_WIDTH??width);
+  height=Number(process.env.NEWGAZA_VIEWPORT_HEIGHT??height);
+  const deviceScaleFactor=Number(process.env.NEWGAZA_DPR??1);
+  const mobile=process.env.NEWGAZA_MOBILE==='true';
+  if(!Number.isFinite(width)||width<1||!Number.isFinite(height)||height<1||!Number.isFinite(deviceScaleFactor)||deviceScaleFactor<1)
+    throw new Error('Invalid NEWGAZA viewport settings.');
+  await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor,mobile});
   return {send,evaluate,wait,until,errors,close:()=>ws.close(),
     async click(selector) {
       await until(`!!document.querySelector(${JSON.stringify(selector)})`);

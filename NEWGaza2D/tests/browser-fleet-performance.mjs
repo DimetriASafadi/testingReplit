@@ -4,11 +4,12 @@ import { browser } from './browser-client.mjs';
 const b = await browser(390,844), key='newgaza2d-save-v1';
 let original;
 try {
-  await b.send('Page.navigate',{url:'http://localhost:80/'});
+  await b.send('Page.navigate',{url:process.env.NEWGAZA_TEST_URL??'http://localhost:80/'});
   await b.until(`!!document.querySelector('#boot.done')`);
   original=await b.evaluate(`localStorage.getItem('${key}')`);
   await b.evaluate(`(async()=>{const n=Date.now(),s=(await import('/src/engine.ts')).newGame(n);
     s.currentDistrict=s.districts[0].id;const d=s.districts[0];
+    d.difficulty='medium';d.difficultyChosen=true;
     d.camera={x:0,y:448,zoom:1.2};
     Object.assign(d.plots[0],{status:'built',buildingId:'recycling',incomeAt:n});
     const equipment=(await import('/src/catalog.ts')).EQUIPMENT;
@@ -16,8 +17,10 @@ try {
     s.jobs=[];(await import('/src/save.ts')).validateSave(s);
     localStorage.setItem('${key}',JSON.stringify(s));window.__perfOld=true})()`);
   await b.send('Page.reload');await b.until(`!window.__perfOld`);
-  await b.until(`!!window.__newgazaArtScene?.fleetAnimation?.doors?.views?.size`);
-  await b.send('Emulation.setCPUThrottlingRate',{rate:4});
+  await b.until(`!!window.__newgazaArtScene?.worldReady`);
+  const cpuRate=Number(process.env.NEWGAZA_CPU_RATE??4);
+  if(!Number.isFinite(cpuRate)||cpuRate<1)throw new Error('NEWGAZA_CPU_RATE must be at least 1.');
+  await b.send('Emulation.setCPUThrottlingRate',{rate:cpuRate});
   await b.evaluate(`(()=>{
     const s=window.__newgazaArtScene;window.__perfStats={};
     const wrap=(o,k,name)=>{const f=o[k];o[k]=function(...a){const t=performance.now();
