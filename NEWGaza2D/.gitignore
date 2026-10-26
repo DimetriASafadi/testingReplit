@@ -1,3 +1,20 @@
 # High-resolution generation masters are local authoring inputs.
 # Ship the optimized runtime WebP sprites and their manifest, not duplicate PNGs.
-art-src/
+!art-src/
+art-src/*
+!art-src/four-face/
+art-src/four-face/*
+!art-src/four-face/clean/
+art-src/four-face/clean/*
+!art-src/four-face/clean/single/
+art-src/four-face/clean/single/*
+!art-src/four-face/clean/single/cement_right.webp
+!art-src/four-face/clean/single/cement_left.webp
+!art-src/four-face/clean/single/citrus_right.webp
+!art-src/four-face/clean/single/citrus_left.webp
+!art-src/four-face/clean/single/veg_right.webp
+!art-src/four-face/clean/single/veg_left.webp
+!art-src/four-face/clean/single/trad_right.webp
+!art-src/four-face/clean/single/trad_left.webp
+!art-src/four-face/clean/single/trees_right.webp
+!art-src/four-face/clean/single/trees_left.webp
