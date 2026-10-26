@@ -1160,3 +1160,17 @@ mtime_ms = 1792934300117
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/cbae144b-d572-4c9d-bf6a-3e02198c6283/6fb20875-1eed-47ff-b732-72fb7ea20bde"
 storage_version_token = "1792934347202068"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "gBTmdmlB22U6SBkv5xm_p"
+uri = "file://generated-artifacts/android/NewGaza-offline-1.5.apk"
+type = "unspecified"
+title = "نيو غزة — APK أوفلاين 1.5"
+description = "نسخة Android محدثة لتحسين تحميل الأحياء المكتظة. ثبّتها فوق نسخة 1.4 دون إلغاء التثبيت للحفاظ على حفظ اللعبة."
+logical_id = "60043dc8-cf8d-498e-9479-51d156598c1f"
+content_hash = "sha256:bfeb9ae96e6afc018cb21189445bc178b76e03a1104101124c6f2a0fdb454f31"
+size = 29156277
+mtime_ms = 1793004750197
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/60043dc8-cf8d-498e-9479-51d156598c1f/3a00b900-f2f2-4b80-9dbd-ec20730d5e91"
+storage_version_token = "1793005376092268"
+content_type = "application/octet-stream"
