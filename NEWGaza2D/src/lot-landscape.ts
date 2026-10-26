@@ -4,6 +4,7 @@ import type Phaser from 'phaser';
 import { U, makeCanvas, TEX_H } from './art';
 import { roundRect, seeded } from './ground';
 import type { Orientation } from './model';
+import { addTrimmedTexture } from './trimmed-texture';
 import { rotateLotPoint } from './orientation';
 import { dressParcel, drawKerbParking, drawSidewalk, parcelFlavor, YARD_W, YARD_EDGE, drawPlanters, drawShadeSeating, drawBench } from './parcel-dressing';
 const TEX_W = YARD_W;
@@ -142,8 +143,10 @@ export function lotLandscape(scene: Phaser.Scene, yard: YardKind | 'none', facto
       ctx.drawImage(cl, px - w / 2, py - w * .72, w, w); ctx.restore();
       if (isFront) front.push(mp);
     }
-    if (front.length) { scene.textures.addCanvas(fkey, fc); }
+    if (front.length) { addTrimmedTexture(scene, fkey, fc); }
+    else fc.width = fc.height = 0;
+    for (const cl of clumps) cl.width = cl.height = 0;
   }
-  scene.textures.addCanvas(key, c);
+  addTrimmedTexture(scene, key, c);
   return { back: key, front: front.length ? fkey : undefined };
 }

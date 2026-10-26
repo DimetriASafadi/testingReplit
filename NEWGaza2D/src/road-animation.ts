@@ -41,7 +41,7 @@ export class RoadAnimation {
   const s=[r.a[0]+dx*f0,r.a[1]+dy*f0],e=[r.a[0]+dx*f1,r.a[1]+dy*f1];
   return [iso(s[0]+ox,s[1]+oy),iso(e[0]+ox,e[1]+oy),iso(e[0]-ox,e[1]-oy),iso(s[0]-ox,s[1]-oy)];
  }
- /** Finished coat: one cached canvas texture, repainted only when the paved signature changes. */
+  /** Rasterize directly into bounded tiles, never two whole-city scratch canvases. */
  private paintCoat(d:DistrictState){
   const l=cityLayout(d.id),max=l.extent,K=.5;
   const ox=iso(-1,max+1).x,oy=iso(-1,-1).y,w=Math.ceil((iso(max+1,-1).x-ox)*K),h=Math.ceil((iso(max+1,max+1).y-oy)*K);
@@ -51,34 +51,40 @@ export class RoadAnimation {
   const trace=(ctx:CanvasRenderingContext2D,ps:[number,number][][])=>{ctx.beginPath();for(const poly of ps)poly.forEach(([x,y],i)=>{const[a,b]=pt(x,y);i?ctx.lineTo(a,b):ctx.moveTo(a,b);});};
   const fillEach=(ctx:CanvasRenderingContext2D,ps:[number,number][][],col:string)=>{ctx.fillStyle=col;for(const poly of ps){trace(ctx,[poly]);ctx.closePath();ctx.fill();}};
    if(!polys.length){this.clearCoat();return;}
-   // CPU scratch only: the full neighborhood must never be a single GPU texture.
-   const cv=document.createElement('canvas');cv.width=w;cv.height=h;const c=cv.getContext('2d')!;
+    this.clearCoat();
+    for(let y=0;y<h;y+=1024)for(let x=0;x<w;x+=1024){
+    const key=`paved:${d.id}:${x}:${y}`,tw=Math.min(1024,w-x),th=Math.min(1024,h-y),pad=20;
+    const cv=document.createElement('canvas');cv.width=tw;cv.height=th;const c=cv.getContext('2d')!;
+    c.translate(-x,-y);
   // 1. dusty shoulder: opaque union on a scratch canvas, blurred, composited once at low alpha (no double-alpha edges)
-  const sc=document.createElement('canvas');sc.width=w;sc.height=h;const s2=sc.getContext('2d')!;
+   const sc=document.createElement('canvas');sc.width=tw+pad*2;sc.height=th+pad*2;const s2=sc.getContext('2d')!;
+   // Neighbor pixels cover the filter radius: no shoulder seams at tile edges.
+   s2.translate(pad-x,pad-y);
    s2.lineJoin='round';s2.lineWidth=11;s2.strokeStyle='#a8916c';
   for(const poly of polys){trace(s2,[poly]);s2.closePath();s2.stroke();}
    fillEach(s2,polys,'#a8916c');
    // Blur the opaque union once, not a separate expensive filter for every edge.
-   c.globalAlpha=.42;c.filter='blur(5px)';c.drawImage(sc,0,0);c.filter='none';c.globalAlpha=1;sc.width=sc.height=0;
+    c.globalAlpha=.42;c.filter='blur(5px)';c.drawImage(sc,x-pad,y-pad);c.filter='none';c.globalAlpha=1;sc.width=sc.height=0;
   // 2. asphalt: opaque, so overlapping run/patch polygons are seamless
   fillEach(c,polys,'#353c3d');
   // 3. aggregate grain clipped to the surface, world-hashed so it never restarts per segment
   c.save();trace(c,polys.map(p=>[...p,p[0]]));c.clip('nonzero');
-  for(let i=0;i<w*h/90;i++){const x=hash(i)*w,y=hash(i+7.3)*h;c.fillStyle=i%3?'rgba(110,115,108,.22)':'rgba(16,20,22,.28)';c.fillRect(x,y,1,1);}
+   // A global jittered lattice gives equal grain density on both sides of a tile seam.
+   const cols=Math.ceil(w/9.5);
+   for(let gy=Math.floor(y/9.5);gy<Math.ceil((y+th)/9.5);gy++)for(let gx=Math.floor(x/9.5);gx<Math.ceil((x+tw)/9.5);gx++){
+    const i=gy*cols+gx,px=(gx+hash(i))*9.5,py=(gy+hash(i+7.3))*9.5;
+    c.fillStyle=i%3?'rgba(110,115,108,.22)':'rgba(16,20,22,.28)';c.fillRect(px,py,1,1);
+   }
   c.restore();
   // 4. worn edge lines only along straight sides; stop before curb returns
   c.lineCap='round';
   for(const r of plan.runs){const P=(s:number,o:number)=>r.axis==='x'?pt(r.fixed+o,s):pt(s,r.fixed+o);
    for(const o of [-ROAD_HALF+.03,ROAD_HALF-.03])for(const [e0,e1] of r.edges){const a=P(e0,o),b=P(e1,o);c.strokeStyle='rgba(190,182,154,.55)';c.lineWidth=.9;c.beginPath();c.moveTo(...a);c.lineTo(...b);c.stroke();}
    for(const [a0,b0] of r.dashes){const a=P(a0,0),b=P(b0,0);c.strokeStyle='rgba(222,209,164,.82)';c.lineWidth=1.1;c.beginPath();c.moveTo(...a);c.lineTo(...b);c.stroke();}}
-   this.clearCoat();
-   for(let y=0;y<h;y+=1024)for(let x=0;x<w;x+=1024){
-    const key=`paved:${d.id}:${x}:${y}`,tw=Math.min(1024,w-x),th=Math.min(1024,h-y);
-    const tex=this.scene.textures.createCanvas(key,tw,th)!;
-    tex.getContext().drawImage(cv,x,y,tw,th,0,0,tw,th);tex.refresh();
-    this.pavedKeys.push(key);this.pavement.push(this.scene.add.image(ox+x/K,oy+y/K,key).setOrigin(0,0).setScale(1/K).setDepth(-799000));
+     this.pavedKeys.push(key);
+     if(!this.scene.textures.addCanvas(key,cv))throw new Error('تعذر تجهيز سطح الشوارع');
+     this.pavement.push(this.scene.add.image(ox+x/K,oy+y/K,key).setOrigin(0,0).setScale(1/K).setDepth(-799000));
    }
-   cv.width=cv.height=0;
  }
  /** Hot fresh mat from road start to the screed edge (fraction fs). No paint. */
   private freshMat(g:SurfaceBrush,r:RoadSegment,fs:number){

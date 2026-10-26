@@ -44,10 +44,16 @@ function showCityStatus(status: 'loading' | 'ready' | 'error', message = '') {
   cityStatus.hidden = status === 'ready' || !S().currentDistrict;
   if (status === 'ready') return;
   cityStatus.innerHTML = status === 'loading'
-    ? '<div class="city-status-card"><h2>تجهيز الحي…</h2><p>جارٍ رسم الأرض والمباني. انتظر قليلًا.</p></div>'
+    ? `<div class="city-status-card"><h2>تجهيز الحي…</h2><p>${esc(message || 'جارٍ رسم الأرض والمباني. انتظر قليلًا.')}</p></div>`
     : `<div class="city-status-card"><h2>تعذر عرض الحي</h2><p>إعادة المحاولة لا تحذف تقدمك.</p><p class="note">${esc(message)}</p><div class="row"><button class="btn gold" data-a="retry-city">إعادة المحاولة</button><button class="btn" data-a="map">خريطة الأحياء</button></div></div>`;
 }
 const esc = (s: string) => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
+let incompleteArtNotice = false;
+window.addEventListener('city-art-incomplete', () => {
+  if (incompleteArtNotice) return;
+  incompleteArtNotice = true;
+  setTimeout(() => toast('بعض زوايا المباني غير مكتملة؛ نعرض نفس المبنى بوجه متاح دون تغيير حفظك.', true), 0);
+});
 function dur(ms: number) { const s = Math.max(0, Math.ceil(ms / 1000)); const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60; return h ? `${fmt(h)} س ${fmt(m)} د` : m ? `${fmt(m)} د ${fmt(x)} ث` : `${fmt(x)} ث`; }
 const secs = (s: number) => dur(cur()?actualWorkDuration(cur()!,s*1000):s*1000);
 const gemIcon = `<img class="gem-icon" src="${import.meta.env.BASE_URL}art/gem.svg" alt="" />`;
@@ -546,7 +552,7 @@ const game = new Phaser.Game({
   type: Phaser.AUTO, parent: stage, backgroundColor: '#d9c39a',
   scale: { mode: Phaser.Scale.NONE, zoom: 1 / DENSITY, width: Math.round(window.innerWidth * DENSITY), height: Math.round(window.innerHeight * DENSITY) },
   loader: { maxParallelDownloads: 4, timeout: 20000, maxRetries: 2 },
-  scene: [BootScene, CityScene], render: { antialias: true }, input: { activePointers: 3 },
+  scene: [BootScene, CityScene], fps: { target: 30 }, render: { antialias: true }, input: { activePointers: 3 },
 });
 // Development-only inspection for the isolated art regression browser.
 if (import.meta.env.DEV) Object.defineProperty(window, '__newgazaArtScene', {

@@ -21,6 +21,7 @@ export function buildingShadow(scene:Phaser.Scene,raw:string){
     c.setTransform(1,0,-CITY_SHADOW.dx,-CITY_SHADOW.dy,
       ox-m.w/2+ground*CITY_SHADOW.dx,oy+ground*CITY_SHADOW.dy);
     c.drawImage(body,0,0);c.restore();
+    body.width=body.height=0;
     c.fillStyle='rgba(45,43,35,.13)';c.beginPath();
     c.ellipse(ox,oy,m.w*.29,(m.ground?.h??m.w/2)*.14,0,0,Math.PI*2);c.fill();
     scene.textures.addCanvas(key,canvas);

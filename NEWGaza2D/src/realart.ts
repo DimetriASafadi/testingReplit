@@ -3,6 +3,7 @@ import manifest from './realistic-manifest.json';
 import { building } from './catalog';
 import type { Orientation } from './model';
 import { ORIENTATION_FACES } from './orientation';
+import { availableBuildingFace } from './artwork-face';
 
 export interface SprMeta { w: number; h: number; ay: number; ground?: { w: number; h: number } }
 export const SPR = manifest as Record<string, SprMeta>;
@@ -21,11 +22,17 @@ const KEY: Record<string, string> = {
   wheat: 'wheat', citrus: 'citrus', olive: 'olive', vegetables: 'veg', strawberry: 'straw', cattle: 'cattle', palms: 'palms', corn: 'corn', protective_trees: 'trees', ornamental_trees: 'orn',
 };
 export const isFarm = (id: string) => building(id).category === 'farm' || id === 'zoo';
+const reportedFaces = new Set<string>();
 export function builtKey(id: string, orient: Orientation) {
   const k = KEY[id]; if (!k) throw new Error(`Unknown building artwork: ${id}`);
-  const side = ORIENTATION_FACES[orient];
-  if (k === 'cattle' && !orient) return 'farm_cattle';
-  return `${k}_${side}`;
+  const face = availableBuildingFace(k, orient, key => !!SPR[key]);
+  const requested = `${k}_${ORIENTATION_FACES[orient]}`;
+  if (face.missing && !reportedFaces.has(requested)) {
+    reportedFaces.add(requested);
+    console.warn(`Incomplete building quartet: ${requested}; displaying same building as ${face.key}`);
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event('city-art-incomplete'));
+  }
+  return face.key;
 }
 /** construction archetype for the civic/leisure additions (independent of catalog category) */
 const CIVIC_CONSTRUCT: Record<string, string> = { school: 'shop_c', hospital: 'apt_c', mosque: 'shop_c', church: 'house_c', sports_club: 'shop_c', recreation_park: 'house_c' };

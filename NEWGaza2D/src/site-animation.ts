@@ -150,18 +150,22 @@ export class SiteAnimation {
 
   update(plots: Plot[], now: number) {
     const vw = this.scene.cameras.main.worldView; let budget = this.maxWorkers; const live = new Set<number>();
+    let plotBudget = vw.width > 2400 ? 10 : 18;
     for (const p of plots) {
       if (!(p.status === 'building' || (p.status === 'built' && isFarmDef(building(p.buildingId))))) continue;
       const c = this.iso(p.x + 1, p.y + 1); live.add(p.id);
-      const kind = p.status === 'building' ? 'b' : 'f'; let v = this.views.get(p.id);
-      if (v && v.kind !== kind) { this.killPV(v); this.views.delete(p.id); v = undefined; }
-      if (!(c.x > vw.x - 200 && c.x < vw.right + 200 && c.y > vw.y - 320 && c.y < vw.bottom + 200)) { if (v) this.setVis(v, false); continue; }
+      const kind = p.status === 'building' ? 'b' : 'f', identity = `${kind}:${p.buildingId}:${p.orientation}`; let v = this.views.get(p.id);
+      if (v && v.kind !== identity) { this.killPV(v); this.views.delete(p.id); v = undefined; }
       const def = building(p.buildingId);
-      if (!v) {
-        const n = kind === 'b' ? Math.min(4, 2 + Math.floor(def.floors / 3)) : def.id === 'cattle' || def.id === 'zoo' ? 0 : 2;
-        if (budget < n) continue; v = this.mk(kind, n); this.views.set(p.id, v);
+      const n = kind === 'b' ? Math.min(4, 2 + Math.floor(def.floors / 3)) : def.id === 'cattle' || def.id === 'zoo' ? 0 : 2;
+      if (plotBudget <= 0 || budget < n || !(c.x > vw.x - 200 && c.x < vw.right + 200 && c.y > vw.y - 320 && c.y < vw.bottom + 200)) {
+        if (v) { this.killPV(v); this.views.delete(p.id); }
+        continue;
       }
-      this.setVis(v, true); budget -= v.workers.length;
+      if (!v) {
+        v = this.mk(identity, n); this.views.set(p.id, v);
+      }
+      this.setVis(v, true); budget -= v.workers.length; plotBudget--;
       if (kind === 'b' && !isFarmDef(def)) this.site(p, v, now); else this.farm(p, v, now);
       this.stepWater(v, now);
     }

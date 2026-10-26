@@ -28,6 +28,7 @@ import { roadAt } from '../roads';
 import { preloadExpansionArt } from '../expansion-art';
 import { DistrictLife, preloadLifeArt } from '../district-life';
 import { PIXEL_DENSITY as DENSITY } from '../render-quality';
+import { renderInBatches } from '../render-work';
 
 export interface CityHooks { getState(): GameState; onSelect(plotId: number | null): void; onRoadSelect?(roadId:string):void; onCamera(c: { x: number; y: number; zoom: number }): void; onWorldState?(state: 'loading' | 'ready' | 'error', message?: string): void }
 
@@ -37,7 +38,7 @@ const iso = (lx: number, ly: number) => ({ x: (lx - ly) * U, y: (lx + ly) * U / 
 const unIso = (wx: number, wy: number) => ({ lx: wy / U + wx / (2 * U), ly: wy / U - wx / (2 * U) });
 const DRAG = 9; const ANCHOR_LOT = 380; const SC = ART_SC;
 
-interface PlotView { key: string; img: Phaser.GameObjects.Image; opacity?: SpriteOpacity; bounds?: Phaser.Geom.Rectangle; shadow?: Phaser.GameObjects.Image; skirt?: Phaser.GameObjects.Image; bar?: Phaser.GameObjects.Graphics; coin?: Phaser.GameObjects.Container; yard?: Phaser.GameObjects.Image; yardFront?: Phaser.GameObjects.Image; yardKey?: string }
+interface PlotView { key: string; img: Phaser.GameObjects.Image; opacity?: SpriteOpacity; bounds?: Phaser.Geom.Rectangle; shadow?: Phaser.GameObjects.Image; skirt?: Phaser.GameObjects.Image; bar?: Phaser.GameObjects.Graphics; coin?: Phaser.GameObjects.Image; yard?: Phaser.GameObjects.Image; yardFront?: Phaser.GameObjects.Image; yardKey?: string }
 
 export class CityScene extends Phaser.Scene {
   private readonly spriteOpacity = new SpriteOpacityCache();
@@ -71,6 +72,8 @@ export class CityScene extends Phaser.Scene {
   private minimumZoom = 0.35;
   private animationAt = 0;
   private textureSweepAt = 0;
+  private buildGeneration = 0;
+  private barsAt = 0;
 
   constructor() { super('city'); }
 
@@ -80,7 +83,7 @@ export class CityScene extends Phaser.Scene {
     this.fleetAnimation = new FleetAnimation(this);
     this.roadAnimation = new RoadAnimation(this);
     this.districtLife = new DistrictLife(this);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { this.siteAnimation.destroy(); this.fleetAnimation.destroy(); this.roadAnimation.reset(); this.districtLife.reset(); });
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { this.buildGeneration++; this.siteAnimation.destroy(); this.fleetAnimation.destroy(); this.roadAnimation.reset(); this.districtLife.reset(); });
     this.cameras.main.setBackgroundColor(TERRAIN_BACKDROP);
     this.input.addPointer(1);
     if (!this.textures.exists('dot')) { const g = this.make.graphics({}, false); g.fillStyle(0xe8dcc4, 1).fillCircle(4, 4, 4); g.generateTexture('dot', 8, 8); g.destroy(); }
@@ -131,6 +134,8 @@ export class CityScene extends Phaser.Scene {
       this.scale.off(Phaser.Scale.Events.RESIZE, resize);
     });
     this.input.on('wheel', (_p: unknown, _o: unknown, _dx: number, dy: number) => { this.zoomBy(dy > 0 ? 0.9 : 1.1); this.saveCam(); });
+    // During create the scene may not be ACTIVE yet (notably on restore).
+    this.events.once(Phaser.Scenes.Events.POST_UPDATE, () => this.sync());
     this.sync();
   }
 
@@ -139,7 +144,8 @@ export class CityScene extends Phaser.Scene {
     return key;
   }
 
-  private buildWorld(st: GameState) {
+  private async buildWorld(st: GameState, generation: number) {
+    this.hooks.onWorldState?.('loading', 'تجهيز أرض الحي…');
     this.resetGestures();
     this.siteAnimation.resetDistrict(); this.fleetAnimation.resetDistrict();
     this.roadAnimation.reset();
@@ -148,6 +154,8 @@ export class CityScene extends Phaser.Scene {
     this.clearingStages.clear(); this.clearingAt = 0;
     const oldTex = [...this.groundTextures, ...this.roadTextures];
     this.children.removeAll(true); this.views.clear(); this.roadImg = undefined;
+    this.tweens.killAll();
+    this.releaseUnusedStages();
     for (const k of oldTex) if (this.textures.exists(k)) this.textures.remove(k);
     this.groundTextures = []; this.roadTextures = []; this.roadImages = [];
     this.groundKey = '';
@@ -161,6 +169,8 @@ export class CityScene extends Phaser.Scene {
     const quad = (x0: number, y0: number, x1: number, y1: number, col: number, a = 1) => { const pts = [iso(x0, y0), iso(x1, y0), iso(x1, y1), iso(x0, y1)]; g.fillStyle(col, a).fillPoints(pts.map(p => new Phaser.Math.Vector2(p.x, p.y)), true); };
     g.fillStyle(0xa39274, 1).fillRect(c.x - size * 1.5, c.y - size * 1.5, size * 3, size * 3);
     this.paintGround(d.id, max);
+    await new Promise<void>(resolve => requestAnimationFrame(() => setTimeout(resolve, 0)));
+    if (generation !== this.buildGeneration || !this.sys.isActive()) return false;
     this.roadStage = -1; this.roadImg = undefined;
     this.sites.clear();
     this.layer = this.add.container(0, 0);
@@ -175,11 +185,20 @@ export class CityScene extends Phaser.Scene {
       if (cam.zoom <= this.minimumZoom * 1.02) this.centerOverview();
     }
     else { cam.setZoom(Phaser.Math.Clamp(Math.min(this.scale.width / (max * U * 2.0), this.scale.height / (max * U * 1.1)), 0.45 * DENSITY, DENSITY)); this.syncCameraBounds(); cam.centerOn(c.x, c.y); }
+    this.hooks.onWorldState?.('loading', 'تجهيز شوارع الحي…');
+    this.drawRoads(0);
+    this.roadAnimation.update(d, Date.now());
+    await new Promise<void>(resolve => requestAnimationFrame(() => setTimeout(resolve, 0)));
+    this.syncClearing(st, Date.now(), false);
+    const alive = () => generation === this.buildGeneration && this.sys.isActive() && this.hooks.getState().currentDistrict === d.id;
+    return renderInBatches(d.plots, p => this.syncPlot(p, Date.now()), alive,
+      (done, total) => this.hooks.onWorldState?.('loading', `تجهيز مباني الحي ${Math.round(done / total * 100)}%`));
   }
 
   sync() {
     if (!this.hooks || !this.sys.isActive()) return;
     const st = this.hooks.getState();
+    if (this.worldQueued) return;
     if (!st.currentDistrict) return;
     // Difficulty is a lightweight pre-entry step. Do not rasterize terrain,
     // upload textures or build all plot views behind its interactive dialog.
@@ -189,22 +208,25 @@ export class CityScene extends Phaser.Scene {
       this.worldQueued = true; this.worldReady = false; this.worldError = false;
       this.hooks.onWorldState?.('loading');
       // Give the loading panel a painted frame before the expensive initial render.
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        this.worldQueued = false;
+      const generation = ++this.buildGeneration;
+      requestAnimationFrame(() => requestAnimationFrame(async () => {
         const current = this.hooks.getState();
-        if (!current.currentDistrict || !this.sys.isActive()) { this.hooks.onWorldState?.('ready'); return; }
+        if (!current.currentDistrict || !this.sys.isActive()) { this.worldQueued = false; this.hooks.onWorldState?.('ready'); return; }
         // The player may have changed districts since this frame was queued.
         if (!current.districts.find(d => d.id === current.currentDistrict)?.difficultyChosen) {
+          this.worldQueued = false;
           this.hooks.onWorldState?.('ready');
           return;
         }
         try {
           this.district = current.currentDistrict; this.selected = null;
-          this.buildWorld(current);
-          this.syncWorld(current);
+          const complete = await this.buildWorld(current, generation);
+          this.worldQueued = false;
+          if (!complete) { if (this.sys.isActive()) this.sync(); return; }
+          this.syncWorld(this.hooks.getState());
           this.worldReady = true;
           this.hooks.onWorldState?.('ready');
-        } catch (error) { this.failWorld(error); }
+        } catch (error) { this.worldQueued = false; this.failWorld(error); }
       }));
       return;
     }
@@ -227,7 +249,8 @@ export class CityScene extends Phaser.Scene {
     this.drawSel(d.plots);
     const rp = d.projects.find(p => p.id === 'road');
     const rs = !rp || rp.status === 'idle' ? 0 : rp.status === 'building' ? 1 + Math.min(2, Math.floor(3 * Phaser.Math.Clamp((now - rp.startedAt) / Math.max(1, rp.endsAt - rp.startedAt), 0, 0.999))) : 4;
-    if (rs !== this.roadStage) { this.roadStage = rs; this.drawRoads(0); }
+    // The damaged base street is immutable; paving is owned by RoadAnimation.
+    this.roadStage = rs;
     this.syncSites(d, now);
   }
 
@@ -465,16 +488,22 @@ export class CityScene extends Phaser.Scene {
       this.syncYard(v, p, c, fp, t === 'b' ? 2 : t === 'c' && Number(b) >= 5 ? 1 : 0, Number(a) as Orientation);
       const source = v.img.texture.getSourceImage();
       if (!(source instanceof HTMLImageElement || source instanceof HTMLCanvasElement)) throw new Error('Unsupported plot sprite source');
-      v.opacity = this.spriteOpacity.prepare(source);
+      // Read pixels only if active machinery actually intersects this building.
+      v.opacity = undefined;
       v.bounds = v.img.getBounds();
       if (t === 'c') v.bar = this.add.graphics().setDepth(6e5);
     }
     // ready-to-collect badge
     const ready = p.status === 'built' && building(p.buildingId).income > 0 && now >= p.incomeAt + buildingIncomePeriod();
     if (ready && !v.coin) {
-      const g = this.add.graphics(); g.fillStyle(0x2b2320, 0.25).fillEllipse(0, 22, 26, 8); g.fillStyle(0xc58a1c).fillCircle(0, 0, 13); g.fillStyle(0xf2d06b).fillCircle(0, -1, 10); g.lineStyle(2, 0xa06c10).strokeCircle(0, -1, 6);
-      v.coin = this.add.container(c.x, c.y - 120, [g]).setDepth(6e5);
-      this.tweens.add({ targets: v.coin, y: c.y - 132, yoyo: true, repeat: -1, duration: 900, ease: 'Sine.inOut' });
+      const coin = this.tex('income-badge', 32, 44, x => {
+        x.fillStyle = 'rgba(43,35,32,.25)'; x.beginPath(); x.ellipse(16, 39, 13, 4, 0, 0, Math.PI * 2); x.fill();
+        for (const [r, y, color] of [[13, 16, '#c58a1c'], [10, 15, '#f2d06b']] as const) {
+          x.fillStyle = color; x.beginPath(); x.arc(16, y, r, 0, Math.PI * 2); x.fill();
+        }
+        x.lineWidth = 2; x.strokeStyle = '#a06c10'; x.beginPath(); x.arc(16, 15, 6, 0, Math.PI * 2); x.stroke();
+      });
+      v.coin = this.add.image(c.x, c.y - 126, coin).setOrigin(.5, 16 / 44).setDepth(6e5);
     } else if (!ready && v.coin) { v.coin.destroy(); v.coin = undefined; }
   }
 
@@ -522,7 +551,25 @@ export class CityScene extends Phaser.Scene {
     const d = st.districts.find(x => x.id === this.district)!; const now = Date.now();
     if (now >= this.clearingAt) { this.clearingAt = now + 160; this.syncClearing(st, now, true); }
     // construction progress bars
-    for (const p of d.plots) { const v = this.views.get(p.id); if (p.status === 'building' && v?.bar) { const c = iso(p.x + 1, p.y + 1); const f = Phaser.Math.Clamp((now - p.startedAt) / Math.max(1, p.endsAt - p.startedAt), 0, 1); v.bar.clear().fillStyle(0x2b2320, 0.75).fillRoundedRect(c.x - 40, c.y + 30, 80, 9, 4).fillStyle(0xf2d06b).fillRoundedRect(c.x - 38, c.y + 32, 76 * f, 5, 2);  } }
+    if (now >= this.barsAt) {
+      this.barsAt = now + 200;
+      const view = this.cameras.main.worldView;
+      for (const p of d.plots) {
+        const v = this.views.get(p.id);
+        if (p.status !== 'building' || !v?.bar) continue;
+        const c = iso(p.x + 1, p.y + 1), visible = view.contains(c.x, c.y + 30);
+        v.bar.setVisible(visible);
+        if (!visible) continue;
+        const f = Phaser.Math.Clamp((now - p.startedAt) / Math.max(1, p.endsAt - p.startedAt), 0, 1);
+        v.bar.clear().fillStyle(0x2b2320, 0.75).fillRoundedRect(c.x - 40, c.y + 30, 80, 9, 4)
+          .fillStyle(0xf2d06b).fillRoundedRect(c.x - 38, c.y + 32, 76 * f, 5, 2);
+      }
+    }
+    const visible = this.cameras.main.worldView;
+    for (const [id, v] of this.views) if (v.coin) {
+      const p = d.plots[id], c = iso(p.x + 1, p.y + 1);
+      if (visible.contains(c.x, c.y - 126)) v.coin.y = c.y - 126 + Math.sin(now / 573 + id * .7) * 6;
+    }
     this.siteAnimation.update([...d.plots, ...this.projectPlots], now);
     this.fleetAnimation.update(st, now, this.roadStage);
     this.roadAnimation.update(d,now);
@@ -542,6 +589,7 @@ export class CityScene extends Phaser.Scene {
           if (img.depth <= p.depth + 8 || !bounds.contains(p.x, p.y)) continue;
           const x = Math.floor((p.x - img.x) / img.scaleX + img.displayOriginX);
           const y = Math.floor((p.y - img.y) / img.scaleY + img.displayOriginY);
+          if (!v.opacity) v.opacity = this.spriteOpacity.prepare(img.texture.getSourceImage() as HTMLImageElement | HTMLCanvasElement);
           if (v.opacity && spriteAlphaAt(v.opacity, x, y) > 90) { this.occlusion.add(id); break; }
         }
       }
@@ -642,7 +690,7 @@ export class CityScene extends Phaser.Scene {
     const used=new Set<string>();
     for(const child of this.children.list)if(child instanceof Phaser.GameObjects.Image)used.add(child.texture.key);
     for(const key of this.textures.getTextureKeys()){
-      if((key.startsWith('construction:')||key.startsWith('clearing:'))&&!used.has(key)){
+      if((key.startsWith('construction:')||key.startsWith('clearing:')||key.startsWith('yard2:')||key.startsWith('building-shadow:'))&&!used.has(key)){
         this.textures.remove(key);delete SPR[key];
       }
     }
