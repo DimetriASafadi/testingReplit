@@ -81,9 +81,14 @@ for p in (a.only or PREFIXES):
     if not src.exists(): src=FF/"clean"/f"{p}.png"
     if not src.exists(): continue
     sh=Image.open(src).convert("RGBA");W2,H2=sh.size;faces={};errs=[];W=man[front_key(p)]["w"];gh=man[front_key(p)].get("ground",{}).get("h",W/2)
-    faces,errs=extract_faces(sh);single={}
+    # When preserving legacy front/back, their accepted published files are the
+    # source of truth. Some old four-view sheets contain overhead or duplicated
+    # panels, so do not let those unused panels reject or replace new side art.
+    faces,errs=({},[]) if a.keep_legacy else extract_faces(sh);single={}
     for f in FACES:  # optional single-pose overrides, only when supplied
-        o=FF/"clean/single"/f"{p}_{f}.png"
+        if a.keep_legacy and f in ("front","back"): continue
+        o=FF/"clean/single"/f"{p}_{f}.webp"
+        if not o.exists(): o=FF/"clean/single"/f"{p}_{f}.png"
         if o.exists():
             im=Image.open(o).convert("RGBA");bb=im.getchannel("A").point(lambda v:255 if v>24 else 0).getbbox()
             if not bb or bb[0]<=0 or bb[1]<=0 or bb[2]>=im.width or bb[3]>=im.height: errs.append(f"{f}: single override empty/clipped")
@@ -93,12 +98,16 @@ for p in (a.only or PREFIXES):
         if others:
             k=(sum(others)/len(others))/im.width;im=im.resize((round(im.width*k),round(im.height*k)),Image.Resampling.LANCZOS)
         faces[f]=im;faces[f].off=(None,None);errs=[e for e in errs if not e.startswith(f+":")]
-    if len(faces)==4:
+    expected_faces=2 if a.keep_legacy else 4
+    if len(faces)==expected_faces:
         hs=[v.height*W/v.width for v in faces.values()]  # normalized height at pinned width
         mw=sum(v.width for v in faces.values())/4
+        if a.keep_legacy: mw=sum(v.width for v in faces.values())/len(faces)
         for f,v in faces.items():
             if not .85<=v.width/mw<=1.15: errs.append(f"{f}: width outlier {v.width/mw:.2f}x mean")
         if max(hs)/min(hs)>1.3: errs.append(f"height spread {max(hs)/min(hs):.2f}")
+    elif a.keep_legacy:
+        errs.append(f"expected two right/left overrides, got {len(faces)}")
     if errs: bad[p]=errs;continue
     capk=min(1,512/max(W,max(round(v.height*W/v.width) for v in faces.values())))  # one common cap for all four faces
     out={}
@@ -126,7 +135,11 @@ for p in (a.only or PREFIXES):
     # contact strip
     cs=Image.new("RGBA",(4*(W+20),330),(150,140,118,255));d=ImageDraw.Draw(cs)
     for i,f in enumerate(FACES):
-        v=Image.open(FF/"staging"/f"{name(p,f)}.webp");cs.alpha_composite(v,(i*(W+20)+10,320-v.height))
+        staged=FF/"staging"/f"{name(p,f)}.webp"
+        if staged.exists(): v=Image.open(staged)
+        elif a.keep_legacy and f in ("front","back"): v=Image.open(ART/"s"/f"{name(p,f)}.webp")
+        else: raise RuntimeError(f"Missing staged face for contact preview: {name(p,f)}")
+        cs.alpha_composite(v.convert("RGBA"),(i*(W+20)+10,320-v.height))
     cs.convert("RGB").save(FF/"contact"/f"{p}.png")
 if done:
     ps=[d[0] for d in done];tile=Image.open(FF/"contact"/f"{ps[0]}.png");T=Image.new("RGB",(tile.width,tile.height*len(ps)))

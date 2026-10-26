@@ -2,14 +2,21 @@
 import assert from 'node:assert/strict';
 import { browser } from './browser-client.mjs';
 const b = await browser(390, 844);
+const openSavedCity = async () => {
+  await b.until("document.querySelector('#boot.done')");
+  if (await b.evaluate("!!document.querySelector('[data-a=\"enter\"]')")) await b.click('[data-a="enter"]');
+  await b.until("window.__newgazaArtScene?.worldReady");
+};
 try {
   await b.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 3 });
-  await b.send('Page.navigate', { url: 'http://localhost:80/' });
+  const appUrl = process.env.BROWSER_TEST_URL || 'http://localhost:80/';
+  await b.send('Page.navigate', { url: appUrl });
   await b.until("document.querySelector('#boot.done')");
   await b.evaluate(`(async()=>{
     const E=await import('/src/engine.ts'), C=await import('/src/catalog.ts'), R=await import('/src/realart.ts');
     const s=E.newGame();s.currentDistrict='shujaiya';s.coins=99000000;
     const d=s.districts.find(d=>d.id==='shujaiya');
+    d.difficultyChosen=true;
     C.BUILDINGS.forEach((def,i)=>{
       const p=d.plots[i],o=[0,2,1,3][i%4];
       Object.assign(p,{status:'built',buildingId:def.id,orientation:R.SPR[R.builtKey(def.id,o)]?o:0,incomeAt:s.lastSeen});
@@ -18,13 +25,28 @@ try {
     localStorage.setItem(E.SAVE_KEY,JSON.stringify(s));
   })()`);
   await b.send('Page.reload');
-  await b.until("window.__newgazaArtScene?.worldReady");
+  await openSavedCity();
   const inventory = await b.evaluate(`(async()=>{
     const C=await import('/src/catalog.ts'),R=await import('/src/realart.ts');
-    return C.BUILDINGS.map(d=>({id:d.id,keys:[0,2,1,3].map(o=>R.builtKey(d.id,o)),
-      full:[0,2,1,3].every(o=>!!R.SPR[R.builtKey(d.id,o)])}));
+    const quartet=id=>{const first=R.builtKey(id,0),stem=first==='farm_cattle'?'cattle':first.replace(/_front$/,'');
+      return [first,stem+'_right',stem+'_back',stem+'_left'];};
+    return C.BUILDINGS.map(d=>{const keys=quartet(d.id);return {id:d.id,keys,full:keys.every(k=>!!R.SPR[k])};});
   })()`);
-  assert.equal(inventory.filter(x => x.full).length, 36);
+  assert.equal(inventory.filter(x => x.full).length, 49);
+  const familyFaces = await b.evaluate(`(async()=>{
+    const C=await import('/src/catalog.ts'),R=await import('/src/realart.ts'),sc=window.__newgazaArtScene;
+    const district=sc.hooks.getState().districts.find(d=>d.id==='shujaiya');
+    return [['cement','cement'],['citrus','citrus'],['vegetables','veg'],['traditional_housing','trad'],['protective_trees','trees']].map(([id,stem])=>{
+      const p=district.plots.find(p=>p.buildingId===id),first=R.builtKey(id,0),keys=[first,stem+'_right',stem+'_back',stem+'_left'];
+      return {id,stem,orientation:p.orientation,expected:'s:'+R.builtKey(id,p.orientation),
+        actual:sc.views.get(p.id)?.img.texture.key,loaded:keys.every(k=>sc.textures.exists('s:'+k))};
+    });
+  })()`);
+  assert.equal(familyFaces.length, 5);
+  for (const face of familyFaces) {
+    assert.ok(face.loaded, `${face.id}: all four face textures loaded after reopening`);
+    assert.equal(face.actual, face.expected, `${face.id}: saved orientation rendered after reopening`);
+  }
   const house = inventory.find(x => x.keys[0] === 'smallhouse_front');
   await b.evaluate("window.__newgazaArtScene.hooks.onSelect(42)");
   await b.click('[data-a="cat"][data-id="housing"]');
@@ -41,6 +63,7 @@ try {
     p.startedAt=Date.now()-50000;p.endsAt=Date.now()+70000;
     const v=sc.views.get(p.id);sc.cameras.main.setZoom(1.8).centerOn(v.img.x,v.img.y-30);
   })()`);
+  await b.evaluate("window.__newgazaArtScene.hooks.onSelect(42)");
   await b.wait(1200);
   const snapshot = () => b.evaluate(`(()=>{
     const sc=window.__newgazaArtScene,s=sc.hooks.getState(),p=s.districts.find(d=>d.id===s.currentDistrict).plots[42],v=sc.views.get(42);
@@ -74,18 +97,8 @@ try {
   })()`), 'landscape action visible');
   await b.screenshot('/tmp/four-faces-landscape.png');
   await b.send('Page.reload');
-  await b.until("window.__newgazaArtScene?.worldReady");
+  await openSavedCity();
   assert.equal((await snapshot()).o, 2);
-  const trad = inventory.find(x => x.keys[0] === 'trad_front');
-  await b.evaluate(`(()=>{
-    const sc=window.__newgazaArtScene,s=sc.hooks.getState(),p=s.districts.find(d=>d.id===s.currentDistrict).plots.find(p=>p.buildingId==='${trad.id}');
-    p.orientation=0;sc.hooks.onSelect(p.id);
-  })()`);
-  assert.ok(await b.evaluate("document.querySelector('.sheet').textContent.includes('لم تُعتمد بعد')"));
-  await b.click('[data-a="rotate-building"]');
-  assert.equal(await b.evaluate(`(()=>{
-    const s=window.__newgazaArtScene.hooks.getState();return s.districts.find(d=>d.id===s.currentDistrict).plots.find(p=>p.buildingId==='${trad.id}').orientation;
-  })()`), 1);
   assert.deepEqual(b.errors, []);
-  console.log('PASS: 36 true quartets; phone previews; construction/built rotation; constant size; timers/costs; saved right pose; landscape controls; explicit two-face pending art.');
+  console.log('PASS: 49 true quartets; five new families loaded in a crowded saved city after reload; phone previews; construction/built rotation; constant size; timers/costs; landscape controls.');
 } finally { b.close(); }

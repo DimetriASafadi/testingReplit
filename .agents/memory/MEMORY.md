@@ -3,6 +3,7 @@
 - [Geographic sources and saves](geographic-sources-and-saves.md) — disambiguate Gaza map points; later expansions preserve neighborhood identity and earned access, not array positions.
 - [GitHub authentication paths](github-authentication-paths.md) — connector authorization can work while native Git push fails; preserve commit hashes and merge remote history before delivery.
 - [Headless 3D previews](headless-3d-previews.md) — use CPU rendering when no graphics context is available; native GPU initialization can abort before a fallback runs.
+- [Python asset toolchain](python-asset-toolchain.md) — use matching Python 3.13 for Pillow-backed scripts; bare Python can mismatch the installed native wheels.
 - [Imported model UV channels](imported-model-uv-channels.md) — export the texture's actual UV channel; valid geometry and UV counts do not prove a correctly mapped albedo.
 - [Orthographic city audio](orthographic-city-audio.md) — mix from ground focus plus zoom; camera setback and map units otherwise give misleading sound distance.
 - [Mechanical contact checks](mechanical-contact-checks.md) — valid meshes and joint bounds do not prove digging/loading contact or realistic map-scale travel.

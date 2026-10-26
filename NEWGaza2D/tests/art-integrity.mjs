@@ -8,7 +8,7 @@ const mapping = read('src/realart.ts').split('const KEY: Record<string, string> 
 const keys = Object.fromEntries([...mapping.matchAll(/(\w+): '([^']+)'/g)].map(m => [m[1], m[2]]));
 const ids = [...read('src/catalog.ts').matchAll(/^ \['(?:equipment|industry|housing|farm|commerce|leisure)',\[([^\]]+)\]/gm)]
   .flatMap(m => [...m[1].matchAll(/'([^']+)'/g)].map(v => v[1]));
-assert.equal(ids.length, 42);
+assert.equal(ids.length, 46);
 const fronts = new Set(), backs = new Set();
 for (const id of ids) {
   assert(keys[id], `Missing catalog art: ${id}`);
@@ -20,6 +20,10 @@ for (const id of ids) {
 }
 assert.equal(fronts.size, ids.length, 'Catalog entries unexpectedly alias the same front art');
 assert.equal(backs.size, ids.length, 'Catalog entries unexpectedly alias the same rear art');
+for (const stem of ['cement', 'citrus', 'veg', 'trad', 'trees']) {
+  for (const face of ['front', 'right', 'back', 'left'])
+    assert(manifest[`${stem}_${face}`], `Missing reviewed face: ${stem}_${face}`);
+}
 let bytes = 0;
 for (const [key, m] of Object.entries(manifest)) {
   assert(m.w > 0 && m.h > 0 && m.w <= 260 && m.h <= 460, key);
