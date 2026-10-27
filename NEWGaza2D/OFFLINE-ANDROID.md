@@ -1,9 +1,10 @@
-# Android offline test build — 1.6
+# Android offline test build — 1.7
 
-This is a debug-signed test APK with the same application ID, `com.newgaza.citygame`, and versionCode 7. It bundles the game rather than opening the development URL. Install over the previous build when Android accepts the signature; **do not uninstall to bypass a signature error without first exporting the old game's save**. Browser and Android saves are separate.
+This is a debug-signed test APK with the same application ID, `com.newgaza.citygame`, and versionCode 8. It bundles the game rather than opening the development URL. Install over the previous build when Android accepts the signature; **do not uninstall to bypass a signature error without first exporting the old game's save**. Browser and Android saves are separate.
 
 ## Current package
 - Dense saved districts rebuild their parcels in yielding batches with loading progress. Transparent yard padding is removed from stored textures without changing the ground anchor or reducing the source building resolution.
+- Terrain preparation and ground-texture uploads now yield between short batches, check whether a district build was superseded, and show changing preparation progress; the existing save is retained.
 - Unused yard/shadow/stage textures are released. Income indicators share a texture without infinite tweens; animation has a bounded parcel budget even when the city is full.
 - Finished roads rasterize directly into mobile-sized tiles; temporary shoulder canvases are tile-sized, not city-sized. Construction bars refresh at 5Hz only in view. Rendering targets 30 FPS.
 - TypeScript and 141 regression tests passed. These checks are not an Android handset benchmark; see docs/render-performance.md for scope and remaining device-verification limits.
@@ -22,6 +23,13 @@ This is a debug-signed test APK with the same application ID, `com.newgaza.cityg
 - All 310 public files and 314 built web files match the APK byte-for-byte.
 - No remote game server URL and no isolated dense-city fixture are included.
 - No physical Android handset/emulator benchmark was performed.
+
+## Package verification — 1.7
+- Gradle `assembleDebug` succeeded: `1.7-offline`, versionCode 8, package `com.newgaza.citygame`.
+- APK signature verified and its SHA-256 certificate matches the previous test APK, so it can be installed over 1.6 without uninstalling.
+- All 326 built web files match the packaged files byte-for-byte; the APK also contains two generated Capacitor bridge scripts.
+- TypeScript and all 141 regression tests passed. The Replit preview loaded the district-selection screen without browser errors.
+- A 93%-dense saved-city browser check did not finish in this workspace's software SwiftShader renderer, which exceeded 1.4 GB of memory. This is not an Android-device result; no phone/emulator was available to validate the cold reopen. Install over the existing build and keep the current save for that test.
 
 ## Package verification — 1.6
 - Android build succeeded: versionName 1.6-offline, versionCode 7, package `com.newgaza.citygame`.

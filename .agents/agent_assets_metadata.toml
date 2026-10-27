@@ -1188,3 +1188,17 @@ mtime_ms = 1793013471878
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/c8167f2d-71b0-422c-928e-afeed74bce79/b73156bf-9ff8-427d-a8fb-de273636869f"
 storage_version_token = "1793013638784848"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "rokd5E9yaMiIlltTAj_G2"
+uri = "file://generated-artifacts/new-gaza-2d-1.7-offline.apk"
+type = "unspecified"
+title = "APK أندرويد 1.7 للاختبار"
+description = "نسخة أوفلاين موقّعة بنفس شهادة النسخة السابقة. ثبّتها فوق 1.6 للاحتفاظ بالحفظ؛ لا تحذف بيانات التطبيق."
+logical_id = "f3740e74-ea4a-439a-8750-ce157bdb2b23"
+content_hash = "sha256:46e25e77a0b3c1ebbba23072a8a36b7e5f9a5ba941d74c19a7b91229d6c663dc"
+size = 28799999
+mtime_ms = 1793096302865
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/f3740e74-ea4a-439a-8750-ce157bdb2b23/fcffcaf8-85cb-4788-a394-72e7f11402bf"
+storage_version_token = "1793096415708511"
+content_type = "application/octet-stream"

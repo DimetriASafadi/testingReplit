@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { alphaBounds, renderInBatches } from '../src/render-work';
 
-test('fully built 144-parcel load yields at least once per four plots, retaining order', async () => {
+test('fully built 144-parcel load yields between plots, retaining order', async () => {
   const visited: number[] = [], progress: number[] = [];
   let yields = 0;
   const items = Array.from({ length: 144 }, (_, i) => i);
@@ -10,7 +10,7 @@ test('fully built 144-parcel load yields at least once per four plots, retaining
     done => progress.push(done), () => 0, async () => { yields++; });
   assert.equal(result, true);
   assert.deepEqual(visited, items);
-  assert.equal(yields, 36);
+  assert.equal(yields, 144);
   assert.equal(progress.at(-1), 144);
 });
 

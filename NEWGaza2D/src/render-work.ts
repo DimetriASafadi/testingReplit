@@ -2,15 +2,18 @@
 export async function renderInBatches<T>(items: readonly T[], visit: (item: T) => void,
   alive: () => boolean, progress: (done: number, total: number) => void,
   clock = () => performance.now(),
-  yieldFrame = () => new Promise<void>(resolve => requestAnimationFrame(() => setTimeout(resolve, 0)))) {
+  yieldFrame = () => new Promise<void>(resolve => requestAnimationFrame(() => setTimeout(resolve, 0))),
+  maxItemsPerFrame = 1) {
   let started = clock();
+  let batchSize = 0;
   for (let i = 0; i < items.length; i++) {
     if (!alive()) return false;
     visit(items[i]);
-    if (clock() - started >= 8 || (i + 1) % 4 === 0) {
+    batchSize++;
+    if (clock() - started >= 8 || batchSize >= maxItemsPerFrame) {
       progress(i + 1, items.length);
       await yieldFrame();
-      started = clock();
+      started = clock(); batchSize = 0;
     }
   }
   return alive();

@@ -145,7 +145,8 @@ export class CityScene extends Phaser.Scene {
   }
 
   private async buildWorld(st: GameState, generation: number) {
-    this.hooks.onWorldState?.('loading', 'تجهيز أرض الحي…');
+    const alive = () => generation === this.buildGeneration && this.sys.isActive() && this.hooks.getState().currentDistrict === st.currentDistrict;
+    this.hooks.onWorldState?.('loading', 'تجهيز أرض الحي 0%');
     this.resetGestures();
     this.siteAnimation.resetDistrict(); this.fleetAnimation.resetDistrict();
     this.roadAnimation.reset();
@@ -168,9 +169,8 @@ export class CityScene extends Phaser.Scene {
     const g = this.add.graphics().setDepth(-9e5);
     const quad = (x0: number, y0: number, x1: number, y1: number, col: number, a = 1) => { const pts = [iso(x0, y0), iso(x1, y0), iso(x1, y1), iso(x0, y1)]; g.fillStyle(col, a).fillPoints(pts.map(p => new Phaser.Math.Vector2(p.x, p.y)), true); };
     g.fillStyle(0xa39274, 1).fillRect(c.x - size * 1.5, c.y - size * 1.5, size * 3, size * 3);
-    this.paintGround(d.id, max);
-    await new Promise<void>(resolve => requestAnimationFrame(() => setTimeout(resolve, 0)));
-    if (generation !== this.buildGeneration || !this.sys.isActive()) return false;
+    const groundReady = await this.paintGround(d.id, max, alive);
+    if (!groundReady || !alive()) return false;
     this.roadStage = -1; this.roadImg = undefined;
     this.sites.clear();
     this.layer = this.add.container(0, 0);
@@ -190,7 +190,6 @@ export class CityScene extends Phaser.Scene {
     this.roadAnimation.update(d, Date.now());
     await new Promise<void>(resolve => requestAnimationFrame(() => setTimeout(resolve, 0)));
     this.syncClearing(st, Date.now(), false);
-    const alive = () => generation === this.buildGeneration && this.sys.isActive() && this.hooks.getState().currentDistrict === d.id;
     return renderInBatches(d.plots, p => this.syncPlot(p, Date.now()), alive,
       (done, total) => this.hooks.onWorldState?.('loading', `تجهيز مباني الحي ${Math.round(done / total * 100)}%`));
   }
@@ -262,18 +261,26 @@ export class CityScene extends Phaser.Scene {
   private seedRnd(n: number) { let seed = n; return () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }; }
 
   /** photo-textured ground: earth base, gravel patches, coastal sand ramp, wet-sand edge, scrub to the east */
-  private paintGround(did: string, max: number) {
+  private async paintGround(did: string, max: number, alive: () => boolean) {
     const LX0 = -14, LY0 = -16, LX1 = max + 16, LY1 = max + 16;
     this.frame = frameFor(LX0, LY0, LX1, LY1); const f = this.frame;
     const cv = makeCanvas(f.w, f.h); const P = new Painter(cv, f, this.imgs());
     const gi = (k: string) => this.textures.exists(k) ? this.textures.get(k).getSourceImage() as HTMLImageElement : null;
-    const info = paintSurroundings(P, districtEnvironment(did), did, max, { x0: LX0, y0: LY0, x1: LX1, y1: LY1 }, (id, lx, ly, w, op, mir) => {
+    const info = await paintSurroundings(P, districtEnvironment(did), did, max, { x0: LX0, y0: LY0, x1: LX1, y1: LY1 }, (id, lx, ly, w, op, mir) => {
       const img = gi('env:' + id); if (!img) return; const [px, py] = P.pt(lx, ly); P.ctx.save(); P.ctx.setTransform(1, 0, 0, 1, 0, 0);
-      groundStamp(P.ctx, img, id, px, py, w * GK * 1.6, op, mir); P.ctx.restore(); }, k => gi('s:' + k));
+      groundStamp(P.ctx, img, id, px, py, w * GK * 1.6, op, mir); P.ctx.restore(); },
+    k => gi('s:' + k), {
+      alive,
+      onProgress: percent => this.hooks.onWorldState?.('loading', `تجهيز أرض الحي ${percent}%`),
+    });
+    if (!info || !alive()) { cv.width = cv.height = 0; return false; }
     this.terrainInfo = info; this.registry.set('terrain', info);
     cv.dataset.terrain = `${info.style}:${info.water ? 'sea' : 'nowater'}`;
-    installGroundTiles(this, cv, f, `ground:${did}`, -8.9e5, this.groundTextures, []);
+    this.hooks.onWorldState?.('loading', 'إرسال أرض الحي إلى الرسوم 99%');
+    const installed = await installGroundTiles(this, cv, f, `ground:${did}`, -8.9e5, this.groundTextures, [], alive);
+    if (!installed) return false;
     this.groundKey = this.groundTextures[0];
+    return true;
   }
 
   /** 0 destroyed, 1 graded dirt, 2 gravel, 3 fresh unmarked asphalt, 4 complete marked roads */

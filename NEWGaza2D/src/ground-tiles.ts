@@ -13,10 +13,12 @@ export function groundTileRects(width: number, height: number, limit = 2048) {
 }
 
 /** Split only the rendered texture: world coordinates and art resolution stay unchanged. */
-export function installGroundTiles(scene: Phaser.Scene, source: HTMLCanvasElement,
+export async function installGroundTiles(scene: Phaser.Scene, source: HTMLCanvasElement,
   frame: GroundFrame, prefix: string, depth: number,
-  keys: string[], images: Phaser.GameObjects.Image[]) {
+  keys: string[], images: Phaser.GameObjects.Image[], alive: () => boolean = () => true,
+  yieldFrame: () => Promise<void> = () => new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 0)))): Promise<boolean> {
   for (const tile of groundTileRects(source.width, source.height)) {
+    if (!alive()) { source.width = source.height = 0; return false; }
     const canvas = makeCanvas(tile.width, tile.height);
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('تعذر تخصيص ذاكرة لرسوم الأرض');
@@ -28,7 +30,9 @@ export function installGroundTiles(scene: Phaser.Scene, source: HTMLCanvasElemen
     scene.textures.addCanvas(key, canvas);
     images.push(scene.add.image(frame.ox + tile.x / GK, frame.oy + tile.y / GK, key)
       .setOrigin(0, 0).setScale(1 / GK).setDepth(depth));
+    await yieldFrame();
   }
   // Do not retain the oversized staging buffer as well as the finished tiles.
   source.width = source.height = 0;
+  return alive();
 }
