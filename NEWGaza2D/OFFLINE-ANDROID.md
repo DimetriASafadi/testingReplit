@@ -38,6 +38,7 @@ This is a debug-signed test APK with the same application ID, `com.newgaza.cityg
 - TypeScript and all 143 regression tests passed. Coverage includes 4GB, unknown-capability, and high-memory render profiles.
 - Ground tile limits, plot rebuild scheduling, and initial local-asset concurrency use the selected profile; building artwork and saved coordinates remain unchanged.
 - The Replit preview loaded without browser errors. No physical phone benchmark was available; the 4GB handset and dense saved-city cold reopen still need confirmation on-device.
+- The disposable Chromium/WebGL dense-reopen check now passes: preparation progress advanced, all 144 plots reopened, and the saved coin balance, building IDs, statuses, and orientations matched. This used a generated fixture (140 built plots), not the user's phone save or the 1.7 APK; no Android device was connected, so cold reopen on-device remains unverified.
 
 ## Package verification — 1.6
 - Android build succeeded: versionName 1.6-offline, versionCode 7, package `com.newgaza.citygame`.

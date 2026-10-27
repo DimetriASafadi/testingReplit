@@ -67,6 +67,13 @@ try {
       total:district.plots.length,buildings:types.length,roads:district.pavedRoads.length};
   })()`);
   assert.equal(fixture.built, 140);
+  const expectedDistrict = await b.evaluate(`(()=>{
+    const save=JSON.parse(localStorage.getItem('${key}'));
+    const district=save.districts.find(d=>d.id===save.currentDistrict);
+    return {coins:save.coins,plots:district.plots.map(p=>({
+      id:p.id,status:p.status,buildingId:p.buildingId,orientation:p.orientation
+    }))};
+  })()`);
 
   const runs=[];
   for(let attempt=1;attempt<=1;attempt++){
@@ -74,6 +81,14 @@ try {
     const report=await waitForWorld();
     assert.equal(report.renderer,2,'Must exercise WebGL, not the Canvas fallback');
     assert.equal(report.plots,144,'All plots must be restored');
+    const restoredDistrict = await b.evaluate(`(()=>{
+      const save=JSON.parse(localStorage.getItem('${key}'));
+      const district=save.districts.find(d=>d.id===save.currentDistrict);
+      return {coins:save.coins,plots:district.plots.map(p=>({
+        id:p.id,status:p.status,buildingId:p.buildingId,orientation:p.orientation
+      }))};
+    })()`);
+    assert.deepEqual(restoredDistrict,expectedDistrict,'Reload must preserve balance, buildings, and plot orientation');
     const progress=await b.evaluate('window.__denseGroundProgress');
     assert(progress.length>=2,`Ground progress must advance, got ${JSON.stringify(progress)}`);
     const scene=await b.evaluate(`(()=>{
@@ -83,12 +98,13 @@ try {
     })()`);
     assert(scene.tiles.length>0);
     assert(scene.tiles.every(([w,h])=>w<=2048&&h<=2048),'Ground tiles must stay within mobile texture limits');
-    assert.equal(await b.evaluate(`JSON.parse(localStorage.getItem('${key}')).coins`),500000,'Reload must not reset saved currency');
-    runs.push({attempt,elapsedMs:report.elapsedMs,renderer:report.renderer,plots:report.plots,progress:scene.progress});
+    runs.push({attempt,elapsedMs:report.elapsedMs,renderer:report.renderer,plots:report.plots,
+      savedCoins:restoredDistrict.coins,built:restoredDistrict.plots.filter(p=>p.status==='built').length,
+      progress:scene.progress});
     if(attempt===1)await b.screenshot('/tmp/newgaza-dense-reopen.png');
   }
   assert.equal(b.errors.length,0,JSON.stringify(b.errors));
-  console.log('PASS: 93% saved city, WebGL terrain preparation progress, all 144 plots, and a fresh-document reload.',{fixture,runs});
+  console.log('PASS: dense saved city, WebGL terrain preparation progress, all 144 plots, preserved balance/buildings, and a fresh-document reload.',{fixture,runs});
 } finally {
   try { await b.evaluate('clearInterval(window.__denseGroundTimer)'); } catch {}
   if(scriptId)await b.send('Page.removeScriptToEvaluateOnNewDocument',{identifier:scriptId});
