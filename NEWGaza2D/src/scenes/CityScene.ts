@@ -27,7 +27,7 @@ import { RoadAnimation } from '../road-animation';
 import { roadAt } from '../roads';
 import { preloadExpansionArt } from '../expansion-art';
 import { DistrictLife, preloadLifeArt } from '../district-life';
-import { PIXEL_DENSITY as DENSITY } from '../render-quality';
+import { DEVICE_RENDER_PROFILE, PIXEL_DENSITY as DENSITY } from '../render-quality';
 import { renderInBatches } from '../render-work';
 
 export interface CityHooks { getState(): GameState; onSelect(plotId: number | null): void; onRoadSelect?(roadId:string):void; onCamera(c: { x: number; y: number; zoom: number }): void; onWorldState?(state: 'loading' | 'ready' | 'error', message?: string): void }
@@ -191,7 +191,8 @@ export class CityScene extends Phaser.Scene {
     await new Promise<void>(resolve => requestAnimationFrame(() => setTimeout(resolve, 0)));
     this.syncClearing(st, Date.now(), false);
     return renderInBatches(d.plots, p => this.syncPlot(p, Date.now()), alive,
-      (done, total) => this.hooks.onWorldState?.('loading', `تجهيز مباني الحي ${Math.round(done / total * 100)}%`));
+      (done, total) => this.hooks.onWorldState?.('loading', `تجهيز مباني الحي ${Math.round(done / total * 100)}%`),
+      undefined, undefined, DEVICE_RENDER_PROFILE.plotBatchSize);
   }
 
   sync() {
@@ -277,7 +278,8 @@ export class CityScene extends Phaser.Scene {
     this.terrainInfo = info; this.registry.set('terrain', info);
     cv.dataset.terrain = `${info.style}:${info.water ? 'sea' : 'nowater'}`;
     this.hooks.onWorldState?.('loading', 'إرسال أرض الحي إلى الرسوم 99%');
-    const installed = await installGroundTiles(this, cv, f, `ground:${did}`, -8.9e5, this.groundTextures, [], alive);
+    const installed = await installGroundTiles(this, cv, f, `ground:${did}`, -8.9e5,
+      this.groundTextures, [], alive, undefined, DEVICE_RENDER_PROFILE.groundTileSize);
     if (!installed) return false;
     this.groundKey = this.groundTextures[0];
     return true;

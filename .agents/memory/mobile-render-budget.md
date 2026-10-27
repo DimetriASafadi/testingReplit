@@ -27,6 +27,12 @@ Treat a late-game saved district—not a new empty district—as the startup/ren
 
 **How to apply:** Preserve the existing save and cold-open a populated Android district through ground, roads, and plot restoration; require visible progress to reach gameplay. Keep loading interruptible between parcels and do not recommend clearing app data as a test fix.
 
+Use the user's reported Android handset as the low-end reference: 4 GB RAM, a Helio processor up to 2 GHz, and Android 11.
+
+**Why:** This is the phone where dense-district loading trouble was observed; desktop or high-memory tests cannot establish its behavior.
+
+**How to apply:** Verify the runtime-selected low-memory profile on that handset when possible. If WebView hides device-memory information, treat the profile result as unconfirmed rather than assuming the 4 GB tier was selected.
+
 Do not assume a stalled late-game load is purely a memory problem: validate art coverage across the whole catalog and all saved orientations.
 
 **Why:** A mixed full-city fixture exposed incomplete view families that stopped scene creation during shadow generation. Empty-city checks never visited those subjects/angles.

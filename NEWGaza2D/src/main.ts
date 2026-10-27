@@ -27,7 +27,7 @@ import { districtIncome } from './district-income';
 import { buildingIncomeDetails } from './building-income';
 import { formatNumber as fmt, formatCompactNumber } from './number-format';
 import { AdsController } from './ads/controller';
-import { PIXEL_DENSITY as DENSITY } from './render-quality';
+import { DEVICE_RENDER_PROFILE, PIXEL_DENSITY as DENSITY } from './render-quality';
 import { isAdPlacement } from './ads/config';
 
 const app = document.getElementById('app')!;
@@ -551,13 +551,18 @@ document.addEventListener('input',e=>{
 const game = new Phaser.Game({
   type: Phaser.AUTO, parent: stage, backgroundColor: '#d9c39a',
   scale: { mode: Phaser.Scale.NONE, zoom: 1 / DENSITY, width: Math.round(window.innerWidth * DENSITY), height: Math.round(window.innerHeight * DENSITY) },
-  loader: { maxParallelDownloads: 4, timeout: 20000, maxRetries: 2 },
+  loader: { maxParallelDownloads: DEVICE_RENDER_PROFILE.parallelDownloads, timeout: 20000, maxRetries: 2 },
   scene: [BootScene, CityScene], fps: { target: 30 }, render: { antialias: true }, input: { activePointers: 3 },
 });
 // Development-only inspection for the isolated art regression browser.
-if (import.meta.env.DEV) Object.defineProperty(window, '__newgazaArtScene', {
-  configurable: true, get: () => game.scene.getScene('city'),
-});
+if (import.meta.env.DEV) {
+  Object.defineProperty(window, '__newgazaArtScene', {
+    configurable: true, get: () => game.scene.getScene('city'),
+  });
+  Object.defineProperty(window, '__newgazaRenderProfile', {
+    configurable: true, value: DEVICE_RENDER_PROFILE,
+  });
+}
 game.registry.set('hooks', {
   getState: () => store.state,
   onWorldState: showCityStatus,

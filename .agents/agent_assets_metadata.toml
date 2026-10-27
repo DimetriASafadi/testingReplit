@@ -1202,3 +1202,17 @@ mtime_ms = 1793096302865
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/f3740e74-ea4a-439a-8750-ce157bdb2b23/fcffcaf8-85cb-4788-a394-72e7f11402bf"
 storage_version_token = "1793096415708511"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "Rk6xydGUbMvxwE_Os9flC"
+uri = "file://generated-artifacts/new-gaza-2d-1.8-offline.apk"
+type = "unspecified"
+title = "APK أندرويد 1.8 — إعدادات متكيفة للأجهزة"
+description = "نسخة أوفلاين تجريبية. تثبّت فوق النسخة السابقة بالتوقيع نفسه، وتحافظ على الحفظ ما دمت لا تحذف التطبيق أو بياناته."
+logical_id = "253d499b-fdf6-421b-bfeb-abfa138d166a"
+content_hash = "sha256:8e9f0f58f39429b7a35913b936040fad0317f4d397909aaa267f5b499a3713d4"
+size = 28800416
+mtime_ms = 1793097155761
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/253d499b-fdf6-421b-bfeb-abfa138d166a/02ff9091-e492-40e1-907d-44e623b5d6b3"
+storage_version_token = "1793097194288094"
+content_type = "application/octet-stream"

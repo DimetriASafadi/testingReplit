@@ -16,8 +16,9 @@ export function groundTileRects(width: number, height: number, limit = 2048) {
 export async function installGroundTiles(scene: Phaser.Scene, source: HTMLCanvasElement,
   frame: GroundFrame, prefix: string, depth: number,
   keys: string[], images: Phaser.GameObjects.Image[], alive: () => boolean = () => true,
-  yieldFrame: () => Promise<void> = () => new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 0)))): Promise<boolean> {
-  for (const tile of groundTileRects(source.width, source.height)) {
+  yieldFrame: () => Promise<void> = () => new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 0))),
+  tileLimit = 2048): Promise<boolean> {
+  for (const tile of groundTileRects(source.width, source.height, tileLimit)) {
     if (!alive()) { source.width = source.height = 0; return false; }
     const canvas = makeCanvas(tile.width, tile.height);
     const ctx = canvas.getContext('2d');
