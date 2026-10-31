@@ -1216,3 +1216,17 @@ mtime_ms = 1793097155761
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/253d499b-fdf6-421b-bfeb-abfa138d166a/12949a22-27d9-4045-a770-1a50aa5bc222"
 storage_version_token = "1793100526169079"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "cRnNoguIVEQx12zsm32za"
+uri = "file://generated-artifacts/new-gaza-2d-1.9-offline.apk"
+type = "unspecified"
+title = "نيو غزة — APK 1.9 مع تشخيص الأداء"
+description = "نسخة اختبار أوفلاين؛ توقيعها مطابق للنسخة 1.8. ثبّتها كتحديث دون إلغاء التثبيت. تشخيص اختياري من قائمة الحفظ؛ أداء الهاتف لم يُقَس هنا."
+logical_id = "afe9662a-5ce4-4138-b3e6-1dc31eeb06f2"
+content_hash = "sha256:46bcddeae87067cee2ce43858f95ffb45d6b613cdb7066aacb842de54038754c"
+size = 29371506
+mtime_ms = 1793441677264
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/afe9662a-5ce4-4138-b3e6-1dc31eeb06f2/1707c1d2-5685-424a-a157-e75c29cf7b15"
+storage_version_token = "1793441748066869"
+content_type = "application/octet-stream"

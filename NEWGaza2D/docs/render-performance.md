@@ -47,6 +47,12 @@ not sufficient to validate rendering or startup.
 
 ## Verification boundary
 
+Opt-in on-device diagnostics are available from the save menu in web/APK.
+See [the Arabic protocol](android-performance-diagnostics.ar.md) for bounded
+recording, dense-save cold reopens, matched comparisons and the explicit
+unverified device measurements. JS heap and RGBA estimates are not total
+Android or GPU memory measurements.
+
 Pure tests cover scheduling, cancellation, pixel bounds and the existing game
 rules. The isolated fixture in generated-artifacts/performance runs the actual
 Phaser renderer without touching player storage; it exercises a dense district,

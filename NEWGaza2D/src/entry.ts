@@ -1,3 +1,4 @@
+import './performance-diagnostics';
 // Keep startup failures visible even if importing Phaser/the game fails.
 const message = document.getElementById('boot-msg');
 const error = document.getElementById('boot-err');

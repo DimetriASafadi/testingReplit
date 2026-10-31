@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { Capacitor } from '@capacitor/core';
 import './style.css';
 import './navigation-icons.css';
 import './blue-theme.css';
@@ -29,6 +30,8 @@ import { formatNumber as fmt, formatCompactNumber } from './number-format';
 import { AdsController } from './ads/controller';
 import { DEVICE_RENDER_PROFILE, PIXEL_DENSITY as DENSITY } from './render-quality';
 import { isAdPlacement } from './ads/config';
+import { connectDiagnostics, diagnosticEvent, openDiagnostics } from './performance-diagnostics';
+import { progressFingerprint } from './performance-samples';
 
 const app = document.getElementById('app')!;
 const stage = document.getElementById('stage')!;
@@ -39,6 +42,9 @@ cityStatus.id = 'city-status'; cityStatus.hidden = true;
 cityStatus.setAttribute('role', 'status'); cityStatus.setAttribute('aria-live', 'polite');
 document.body.append(cityStatus);
 function showCityStatus(status: 'loading' | 'ready' | 'error', message = '') {
+  const percent = message.match(/(\d+)%/);
+  if (!percent || Number(percent[1]) % 10 === 0)
+    diagnosticEvent(`city:${status}:${message}`, status !== 'loading');
   cityLoading = status === 'loading';
   syncMusic();
   cityStatus.hidden = status === 'ready' || !S().currentDistrict;
@@ -383,6 +389,7 @@ function dialogHtml(st: GameState, now: number): [string, string] {
   if (ui.dialog === 'save') {
     return ['الحفظ', `<p>يُحفظ التقدم تلقائيًا <b>على هذا الجهاز وهذا المتصفح فقط</b>. لا توجد مزامنة سحابية.</p>${store.storageError ? `<p class="note" role="alert">${esc(store.storageError)}</p>` : ''}
       <div class="row"><button class="btn" data-a="export" data-k="exp">تنزيل نسخة الحفظ</button></div>
+      <div class="row"><button class="btn" data-a="diagnostics" data-k="diagnostics">تشخيص الأداء الاختياري</button></div>
       <p class="note">إعادة الضبط تحذف كل التقدم من هذا الجهاز ولا يمكن التراجع عنها.</p><button class="btn sumac" data-a="reset" data-k="reset">إعادة ضبط اللعبة</button>`];
   }
   return ['', ''];
@@ -556,6 +563,7 @@ document.addEventListener('click', e => {
     case 'hide-obj': ui.objectiveHidden = true; break;
     case 'zin': scene?.zoomBy(1.2); scene?.saveCam(); break;
     case 'zout': scene?.zoomBy(1 / 1.2); scene?.saveCam(); break;
+    case 'diagnostics': ui.dialog = null; dlg.close(); openDiagnostics(); return;
     case 'export': download(store.exportSave(), `newgaza2d-save-${new Date().toISOString().slice(0, 10)}.json`); break;
     case 'reset': if (confirm('حذف كل التقدم من هذا الجهاز نهائيًا؟') && confirm('تأكيد أخير: إعادة الضبط لا يمكن التراجع عنها.') && store.reset()) location.reload(); return;
     case 'retry-city': scene?.retryWorld(); break;
@@ -577,6 +585,35 @@ const game = new Phaser.Game({
   scale: { mode: Phaser.Scale.NONE, zoom: 1 / DENSITY, width: Math.round(window.innerWidth * DENSITY), height: Math.round(window.innerHeight * DENSITY) },
   loader: { maxParallelDownloads: DEVICE_RENDER_PROFILE.parallelDownloads, timeout: 20000, maxRetries: 2 },
   scene: [BootScene, CityScene], fps: { target: 30 }, render: { antialias: true }, input: { activePointers: 3 },
+});
+connectDiagnostics(() => {
+  const renderer = game.renderer;
+  const gl = renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer ? renderer.gl : null;
+  const extension = gl?.getExtension('WEBGL_debug_renderer_info');
+  const textures = game.textures.getTextureKeys().map(key => game.textures.get(key));
+  const sources = textures.flatMap(texture => texture.source);
+  const d = cur();
+  return {
+    build: '1.9-offline-diagnostics', runtime: Capacitor.getPlatform(),
+    renderer: gl ? 'WebGL' : 'Canvas', gpu: gl ? String(gl.getParameter(extension?.UNMASKED_RENDERER_WEBGL ?? gl.RENDERER)) : null,
+    maxTextureSize: gl?.getParameter(gl.MAX_TEXTURE_SIZE) ?? null, contextLost: gl?.isContextLost() ?? null,
+    renderProfile: DEVICE_RENDER_PROFILE, framebuffer: [game.canvas.width, game.canvas.height],
+    cameraZoom: scene?.cameras.main.zoom ?? null, textureCount: textures.length,
+    rgbaTextureEstimateBytes: sources.reduce((n, source) => n + source.width * source.height * 4, 0),
+    largestTextureEdge: Math.max(0, ...sources.map(source => Math.max(source.width, source.height))),
+    farmTextures: textures.filter(texture => texture.key.startsWith('farmyard:')).length,
+    district: d?.id ?? null, built: d?.plots.filter(p => p.status === 'built').length ?? 0,
+    plots: d?.plots.length ?? 0, progress: d ? districtProgress(d) : null,
+    construction: d?.plots.filter(p => p.status === 'building').length ?? 0,
+    pavedRoads: d?.pavedRoads?.length ?? 0, projects: d?.projects.filter(p => p.status === 'complete').length ?? 0,
+    progressFingerprint: d ? progressFingerprint(d) : null, coins: S().coins, gems: S().gems,
+    builtTypes: d ? Object.fromEntries([...new Set(d.plots.filter(p => p.status === 'built').map(p => p.buildingId))]
+      .map(id => [id, d.plots.filter(p => p.status === 'built' && p.buildingId === id).length])) : {},
+    loading: cityLoading, bootLoading, storageError: Boolean(store.storageError),
+  };
+}, frame => {
+  game.events.on('poststep', frame);
+  return () => { game.events.off('poststep', frame); };
 });
 // Development-only inspection for the isolated art regression browser.
 if (import.meta.env.DEV) {

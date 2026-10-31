@@ -1,8 +1,11 @@
-# Android offline test build — 1.8
+# Android offline test build — 1.9
 
-This is a debug-signed test APK with the same application ID, `com.newgaza.citygame`, and versionCode 9. It bundles the game rather than opening the development URL. Install over the previous build when Android accepts the signature; **do not uninstall to bypass a signature error without first exporting the old game's save**. Browser and Android saves are separate.
+This is a debug-signed test APK with the same application ID, `com.newgaza.citygame`, and versionCode 10. It bundles the game rather than opening the development URL. Install over the previous build when Android accepts the signature; **do not uninstall to bypass a signature error without first exporting the old game's save**. Browser and Android saves are separate.
 
 ## Current package
+- Version 1.9 adds **الحفظ ← تشخيص الأداء الاختياري**. Recording is off by default, persists its opt-in across cold opens, and can be stopped from the same panel. Reports are copyable locally; there is no telemetry upload.
+- It samples actual Phaser frames, JavaScript heap when available, an explicitly labelled texture-memory estimate, WebGL limits and renderer, district progress fingerprints, and startup milestones. It does not modify the player's save or procedural-art cache limits.
+- Recording retains six sessions of up to 60 five-second samples each. See [the Arabic device protocol and unverified measurements](docs/android-performance-diagnostics.ar.md). Real Android WebView, 90–100% cold reopens, long-session memory stability and a same-device before/after comparison remain **unverified**; no phone is connected here.
 - Dense saved districts rebuild their parcels in yielding batches with loading progress. Transparent yard padding is removed from stored textures without changing the ground anchor or reducing the source building resolution.
 - Terrain preparation and ground-texture uploads now yield between short batches, check whether a district build was superseded, and show changing preparation progress; the existing save is retained.
 - Startup quality now adapts to reported device memory and CPU cores. A phone reporting 4GB uses a 1.25x pixel-density cap, smaller ground tiles, fewer concurrent asset loads, and single-parcel frame batches; original building artwork is kept at full resolution.
@@ -17,6 +20,14 @@ This is a debug-signed test APK with the same application ID, `com.newgaza.cityg
 - Includes the latest flag construction site and completed plaza, streetlamp, fishing boat, low-rise house and roadside palm artwork. Assets load with the initial game loader, not a remote development URL.
 - Includes the earlier startup recovery and agricultural-ground fixes from 1.2, as well as the performance improvements below.
 - This is a new package for phone testing, not a claim that every device or every gameplay state has been tested.
+
+## Package verification — 1.9
+- Gradle `assembleDebug` succeeded: versionName `1.9-offline`, versionCode 10, package `com.newgaza.citygame`.
+- APK signature verification succeeded and its SHA-256 certificate matches the 1.8 test APK. This supports an in-place update without uninstalling; no device installation was attempted.
+- All 328 built web files match the APK byte-for-byte. Diagnostics and the current build label are included; the packaged Capacitor configuration contains no remote game-server URL.
+- TypeScript passed. The full suite passed 154 tests; after the final logging-throttle change, the three focused diagnostics tests also passed.
+- Phone-sized preview showed the diagnostic panel without errors, using Canvas. No actual WebGL/Android performance measurement, dense-save reopen or before/after device comparison was completed.
+- Local retained output: `generated-artifacts/new-gaza-2d-1.9-offline.apk` (generated/ignored, not a Git source file).
 
 ## Package verification — 1.5
 - Android build succeeded: versionName 1.5-offline, versionCode 6, package com.newgaza.citygame.
