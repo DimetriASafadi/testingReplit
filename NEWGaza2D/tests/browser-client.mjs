@@ -19,8 +19,9 @@ export async function browser(width=1440,height=900) {
     return r.result.value;
   };
   const wait=ms=>new Promise(r=>setTimeout(r,ms));
-  const until=async expression=>{
-    for(let i=0;i<100;i++){
+  const until=async (expression,timeoutMs=15000)=>{
+    const deadline=Date.now()+timeoutMs;
+    while(Date.now()<deadline){
       try { if(await evaluate(expression))return; }
       catch(e) {
         if(!/navigated|context.*destroyed|Cannot find context|closed/i.test(e?.message || ''))throw e;

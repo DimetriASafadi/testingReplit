@@ -16,6 +16,7 @@ export function preloadExpansionArt(scene: Phaser.Scene) {
   for (let i = 0; i < TENT_COUNT; i++) if (!scene.textures.exists(`exp:tent${i}`)) scene.load.image(`exp:tent${i}`, url(`tent${i}.webp`));
   if (!scene.textures.exists('exp:paver')) scene.load.image('exp:paver', url('paver.jpg'));
   for (const d of PAVER_DIRS) if (!scene.textures.exists(`exp:paver-machine:${d}`)) scene.load.image(`exp:paver-machine:${d}`, url(`paver_${d}.webp`));
+  preloadProjectArt(scene);
 }
 
 /** Asphalt paving machine (painted, unbranded yellow paver: hopper, crawler tracks, rear screed). */
@@ -69,4 +70,20 @@ export function pavementTexture(scene: Phaser.Scene, angle: number): string {
 export function addPavement(scene: Phaser.Scene, sx: number, sy: number, angle: number, depth: number) {
   const k = pavementTexture(scene, angle); if (!k) return null;
   return scene.add.image(sx, sy, k).setOrigin(.5, .5).setDepth(depth);
+}
+
+/** Bespoke completed-project art for projects whose catalog meaning changed:
+ * housing = sewer network (pump station, manholes, pipe junction),
+ * commerce = security building (civil police station with walled yard).
+ * Sources: art-src/expansion/{sewer,security}_site.png. Anchor = parcel diamond centre. */
+export const PROJECT_ART: Record<string, { key: string; file: string; ox: number; oy: number }> = {
+  housing: { key: 'exp:project:sewer', file: 'sewer_site.webp', ox: .5, oy: .66 },
+  commerce: { key: 'exp:project:security', file: 'security_site.webp', ox: .5, oy: .72 },
+};
+/** Fit a project sprite to one plot diamond (2x2 lot units = 4U px wide). */
+export const projectArtScale = (frameWidth: number) => (4 * U * .92) / Math.max(1, frameWidth);
+/** Absolute URL for DOM previews (project cards) of the bespoke art. */
+export const projectArtUrl = (projectId: string) => PROJECT_ART[projectId] ? url(PROJECT_ART[projectId].file) : '';
+export function preloadProjectArt(scene: Phaser.Scene) {
+  for (const a of Object.values(PROJECT_ART)) if (!scene.textures.exists(a.key)) scene.load.image(a.key, url(a.file));
 }

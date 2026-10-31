@@ -94,8 +94,9 @@ function showRecovery(msg: string) {
 function download(text: string, name: string) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
 
 // ---------- UI state ----------
-const ui = { selDistrict: null as string | null, plot: null as number | null, cat: 'all' as Category | 'all', catPage: 0, dialogTab: 0, dialogPage: 0, pick: null as string | null, orient: 0 as Orientation, dialog: null as null | 'fleet' | 'mats' | 'projects' | 'progress' | 'save' | 'audio' | 'building-disposal' | 'difficulty' | 'wheel' | 'coins' | 'gems' | 'exchange' | 'road', objectiveHidden: false, road: null as string | null, diffPick: '' as string, exchangePack: 0, exchangeReq: '' };
+const ui = { selDistrict: null as string | null, plot: null as number | null, cat: 'all' as Category | 'all', catPage: 0, dialogTab: 0, dialogPage: 0, pick: null as string | null, orient: 0 as Orientation, dialog: null as null | 'fleet' | 'mats' | 'projects' | 'progress' | 'save' | 'audio' | 'building-disposal' | 'difficulty' | 'wheel' | 'coins' | 'gems' | 'exchange' | 'accelerate' | 'road', objectiveHidden: false, road: null as string | null, diffPick: '' as string, exchangePack: 0, exchangeReq: '' };
 const announcedSpin = new Set<number>(); const celebratedNow = new Set<string>();
+let accelerating: {districtId:string;plotId:number;startedAt:number}|null=null;
 const hasAsphalt = (d: DistrictState) => d.plots.some(p => p.buildingId === 'asphalt' && p.status === 'built');
 const uuid = () => (crypto as Crypto & { randomUUID?: () => string }).randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
 let disposal: { districtId: string; plotId: number; buildingId: string; startedAt: number; mode: 'sellBuilding' | 'removeBuilding' } | null = null;
@@ -266,6 +267,8 @@ function plotSheet(st: GameState, d: DistrictState, now: number) {
     title = b.name; sub = `قيد الإنشاء · ${ORIENTATION_LABELS[p.orientation]}`;
     const f = Math.min(1, (now - p.startedAt) / Math.max(1, p.endsAt - p.startedAt));
     body = `<div class="meter"><i style="transform:scaleX(${f})"></i></div><dl class="kv"><dt>المرحلة</dt><dd>${f < 0.3 ? 'الأساسات وحديد التسليح' : f < 0.68 ? 'الهيكل والسقالات' : 'الجدران والتشطيب'}</dd><dt>متبقٍ</dt><dd class="num">${dur(p.endsAt - now)}</dd><dt>المدة الكلية</dt><dd>${dur(p.endsAt-p.startedAt)}</dd></dl><p class="note">البناء يستمر بالوقت الحقيقي حتى عند إغلاق اللعبة.</p>`;
+    body += p.accelerated ? '<p class="note">تم استخدام تسريع الجواهر لهذا البناء.</p>' :
+      `<button class="btn gem-build" data-a="speed-ask" data-k="speed-ask" ${st.gems<2?'disabled':''}>${gemIcon} تسريع المتبقي للنصف · <bdi class="num">2</bdi> جواهر</button>${st.gems<2?'<p class="note">تحتاج إلى جوهرتين للتسريع.</p>':''}`;
   } else {
     title = b.name; sub = `${CAT[b.category]} · ${ORIENTATION_LABELS[p.orientation]}`;
     const incomeNow = Math.max(now, st.lastSeen);
@@ -317,6 +320,12 @@ function dialogHtml(st: GameState, now: number): [string, string] {
   if (ui.dialog === 'coins') return ['متجر المال', coinStoreHtml(st)];
   if (ui.dialog === 'gems') return ['متجر الجواهر', gemStoreHtml(st)];
   if (ui.dialog === 'exchange') return ['تأكيد التحويل', exchangeHtml(st, ui.exchangePack)];
+  if(ui.dialog==='accelerate') {
+    const c=accelerating,d=st.districts.find(d=>d.id===c?.districtId),p=d?.plots.find(p=>p.id===c?.plotId);
+    if(!c||!p||st.currentDistrict!==c.districtId||p.startedAt!==c.startedAt||p.status!=='building'||p.accelerated)
+      return ['تسريع البناء','<p class="note">اكتمل البناء أو تغيرت حالته. افتح تفاصيل المبنى مجددًا.</p><button class="btn" data-a="close-dlg">إغلاق</button>'];
+    return ['تأكيد تسريع البناء',`<p>خفض الوقت المتبقي لبناء ${esc(building(p.buildingId).name)} للنصف مقابل ${gemIcon} <bdi class="num">2</bdi> جواهر. يُستخدم مرة واحدة لكل بناء.</p><dl class="kv"><dt>المتبقي الآن</dt><dd class="num">${dur(p.endsAt-now)}</dd><dt>بعد التسريع</dt><dd class="num">${dur((p.endsAt-now)/2)}</dd></dl><button class="btn gold" data-a="speed-confirm" data-k="speed-confirm" ${st.gems<2?'disabled':''}>تأكيد خصم جوهرتين والتسريع</button>`];
+  }
   if (ui.dialog === 'road') { const d = cur(); if (!d) return ['', '']; return ['الطريق الرئيسي · تطوير الشوارع', ui.road?roadHtml(st, d, ui.road, hasAsphalt(d), now):streetsHtml(d)]; }
   if(ui.dialog==='audio'){
     const p=gameAudio.prefs;
@@ -344,7 +353,7 @@ function dialogHtml(st: GameState, now: number): [string, string] {
   }
   if (ui.dialog === 'projects' && d) {
     const defs = projects(d.id === 'rashid');
-    return ['مشاريع الحي', `<button class="btn gold" data-a="roads" data-k="main-road">الطريق الرئيسي · تجهيز وسفلتة الشوارع</button><p class="note">مدد البناء والإزالة والسفلتة حسب الحجم والصعوبة. ${MINUTE_TEST_TIMERS ? 'بقية المشاريع تحتفظ بمؤقت الاختبار الحالي.' : ''} الزراعة والورشة تُكرَّر بعد الجمع، والسوق يدرّ دخلًا كل ${incomeIntervalLabel()}.</p><div class="list">${defs.map(def => { const ps = d.projects.find(x => x.id === def.id)!; const pre = def.prerequisite ? d.projects.find(x => x.id === def.prerequisite) : null; const locked = pre && pre.status !== 'complete';
+    return ['مشاريع الحي', `<button class="btn gold" data-a="roads" data-k="main-road">تطوير الشوارع · تجهيز وسفلتة</button><p class="note">${MINUTE_TEST_TIMERS ? 'وضع الاختبار: كل نشاط 30 ثانية دون زيادة حسب الصعوبة. المدد النهائية محفوظة لتفعيلها لاحقًا.' : 'مدد العمل الأساسية تزيد حسب الصعوبة.'} لا تنتج مشاريع الخدمات دخلًا؛ الدخل من المباني المنتجة فقط، دفعة واحدة كل ${incomeIntervalLabel()}.</p><div class="list">${defs.map(def => { const ps = d.projects.find(x => x.id === def.id)!; const pre = def.prerequisite ? d.projects.find(x => x.id === def.prerequisite) : null; const locked = pre && pre.status !== 'complete';
       const repeat = def.id === 'farm' || def.id === 'industry'; let btn = '', info = '';
       if (ps.status === 'idle') { info = locked ? `يتطلب: ${esc(defs.find(x => x.id === def.prerequisite)!.name)}` : `<span class="num">${fmt(def.cost)}</span> · ${dur(workDuration(d,def.duration*1000))}${def.income ? ` · عائد <span class="num">${fmt(projectIncome(d, def))}</span>` : ''}`; btn = `<button class="btn sm" data-a="proj" data-id="${def.id}" data-k="p-${def.id}" ${locked || st.coins < def.cost ? 'disabled' : ''}>بدء</button>`; }
       else if (ps.status === 'building') { info = `قيد التنفيذ · متبقٍ <span class="num">${dur(ps.endsAt - now)}</span>`; }
@@ -367,7 +376,7 @@ function dialogHtml(st: GameState, now: number): [string, string] {
       <div class="check ${paved >= roads ? 'ok' : ''}"><i></i>مقاطع الشوارع المسفلتة: <span class="num">${fmt(paved)}/${fmt(roads)}</span></div>
       <div class="check ${done === d.projects.length ? 'ok' : ''}"><i></i>المشاريع المكتملة: <span class="num">${fmt(done)}/${fmt(d.projects.length)}</span></div>
       <div class="check ${!jobs ? 'ok' : ''}"><i></i>لا مهام إزالة أو سفلتة جارية في الحي</div>
-      <p>المكافأة: <b class="num">${fmt(def.reward)}</b> عملة + ${gemIcon} <b class="num">15</b> جوهرة</p>
+      <p>${d.completionRewarded ? 'أُضيفت مكافأة الإنجاز إلى رصيدك:' : 'مكافأة الإنجاز:'} <b class="num">${fmt(def.reward)}</b> عملة + ${gemIcon} <b class="num">15</b> جوهرة</p>
       <p class="note">${last ? 'هذا الحي الختامي: يعرض الاستلام خاتمة الرحلة.' : `بعد الاستلام تنتقل مباشرة إلى حي ${esc(DISTRICTS[idx + 1].name)}.`}</p>
       <button class="btn gold" data-a="claim" data-k="claim" ${ok ? '' : 'disabled'}>${d.claimed ? 'تم الاستلام' : last ? 'استلام الحي الختامي' : 'استلام الحي والانتقال للتالي'}</button>`];
   }
@@ -401,7 +410,7 @@ function expansionChecks() {
     const p = WHEEL_PRIZES[w.result]; toast(p.coins ? `ربحت ${fmt(p.coins)} عملة` : p.gems ? `ربحت ${fmt(p.gems)} جواهر` : p.iron ? `ربحت ${fmt(p.iron)} وحدة حديد` : p.wood ? `ربحت ${fmt(p.wood)} وحدة خشب` : 'حظًا أوفر في الدورة القادمة');
   }
   if (d && !d.claimed && !d.celebrated && !celebratedNow.has(d.id) && districtComplete(d)) {
-    celebratedNow.add(d.id); celebrate(dName(d.id)); gameAudio.click(true);
+    celebratedNow.add(d.id); celebrate(dName(d.id),DISTRICTS.find(def=>def.id===d.id)!.reward,15); gameAudio.click(true);
     try { store.dispatch({ type: 'celebrated' }); } catch { /* ack retried next session */ }
   }
 }
@@ -481,6 +490,21 @@ document.addEventListener('click', e => {
     case 'place':
     case 'place-half': if (ui.plot != null && ui.pick && act({ type: 'place', plotId: ui.plot, buildingId: ui.pick, orientation: ui.orient, accelerate: t.dataset.a === 'place-half' }, `بدأ إنشاء ${building(ui.pick).name}${t.dataset.a === 'place-half' ? ' بنصف الوقت مقابل جوهرتين' : ''}`)) closePlotSheet(); break;
     case 'clear': if (ui.plot != null && act({ type: 'clear', plotId: ui.plot }, 'انطلقت الآليات من مخزن المعدات')) closePlotSheet(); break;
+    case 'speed-ask': {
+      const d=cur(),p=d?.plots.find(p=>p.id===ui.plot);
+      if(d&&p&&p.status==='building'&&!p.accelerated) {
+        accelerating={districtId:d.id,plotId:p.id,startedAt:p.startedAt};
+        ui.dialog='accelerate';ui.dialogPage=0;ui.dialogTab=0;resetScroll('dlg');
+      }
+      break;
+    }
+    case 'speed-confirm': {
+      const c=accelerating;
+      if(c&&c.districtId===st.currentDistrict&&act({type:'accelerateBuilding',plotId:c.plotId,expectedStartedAt:c.startedAt},'تم تسريع الوقت المتبقي للنصف مقابل جوهرتين')) {
+        accelerating=null;ui.dialog=null;
+      }
+      break;
+    }
     case 'collectB': {
       if (ui.plot != null) {
         const previousCoins = S().coins;

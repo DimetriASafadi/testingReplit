@@ -1,4 +1,4 @@
-import { BUILDINGS, DISTRICTS, EQUIPMENT, building, projects } from './catalog';
+import { BUILDINGS, DISTRICTS, EQUIPMENT, building, projects, legacyProjects } from './catalog';
 import type { Action, DistrictState, GameAPI, GameState, Job, Plot } from './model';
 import { validateSave } from './save';
 import { factoryWindows, nextFactorySlot, outgoingTravelDuration, returnTravelDuration } from './fleet-motion';
@@ -17,18 +17,21 @@ import { difficultyOf, isDifficulty, PAVER_COST, projectIncome, ROAD_COST, START
 import { COIN_PACKS, WHEEL_COOLDOWN, WHEEL_PRIZES, wheelResult } from './rewards';
 import { roadsFor, pavingRoute, pathLength, streetFor } from './roads';
 import { actualWorkDuration, clearingSeconds, STREET_WORK_MS, STREET_STAGE_SHARES } from './construction-rules';
-import { purchaseWarehouse, roadUnitBusy, localUnit } from './warehouse-capacity';
+import { roadUnitBusy, localUnit } from './warehouse-capacity';
+import { migrateReconstruction } from './reconstruction-migration';
+import { wheelCooldown } from './timing-settings';
 import { beginAd, cancelAd, markAdEarned, recoverAd, settleEarnedAd } from './ads/ledger';
 import type { AdPlacement } from './ads/config';
 
 export const SAVE_KEY = 'newgaza2d-save-v1';
+export const UPGRADE_BACKUP_KEY = 'newgaza2d-save-before-upgrade';
 export const factoryRotationBlocked = (state: GameState, plotId: number) =>
   state.jobs.some(j => j.districtId === state.currentDistrict && (j.originPlotId === plotId || j.recyclingPlotId === plotId) && j.returnEnd > state.lastSeen) ||
   !!state.districts.find(d=>d.id===state.currentDistrict)?.roadWorks?.some(w=>(w.factoryId===plotId || w.preparation?.warehouseId===plotId) && w.returnEnd>state.lastSeen);
 export function newGame(now = Date.now()): GameState {
   const homes = BUILDINGS.filter(b => b.category === 'housing');
   return {
-    version: 1, expansionVersion:1, pavers:[], exchanges:[], timerProfile: timingProfile(), coins: STARTING_COINS, gems: 0, inventory: { concrete: 0, iron: 0, wood: 0, other: 0, value: 0 },
+    version: 1, reconstructionVersion:1, expansionVersion:1, pavers:[], exchanges:[], timerProfile: timingProfile(), coins: STARTING_COINS, gems: 0, inventory: { concrete: 0, iron: 0, wood: 0, other: 0, value: 0 },
     units: [], jobs: [], currentDistrict: null, lastSeen: now, sequence: 0,
     districts: DISTRICTS.map((d, index) => ({
       id: d.id, unlocked: index === 0, claimed: false, camera: null,
@@ -47,6 +50,7 @@ export function newGame(now = Date.now()): GameState {
 export function expandDistrictSave(state: GameState): void {
   if (state.districts.some(d => d.id === 'shati')) return;
   const added = newGame(state.lastSeen).districts.find(d => d.id === 'shati')!;
+  if(state.reconstructionVersion!==1) added.projects=legacyProjects().map(p=>({id:p.id,status:'idle',startedAt:0,endsAt:0,incomeAt:0}));
   added.unlocked = state.districts.find(d => d.id === 'sheikh-ijlin')!.claimed;
   state.districts.splice(DISTRICTS.findIndex(d => d.id === 'shati'), 0, added);
 }
@@ -112,11 +116,16 @@ export class GameStore implements GameAPI {
       try { const parsed: unknown = JSON.parse(raw); validateSave(parsed); expandDistrictSave(parsed); expandCitySave(parsed); validateSave(parsed); this.state = parsed }
       catch { throw new Error('تعذر التحقق من ملف الحفظ. لم نحذفه أو نستبدله؛ نزّل نسخة منه قبل اختيار بداية جديدة.') }
     } else this.state = newGame(now);
+    if(raw!==null && (this.state.reconstructionVersion!==1 || this.state.timerProfile!==timingProfile())) {
+      try { this.storage.setItem(UPGRADE_BACKUP_KEY,raw); }
+      catch { throw new Error('تعذر حفظ نسخة احتياطية قبل تحديث التقدم. لم نغيّر الحفظ الأصلي؛ تحقق من مساحة التخزين.'); }
+    }
     this.state.gems ??= 0;
     migrateExpansion(this.state);
+    migrateReconstruction(this.state, Math.max(now,this.state.lastSeen));
+    applyTimingProfile(this.state, Math.max(now,this.state.lastSeen));
     balanceFleetDepots(this.state);
     this.tick(now);
-    applyTimingProfile(this.state, this.state.lastSeen);
     recoverAd(this.state, this.state.lastSeen);
     this.persist();
   }
@@ -195,6 +204,10 @@ export class GameStore implements GameAPI {
       }
     }
     this.state.jobs = this.state.jobs.filter(j => now < j.returnEnd);
+    for(const d of this.state.districts) if(!d.completionRewarded && !d.claimed && districtComplete(d)) {
+      this.state.coins+=DISTRICTS.find(def=>def.id===d.id)!.reward;
+      this.state.gems+=DISTRICT_GEMS;d.completionRewarded=true;changed=true;
+    }
     this.state.lastSeen = now;
     if (changed) balanceFleetDepots(this.state);
     if (changed || now - this.savedAt >= 10000) this.persist();
@@ -257,7 +270,8 @@ export class GameStore implements GameAPI {
           ensure(!bonus || (this.state.ads?.spinCredits??0)>0,'انتظر انتهاء وقت دولاب الحظ');
           if(bonus)this.state.ads!.spinCredits--;
           const result=wheelResult(Math.random()),prize=WHEEL_PRIZES[result];
-          this.state.wheel={nextAt:bonus?this.state.wheel!.nextAt:now+WHEEL_COOLDOWN,result,startedAt:now,...(bonus?{bonus:true}:{})};
+          const nextAt=bonus?this.state.wheel!.nextAt:now+wheelCooldown();
+          this.state.wheel={nextAt,cooldownMs:nextAt-now,result,startedAt:now,...(bonus?{bonus:true}:{})};
           this.state.coins+=prize.coins;this.state.gems+=prize.gems;
           this.state.inventory.iron+=prize.iron;this.state.inventory.wood+=prize.wood;
           this.state.inventory.value+=prize.iron*60+prize.wood*35;break;
@@ -295,6 +309,17 @@ export class GameStore implements GameAPI {
           Object.assign(p, { status: 'building', buildingId: def.id, orientation: action.orientation, startedAt: now, endsAt: now + Math.round(actualWorkDuration(this.district(),def.duration * 1000) / (action.accelerate ? 2 : 1)), incomeAt: 0, paidCost: def.cost, accelerated: !!action.accelerate, incomeFactor:difficultyOf(this.district()).income });
           break;
         }
+        case 'accelerateBuilding': {
+          const p=this.plot(action.plotId);
+          ensure(p.status==='building' && p.startedAt===action.expectedStartedAt,'تغيّر المبنى أو اكتمل؛ افتح تفاصيله مجددًا');
+          ensure(!p.accelerated,'تم استخدام تسريع الجواهر لهذا البناء بالفعل');
+          ensure(this.state.gems>=HALF_TIME_GEMS,'تحتاج إلى جوهرتين لتسريع البناء');
+          this.state.gems-=HALF_TIME_GEMS;p.accelerated=true;
+          // Preserve the visible fraction at the moment of acceleration.
+          const remaining=Math.max(1,Math.ceil((p.endsAt-now)/2));
+          p.startedAt=now-Math.floor((now-p.startedAt)/2);p.endsAt=now+remaining;
+          break;
+        }
         case 'sellBuilding':
         case 'removeBuilding': {
           const p = this.plot(action.plotId);
@@ -320,12 +345,8 @@ export class GameStore implements GameAPI {
           break;
         }
         case 'buy': {
-          ensure(this.recycler(this.district()), 'ابنِ مصنع إعادة التدوير وانتظر اكتماله أولًا');
-          balanceFleetDepots(this.state);
-          const d=this.district(),warehouse=purchaseWarehouse(this.state,d,action.kind);
-          ensure(warehouse,'سعة المخازن ممتلئة لهذا النوع؛ ابنِ مخزن معدات جديدًا (3 آليات من كل نوع لكل مخزن)');
           const def = EQUIPMENT[action.kind]; ensure(def, 'نوع الآلية غير صالح'); this.pay(def.cost);
-          this.state.units.push({ id: `unit-${++this.state.sequence}`, kind: action.kind, level: 1, purchasePrice: def.cost,home:{districtId:d.id,warehouseId:warehouse.id} }); break;
+          this.state.units.push({ id: `unit-${++this.state.sequence}`, kind: action.kind, level: 1, purchasePrice: def.cost }); break;
         }
         case 'upgrade': {
           const u = this.state.units.find(v => v.id === action.unitId);
@@ -436,8 +457,10 @@ export class GameStore implements GameAPI {
           const d = this.district(), index = this.state.districts.indexOf(d);
           ensure(!d.claimed, 'استلمت مكافأة هذا الحي بالفعل');
           ensure(districtComplete(d) && !this.state.jobs.some(j => j.districtId === d.id), 'ابنِ جميع الأراضي وأكمل سفلتة الشوارع والمشاريع وانتظر عودة الآليات أولًا');
-          d.claimed = true; this.state.coins += DISTRICTS[index].reward;
-          this.state.gems += DISTRICT_GEMS;
+          if(!d.completionRewarded) {
+            this.state.coins+=DISTRICTS[index].reward;this.state.gems+=DISTRICT_GEMS;d.completionRewarded=true;
+          }
+          d.claimed = true;
           if (index + 1 < this.state.districts.length) {this.state.districts[index + 1].unlocked = true;this.state.currentDistrict=this.state.districts[index + 1].id;}
           else this.state.currentDistrict=null;
           break;

@@ -1,4 +1,4 @@
-import { BUILDINGS, DISTRICTS, EQUIPMENT, projects } from './catalog';
+import { BUILDINGS, DISTRICTS, EQUIPMENT, projects, legacyProjects } from './catalog';
 import type { GameState } from './model';
 import { cityLayout, LOT_COUNT } from './city-layout';
 import { isOrientation } from './orientation';
@@ -17,9 +17,13 @@ export function validateSave(value: unknown): asserts value is GameState {
   require(s.version === 1 && integer(s.coins) && integer(s.lastSeen) && integer(s.sequence));
   require(s.gems === undefined || integer(s.gems));
   require(s.expansionVersion===undefined || s.expansionVersion===1);
+  require(s.reconstructionVersion===undefined || s.reconstructionVersion===1);
+  require(s.timerProfile===undefined || ['normal','minute-test','test-30s','production-v2'].includes(s.timerProfile));
   require(s.exchanges===undefined || (Array.isArray(s.exchanges)&&s.exchanges.every(x=>typeof x==='string'&&x.length>=8&&x.length<=100)&&new Set(s.exchanges).size===s.exchanges.length));
   if(s.wheel)require(integer(s.wheel.startedAt)&&s.wheel.startedAt<=s.lastSeen&&integer(s.wheel.nextAt)&&
-    (s.wheel.bonus===true?s.wheel.nextAt>s.wheel.startedAt&&s.wheel.nextAt<=s.wheel.startedAt+WHEEL_COOLDOWN:s.wheel.bonus===undefined&&s.wheel.nextAt===s.wheel.startedAt+WHEEL_COOLDOWN)&&integer(s.wheel.result)&&!!WHEEL_PRIZES[s.wheel.result]);
+    (s.wheel.cooldownMs!==undefined?
+      integer(s.wheel.cooldownMs)&&s.wheel.cooldownMs>0&&s.wheel.cooldownMs<=WHEEL_COOLDOWN&&s.wheel.nextAt===s.wheel.startedAt+s.wheel.cooldownMs:
+      s.wheel.bonus===true?s.wheel.nextAt>s.wheel.startedAt&&s.wheel.nextAt<=s.wheel.startedAt+WHEEL_COOLDOWN:s.wheel.bonus===undefined&&s.wheel.nextAt===s.wheel.startedAt+WHEEL_COOLDOWN)&&integer(s.wheel.result)&&!!WHEEL_PRIZES[s.wheel.result]);
   if(s.ads!==undefined){
     const a=s.ads;require(a&&typeof a==='object'&&!Array.isArray(a)&&integer(a.nextAt)&&[0,1].includes(a.spinCredits));
     const id=(v:unknown)=>typeof v==='string'&&/^ad-[1-9]\d*$/.test(v)&&Number(v.slice(3))<=s.sequence;
@@ -50,6 +54,7 @@ export function validateSave(value: unknown): asserts value is GameState {
     require(d.difficulty===undefined || isDifficulty(d.difficulty));
     require(d.difficultyChosen===undefined || typeof d.difficultyChosen==='boolean');
     require(d.celebrated===undefined || typeof d.celebrated==='boolean');
+    require(d.completionRewarded===undefined || typeof d.completionRewarded==='boolean');
     const roadIds=new Set(roadsFor(d.id).map(r=>r.id));
     if(d.pavedRoads!==undefined)require(Array.isArray(d.pavedRoads)&&new Set(d.pavedRoads).size===d.pavedRoads.length&&d.pavedRoads.every(id=>roadIds.has(id)));
     if(d.roadWorks!==undefined){
@@ -69,7 +74,8 @@ export function validateSave(value: unknown): asserts value is GameState {
     require(d.unlocked === (i === 0 || predecessor.claimed) ||
       (d.id === 'rashid' && d.unlocked && predecessor?.id === 'shati' && predecessor.unlocked));
     require(d.camera === null || (typeof d.camera === 'object' && Number.isFinite(d.camera.x) && Number.isFinite(d.camera.y) && d.camera.zoom >= MIN_CAMERA_ZOOM && d.camera.zoom <= 4));
-    require(Array.isArray(d.plots) && [64, LOT_COUNT].includes(d.plots.length) && Array.isArray(d.projects) && [9,10].includes(d.projects.length));
+    require(Array.isArray(d.plots) && [64, LOT_COUNT].includes(d.plots.length) && Array.isArray(d.projects) &&
+      (s.reconstructionVersion===1?d.projects.length===7:[9,10].includes(d.projects.length)));
     const legacy = d.plots.length === 64;
     if (!legacy) require([cityLayout(d.id), cityLayout(d.id,1)].some(layout =>
       d.plots.every((p,j) => p && p.x === layout.cells[j].x && p.y === layout.cells[j].y)));
@@ -84,7 +90,7 @@ export function validateSave(value: unknown): asserts value is GameState {
       require(p.paidCost === undefined || integer(p.paidCost));
       require(p.status !== 'building' || (p.endsAt > p.startedAt && p.startedAt <= s.lastSeen));
     }
-    const defs = projects(d.id === 'rashid');
+    const defs = s.reconstructionVersion===1?projects(d.id === 'rashid'):legacyProjects(d.id === 'rashid');
     for (const [j,p] of d.projects.entries()) {
       require(p.gemRewarded === undefined || typeof p.gemRewarded === 'boolean');
       require(p && p.id === defs[j].id && ['idle','building','ready','complete'].includes(p.status));
@@ -133,7 +139,7 @@ export function validateSave(value: unknown): asserts value is GameState {
     require(team.every(u => u!.depotIds?.[d!.id] === undefined || u!.depotIds[d!.id] === (j.recyclingPlotId ?? j.originPlotId) ||
       (u!.kind !== 'truck' && j.toolsReturnEnd !== undefined && s.lastSeen >= j.toolsReturnEnd)));
     require([j.start,j.arrival,j.workEnd,j.returnEnd,j.value].every(integer));
-    require(j.start <= s.lastSeen && j.start < j.arrival && [60000,69000,78000,120000,138000,156000,180000,207000,234000].includes(j.workEnd - j.arrival) && j.returnEnd > j.workEnd);
+    require(j.start <= s.lastSeen && j.start < j.arrival && [30000,60000,69000,78000,120000,138000,156000,180000,207000,234000].includes(j.workEnd - j.arrival) && j.returnEnd > j.workEnd);
     require(j.departureAt === undefined || (integer(j.departureAt) && j.departureAt >= j.start && j.departureAt < j.arrival));
     require(j.returnStartAt === undefined || (integer(j.returnStartAt) && j.returnStartAt >= j.workEnd && j.returnStartAt < j.returnEnd));
     require(typeof j.cleared === 'boolean' && (j.cleared || d!.plots[j.plotId].status === 'rubble'));

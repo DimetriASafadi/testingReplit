@@ -8,7 +8,7 @@ let original, scriptId;
 const reloadDocument = async () => {
   const origin = await b.evaluate('performance.timeOrigin');
   await b.send('Page.reload');
-  await b.until(`performance.timeOrigin > ${origin} && !!document.querySelector('#boot.done')`);
+  await b.until(`performance.timeOrigin > ${origin} && !!document.querySelector('#boot.done')`,90000);
 };
 const waitForWorld = async (timeout = 210_000) => {
   const start = Date.now();
@@ -40,7 +40,7 @@ try {
     },25);
   ` }).then(result => { scriptId = result.identifier; });
   await b.send('Page.navigate', { url: testUrl });
-  await b.until(`!!document.querySelector('#boot.done')`);
+  await b.until(`!!document.querySelector('#boot.done')`,90000);
   original = await b.evaluate(`localStorage.getItem('${key}')`);
 
   const fixture = await b.evaluate(`(async()=>{
@@ -53,7 +53,7 @@ try {
     save.coins=500000;
     district.unlocked=true;district.difficulty='medium';district.difficultyChosen=true;
     district.claimed=false;district.celebrated=false;
-    const types=['small_house','food_shop','cafe','mosque'];
+    const types=['small_house','food_shop','cafe','mosque','wheat','citrus','vegetables'];
     if(!types.every(id=>BUILDINGS.some(b=>b.id===id)))throw new Error('Dense reload fixture building type is missing');
     for(const [i,p] of district.plots.entries()){
       Object.assign(p,{status:i<140?'built':'rubble',buildingId:types[i%types.length],
@@ -76,7 +76,7 @@ try {
   })()`);
 
   const runs=[];
-  for(let attempt=1;attempt<=1;attempt++){
+  for(let attempt=1;attempt<=2;attempt++){
     await reloadDocument();
     const report=await waitForWorld();
     assert.equal(report.renderer,2,'Must exercise WebGL, not the Canvas fallback');
@@ -94,15 +94,35 @@ try {
     const scene=await b.evaluate(`(()=>{
       const s=window.__newgazaArtScene;
       const tiles=s.groundTextures.map(k=>{const c=s.textures.get(k).getSourceImage();return [c.width,c.height]});
-      return {tiles,frame:s.frame,progress:window.__denseGroundProgress};
+      const textures=s.textures.getTextureKeys().filter(k=>!k.startsWith('__'));
+      const pixels=textures.reduce((n,k)=>{const t=s.textures.get(k);return n+t.source.reduce((a,v)=>a+v.width*v.height,0)},0);
+      return {tiles,frame:s.frame,progress:window.__denseGroundProgress,
+        textures:textures.length,textureMiB:pixels*4/1048576,
+        farmTextures:textures.filter(k=>k.startsWith('farmyard:')).length,
+        lamps:s.districtLife?.lamps?.length,visibleLamps:s.districtLife?.lamps?.filter(v=>v.visible).length,
+        projectTextures:[...s.sites.values()].map(v=>v.img.texture.key)};
     })()`);
     assert(scene.tiles.length>0);
     assert(scene.tiles.every(([w,h])=>w<=2048&&h<=2048),'Ground tiles must stay within mobile texture limits');
+    assert(scene.farmTextures<=72,'Farm variants must have a fixed finite cache');
+    assert(scene.projectTextures.includes('exp:project:sewer')&&scene.projectTextures.includes('exp:project:security'),'New projects must load their own art');
+    await b.send('Performance.enable');
+    const baseline=await b.send('Performance.getMetrics');
+    const frameSample=await b.evaluate(`new Promise(resolve=>{
+      const samples=[];let previous=performance.now();const end=previous+2500;
+      function next(t){samples.push(t-previous);previous=t;if(t<end)requestAnimationFrame(next);else {
+        samples.sort((a,b)=>a-b);resolve({frames:samples.length,medianMs:samples[Math.floor(samples.length*.5)],p95Ms:samples[Math.floor(samples.length*.95)]});
+      }}requestAnimationFrame(next);
+    })`);
+    const metric=key=>baseline.metrics.find(m=>m.name===key)?.value;
     runs.push({attempt,elapsedMs:report.elapsedMs,renderer:report.renderer,plots:report.plots,
       savedCoins:restoredDistrict.coins,built:restoredDistrict.plots.filter(p=>p.status==='built').length,
-      progress:scene.progress});
+      textures:scene.textures,textureMiB:Math.round(scene.textureMiB*10)/10,farmTextures:scene.farmTextures,
+      lamps:scene.lamps,visibleLamps:scene.visibleLamps,heapMiB:Math.round(metric('JSHeapUsedSize')/1048576),
+      frames:frameSample,progress:scene.progress});
     if(attempt===1)await b.screenshot('/tmp/newgaza-dense-reopen.png');
   }
+  assert(runs[1].textureMiB<=runs[0].textureMiB*1.05,'Reopening must not grow the texture footprint');
   assert.equal(b.errors.length,0,JSON.stringify(b.errors));
   console.log('PASS: dense saved city, WebGL terrain preparation progress, all 144 plots, preserved balance/buildings, and a fresh-document reload.',{fixture,runs});
 } finally {

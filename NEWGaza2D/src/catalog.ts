@@ -1,5 +1,6 @@
 import type { BuildingDef, EquipmentKind, ProjectDef } from './model';
 import { constructionSeconds } from './construction-rules';
+import { FINAL_TIMING } from './timing-settings';
 export const EQUIPMENT: Record<EquipmentKind, { name: string; cost: number }> = {
   excavator: { name: 'حفار', cost: 8000 }, bulldozer: { name: 'جرافة', cost: 5000 }, truck: { name: 'شاحنة نقل', cost: 6000 },
 };
@@ -32,7 +33,8 @@ export const BUILDINGS: BuildingDef[] = rows.flatMap(([category,ids,names,floors
  id,name:names[i],category,floors:floors[i],cost:costs[i],duration:constructionSeconds(id,category,floors[i]),income:incomeBuildings.has(id)?Math.max(100,Math.floor(costs[i]/12)):0,
 })));
 export function building(id:string): BuildingDef { const def=BUILDINGS.find(b=>b.id===id); if(!def)throw new Error('نوع المبنى غير معروف'); return def }
-export function projects(finale=false): ProjectDef[] {
+/** Immutable legacy definitions are needed to validate and settle older saves. */
+export function legacyProjects(finale=false): ProjectDef[] {
  return [
   {id:'water',name:'شبكة المياه',cost:18000,duration:3600,income:0,period:0},
   {id:'power',name:'شبكة الكهرباء',cost:22000,duration:5400,income:0,period:0},
@@ -45,4 +47,15 @@ export function projects(finale=false): ProjectDef[] {
   {id:'industry',name:'دفعة ورشة التدوير',cost:3000,duration:900,prerequisite:'power',income:4500,period:0},
   {id:'flag',name:'سارية علم فلسطين',cost:3000,duration:300,income:0,period:0},
  ];
+}
+export function projects(finale=false): ProjectDef[] {
+ return legacyProjects(finale).filter(p=>!['road','farm','industry'].includes(p.id)).map(p=>{
+  if(p.id==='water') return {...p,duration:FINAL_TIMING.waterSeconds};
+  if(p.id==='power') return {...p,duration:FINAL_TIMING.powerSeconds};
+  if(p.id==='flag') return {...p,duration:FINAL_TIMING.flagSeconds};
+  if(p.id==='housing') return {...p,name:'شبكة الصرف الصحي'};
+  if(p.id==='commerce') return {...p,name:'مبنى الأمن',income:0,period:0};
+  if(p.id==='park') return {...p,prerequisite:'water'};
+  return p;
+ });
 }

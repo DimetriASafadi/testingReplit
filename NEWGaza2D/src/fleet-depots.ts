@@ -57,12 +57,18 @@ export function availableDepotTeam(state: GameState, d: DistrictState, target: P
     warehouse,
     depot,
     team: (['excavator', 'bulldozer', 'truck'] as EquipmentKind[]).map(kind =>
-      state.units.find(u => u.kind === kind && localUnit(u,d) && (!u.home || u.home.warehouseId === warehouse.id) && !busy.has(u.id) && u.depotIds?.[d.id] === depot.id)),
-    active: state.jobs.filter(j => j.districtId === d.id && (j.recyclingPlotId ?? j.originPlotId) === depot.id).length,
-    distance: Math.abs(target.x - depot.x) + Math.abs(target.y - depot.y),
+      state.units.find(u => u.kind === kind && localUnit(u,d) && u.home?.warehouseId === warehouse.id && !busy.has(u.id) && u.depotIds?.[d.id] === depot.id) ??
+      state.units.find(u => u.kind === kind && !busy.has(u.id))),
+    active: state.jobs.filter(j => j.districtId === d.id && (j.recyclingPlotId ?? j.originPlotId) === depot.id).length*100+
+      state.jobs.filter(j=>j.districtId===d.id&&j.originPlotId===warehouse.id).length,
+    distance: Math.abs(target.x - depot.x) + Math.abs(target.y - depot.y)+Math.abs(target.x-warehouse.x)+Math.abs(target.y-warehouse.y),
   }))).filter(v => v.team.every(Boolean));
   candidates.sort((a, b) => a.active - b.active || a.distance - b.distance || a.depot.id - b.depot.id);
   const chosen = candidates[0];
   const warehouse = chosen?.warehouse;
+  if(chosen && warehouse)for(const u of chosen.team as Unit[]) {
+    u.home={districtId:d.id,warehouseId:warehouse.id};
+    (u.depotIds??={})[d.id]=chosen.depot.id;
+  }
   return chosen && warehouse ? { depot: chosen.depot, warehouse, team: chosen.team as Unit[] } : null;
 }

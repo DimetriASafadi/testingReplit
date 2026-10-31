@@ -16,6 +16,7 @@ import { paintSurroundings, TERRAIN_BACKDROP } from '../district-terrain';
 import { buildingFootprint } from '../building-footprint';
 import { buildingShadow } from '../building-shadow';
 import { lotLandscape } from '../lot-landscape';
+import { farmLandscape } from '../farm-landscape';
 import { ENVIRONMENT_IDS, environmentUrl, groundStamp } from '../environment-art';
 import { clearingProgress, clearingStage } from '../clearing-progress';
 import { CLEARING_META, CLEARING_SIZE, clearingCanvas, preloadClearing } from '../clearing-art';
@@ -25,7 +26,7 @@ import { gameAudio } from '../game-audio';
 import { installGroundTiles } from '../ground-tiles';
 import { RoadAnimation } from '../road-animation';
 import { roadAt } from '../roads';
-import { preloadExpansionArt } from '../expansion-art';
+import { preloadExpansionArt, PROJECT_ART, projectArtScale } from '../expansion-art';
 import { DistrictLife, preloadLifeArt } from '../district-life';
 import { DEVICE_RENDER_PROFILE, PIXEL_DENSITY as DENSITY } from '../render-quality';
 import { renderInBatches } from '../render-work';
@@ -33,7 +34,7 @@ import { renderInBatches } from '../render-work';
 export interface CityHooks { getState(): GameState; onSelect(plotId: number | null): void; onRoadSelect?(roadId:string):void; onCamera(c: { x: number; y: number; zoom: number }): void; onWorldState?(state: 'loading' | 'ready' | 'error', message?: string): void }
 
 // Projects with a dedicated parcel-free site sprite. Others (flag pole) are drawn by DistrictLife; never fall back to a factory.
-const SITE_PROJECTS = new Set(['water', 'power', 'housing', 'park', 'services', 'farm', 'commerce', 'industry']);
+const SITE_PROJECTS = new Set(['water', 'power', 'housing', 'park', 'services', 'commerce']);
 const iso = (lx: number, ly: number) => ({ x: (lx - ly) * U, y: (lx + ly) * U / 2 });
 const unIso = (wx: number, wy: number) => ({ lx: wy / U + wx / (2 * U), ly: wy / U - wx / (2 * U) });
 const DRAG = 9; const ANCHOR_LOT = 380; const SC = ART_SC;
@@ -349,10 +350,14 @@ export class CityScene extends Phaser.Scene {
       const stage = ps.status === 'idle' ? 0 : ps.status === 'building' ? 1 : 2; const q = stage === 1 ? constructionStageFor(f) : 0;
       const key = `ps:${def.id}:${stage}:${q}`; const [lx, ly] = spots[i] ?? [this.maxL + 1, 1 + i * 2]; const c = iso(lx, ly);
       const sk = siteKey(def.id, stage as 0 | 1 | 2, q);
-      const projectBuilding: Record<string, string> = { water: 'water_treatment', power: 'work', housing: 'housing_4', park: 'ornamental_trees', services: 'municipality', farm: 'wheat', commerce: 'modern_mall', industry: 'steel' };
+      // housing = sewer network, commerce = security building: their construction phase reuses
+      // utility/civic site canvases (pipes, formwork), never a house or a mall.
+      const projectBuilding: Record<string, string> = { water: 'water_treatment', power: 'work', housing: 'water_treatment', park: 'ornamental_trees', services: 'municipality', commerce: 'municipality' };
+      const own = stage === 2 ? PROJECT_ART[def.id] : undefined;
       if (stage === 1) this.projectPlots.push({ id: 1000 + i, x: lx - 1, y: ly - 1, status: 'building',
         buildingId: projectBuilding[def.id], orientation: 0, startedAt: ps.startedAt, endsAt: ps.endsAt, incomeAt: 0 });
-      const tk = stage === 1 ? this.constructionTex(projectBuilding[def.id], 0, q) : sk ? 's:' + sk : this.skirtTex(i % 3, true);
+      if(own&&!this.textures.exists(own.key))throw new Error(`Missing project artwork: ${own.key}`);
+      const tk = own ? own.key : stage === 1 ? this.constructionTex(projectBuilding[def.id], 0, q) : sk ? 's:' + sk : this.skirtTex(i % 3, true);
       let v = this.sites.get(def.id);
       if (!v) { const img = this.place(tk, c.x, c.y, c.y);
         const label = this.add.text(c.x, c.y + 44, '', {
@@ -363,6 +368,7 @@ export class CityScene extends Phaser.Scene {
         }).setOrigin(0.5).setDepth(6e5).setAlpha(0.9);
         v = { key, img, label, bar: this.add.graphics().setDepth(6e5) }; this.sites.set(def.id, v); }
       else if (v.key !== key) { this.applyTex(v.img, tk); v.key = key }
+      if (own && tk === own.key) v.img.setOrigin(own.ox, own.oy).setScale(projectArtScale(v.img.frame.width));
       const st = stage === 0 ? 'لم يبدأ' : stage === 1 ? `قيد الإنشاء ${Math.round(f * 100)}٪` : ps.status === 'ready' ? 'جاهز للجمع' : 'مكتمل';
       v.label.setText(`${def.name} · ${st}`);
       v.bar.clear(); if (stage === 1) v.bar.fillStyle(0x2b2320, 0.75).fillRoundedRect(c.x - 40, c.y + 58, 80, 8, 4).fillStyle(0xf2d06b).fillRoundedRect(c.x - 38, c.y + 60, 76 * f, 4, 2);
@@ -519,6 +525,12 @@ export class CityScene extends Phaser.Scene {
 
   /** compact buildings only: bounded courtyard on the free part of the lot; removed for ruins/empty plots */
   private syncYard(v: PlotView, p: Plot, c: { x: number; y: number }, fp: { factor: number; yard: string } | null, level: 0 | 1 | 2, orient: Orientation) {
+    if (isFarm(p.buildingId) && (p.status === 'built' || p.status === 'building')) {
+      const fk = farmLandscape(this, p.buildingId, orient, level);
+      v.yardFront?.destroy(); v.yardFront = undefined;
+      if (!v.yard) v.yard = this.add.image(c.x, c.y, fk).setOrigin(0.5, ANCHOR_LOT / TEX_H).setDepth(-200000).setScale(SC); else if (v.yard.texture.key !== fk) v.yard.setTexture(fk);
+      return;
+    }
     if (!fp || building(p.buildingId).category==='farm' || p.buildingId==='zoo') { v.yard?.destroy(); v.yardFront?.destroy(); v.yard = v.yardFront = undefined; return; }
     const y = lotLandscape(this, fp.yard as 'none'|'garden'|'patio'|'service', fp.factor, orient, level, p.id,p.buildingId);
     if (!v.yard) v.yard = this.add.image(c.x, c.y, y.back).setOrigin(0.5, ANCHOR_LOT / TEX_H).setDepth(-200000).setScale(SC); else v.yard.setTexture(y.back);
@@ -699,7 +711,7 @@ export class CityScene extends Phaser.Scene {
     const used=new Set<string>();
     for(const child of this.children.list)if(child instanceof Phaser.GameObjects.Image)used.add(child.texture.key);
     for(const key of this.textures.getTextureKeys()){
-      if((key.startsWith('construction:')||key.startsWith('clearing:')||key.startsWith('yard2:')||key.startsWith('building-shadow:'))&&!used.has(key)){
+      if((key.startsWith('construction:')||key.startsWith('clearing:')||key.startsWith('yard2:')||key.startsWith('farmyard:')||key.startsWith('building-shadow:'))&&!used.has(key)){
         this.textures.remove(key);delete SPR[key];
       }
     }

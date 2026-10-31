@@ -55,7 +55,7 @@ for (const testMode of [true, false]) {
     Object.assign(d.plots[2], { status: 'building', buildingId: home.id, startedAt: now - 1000, endsAt: now + 60000, incomeAt: 0 });
     Object.assign(other.plots[0], { status: 'built', buildingId: home.id, startedAt: now - period * 5, endsAt: now - period * 4, incomeAt: now - period * 3 });
     const definitions = projects(false);
-    for (const id of ['power', 'services', 'commerce', 'farm', 'industry']) {
+    for (const id of ['power', 'services', 'commerce']) {
       const p = d.projects.find(p => p.id === id)!;
       const def = definitions.find(p => p.id === id)!;
       Object.assign(p, { status: def.income > 0 && !def.period ? 'ready' : 'complete',
@@ -65,17 +65,13 @@ for (const testMode of [true, false]) {
     const inventory = structuredClone(store.state.inventory), outside = structuredClone(other);
     validateSave(store.state);
     const before = store.state.coins, available = districtIncome(d, now);
-    const expected = home.income + ['commerce', 'farm', 'industry'].reduce((sum, id) => {
-      const def = definitions.find(p => p.id === id)!; return sum + projectIncome(d,def);
-    }, 0);
+    const expected = home.income;
     assert.equal(available.total, expected);
-    assert.equal(available.count, 4);
+    assert.equal(available.count, 1);
     store.dispatch({ type: 'collectAllIncome' });
     assert.equal(store.state.coins, before + expected);
     assert.equal(d.plots[0].incomeAt, now);
-    assert.equal(d.projects.find(p => p.id === 'commerce')!.incomeAt, now);
-    assert.equal(d.projects.find(p => p.id === 'farm')!.status, 'complete');
-    assert.equal(d.projects.find(p => p.id === 'industry')!.status, 'complete');
+    assert.equal(d.projects.find(p => p.id === 'commerce')!.status, 'complete');
     assert.deepEqual(store.state.districts[1], outside);
     assert.deepEqual(store.state.inventory, inventory);
     assert.equal(districtIncome(d, now).total, 0);

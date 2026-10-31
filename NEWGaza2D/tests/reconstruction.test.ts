@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { GameStore, newGame, SAVE_KEY } from '../src/engine';
-import { building } from '../src/catalog';
+import { building, legacyProjects } from '../src/catalog';
+import { setMinuteTestTimers } from '../src/game-timing';
 import { actualWorkDuration, clearingSeconds, STREET_WORK_MS } from '../src/construction-rules';
 import { roadsFor } from '../src/roads';
 import { validateSave } from '../src/save';
@@ -17,15 +18,16 @@ function fixture(){
 test('explicit production building and clearing bands are independent of income test mode',()=>{
  for(const [id,seconds] of [['small_house',300],['medium_house',600],['housing_complex',1800],['wood_factory',1800],['asphalt',1800],['recycling',120],['equipment_store',120]] as const)assert.equal(building(id).duration,seconds);
  assert.equal(clearingSeconds(2),120);assert.equal(clearingSeconds(6),180);
- const d=newGame().districts[0];d.difficulty='hard';assert.equal(actualWorkDuration(d,STREET_WORK_MS),624000);
+ const d=newGame().districts[0];d.difficulty='hard';
+ setMinuteTestTimers(false);assert.equal(actualWorkDuration(d,STREET_WORK_MS),624000);setMinuteTestTimers(true);
 });
-test('capacity rejects a fourth kind without charge, second warehouse adds capacity',()=>{
+test('global fleet purchases are not capped by warehouse capacity',()=>{
  const {store,d}=fixture();
  for(let i=0;i<3;i++)store.dispatch({type:'buy',kind:'bulldozer'});
- const coins=store.state.coins;assert.throws(()=>store.dispatch({type:'buy',kind:'bulldozer'}),/سعة/);assert.equal(store.state.coins,coins);
+ const coins=store.state.coins;store.dispatch({type:'buy',kind:'bulldozer'});assert.equal(store.state.coins,coins-5000);
  Object.assign(store.state.districts[0].plots[3],{status:'built',buildingId:'equipment_store'});
  store.dispatch({type:'buy',kind:'bulldozer'});
- assert.deepEqual(warehouseCapacity(store.state,store.state.districts[0],'bulldozer'),{used:4,total:6});
+ assert.deepEqual(warehouseCapacity(store.state,store.state.districts[0],'bulldozer'),{used:5,total:5});
  validateSave(store.state);
 });
 test('eight minute stages persist without replay and reserve dozer against clearing',()=>{
@@ -33,7 +35,7 @@ test('eight minute stages persist without replay and reserve dozer against clear
  for(const kind of ['excavator','bulldozer','truck'] as const)store.dispatch({type:'buy',kind});
  store.dispatch({type:'buyPaver'});store.dispatch({type:'pave',roadId:roadsFor(d.id)[0].id});
  const w=structuredClone(d.roadWorks![0]),p=w.preparation!;
- assert.equal(p.aggregateEnd-w.arrival+w.workEnd-p.asphaltStart,480000);
+ assert.equal(p.aggregateEnd-w.arrival+w.workEnd-p.asphaltStart,30000);
  assert.ok(p.sandEnd>w.arrival&&p.aggregateEnd>p.sandEnd&&p.asphaltStart>p.aggregateEnd);
  assert.throws(()=>store.dispatch({type:'clear',plotId:3}));
  const restored=new GameStore(storage,p.sandEnd+1000);
@@ -45,7 +47,8 @@ test('eight minute stages persist without replay and reserve dozer against clear
 });
 test('legacy nine-project claimed districts keep access without flag reward duplication',()=>{
  const s=newGame(Date.now()+100000);s.districts[0].claimed=true;s.districts[1].unlocked=true;
- for(const d of s.districts)d.projects=d.projects.filter(p=>p.id!=='flag');
+ delete s.reconstructionVersion;
+ for(const d of s.districts)d.projects=legacyProjects(d.id==='rashid').filter(p=>p.id!=='flag').map(p=>({id:p.id,status:'idle',startedAt:0,endsAt:0,incomeAt:0}));
  let raw=JSON.stringify(s);const store=new GameStore({getItem:()=>raw,setItem:(_k,v)=>raw=v},s.lastSeen);
  const flag=store.state.districts[0].projects.at(-1)!;
  assert.equal(flag.status,'complete');assert.equal(flag.gemRewarded,true);assert.equal(store.state.gems,0);

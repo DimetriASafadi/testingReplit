@@ -4,6 +4,7 @@ import { GameStore, SAVE_KEY, districtProgress, newGame } from '../src/engine';
 import { roadsFor, pavingRoute, along, streetFor, workRoad } from '../src/roads';
 import { validateSave } from '../src/save';
 import { WHEEL_COOLDOWN, WHEEL_PRIZES, wheelResult } from '../src/rewards';
+import { wheelCooldown } from '../src/timing-settings';
 import { projectIncome, workDuration } from '../src/economy';
 import { projects } from '../src/catalog';
 import { building } from '../src/catalog';
@@ -63,7 +64,7 @@ test('wheel weighted results, persisted reward and two-hour cooldown',()=>{
  const{store,storage}=setup();const before=store.state.coins;
  store.dispatch({type:'spin'});const w=store.state.wheel!;
  assert.equal(store.state.coins,before+WHEEL_PRIZES[w.result].coins);
- assert.equal(w.nextAt-w.startedAt,WHEEL_COOLDOWN);
+ assert.equal(w.nextAt-w.startedAt,wheelCooldown());
  const reloaded=new GameStore(storage,w.startedAt+5000);
  assert.equal(reloaded.state.coins,store.state.coins);
  assert.throws(()=>reloaded.dispatch({type:'spin'}));
@@ -98,11 +99,12 @@ test('legacy progress retains rewards, deadlines and wallet; only rebuilt paved 
  assert.ok(districtProgress(d)<100);d.pavedRoads=roadsFor(d.id).map(r=>r.id);assert.equal(districtProgress(d),100);
  d.plots[0].status='empty';assert.ok(districtProgress(d)<100);
 });
-test('difficulty selected once changes only new timers and retains profitable repeatable farming',()=>{
+test('difficulty selected once retains farm-building income and effective work timers',()=>{
  const{store}=setup();store.dispatch({type:'difficulty',difficulty:'hard'});
  assert.throws(()=>store.dispatch({type:'difficulty',difficulty:'easy'}));
- const d=store.state.districts[0],farm=projects(false).find(p=>p.id==='farm')!;
- assert.ok(projectIncome(d,farm)>farm.cost);
+ const d=store.state.districts[0];
+ assert.ok(building('wheat').income>0);
+ assert.equal(projects(false).find(p=>p.id==='farm'),undefined);
  store.dispatch({type:'place',plotId:0,buildingId:'school',orientation:0});
  assert.equal(d.plots[0].endsAt-d.plots[0].startedAt,actualWorkDuration(d,building('school').duration*1000));
 });

@@ -1,6 +1,7 @@
-import test from 'node:test';
+import test, { beforeEach } from 'node:test';
 import { setMinuteTestTimers } from '../src/game-timing';
 setMinuteTestTimers(false);
+beforeEach(()=>setMinuteTestTimers(false));
 import assert from 'node:assert/strict';
 import { GameStore, newGame, rubbleYield, SAVE_KEY } from '../src/engine';
 import { BUILDINGS, DISTRICTS, projects } from '../src/catalog';
@@ -17,7 +18,7 @@ import { depotPortal } from '../src/fleet-motion';
 import { unitInJob } from '../src/fleet-depots';
 import { roadsFor } from '../src/roads';
 import { projectIncome, STARTING_COINS } from '../src/economy';
-import { clearingSeconds } from '../src/construction-rules';
+import { clearingSeconds, actualWorkDuration } from '../src/construction-rules';
 import { building } from '../src/catalog';
 
 test('gems reward each project once, including offline completions and legacy progress', () => {
@@ -32,12 +33,12 @@ test('gems reward each project once, including offline completions and legacy pr
   store.tick(now + 1000);
   assert.equal(new GameStore(storage, now + 2000).state.gems, PROJECT_GEMS);
   store.dispatch({ type: 'enter', districtId: 'shujaiya' });
-  const farm = store.state.districts[0].projects.find(p => p.id === 'farm')!;
+  const farm = store.state.districts[0].projects.find(p => p.id === 'power')!;
   Object.assign(farm, { status: 'building', startedAt: now, endsAt: now + 3000 });
   store.tick(now + 3000);
   assert.equal(store.state.gems, PROJECT_GEMS * 2);
-  store.dispatch({ type: 'collectProject', projectId: farm.id });
-  store.dispatch({ type: 'project', projectId: farm.id });
+  assert.throws(()=>store.dispatch({ type: 'collectProject', projectId: farm.id }));
+  assert.throws(()=>store.dispatch({ type: 'project', projectId: farm.id }));
   store.tick(farm.endsAt);
   assert.equal(store.state.gems, PROJECT_GEMS * 2);
   validateSave(store.state);
@@ -52,7 +53,7 @@ test('half-time building costs two gems, keeps money cost and persists its deadl
     const before = store.state.coins;
     store.dispatch({ type: 'place', plotId: 0, buildingId: def.id, orientation: 2, accelerate: true });
     const plot = store.state.districts[0].plots[0];
-    assert.equal(plot.endsAt - plot.startedAt, def.duration * 1000 / 2);
+    assert.equal(plot.endsAt - plot.startedAt, actualWorkDuration(store.state.districts[0],def.duration * 1000) / 2);
     assert.equal(store.state.gems, 0);
     assert.equal(store.state.coins, before - def.cost);
     const restored = new GameStore(storage, plot.startedAt);
@@ -289,7 +290,7 @@ test('reset commits a valid fresh save and later ticks cannot restore old progre
   assert.notEqual(store.state, previous);
   assert.equal(store.state.currentDistrict, null);
   assert.equal(store.state.jobs.length, 0);
-  assert.equal(store.state.coins,500_000);
+  assert.equal(store.state.coins,350_000);
   assert.equal(store.state.coins, newGame(now).coins);
   store.tick(now + 3000);
   const restored = new GameStore(storage, now + 4000);
@@ -625,10 +626,10 @@ test('multiple teams reserve the factory portal, save queues and settle once aft
   invalid.jobs[0].departureAt = invalid.jobs[0].arrival;
   assert.throws(() => validateSave(invalid));
 });
-test('fresh campaign starts with 500,000 coins, thirteen districts, dense ruins, no placed recycler', () => {
+test('fresh campaign starts with 350,000 coins, fourteen districts, dense ruins, no placed recycler', () => {
   const state = newGame();
   validateSave(state);
-  assert.equal(STARTING_COINS,500_000);
+  assert.equal(STARTING_COINS,350_000);
   assert.equal(state.coins,STARTING_COINS);
   assert.equal(state.districts.length,14);
   assert.equal(state.districts.filter(d=>d.unlocked).length,1);
@@ -638,7 +639,9 @@ test('fresh campaign starts with 500,000 coins, thirteen districts, dense ruins,
 });
 test('factory onboarding, clean land, money-only prices, two orientations and reload', () => {
   const {store,storage}=setup();
-  assert.throws(()=>store.dispatch({type:'buy',kind:'truck'}));
+  store.dispatch({type:'buy',kind:'truck'});
+  assert.equal(store.state.units.length,1);
+  store.state.coins+=6000; // This test isolates building prices from the global purchase.
   assert.throws(()=>store.dispatch({type:'place',plotId:2,buildingId:'small_house',orientation:0}));
   store.dispatch({type:'place',plotId:0,buildingId:'small_house',orientation:1});
   assert.equal(store.state.coins,997500);
@@ -715,18 +718,15 @@ test('parallel independent teams cannot share equipment', () => {
   assert.equal(new Set(store.state.jobs.flatMap(j=>j.unitIds)).size,6);
   validateSave(store.state);
 });
-test('infrastructure prerequisites and real-time repeatable investments', () => {
+test('infrastructure prerequisites and removed investments cannot be restarted', () => {
   const {store}=setup();
   assert.throws(()=>store.dispatch({type:'project',projectId:'housing'}));
-  store.dispatch({type:'project',projectId:'farm'});
-  const p=store.state.districts[0].projects.find(p=>p.id==='farm')!;
-  assert.equal(p.endsAt-p.startedAt,300000);
-  assert.throws(()=>store.dispatch({type:'collectProject',projectId:'farm'}));
-  store.tick(p.endsAt);store.dispatch({type:'collectProject',projectId:'farm'});
-  assert.equal(store.state.coins,1000700);
-  assert.throws(()=>store.dispatch({type:'collectProject',projectId:'farm'}));
-  store.dispatch({type:'project',projectId:'farm'});
-  assert.equal(store.state.coins,1000200);
+  for(const id of ['farm','road','industry'])assert.throws(()=>store.dispatch({type:'project',projectId:id}),/غير معروف/);
+  store.dispatch({type:'project',projectId:'water'});
+  const p=store.state.districts[0].projects.find(p=>p.id==='water')!;
+  assert.equal(p.endsAt-p.startedAt,5*3600000);
+  store.tick(p.endsAt);store.dispatch({type:'project',projectId:'housing'});
+  assert.equal(store.state.coins,1000000-18000-25000);
 });
 test('district completion reward only once, ordered unlocking, finale present', () => {
   const {store,storage}=setup();
@@ -743,7 +743,7 @@ test('district completion reward only once, ordered unlocking, finale present', 
   validateSave(store.state);
   assert.equal(new GameStore(storage).state.districts[1].unlocked,true);
   assert.equal(DISTRICTS.at(-1)!.id,'rashid');
-  assert.equal(projects(true).find(p=>p.id==='road')!.cost,150000);
+  assert.equal(projects(true).find(p=>p.id==='road'),undefined);
 });
 test('camera save, monotonic wall clock and failed actions never spend', () => {
   const {store,storage}=setup();

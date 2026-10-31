@@ -8,14 +8,15 @@ export interface ProjectState { id: string; status: 'idle' | 'building' | 'ready
 export type Difficulty = 'easy' | 'medium' | 'hard';
 export interface RoadPreparation { unitId: string; warehouseId: number; route: [number,number][]; sandEnd: number; aggregateEnd: number; asphaltStart: number; dozerReturnEnd: number }
 export interface RoadWork { roadId: string; roadIds?: string[]; factoryId: number; machineId: string; start: number; arrival: number; workEnd: number; returnEnd: number; route: [number,number][]; preparation?: RoadPreparation }
-export interface DistrictState { id: string; unlocked: boolean; claimed: boolean; plots: Plot[]; projects: ProjectState[]; camera: { x: number; y: number; zoom: number } | null; difficulty?: Difficulty; difficultyChosen?: boolean; pavedRoads?: string[]; roadWorks?: RoadWork[]; celebrated?: boolean }
+export interface DistrictState { id: string; unlocked: boolean; claimed: boolean; plots: Plot[]; projects: ProjectState[]; camera: { x: number; y: number; zoom: number } | null; difficulty?: Difficulty; difficultyChosen?: boolean; pavedRoads?: string[]; roadWorks?: RoadWork[]; celebrated?: boolean; completionRewarded?: boolean }
 export interface Unit { id: string; kind: EquipmentKind; level: number; purchasePrice: number; depotIds?: Record<string, number>; home?: { districtId: string; warehouseId: number } }
 export interface Job { id: string; districtId: string; plotId: number; unitIds: string[]; start: number; arrival: number; workEnd: number; returnEnd: number; cleared: boolean; value: number; originPlotId: number; departureAt?: number; returnStartAt?: number; recyclingPlotId?: number; toolsReturnEnd?: number; unloadAt?: number; unloadStartAt?: number; unloadEnd?: number; unloadQueueDistance?: number; truckHomeDepartureAt?: number; travelSpeed?: number; delivered?: boolean; insideUnloading?: boolean }
-export interface GameState { version: 1; timerProfile?: 'normal' | 'minute-test'; coins: number; gems: number; inventory: { concrete: number; iron: number; wood: number; other: number; value: number }; units: Unit[]; jobs: Job[]; districts: DistrictState[]; currentDistrict: string | null; lastSeen: number; sequence: number; expansionVersion?: number; pavers?: {id:string;cost:number}[]; wheel?: {nextAt:number; result:number; startedAt:number; bonus?: boolean}; exchanges?: string[]; ads?: import('./ads/ledger').AdLedger }
+export interface GameState { version: 1; timerProfile?: 'normal' | 'minute-test' | 'test-30s' | 'production-v2'; reconstructionVersion?: 1; coins: number; gems: number; inventory: { concrete: number; iron: number; wood: number; other: number; value: number }; units: Unit[]; jobs: Job[]; districts: DistrictState[]; currentDistrict: string | null; lastSeen: number; sequence: number; expansionVersion?: number; pavers?: {id:string;cost:number}[]; wheel?: {nextAt:number; result:number; startedAt:number; bonus?: boolean; cooldownMs?:number}; exchanges?: string[]; ads?: import('./ads/ledger').AdLedger }
 export type Action =
  | { type: 'enter'; districtId: string }
  | { type: 'map' }
  | { type: 'place'; plotId: number; buildingId: string; orientation: Orientation; accelerate?: boolean }
+ | { type: 'accelerateBuilding'; plotId: number; expectedStartedAt: number }
  | { type: 'rotateBuilding'; plotId: number; orientation?: Orientation }
  | { type: 'sellBuilding' | 'removeBuilding'; plotId: number; expected?: { buildingId: string; startedAt: number } }
  | { type: 'buy'; kind: EquipmentKind }

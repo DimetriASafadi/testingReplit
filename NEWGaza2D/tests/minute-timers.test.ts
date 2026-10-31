@@ -19,17 +19,17 @@ function setup() {
   store.dispatch({ type: 'enter', districtId: 'shujaiya' });
   return { store, storage };
 }
-test('construction uses production times while unrelated projects and income retain their minute profile', () => {
-  assert.equal(buildingIncomePeriod(), 60000);
+test('construction, projects and income all use the 30-second testing profile', () => {
+  assert.equal(buildingIncomePeriod(), 30000);
   for (const b of BUILDINGS) {
     const { store } = setup(), p = store.state.districts[0].plots[0];
     store.dispatch({ type: 'place', plotId: p.id, buildingId: b.id, orientation: 0 });
-    assert.equal(p.endsAt - p.startedAt, b.duration*1000);
+    assert.equal(p.endsAt - p.startedAt, 30000);
     store.tick(p.endsAt - 1); assert.equal(p.status, 'building');
     store.tick(p.endsAt); assert.equal(p.status, 'built');
     if (b.income) {
-      assert.throws(() => store.dispatch({ type: 'collectBuilding', plotId: p.id }), /دقيقة/);
-      store.tick(p.incomeAt + 60000);
+      assert.throws(() => store.dispatch({ type: 'collectBuilding', plotId: p.id }), /30 ثانية/);
+      store.tick(p.incomeAt + 30000);
       const coins = store.state.coins;
       store.dispatch({ type: 'collectBuilding', plotId: p.id });
       assert.equal(store.state.coins - coins, Math.floor(b.income*.7));
@@ -39,12 +39,12 @@ test('construction uses production times while unrelated projects and income ret
   for (const finale of [false, true]) {
     const { store } = setup(), d = store.state.districts[0];
     for (const def of projects(finale)) {
-      assert.equal(activityDuration(def.duration * 1000), 60000);
-      if (def.period) assert.equal(activityDuration(def.period * 1000), 60000);
+      assert.equal(activityDuration(def.duration * 1000), 30000);
+      if (def.period) assert.equal(activityDuration(def.period * 1000), 30000);
       if (finale) continue; // Coastal catalog uses the same centralized override.
       store.dispatch({ type: 'project', projectId: def.id });
       const p = d.projects.find(x => x.id === def.id)!;
-      assert.equal(p.endsAt - p.startedAt, 60000);
+      assert.equal(p.endsAt - p.startedAt, 30000);
       store.tick(p.endsAt);
       if (def.income) {
         if (def.period) store.tick(p.incomeAt + 60000);
@@ -69,7 +69,7 @@ test('convoy travel follows route distance while clearing uses size, with offlin
   const travel = outgoingTravelDuration(d.plots[1], target);
   assert.equal(j.arrival - j.departureAt!, travel);
   assert.ok(travel < 60000);
-  assert.equal(j.workEnd - j.arrival, clearingSeconds(building(target.buildingId).floors)*1000);
+  assert.equal(j.workEnd - j.arrival, 30000);
   assert.equal(j.toolsReturnEnd! - j.returnStartAt!, returnTravelDuration(d.plots[1], target, travel));
   const restored = new GameStore(storage, j.workEnd);
   assert.equal(restored.state.districts[0].plots[target.id].status, 'empty');
@@ -97,8 +97,8 @@ test('existing counters retain deadlines and earned income without resetting on 
   setMinuteTestTimers(true);
   const migrated = new GameStore(storage, now);
   const mp = migrated.state.districts[0].projects.find(p => p.id === 'water')!;
-  assert.equal(mp.endsAt - mp.startedAt, 3600000);
-  assert.equal(mp.endsAt - now, 3570000);
+  assert.equal(mp.endsAt - mp.startedAt, 30000);
+  assert.equal(mp.endsAt - now, 29750);
   const coins = migrated.state.coins;
   migrated.dispatch({ type: 'collectBuilding', plotId: 0 });
   assert.equal(migrated.state.coins - coins, Math.floor(building('food_shop').income*.7));

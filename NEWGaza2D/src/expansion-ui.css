@@ -19,14 +19,6 @@ button.pill:focus-visible,button.chip:focus-visible{outline:2px solid #f2b632;ou
 .pack-buy{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
 .pack-buy .btn{min-height:40px}
 
-.celebration{position:fixed;inset:0;z-index:60;display:grid;place-items:center;pointer-events:auto;background:radial-gradient(ellipse at center,rgba(8,28,52,.35),rgba(8,28,52,0) 70%);transition:opacity .5s}
-.celebration.out{opacity:0}
-.celebration canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-.celebration-card{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:18px 28px;border-radius:20px;background:#0f2a4a;border:2px solid #f2b632;color:#f4f7fc;box-shadow:0 18px 40px rgba(4,14,30,.5);animation:cel-in .6s cubic-bezier(.2,1.4,.4,1) both}
-.celebration-card small{color:#f2b632;font-weight:700}
-.celebration-card b{font-size:1.6rem}
-.celebration.still .celebration-card{animation:none}
-@keyframes cel-in{from{transform:scale(.7);opacity:0}to{transform:none;opacity:1}}
 @media(prefers-reduced-motion:reduce){.celebration-card{animation:none}}
 
 .dlg-footer .row{flex-wrap:wrap}
@@ -37,3 +29,27 @@ button.pill:focus-visible,button.chip:focus-visible{outline:2px solid #f2b632;ou
 .paver-card p{margin:4px 0 0;font-size:.85em;opacity:.85}
 .paver-thumb{width:44px;height:auto;filter:drop-shadow(1px 2px 1px rgba(20,16,10,.35))}
 .item:has(.paver-thumb){grid-template-columns:auto auto 1fr auto}
+
+.celebration{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:20px;background:radial-gradient(ellipse at 50% 45%,rgba(14,32,40,.62),rgba(10,22,30,.78));transition:opacity .3s}
+.celebration.out{opacity:0;pointer-events:none}
+.celebration canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.celebration-card{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;width:min(340px,100%);padding:26px 24px 20px;border-radius:22px;background:linear-gradient(180deg,#f6efdf,#eadfc6);color:#1f2a2c;border:1px solid rgba(160,120,40,.4);box-shadow:0 0 0 6px rgba(246,239,223,.12),0 24px 50px rgba(4,14,20,.5);text-align:center;animation:cel-in .55s cubic-bezier(.2,1.3,.4,1) both}
+.celebration-card::before{content:"";position:absolute;inset:0 0 auto;height:6px;border-radius:22px 22px 0 0;background:linear-gradient(90deg,#1d1f22 0 33%,#f4efe2 33% 66%,#2f8a57 66%)}
+.cel-seal{width:58px;height:58px;margin-top:-4px;animation:cel-pop .5s .2s both}
+.cel-seal svg{width:100%;height:100%}.cel-seal circle{fill:#2f8a57;stroke:#e2b23a;stroke-width:3}.cel-seal path{fill:none;stroke:#f6efdf;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:44;stroke-dashoffset:44;animation:cel-draw .45s .55s forwards}
+.celebration-card h2{margin:0;font-size:1.65rem;font-weight:900;color:#1b5a3a}
+.cel-name{font-size:1.05rem;color:#6a4c1c}
+.cel-sub{color:#4a5555;font-size:.9rem}
+.cel-rewards{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:4px 0 2px}
+.cel-reward{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:14px;background:#fffaf0;border:1px solid rgba(120,90,30,.25);animation:cel-pop .45s .4s both}
+.cel-reward bdi{font-size:1.4rem;font-weight:900;min-width:3ch;font-variant-numeric:tabular-nums}
+.cel-reward span{font-size:.8rem;color:#5c6464}
+.cel-reward i{width:20px;height:20px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe9a0,#d99a1c 60%,#9a6510);box-shadow:inset 0 0 0 2px rgba(150,100,20,.5)}
+.cel-reward.gem i{border-radius:4px;transform:rotate(45deg) scale(.82);background:linear-gradient(135deg,#9ff0d0,#2f8a57 60%,#1b5a3a)}
+.cel-reward.coin bdi{color:#9a6510}.cel-reward.gem bdi{color:#1b5a3a}
+.cel-close{margin-top:6px;min-width:150px}
+.celebration.still .celebration-card,.celebration.still .cel-seal,.celebration.still .cel-reward{animation:none}.celebration.still .cel-seal path{animation:none;stroke-dashoffset:0}
+@keyframes cel-in{from{opacity:0;transform:translateY(14px) scale(.92)}to{opacity:1;transform:none}}
+@keyframes cel-pop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+@keyframes cel-draw{to{stroke-dashoffset:0}}
+@media(prefers-reduced-motion:reduce){.celebration-card,.cel-seal,.cel-reward{animation:none}.cel-seal path{animation:none;stroke-dashoffset:0}.celebration{transition:none}}

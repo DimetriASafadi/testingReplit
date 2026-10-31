@@ -5,6 +5,7 @@ import { beginAd, markAdEarned, recoverAd, settleEarnedAd } from '../src/ads/led
 import { ADS } from '../src/ads/config';
 import { validateSave } from '../src/save';
 import { WHEEL_COOLDOWN, WHEEL_SPIN_MS } from '../src/rewards';
+import { wheelCooldown } from '../src/timing-settings';
 import { webAdProvider } from '../src/ads/web';
 
 function fixture() {
@@ -66,7 +67,7 @@ test('bonus spin is durable, single-use and leaves free-wheel deadline unchanged
   restored.tick(restored.state.wheel!.startedAt + WHEEL_SPIN_MS);
   assert.throws(() => restored.dispatch({ type: 'spin' }), /انتظر/);
   restored.tick(freeAt); restored.dispatch({ type: 'spin' });
-  assert.equal(restored.state.wheel!.nextAt, freeAt + WHEEL_COOLDOWN);
+  assert.equal(restored.state.wheel!.nextAt, freeAt + wheelCooldown());
   validateSave(new GameStore(storage, restored.state.lastSeen).state);
 });
 test('malformed ad state and bonus wheel records are rejected without replacing saves', () => {

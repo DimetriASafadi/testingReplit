@@ -6,6 +6,7 @@ import { formatNumber as fmt } from './number-format';
 import { actualWorkDuration, STREET_WORK_MS } from './construction-rules';
 import { localUnit, roadUnitBusy, warehousePlots } from './warehouse-capacity';
 import { unitInJob } from './fleet-depots';
+import { TEST_TIMERS } from './timing-settings';
 
 /* Shared expansion surfaces: difficulty, wheel, stores, roads, celebration.
    Everything here is pure HTML for the stable dom-patch renderer, except the
@@ -80,38 +81,60 @@ export function roadHtml(st: GameState, d: DistrictState, roadId: string, hasAsp
     { ok: free.length > 0, t: `آلية سفلتة متاحة (${fmt(free.length)}/${fmt(st.pavers?.length ?? 0)})` },
     { ok: st.coins >= cost, t: `الرصيد يكفي التكلفة ${fmt(cost)}` },
   ];
-  return `${head}<dt>التكلفة</dt><dd class="num">${fmt(cost)}</dd><dt>مدة العمل في الموقع</dt><dd><bdi class="num">${clock(actualWorkDuration(d, STREET_WORK_MS))}</bdi> + سفر الآليات</dd><dt>الصعوبة</dt><dd>${difficultyOf(d).name}</dd></dl><p class="note">رمل ثم بيسكورس ثم أسفلت، من بداية الشارع إلى نهايته. المدة الأساسية 8 دقائق للمراحل مجتمعة وتزيد حسب الصعوبة. التكلفة للأجزاء غير المنجزة فقط: ${fmt(ROAD_COST)} لكل جزء.</p>
+  return `${head}<dt>التكلفة</dt><dd class="num">${fmt(cost)}</dd><dt>مدة العمل في الموقع</dt><dd><bdi class="num">${clock(actualWorkDuration(d, STREET_WORK_MS))}</bdi> + سفر الآليات</dd><dt>الصعوبة</dt><dd>${difficultyOf(d).name}</dd></dl><p class="note">رمل ثم بيسكورس ثم أسفلت، من بداية الشارع إلى نهايته. ${TEST_TIMERS ? 'للاختبار: 30 ثانية للمراحل مجتمعة، دون زيادة حسب الصعوبة. المدة النهائية محفوظة.' : 'المدة الأساسية 8 دقائق للمراحل مجتمعة وتزيد حسب الصعوبة.'} التكلفة للأجزاء غير المنجزة فقط: ${fmt(ROAD_COST)} لكل جزء.</p>
     ${reqs.map(q => `<div class="check ${q.ok ? 'ok' : ''}"><i></i>${q.t}</div>`).join('')}
     <div class="row">${(st.pavers?.length ?? 0) === 0 ? `<button class="btn ghost" data-a="dlg" data-id="fleet" data-k="road-fleet">شراء آلية سفلتة</button>` : ''}<button class="btn gold" data-a="pave" data-id="${esc(roadId)}" data-k="pave" ${reqs.every(q => q.ok) ? '' : 'disabled'}>سفلتة الشارع كاملًا · <span class="num">${fmt(cost)}</span></button></div>`;
 }
 
 // ---------- celebration ----------
-export function celebrate(name: string) {
-  document.querySelector('.celebration')?.remove();
+/** Visual-only district completion overlay. Credits nothing; the caller owns rewards. */
+let celebrationCleanup: (() => void) | null = null;
+export function celebrate(name: string, rewardCoins?: number, rewardGems?: number) {
+  celebrationCleanup?.(); document.querySelector('.celebration')?.remove();
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const coins = Math.max(0, Math.round(rewardCoins ?? 0)), gems = Math.max(0, Math.round(rewardGems ?? 0));
   const box = document.createElement('div'); box.className = 'celebration' + (reduce ? ' still' : '');
-  box.setAttribute('role', 'status');
-  box.innerHTML = `<canvas aria-hidden="true"></canvas><div class="celebration-card"><small>تم إنجاز الحي</small><b>${esc(name)}</b><span>الحي جاهز للاستلام</span></div>`;
+  box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-labelledby', 'cel-title');
+  const reward = (cls: string, label: string, v: number) => v ? `<div class="cel-reward ${cls}"><i aria-hidden="true"></i><bdi class="num" data-to="${v}">${fmt(reduce ? v : 0)}</bdi><span>${label}</span></div>` : '';
+  box.innerHTML = `<canvas aria-hidden="true"></canvas><div class="celebration-card">
+    <div class="cel-seal" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="28"/><path d="M19 33l9 9 18-20"/></svg></div>
+    <h2 id="cel-title">تم إنجاز الحي!</h2><b class="cel-name">${esc(name)}</b>
+    ${coins || gems ? `<div class="cel-rewards" aria-live="polite">${reward('coin', 'عملة', coins)}${reward('gem', 'جوهرة', gems)}</div>` : '<span class="cel-sub">الحي جاهز للحياة من جديد</span>'}
+    <button class="btn gold cel-close" type="button" data-k="celebration-close">متابعة</button></div>`;
   document.body.appendChild(box);
-  const life = reduce ? 3200 : 4600;
-  setTimeout(() => box.classList.add('out'), life - 500); setTimeout(() => box.remove(), life);
-  box.onclick = () => box.remove();
-  if (reduce) return;
-  const cv = box.querySelector('canvas')!, ctx = cv.getContext('2d'); if (!ctx) return;
-  const dpr = Math.min(2, devicePixelRatio || 1);
-  cv.width = innerWidth * dpr; cv.height = innerHeight * dpr; ctx.scale(dpr, dpr);
-  const cols = ['#f2b632', '#f4f7fc', '#4ea0e0', '#e86a5a', '#8fd18a'];
-  type P = { x: number; y: number; vx: number; vy: number; life: number; c: string };
-  let parts: P[] = []; const t0 = performance.now(); let bursts = 0;
-  const burst = () => { const x = innerWidth * (.2 + Math.random() * .6), y = innerHeight * (.15 + Math.random() * .3), c = cols[bursts++ % cols.length];
-    for (let i = 0; i < 46; i++) { const a = i / 46 * Math.PI * 2, s = 1.6 + Math.random() * 2.4; parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 1, c }); } };
-  const tick = (t: number) => {
-    if (!box.isConnected) return;
-    if (bursts < 7 && t - t0 > bursts * 480) burst();
-    ctx.clearRect(0, 0, innerWidth, innerHeight);
-    parts = parts.filter(p => (p.life -= .014) > 0);
-    for (const p of parts) { p.x += p.vx; p.y += p.vy; p.vy += .035; p.vx *= .985; ctx.globalAlpha = p.life; ctx.fillStyle = p.c; ctx.fillRect(p.x, p.y, 3, 3); }
-    if (t - t0 < life) requestAnimationFrame(tick);
+  const timers: number[] = []; let raf = 0, done = false;
+  const close = () => {
+    if (done) return; done = true; cancelAnimationFrame(raf); timers.forEach(clearTimeout);
+    document.removeEventListener('keydown', key, true); celebrationCleanup = null;
+    box.classList.add('out'); timers.length = 0;
+    setTimeout(() => box.remove(), reduce ? 0 : 320);
   };
-  requestAnimationFrame(tick);
+  const key = (e: KeyboardEvent) => { if (e.key === 'Escape' || e.key === 'Enter') { e.preventDefault(); close(); } };
+  celebrationCleanup = close;
+  document.addEventListener('keydown', key, true);
+  box.addEventListener('click', e => { if (e.target === box || (e.target as HTMLElement).closest('.cel-close')) close(); });
+  (box.querySelector('.cel-close') as HTMLButtonElement).focus({ preventScroll: true });
+  timers.push(window.setTimeout(close, reduce ? 9000 : 7000));
+  if (reduce) return;
+  // count-up of the reward amounts (display only), bounded 1.3 s
+  const nums = Array.from(box.querySelectorAll<HTMLElement>('[data-to]'));
+  const cv = box.querySelector('canvas')!, ctx = cv.getContext('2d');
+  const dpr = Math.min(2, devicePixelRatio || 1), W = innerWidth, H = innerHeight;
+  if (ctx) { cv.width = W * dpr; cv.height = H * dpr; ctx.scale(dpr, dpr); }
+  const cols = ['#e2b23a', '#f4efe2', '#2f8a57', '#c8343c', '#1d1f22'];
+  type P = { x: number; y: number; vx: number; vy: number; r: number; vr: number; life: number; c: string };
+  const parts: P[] = [];
+  for (let i = 0; i < 90; i++) { const a = -Math.PI / 2 + (Math.random() - .5) * 1.6, s = 5 + Math.random() * 6;
+    parts.push({ x: W / 2, y: H * .56, vx: Math.cos(a) * s, vy: Math.sin(a) * s, r: Math.random() * 6, vr: (Math.random() - .5) * .3, life: 1, c: cols[i % cols.length] }); }
+  const t0 = performance.now(), ease = (t: number) => 1 - Math.pow(1 - t, 3);
+  const tick = (t: number) => {
+    if (done || !box.isConnected) return;
+    const k = Math.min(1, Math.max(0, (t - t0 - 450) / 1300));
+    for (const n of nums) n.textContent = fmt(Math.round(Number(n.dataset.to) * ease(k)));
+    if (ctx) { ctx.clearRect(0, 0, W, H);
+      for (const p of parts) { if (p.life <= 0) continue; p.life -= .009; p.x += p.vx; p.y += p.vy; p.vy += .16; p.vx *= .985; p.r += p.vr;
+        ctx.save(); ctx.globalAlpha = Math.max(0, p.life); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.fillStyle = p.c; ctx.fillRect(-3, -1.5, 6, 3); ctx.restore(); } }
+    if (t - t0 < 2400) raf = requestAnimationFrame(tick); else { for (const n of nums) n.textContent = fmt(Number(n.dataset.to)); ctx?.clearRect(0, 0, W, H); }
+  };
+  raf = requestAnimationFrame(tick);
 }

@@ -1,4 +1,5 @@
 import type { BuildingDef, DistrictState } from './model';
+import { effectiveWorkDuration } from './timing-settings';
 
 /** Seconds. Explicit exceptions precede the size bands, so factories never
  * accidentally inherit the time of a two-storey house. */
@@ -17,4 +18,4 @@ export const STREET_WORK_MS = 8 * 60_000;
  * Paver travel after preparation is deliberately outside this budget. */
 export const STREET_STAGE_SHARES = { sand: .25, aggregate: .25, asphalt: .5 } as const;
 export const actualWorkDuration = (d: DistrictState, ms: number) =>
-  Math.round(ms * ({ easy: 1, medium: 1.15, hard: 1.3 }[d.difficulty ?? 'medium']));
+  effectiveWorkDuration(ms, { easy: 1, medium: 1.15, hard: 1.3 }[d.difficulty ?? 'medium']);

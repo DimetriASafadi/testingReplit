@@ -15,7 +15,7 @@ import { WK_FOOT, WK_FRAMES, WK_H, WK_W, drawWorker } from './workers';
 
 type P2 = [number, number];
 const iso = (lx: number, ly: number) => ({ x: (lx - ly) * U, y: (lx + ly) * U / 2 });
-const MAX_STAFF = 8, MAX_RESIDENTS = 16, MAX_LAMPS = 44, MAX_BOATS = 4;
+const MAX_STAFF = 8, MAX_RESIDENTS = 16, MAX_LAMPS = 96, MAX_BOATS = 4;
 const STAFF_IDS = new Set(['work', 'equipment_store', 'recycling', 'glass', 'cement', 'steel', 'asphalt', 'food_factory', 'water_treatment', 'wood_factory', 'household_shop']);
 const HOUSING_IDS = new Set(['small_house', 'medium_house', 'villa', 'housing_4', 'housing_6', 'housing_complex', 'modern_housing', 'traditional_housing', 'housing_tower', 'tourist_villa']);
 const PERSON_SCALE = .3;
@@ -138,12 +138,18 @@ export class DistrictLife {
       const r: Resident = { ...this.person('civilian', i % 5), tent, threshold: 40 + i * 58 / (MAX_RESIDENTS - 1), moveStart: 0, route: null, len: 0, home: '', done: false, last: tent };
       this.residents.push(r);
     }
-    // Streetlamps: kerb-side along each road, alternating sides, bounded.
+    // Streetlamps: both kerbs of every street, paired, skipping crossings and plot entrances.
     const spots: P2[] = [];
-    const step = Math.max(2.4, (layout.roadX.length + layout.roadY.length) * max / MAX_LAMPS);
-    let k = 0;
-    for (const c of layout.roadX) for (let s = 1; s < max; s += step) spots.push([c + (k++ % 2 ? .48 : -.48), s]);
-    for (const c of layout.roadY) for (let s = 1 + step / 2; s < max; s += step) spots.push([s, c + (k++ % 2 ? .48 : -.48)]);
+    const roads = layout.roadX.length + layout.roadY.length;
+    const step = Math.max(1.8, roads * max * 2 / MAX_LAMPS);
+    // Reserve every possible entrance once; rotating a building cannot put its door behind a lamp.
+    const doors = d.plots.flatMap(p => ([0,1,2,3] as const).map(orientation=>plotEntrance({...p,orientation},.45)));
+    const clearOf = (q: P2) => !doors.some(e => Math.hypot(e[0] - q[0], e[1] - q[1]) < .7);
+    const nearCross = (v: number, cross: number[]) => cross.some(k => Math.abs(k - v) < .75);
+    for (const c of layout.roadX) for (let s = 1; s < max; s += step) { if (nearCross(s, layout.roadY)) continue;
+      for (const o of [-.5, .5]) { const q: P2 = [c + o, s + (o > 0 ? step / 2 : 0)]; if (q[1] < max && clearOf(q) && !nearCross(q[1], layout.roadY)) spots.push(q); } }
+    for (const c of layout.roadY) for (let s = 1 + step / 4; s < max; s += step) { if (nearCross(s, layout.roadX)) continue;
+      for (const o of [-.5, .5]) { const q: P2 = [s + (o > 0 ? step / 2 : 0), c + o]; if (q[0] < max && clearOf(q) && !nearCross(q[0], layout.roadX)) spots.push(q); } }
     const lampKey = this.tex('life:lamp', 20, 64, x => {
       x.fillStyle = 'rgba(30,22,14,.3)'; x.beginPath(); x.ellipse(10, 61, 6, 2, 0, 0, Math.PI * 2); x.fill();
       x.fillStyle = '#4b5056'; x.fillRect(8.6, 10, 2.8, 51); x.fillStyle = '#7d848b'; x.fillRect(9, 10, 1, 51);
@@ -306,7 +312,7 @@ export class DistrictLife {
     // Street lighting progressive with the power project.
     const power = d.projects.find(p => p.id === 'power');
     const frac = !power || power.status === 'idle' ? 0 : power.status === 'building' ? Phaser.Math.Clamp((now - power.startedAt) / Math.max(1, power.endsAt - power.startedAt), 0, 1) : 1;
-    const lit = Math.floor(frac * this.lamps.length);
+    const lit = frac <= 0 ? 0 : Math.min(this.lamps.length, Math.ceil((.12 + .88 * frac) * this.lamps.length));
     if (lit !== this.lampLit) {
       this.lampLit = lit; const on = new Set(this.lampOrder.slice(0, lit));
       this.lamps.forEach((l, i) => l.setVisible(on.has(i)).setTint(frac >= 1 ? 0xffffff : 0xd8d8d8));

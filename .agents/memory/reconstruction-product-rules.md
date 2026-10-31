@@ -21,6 +21,18 @@ Final gameplay durations must be stored separately from temporary testing overri
 
 **How to apply:** Do not overwrite production durations with test values or activate production timings until requested. Income never accumulates multiple payouts and restarts only on collection. Preserve completed progress and keep migration from restarting timers on each launch.
 
+Neighborhood completion should award its one-time reward and show the celebration when reconstruction reaches completion, not only after pressing handover.
+
+**Why:** The user specifically asked for the completion screen followed by an animated reward. Handover still serves to move to the next district.
+
+**How to apply:** Persist reward receipt separately from handover and celebration display. Reloading, dismissing the celebration, or handing over must never pay the same reward again.
+
+Project replacement must preserve earned progress; removing an unfinished paid project refunds its investment once, while a finished investment preserves its one earned pending payout.
+
+**Why:** Existing campaigns must not lose spending or earned rewards when the requested sewer/security project changes replace the old list.
+
+**How to apply:** Keep claimed districts grandfathered, protect the original save before migration, and make financial settlement idempotent. Do not reset a campaign to make a changed project list fit.
+
 The requested district-life additions are a wood factory, household-goods shop, workers leaving/returning to their building, street lighting as part of the electricity project, more peripheral tents with moving residents, and a Palestinian flagpole project. Residents begin entering completed residential buildings from outside only at 40% district progress and increase gradually. Western coastal districts, particularly Shati and Sheikh Ijlin, should have Rashid Street or sea on their geographic west.
 
 **Why:** The user wants visible population return and district-specific Gaza surroundings, not identical peripheral decoration.

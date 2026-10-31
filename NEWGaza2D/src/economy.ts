@@ -1,5 +1,5 @@
 import type { Difficulty, DistrictState, Plot } from './model';
-import { activityDuration } from './game-timing';
+import { effectiveWorkDuration } from './timing-settings';
 
 /** Initial balance, intentionally centralized for the later tuning requested. */
 export const DIFFICULTIES = {
@@ -7,11 +7,11 @@ export const DIFFICULTIES = {
   medium: { name:'متوسط', income:.45, time:1.15 },
   hard: { name:'صعب', income:.25, time:1.3 },
 } as const;
-export const STARTING_COINS = 500000;
+export const STARTING_COINS = 350000;
 export const PAVER_COST = 10000;
 export const ROAD_COST = 120;
 export const difficultyOf = (d: DistrictState) => DIFFICULTIES[d.difficulty ?? 'medium'];
-export const workDuration = (d: DistrictState, normalMs:number) => Math.round(activityDuration(normalMs)*difficultyOf(d).time);
+export const workDuration = (d: DistrictState, normalMs:number) => effectiveWorkDuration(normalMs,difficultyOf(d).time);
 export const plotIncome = (p:Plot, base:number) => Math.floor(base*(p.incomeFactor??1));
 export const projectIncome = (d:DistrictState, def:{income:number;cost:number;period:number}) =>
   def.income <= 0 ? 0 : def.period ? Math.floor(def.income*difficultyOf(d).income)

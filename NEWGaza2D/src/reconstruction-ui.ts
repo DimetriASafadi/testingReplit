@@ -6,12 +6,12 @@ import { formatNumber as fmt } from './number-format';
 import { machinePreview } from './fleet-animation';
 
 export function fleetPurchaseHtml(st:GameState,d:DistrictState|null|undefined,hasRecycler:boolean) {
-  return `<p class="note">كل مخزن مكتمل يستوعب 3 جرافات و3 حفارات و3 شاحنات. عند امتلاء السعة ابنِ مخزنًا جديدًا. الآليات القديمة محفوظة حتى إن تجاوزت السعة.</p><div class="list">${
+  return `<p class="note">الآليات ملك لك في جميع الأحياء. اشترِ ما تحتاجه، ثم ابنِ مخزن معدات في أي حي لاستخدام جميع الآليات المتاحة فيه. الآليات المشغولة لا تتاح حتى عودتها.</p><div class="list">${
     (Object.keys(EQUIPMENT) as EquipmentKind[]).map(k=>{
-      const cap=d?warehouseCapacity(st,d,k):{used:0,total:0};
-      const ok=!!d&&hasRecycler&&st.coins>=EQUIPMENT[k].cost&&cap.used<cap.total;
-      return `<div class="item"><img src="${machinePreview(k)}" alt=""/><div><h3>${EQUIPMENT[k].name}</h3><p>السعر <span class="num">${fmt(EQUIPMENT[k].cost)}</span></p><p>السعة <bdi class="num">${fmt(cap.used)} / ${fmt(cap.total)}</bdi></p></div><button class="btn sm" data-a="buy" data-id="${k}" data-k="buy-${k}" ${ok?'':'disabled'}>شراء</button></div>`;
-    }).join('')}</div>${d?`<p class="note">${warehousePlots(d).map(p=>`مخزن قطعة ${fmt(p.id+1)}: ${fmt(st.units.filter(u=>localUnit(u,d)&&u.home?.warehouseId===p.id).length)} / 9`).join(' · ')||'ابنِ مخزن معدات مكتملًا أولًا.'}</p>`:''}`;
+      const count=st.units.filter(u=>u.kind===k).length;
+      const ok=st.coins>=EQUIPMENT[k].cost;
+      return `<div class="item"><img src="${machinePreview(k)}" alt=""/><div><h3>${EQUIPMENT[k].name}</h3><p>السعر <span class="num">${fmt(EQUIPMENT[k].cost)}</span></p><p>المملوك عالميًا <bdi class="num">${fmt(count)}</bdi></p></div><button class="btn sm" data-a="buy" data-id="${k}" data-k="buy-${k}" ${ok?'':'disabled'}>شراء</button></div>`;
+    }).join('')}</div>${d?`<p class="note">${warehousePlots(d).map(p=>`مخزن قطعة ${fmt(p.id+1)}: ${fmt(st.units.filter(u=>localUnit(u,d)&&u.home?.warehouseId===p.id).length)} آليات`).join(' · ')||'لاستخدام الأسطول في هذا الحي ابنِ مخزن معدات مكتملًا.'}</p>`:''}`;
 }
 export function streetsHtml(d:DistrictState) {
   const streets=roadsFor(d.id).filter((r,i,all)=>all.findIndex(q=>q.id.split('-').slice(0,2).join('-')===r.id.split('-').slice(0,2).join('-'))===i);

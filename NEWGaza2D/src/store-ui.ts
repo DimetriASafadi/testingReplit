@@ -3,6 +3,7 @@ import type { GameState } from './model';
 import { formatNumber as fmt } from './number-format';
 import { ADS, adRewardLabel } from './ads/config';
 import { adUnavailable } from './ads/ledger';
+import { COIN_PACKS } from './rewards';
 
 const B = import.meta.env.BASE_URL;
 export const usd = (c: number) => `$${(Math.round(c) / 100).toFixed(2)}`;
@@ -18,7 +19,10 @@ function rewardHtml(st: GameState, kind:'coins'|'gems') {
     ${ADS.testMode?'<p class="note">إعلانات اختبار Google · لا تحقق إيرادات. توفر الإعلان يعتمد على الشبكة والجهاز.</p>':''}
     <button class="btn ghost ad-privacy" data-a="ad-privacy">خيارات خصوصية الإعلانات</button></div></div>`;
 }
-export const coinStoreHtml = (st:GameState) => rewardHtml(st,'coins');
+export const coinStoreHtml = (st:GameState) => `<div class="st"><h3>تحويل الجواهر إلى عملات</h3><p class="note">اختر باقة لتأكيد التحويل. لا يوجد دفع بمال حقيقي.</p><div class="list">${COIN_PACKS.map((p,i)=>`<div class="item"><div>${icon('coins')} <bdi class="num">${fmt(p.coins)}</bdi></div><button class="btn" data-a="exch-ask" data-id="${i}" data-k="exchange-${i}" ${st.gems<p.gems?'disabled':''}>${icon('gems')} <bdi class="num">${fmt(p.gems)}</bdi> · تحويل</button></div>`).join('')}</div></div>${rewardHtml(st,'coins')}`;
 export const gemStoreHtml = (st:GameState) => rewardHtml(st,'gems');
-/** Legacy navigation cannot expose a hidden purchase confirmation. */
-export const exchangeHtml = (st:GameState, _pack:number) => coinStoreHtml(st);
+export function exchangeHtml(st:GameState, pack:number) {
+  const p=COIN_PACKS[pack];
+  if(!p)return '<p>الباقة غير موجودة.</p>';
+  return `<div class="st"><p class="st-lead">تأكيد تحويل الجواهر إلى عملات</p><div class="st-bal">${icon('gems')}<bdi class="num">${fmt(p.gems)}</bdi><span aria-hidden="true">←</span>${icon('coins')}<bdi class="num">${fmt(p.coins)}</bdi></div><p class="note">رصيد الجواهر: <bdi class="num">${fmt(st.gems)}</bdi>. التحويل نهائي، دون أي دفع نقدي.</p><button class="btn gold" data-a="exch-confirm" data-k="exch-confirm" ${st.gems<p.gems?'disabled':''}>تأكيد التحويل</button><button class="btn ghost" data-a="dlg" data-id="coins">رجوع دون تحويل</button></div>`;
+}
