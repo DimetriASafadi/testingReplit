@@ -9,17 +9,17 @@ Requested 2026-10-25: one whole street takes 8 base minutes of work, including b
 
 **How to apply:** Keep travel separate from work and avoid multiplying the 8 minutes by parcel-length pieces. Building bases: small 5 minutes, medium 10, progressing to residential complex 30. All factories 30 except rubble recycler and equipment warehouse 2. Rubble clearing: small 2, large 3. Other building-size mappings were not individually specified.
 
-Each warehouse should hold only three complete equipment teams: three bulldozers, three excavators and three trucks. More equipment requires another warehouse. Heavy vehicles should move slightly slower and logically.
+Equipment purchases are now requested to be global across neighborhoods, rather than owned by one neighborhood. A completed equipment warehouse is required in the neighborhood where the player uses the fleet.
 
-**Why:** This is an explicit capacity/progression request, replacing unrestricted equipment buying.
+**Why:** The user explicitly superseded district-specific ownership, giving the example of buying ten machines and using those same machines in any district with a warehouse.
 
-**How to apply:** Count each equipment kind separately against local completed warehouses; protect existing saved equipment rather than deleting it.
+**How to apply:** Preserve all existing equipment and upgrades. Busy machines must remain reserved globally until their current trip ends; a district switch must not duplicate equipment or interrupt its return.
 
-Equipment warehouse capacity is local ownership, not a global fleet multiplied by every district's warehouse count. Legacy active trips keep their departure home and excess equipment stays owned.
+Final gameplay durations must be stored separately from temporary testing overrides. The latest requested final durations are five hours each for water and electricity, four hours for the flagpole, and ten minutes per single collectible building-income payout.
 
-**Why:** Otherwise opening another district duplicates storage capacity for the same vehicles and undermines the user's requirement to build another warehouse for more equipment.
+**Why:** The user explicitly asks to retain final settings for later activation, while testing all gameplay countdowns at 30 seconds now.
 
-**How to apply:** Keep the saved owner district when adding later fleet transfers; transfers should be explicit and capacity-checked, not automatic on district entry.
+**How to apply:** Do not overwrite production durations with test values or activate production timings until requested. Income never accumulates multiple payouts and restarts only on collection. Preserve completed progress and keep migration from restarting timers on each launch.
 
 The requested district-life additions are a wood factory, household-goods shop, workers leaving/returning to their building, street lighting as part of the electricity project, more peripheral tents with moving residents, and a Palestinian flagpole project. Residents begin entering completed residential buildings from outside only at 40% district progress and increase gradually. Western coastal districts, particularly Shati and Sheikh Ijlin, should have Rashid Street or sea on their geographic west.
 
