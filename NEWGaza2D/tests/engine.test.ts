@@ -17,6 +17,7 @@ import { activityDuration } from '../src/game-timing';
 import { warehouseMotion, truckDeliveryRoute, truckHomeRoute, recyclingBay, recyclerGateDemand, recyclerVisitWindow } from '../src/warehouse-cycle';
 import { depotPortal } from '../src/fleet-motion';
 import { unitInJob } from '../src/fleet-depots';
+import { selectRecyclerVisit } from '../src/recycler-dispatch';
 import { roadsFor } from '../src/roads';
 import { projectIncome, STARTING_COINS } from '../src/economy';
 import { clearingSeconds, actualWorkDuration } from '../src/construction-rules';
@@ -483,7 +484,42 @@ test('previous outdoor unloading saves keep their dock and deadlines instead of 
   assert.deepEqual(motion.position,recyclingBay(d.plots[0],false));
   assert.equal(motion.visibility,1);
 });
-test('two recycling factories share receiving teams departing from the equipment warehouse', () => {
+test('recycler dispatch takes the nearest free route, skips busy factories in order, and reserves the full visit', () => {
+  const { store } = ready(), d = store.state.districts[0];
+  for (const p of d.plots.filter(p => p.status === 'empty').slice(0, 2))
+    Object.assign(p, { buildingId: 'recycling', status: 'built', orientation: 0 });
+  store.dispatch({ type: 'clear', plotId: 2 });
+  const job = structuredClone(store.state.jobs[0]), site = d.plots[job.plotId];
+  const depots = d.plots.filter(p => p.buildingId === 'recycling' && p.status === 'built')
+    .sort((a,b) => routeLength(truckDeliveryRoute(a, site)) - routeLength(truckDeliveryRoute(b, site)) || a.id-b.id);
+  assert.equal(depots.length, 3);
+  const held = (index: number, hours = 1): Job => ({ ...structuredClone(job),
+    id: `held-${index}`, recyclingPlotId: depots[index].id,
+    unloadStartAt: job.workEnd - 60000, unloadEnd: job.workEnd - 54000,
+    truckHomeDepartureAt: job.workEnd + hours * 3600000,
+    returnEnd: job.workEnd + hours * 3600000 + 60000 });
+  const first = selectRecyclerVisit(d, [], job)!;
+  assert.equal(first.depot.id, depots[0].id);
+  assert.equal(first.waiting, false);
+  assert.equal(selectRecyclerVisit(d, [held(0)], job)!.depot.id, depots[1].id);
+  assert.equal(selectRecyclerVisit(d, [held(0), held(1)], job)!.depot.id, depots[2].id);
+  // A reservation in another district is not local traffic.
+  assert.equal(selectRecyclerVisit(d, [{ ...held(0), districtId: 'shujaiya' }], job)!.depot.id, depots[0].id);
+  // When all are busy, use the earliest free bay instead of a single long queue.
+  const reservations = [held(0, 3), held(1, 1), held(2, 2)];
+  const before = structuredClone(reservations);
+  const queued = selectRecyclerVisit(d, reservations, job)!;
+  assert.equal(queued.depot.id, depots[1].id);
+  assert.equal(queued.waiting, true);
+  const visit = { ...job, ...queued.timing };
+  assert.ok(recyclerVisitWindow(visit, queued.depot).start > recyclerVisitWindow(reservations[1], queued.depot).end);
+  assert.deepEqual(reservations, before, 'planning must not reroute already saved trips');
+  assert.deepEqual(store.state.jobs[0], job);
+  // Construction sites are not receiving bays.
+  const nearest = depots[0]; nearest.status = 'building';
+  assert.equal(selectRecyclerVisit(d, [], job)!.depot.id, depots[1].id);
+});
+test('a second dispatch uses a free recycler and persists its selected bay and return warehouse', () => {
   const { store, storage } = ready();
   buyTeam(store);
   const second = addDepot(store), d = store.state.districts[0];
@@ -493,7 +529,15 @@ test('two recycling factories share receiving teams departing from the equipment
     assert.equal(new Set(team.map(u => u.kind)).size, 3);
   }
   const targets = d.plots.filter(p => p.status === 'rubble').slice(0,2);
-  for (const p of targets) store.dispatch({ type:'clear', plotId:p.id });
+  targets[1].buildingId = targets[0].buildingId;
+  for (const p of targets) {
+    store.dispatch({ type:'clear', plotId:p.id });
+    if (store.state.jobs.length === 1) {
+      // Keep the first receiving bay occupied for the second truck's arrival.
+      store.state.jobs[0].truckHomeDepartureAt! += 3600000;
+      store.state.jobs[0].returnEnd += 3600000;
+    }
+  }
   assert.deepEqual(new Set(store.state.jobs.map(j => j.recyclingPlotId)), new Set([0,second]));
   assert.ok(store.state.jobs.every(j => j.originPlotId === 1));
   for (const j of store.state.jobs) {
@@ -558,7 +602,7 @@ test('legacy fleet saves acquire balanced depot homes and keep returning jobs at
   const restored = new GameStore(storage, store.state.lastSeen);
   assert.deepEqual(restored.state.jobs[0], job);
   for (const id of job.unitIds) assert.equal(restored.state.units.find(u => u.id === id)!.depotIds?.zeitoun, job.recyclingPlotId);
-  assert.equal(restored.state.units.filter(u => u.depotIds?.zeitoun === second).length, 3);
+  assert.equal(restored.state.units.filter(u => u.depotIds?.zeitoun !== job.recyclingPlotId).length, 3);
   validateSave(restored.state);
   const invalid = structuredClone(restored.state);
   invalid.units[0].depotIds!.zeitoun = 2;
