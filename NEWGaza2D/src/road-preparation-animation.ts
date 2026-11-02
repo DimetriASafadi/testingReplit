@@ -5,7 +5,7 @@ import { U } from './art';
 import meta from './machinery-manifest.json';
 import { machineryDepth } from './machinery-depth';
 import type { FleetSound } from './game-audio';
-import { RoadSurfaceCache, type SurfaceBrush } from './road-surface-cache';
+import { RoadSurfaceCache, type SurfaceBrush, type SurfaceUploadBudget } from './road-surface-cache';
 
 const iso=([x,y]:Point)=>({x:(x-y)*U,y:(x+y)*U/2});
 const clamp=(f:number)=>Math.max(0,Math.min(1,f));
@@ -16,7 +16,7 @@ export class RoadPreparationAnimation {
   private ground:RoadSurfaceCache;
   private actors=new Map<string,{body:Phaser.GameObjects.Image;dust:Phaser.GameObjects.Graphics}>();
   sounds:FleetSound[]=[];
-  constructor(private scene:Phaser.Scene){this.ground=new RoadSurfaceCache(scene,-798950);}
+  constructor(private scene:Phaser.Scene,budget?:SurfaceUploadBudget){this.ground=new RoadSurfaceCache(scene,-798950,budget);}
   reset(){this.ground.reset();for(const a of this.actors.values()){a.body.destroy();a.dust.destroy();}this.actors.clear();this.sounds=[];}
   destroy(){this.reset();}
   private coat(g:SurfaceBrush,r:RoadSegment,lo:number,hi:number,aggregate:boolean){

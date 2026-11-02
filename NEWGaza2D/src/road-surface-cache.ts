@@ -39,32 +39,69 @@ export class SurfaceBrush {
   }
 }
 
-type Tile = { key:string; image:Phaser.GameObjects.Image; texture:Phaser.Textures.CanvasTexture;
+/** Shared by preparation/fresh mat: multiple machines must not synchronize a
+ * burst of Canvas allocations and GPU uploads on the same animation frame. */
+export class SurfaceUploadBudget {
+  private remaining = 0;
+  private frame = 0;
+  private waiting = new Map<string,number>();
+  constructor(private limit = 1) {}
+  begin() {
+    this.remaining = this.limit;this.frame++;
+    for(const [id,last] of this.waiting)if(last<this.frame-1)this.waiting.delete(id);
+  }
+  take(id: string) {
+    this.waiting.set(id,this.frame);
+    if(this.remaining<=0 || this.waiting.keys().next().value!==id)return false;
+    this.waiting.delete(id);this.remaining--;return true;
+  }
+  reset() { this.waiting.clear();this.remaining=0;this.frame=0; }
+}
+
+/** Only a job that actually laid visible mat can hand it to the finished coat.
+ * Returning machines must not resurrect old surfaces when another job ends. */
+export class RoadMatHandover {
+  private owners = new Set<string>();
+  private next = new Set<string>();
+  begin(coating: boolean) { this.next = new Set(coating ? this.owners : []); }
+  needs(owner: string, working: boolean, pending: boolean) {
+    if(!working && !(pending && this.owners.has(owner)))return false;
+    this.next.add(owner);return true;
+  }
+  get holding(): ReadonlySet<string> { return this.next; }
+  end() { this.owners = this.next; }
+  reset() { this.owners.clear();this.next.clear(); }
+}
+
+type Tile = { key:string; owner:string; image:Phaser.GameObjects.Image; texture:Phaser.Textures.CanvasTexture;
   stamp:string; at:number; x:number; y:number; width:number; height:number };
 let nextCache = 0;
 export class RoadSurfaceCache {
   private tiles = new Map<string,Tile>();
   private live = new Set<string>();
   private prefix = `road-surface:${nextCache++}:`;
-  constructor(private scene:Phaser.Scene,private depth:number) {}
+  constructor(private scene:Phaser.Scene,private depth:number,private budget?:SurfaceUploadBudget) {}
   begin() { this.live.clear(); }
   /** Hold existing mat during the incremental finished-coat handover. */
-  retain(){for(const id of this.tiles.keys())this.live.add(id);}
-  paint(id:string,r:RoadSegment,stamp:string,now:number,draw:(brush:SurfaceBrush)=>void) {
+  retain(owners?:ReadonlySet<string>){for(const [id,t] of this.tiles)if(!owners || owners.has(t.owner))this.live.add(id);}
+  paint(id:string,r:RoadSegment,stamp:string,now:number,draw:(brush:SurfaceBrush)=>void,owner=id) {
     this.live.add(id);
     let t = this.tiles.get(id);
     const b = t ?? surfaceBounds(r), v = this.scene.cameras.main.worldView;
     const visible = b.x+b.width>=v.x && b.x<=v.right && b.y+b.height>=v.y && b.y<=v.bottom;
     if(t)t.image.setVisible(visible);
     if(!visible)return;
+    if(t && (t.stamp===stamp || (now>=t.at && now-t.at<200)))return;
+    // Defer before allocation. A skipped new section must not create a blank
+    // texture; the next update retries with the latest progress, not a backlog.
+    if(this.budget && !this.budget.take(this.prefix+id))return;
     if(!t) {
       if(b.width>1024||b.height>1024)throw new Error('Road surface must be split into short sections');
       const key = this.prefix+id, texture = this.scene.textures.createCanvas(key,b.width,b.height)!;
-      t = { key,texture,image:this.scene.add.image(b.x,b.y,key).setOrigin(0,0).setDepth(this.depth),
+      t = { key,owner,texture,image:this.scene.add.image(b.x,b.y,key).setOrigin(0,0).setDepth(this.depth),
         stamp:'',at:-Infinity,x:b.x,y:b.y,width:b.width,height:b.height };
       this.tiles.set(id,t);
     }
-    if(t.stamp===stamp || (now>=t.at && now-t.at<200))return;
     const c = t.texture.getContext();
     c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,t.texture.width,t.texture.height);
     c.setTransform(1,0,0,1,-t.x,-t.y);draw(new SurfaceBrush(c));

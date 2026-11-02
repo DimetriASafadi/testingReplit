@@ -8,7 +8,7 @@ import type { FleetSound } from './game-audio';
 import { cityLayout } from './city-layout';
 import { pavingPlan, runOutline, nodeOutlines, splitPavingRun, ROAD_HALF, type PavingPlan } from './road-paving';
 import { RoadPreparationAnimation } from './road-preparation-animation';
-import { RoadSurfaceCache, type SurfaceBrush } from './road-surface-cache';
+import { RoadSurfaceCache, RoadMatHandover, SurfaceUploadBudget, type SurfaceBrush } from './road-surface-cache';
 import { tentSpot } from './district-life';
 import { districtEnvironment } from './district-environment';
 import { RoadCoatTiles, COAT_TILE_SIZE, coatShapeTouches } from './road-coat-tiles';
@@ -37,9 +37,11 @@ export class RoadAnimation {
  private tentAlpha=1;
  private preparation?:RoadPreparationAnimation;
  private fresh:RoadSurfaceCache;
+ private surfaceBudget=new SurfaceUploadBudget(1);
+ private matHandover=new RoadMatHandover();
  sounds:FleetSound[]=[];
-  constructor(private scene:Phaser.Scene){this.fresh=new RoadSurfaceCache(scene,-798925);}
- reset(){this.fresh.reset();this.preparation?.destroy();this.preparation=undefined;this.clearCoat();this.work?.destroy();this.fx?.destroy();for(const a of this.actors.values()){a.img.destroy();a.under.destroy();a.over.destroy();}for(const t of this.tents)t.destroy();this.actors.clear();this.tents=[];this.did='';this.signature='';this.sounds=[];this.nextProgress=0;}
+  constructor(private scene:Phaser.Scene){this.fresh=new RoadSurfaceCache(scene,-798925,this.surfaceBudget);}
+ reset(){this.fresh.reset();this.matHandover.reset();this.surfaceBudget.reset();this.preparation?.destroy();this.preparation=undefined;this.clearCoat();this.work?.destroy();this.fx?.destroy();for(const a of this.actors.values()){a.img.destroy();a.under.destroy();a.over.destroy();}for(const t of this.tents)t.destroy();this.actors.clear();this.tents=[];this.did='';this.signature='';this.sounds=[];this.nextProgress=0;}
  private clearCoat(){this.coatWork?.return(undefined);this.coatWork=undefined;this.coatTiles.reset();for(const img of this.pavement)img.destroy();for(const key of this.pavedKeys)this.scene.textures.remove(key);this.pavement=[];this.pavedKeys=[];}
  private quad(r:RoadSegment,f0:number,f1:number,w=HALF){
   const dx=r.b[0]-r.a[0],dy=r.b[1]-r.a[1],len=Math.hypot(dx,dy),ox=-dy/len*w,oy=dx/len*w;
@@ -169,13 +171,12 @@ export class RoadAnimation {
   if(now>=this.nextProgress){this.nextProgress=now+500;this.tentAlpha=Math.pow(1-districtProgress(d)/100,1.2);}
   const target=this.tentAlpha;
   for(const t of this.tents)t.setAlpha(Math.abs(t.alpha-target)<.005?target:t.alpha+(target-t.alpha)*.045);
-   this.preparation??=new RoadPreparationAnimation(this.scene);
+   this.surfaceBudget.begin();
+   this.preparation??=new RoadPreparationAnimation(this.scene,this.surfaceBudget);
    this.preparation.update(d,now);
    const live=new Set<string>();this.sounds=[...this.preparation.sounds];
    this.work!.clear();this.fx!.clear();this.fresh.begin();
-   // Keep the last visible mat while the replacement is prepared; never reveal
-   // the sandy base for a frame or discard all final-pass surfaces in one tick.
-   if(this.coatWork)this.fresh.retain();
+   this.matHandover.begin(!!this.coatWork);
   for(const w of d.roadWorks??[]){
    if(now>=w.returnEnd)continue;
    if(!roadsFor(d.id).some(r=>r.id===w.roadId))continue;
@@ -191,11 +192,12 @@ export class RoadAnimation {
     const m=now<arrival?along([...w.route,workStart],(now-departure)/(arrival-departure)):working?{p:[workStart[0]+ux*f*len,workStart[1]+uy*f*len] as P,angle:Math.atan2(uy,ux)}:along([workFinish,r.b,...w.route.slice().reverse()],(now-w.workEnd)/(w.returnEnd-w.workEnd));
     if(now<arrival)this.cones(this.work!,r);
     const pending=new Set(w.roadIds??[w.roadId]);
-    if(working || now>=w.workEnd && (!!this.coatWork || ![...pending].every(id=>(d.pavedRoads??[]).includes(id)))){
+    const owner=`${w.machineId}:${w.start}`;
+    if(this.matHandover.needs(owner,working,now>=w.workEnd && (!!this.coatWork || ![...pending].every(id=>(d.pavedRoads??[]).includes(id))))){
      for(const part of roadsFor(d.id).filter(q=>pending.has(q.id))){
        const start=Math.hypot(part.a[0]-r.a[0],part.a[1]-r.a[1]),size=Math.hypot(part.b[0]-part.a[0],part.b[1]-part.a[1]);
        const fs=Math.max(0,Math.min(1,(f*len-start)/size));
-       if(fs>0)this.fresh.paint(`${w.machineId}:${part.id}`,part,String(Math.round(fs*size*U)),now,g=>this.freshMat(g,part,fs));
+       if(fs>0)this.fresh.paint(`${owner}:${part.id}`,part,String(Math.round(fs*size*U)),now,g=>this.freshMat(g,part,fs),owner);
      }
      if(working)this.cones(this.work!,r);
    }
@@ -239,7 +241,10 @@ export class RoadAnimation {
    for(let k=0;k<3;k++){const ph=((now/(working?700:1100))+k/3)%1;this.fx!.fillStyle(0x4a4844,.28*(1-ph)).fillCircle(p.x+3+ph*7,p.y-46*PAVER_SCALE/.62-ph*16,2+ph*4);}
    this.sounds.push({id:w.machineId,kind:'paver',x:p.x,y:p.y,working});
   }
-   this.fresh.end();
+   // Hold only the existing surfaces of their actual owners. In particular,
+   // a returning older paver is not a request to redraw its entire street.
+   if(this.coatWork)this.fresh.retain(this.matHandover.holding);
+   this.matHandover.end();this.fresh.end();
    for(const[id,a]of this.actors)if(!live.has(id)){a.img.destroy();a.under.destroy();a.over.destroy();this.actors.delete(id);}
  }
 }

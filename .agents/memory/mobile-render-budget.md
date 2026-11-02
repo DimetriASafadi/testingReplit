@@ -27,6 +27,12 @@ Final asphalt updates require dirty-region invalidation AND stable world-aligned
 
 **How to apply:** Compare short stable pieces and actual diagonal footprints, retain unaffected GPU textures, split planning from raster/upload work, preserve pending dirty tiles when plans change, and retain the visible fresh mat until its replacement is ready.
 
+Concurrent paving handovers belong to individual jobs, not to a global “some coat is pending” flag. An older returning machine must not recreate its retired street when a different machine finishes.
+
+**Why:** The user specifically reproduced renewed stutter with several pavers working concurrently, after the single-street dirty-tile fix.
+
+**How to apply:** Track fresh-mat ownership per job (including machine reuse), retain only existing owned mat during handover, and share a fair bounded raster-update budget across preparation/asphalt jobs. Deferred work uses current progress; stale/offscreen requests cannot block other machines. Verify successive completions with a third job still active, not only a single-machine fixture.
+
 Treat a late-game saved district—not a new empty district—as the startup/rendering acceptance case, especially the user's Android save at 93% progress.
 
 **Why:** The user reported that after force-closing and reopening the Android game at 93%, it stayed on “Preparing district ground.” A new-game screenshot does not exercise dense-save restoration.

@@ -15,3 +15,13 @@ The final-coat renderer now invalidates only changed, world-aligned road pieces 
 ## Device verification still needed
 
 On the reported Android 11 / 4GB Helio phone, finish several streets in a densely built saved district, including concurrent jobs, repeated map switching, and background/resume. Measure full frame times, memory, and texture counts rather than relying on the desktop CPU result.
+
+## Concurrent machine follow-up
+
+The global handover condition could recreate an older completed street while its paver was still returning, when another job triggered a new coat. Mat ownership is now tracked by job; retired jobs cannot re-enter handover. Preparation and fresh asphalt also share one fair surface raster/update slot per animation update, separate from the already bounded finished-coat tile update. Deferred sections do not allocate blank textures or store outdated progress callbacks.
+
+- TypeScript and 22 targeted road geometry/cache/handover tests pass.
+- The production `RoadAnimation` was exercised with three machines in the render-only fixture `tests/render/concurrent-pavers.ts`: A completes while B/C continue, then B completes while A is returning and C continues.
+- In that Canvas smoke run, completing A caused zero unrelated B/C surface refreshes; completing B caused zero new surface allocations for returning A and zero unrelated C refreshes. The shared preparation/fresh-mat upload counter peaked at one per update.
+- Progress on unrelated jobs is effectively held constant in this fixture to separate invalidation from normal animation updates. This is not an Android/WebGL FPS benchmark.
+- The temporary browser route and compiled fixture bundle were removed after verification; the source fixture remains outside production assets.
