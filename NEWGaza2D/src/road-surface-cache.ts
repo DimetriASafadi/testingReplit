@@ -48,6 +48,8 @@ export class RoadSurfaceCache {
   private prefix = `road-surface:${nextCache++}:`;
   constructor(private scene:Phaser.Scene,private depth:number) {}
   begin() { this.live.clear(); }
+  /** Hold existing mat during the incremental finished-coat handover. */
+  retain(){for(const id of this.tiles.keys())this.live.add(id);}
   paint(id:string,r:RoadSegment,stamp:string,now:number,draw:(brush:SurfaceBrush)=>void) {
     this.live.add(id);
     let t = this.tiles.get(id);

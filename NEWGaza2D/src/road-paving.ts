@@ -19,6 +19,21 @@ export interface PavedRun { axis: 'x' | 'y'; fixed: number; s0: number; s1: numb
 export interface PavedNode { x: number; y: number; fillets: [number, number][] }
 export interface PavingPlan { runs: PavedRun[]; nodes: PavedNode[] }
 
+/** Stable, world-aligned raster pieces. Changing a junction/end cap must not
+ * invalidate the entire crossing street's otherwise identical merged run. */
+export function splitPavingRun(r:PavedRun,size=2):PavedRun[]{
+  const pieces:PavedRun[]=[];
+  for(let s=Math.floor(r.p0/size)*size;s<r.p1;s+=size){
+    const p0=Math.max(s,r.p0),p1=Math.min(s+size,r.p1);
+    if(p1-p0<1e-6)continue;
+    const clip=(spans:[number,number][])=>spans
+      .map(([a,b]):[number,number]=>[Math.max(a,p0),Math.min(b,p1)]).filter(([a,b])=>b>a);
+    pieces.push({...r,s0:p0,s1:p1,p0,p1,start:p0===r.p0?r.start:'node',
+      end:p1===r.p1?r.end:'node',edges:clip(r.edges),dashes:clip(r.dashes)});
+  }
+  return pieces;
+}
+
 const EPS = 1e-6;
 const near = (a: number, b: number) => Math.abs(a - b) < EPS;
 const axisOf = (r: RoadSegment): 'x' | 'y' => near(r.a[0], r.b[0]) ? 'x' : 'y';

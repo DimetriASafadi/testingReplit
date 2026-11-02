@@ -6,11 +6,12 @@ import { paverTexture, tentTexture, TENT_ORIGIN, PAVER_ORIGIN, PAVER_SCALE } fro
 import { districtProgress } from './engine';
 import type { FleetSound } from './game-audio';
 import { cityLayout } from './city-layout';
-import { pavingPlan, runOutline, nodeOutlines, ROAD_HALF, type PavingPlan } from './road-paving';
+import { pavingPlan, runOutline, nodeOutlines, splitPavingRun, ROAD_HALF, type PavingPlan } from './road-paving';
 import { RoadPreparationAnimation } from './road-preparation-animation';
 import { RoadSurfaceCache, type SurfaceBrush } from './road-surface-cache';
 import { tentSpot } from './district-life';
 import { districtEnvironment } from './district-environment';
+import { RoadCoatTiles, COAT_TILE_SIZE, coatShapeTouches } from './road-coat-tiles';
 
 const iso=(x:number,y:number)=>({x:(x-y)*U,y:(x+y)*U/2});
 type P=[number,number];
@@ -28,6 +29,7 @@ export class RoadAnimation {
  private fx?:Phaser.GameObjects.Graphics;
  private signature='';
  private coatWork?: Generator<void>;
+ private coatTiles=new RoadCoatTiles();
  private did='';
  private actors=new Map<string,{img:Phaser.GameObjects.Image;under:Phaser.GameObjects.Graphics;over:Phaser.GameObjects.Graphics}>();
  private tents:Phaser.GameObjects.Image[]=[];
@@ -38,7 +40,7 @@ export class RoadAnimation {
  sounds:FleetSound[]=[];
   constructor(private scene:Phaser.Scene){this.fresh=new RoadSurfaceCache(scene,-798925);}
  reset(){this.fresh.reset();this.preparation?.destroy();this.preparation=undefined;this.clearCoat();this.work?.destroy();this.fx?.destroy();for(const a of this.actors.values()){a.img.destroy();a.under.destroy();a.over.destroy();}for(const t of this.tents)t.destroy();this.actors.clear();this.tents=[];this.did='';this.signature='';this.sounds=[];this.nextProgress=0;}
- private clearCoat(){this.coatWork?.return(undefined);this.coatWork=undefined;for(const img of this.pavement)img.destroy();for(const key of this.pavedKeys)this.scene.textures.remove(key);this.pavement=[];this.pavedKeys=[];}
+ private clearCoat(){this.coatWork?.return(undefined);this.coatWork=undefined;this.coatTiles.reset();for(const img of this.pavement)img.destroy();for(const key of this.pavedKeys)this.scene.textures.remove(key);this.pavement=[];this.pavedKeys=[];}
  private quad(r:RoadSegment,f0:number,f1:number,w=HALF){
   const dx=r.b[0]-r.a[0],dy=r.b[1]-r.a[1],len=Math.hypot(dx,dy),ox=-dy/len*w,oy=dx/len*w;
   const s=[r.a[0]+dx*f0,r.a[1]+dy*f0],e=[r.a[0]+dx*f1,r.a[1]+dy*f1];
@@ -49,13 +51,31 @@ export class RoadAnimation {
   const l=cityLayout(d.id),max=l.extent,K=.5;
   const ox=iso(-1,max+1).x,oy=iso(-1,-1).y,w=Math.ceil((iso(max+1,-1).x-ox)*K),h=Math.ceil((iso(max+1,max+1).y-oy)*K);
   const plan:PavingPlan=pavingPlan(l.roadX,l.roadY,roadsFor(d.id),new Set(d.pavedRoads??[]));
+  // Geometry planning and raster uploads have separate frame slots as well.
+  yield;
   const pt=(x:number,y:number):[number,number]=>{const q=iso(x,y);return[(q.x-ox)*K,(q.y-oy)*K];};
-  const polys=[...plan.runs.map(runOutline),...plan.nodes.flatMap(n=>nodeOutlines(n))];
+  const shapes=[
+    ...plan.runs.flatMap(run=>splitPavingRun(run)).map(run=>({token:JSON.stringify(run),polys:[runOutline(run)],run})),
+    ...plan.nodes.map(node=>({token:JSON.stringify(node),polys:nodeOutlines(node),run:undefined}))
+  ].map(s=>{
+    const footprints=s.polys.map(poly=>poly.map(([x,y])=>pt(x,y))),points=footprints.flat();
+    return {...s,footprints,bounds:{x:Math.min(...points.map(p=>p[0]))-22,y:Math.min(...points.map(p=>p[1]))-22,
+      right:Math.max(...points.map(p=>p[0]))+22,bottom:Math.max(...points.map(p=>p[1]))+22}};
+  });
+  this.coatTiles.reconcile(shapes,w,h);
+  yield;
   const trace=(ctx:CanvasRenderingContext2D,ps:[number,number][][])=>{ctx.beginPath();for(const poly of ps)poly.forEach(([x,y],i)=>{const[a,b]=pt(x,y);i?ctx.lineTo(a,b):ctx.moveTo(a,b);});};
   const fillEach=(ctx:CanvasRenderingContext2D,ps:[number,number][][],col:string)=>{ctx.fillStyle=col;for(const poly of ps){trace(ctx,[poly]);ctx.closePath();ctx.fill();}};
-   if(!polys.length){this.clearCoat();return;}
-    for(let y=0;y<h;y+=512)for(let x=0;x<w;x+=512){
-    const key=`paved:${d.id}:${x}:${y}`,tw=Math.min(512,w-x),th=Math.min(512,h-y),pad=20;
+    while(this.coatTiles.size){
+    const {x,y}=this.coatTiles.next()!;
+    const key=`paved:${d.id}:${x}:${y}`,tw=Math.min(COAT_TILE_SIZE,w-x),th=Math.min(COAT_TILE_SIZE,h-y),pad=20;
+    const local=shapes.filter(s=>coatShapeTouches(s,{x,y,right:x+tw,bottom:y+th}));
+    const polys=local.flatMap(s=>s.polys),runs=local.flatMap(s=>s.run?[s.run]:[]);
+    if(!polys.length){
+      const old=this.pavedKeys.indexOf(key);
+      if(old>=0){this.pavement[old].destroy();this.scene.textures.remove(key);this.pavedKeys.splice(old,1);this.pavement.splice(old,1);}
+      this.coatTiles.applied(x,y);yield;continue;
+    }
     const cv=document.createElement('canvas');cv.width=tw;cv.height=th;const c=cv.getContext('2d')!;
     c.translate(-x,-y);
   // 1. dusty shoulder: opaque union on a scratch canvas, blurred, composited once at low alpha (no double-alpha edges)
@@ -80,14 +100,19 @@ export class RoadAnimation {
   c.restore();
   // 4. worn edge lines only along straight sides; stop before curb returns
   c.lineCap='round';
-  for(const r of plan.runs){const P=(s:number,o:number)=>r.axis==='x'?pt(r.fixed+o,s):pt(s,r.fixed+o);
+  for(const r of runs){const P=(s:number,o:number)=>r.axis==='x'?pt(r.fixed+o,s):pt(s,r.fixed+o);
    for(const o of [-ROAD_HALF+.03,ROAD_HALF-.03])for(const [e0,e1] of r.edges){const a=P(e0,o),b=P(e1,o);c.strokeStyle='rgba(190,182,154,.55)';c.lineWidth=.9;c.beginPath();c.moveTo(...a);c.lineTo(...b);c.stroke();}
    for(const [a0,b0] of r.dashes){const a=P(a0,0),b=P(b0,0);c.strokeStyle='rgba(222,209,164,.82)';c.lineWidth=1.1;c.beginPath();c.moveTo(...a);c.lineTo(...b);c.stroke();}}
      const previous=this.pavedKeys.indexOf(key);
-     if(previous>=0){this.pavement[previous].destroy();this.scene.textures.remove(key);this.pavedKeys.splice(previous,1);this.pavement.splice(previous,1);}
-     this.pavedKeys.push(key);
-     if(!this.scene.textures.addCanvas(key,cv))throw new Error('تعذر تجهيز سطح الشوارع');
-     this.pavement.push(this.scene.add.image(ox+x/K,oy+y/K,key).setOrigin(0,0).setScale(1/K).setDepth(-799000));
+     if(previous>=0){
+       const texture=this.scene.textures.get(key) as Phaser.Textures.CanvasTexture,ctx=texture.getContext();
+       ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,tw,th);ctx.drawImage(cv,0,0);texture.refresh();cv.width=cv.height=0;
+     }else{
+       this.pavedKeys.push(key);
+       if(!this.scene.textures.addCanvas(key,cv))throw new Error('تعذر تجهيز سطح الشوارع');
+       this.pavement.push(this.scene.add.image(ox+x/K,oy+y/K,key).setOrigin(0,0).setScale(1/K).setDepth(-799000));
+     }
+     this.coatTiles.applied(x,y);
      yield;
    }
  }
@@ -148,6 +173,9 @@ export class RoadAnimation {
    this.preparation.update(d,now);
    const live=new Set<string>();this.sounds=[...this.preparation.sounds];
    this.work!.clear();this.fx!.clear();this.fresh.begin();
+   // Keep the last visible mat while the replacement is prepared; never reveal
+   // the sandy base for a frame or discard all final-pass surfaces in one tick.
+   if(this.coatWork)this.fresh.retain();
   for(const w of d.roadWorks??[]){
    if(now>=w.returnEnd)continue;
    if(!roadsFor(d.id).some(r=>r.id===w.roadId))continue;
@@ -163,7 +191,7 @@ export class RoadAnimation {
     const m=now<arrival?along([...w.route,workStart],(now-departure)/(arrival-departure)):working?{p:[workStart[0]+ux*f*len,workStart[1]+uy*f*len] as P,angle:Math.atan2(uy,ux)}:along([workFinish,r.b,...w.route.slice().reverse()],(now-w.workEnd)/(w.returnEnd-w.workEnd));
     if(now<arrival)this.cones(this.work!,r);
     const pending=new Set(w.roadIds??[w.roadId]);
-    if(working || now>=w.workEnd && ![...pending].every(id=>(d.pavedRoads??[]).includes(id))){
+    if(working || now>=w.workEnd && (!!this.coatWork || ![...pending].every(id=>(d.pavedRoads??[]).includes(id)))){
      for(const part of roadsFor(d.id).filter(q=>pending.has(q.id))){
        const start=Math.hypot(part.a[0]-r.a[0],part.a[1]-r.a[1]),size=Math.hypot(part.b[0]-part.a[0],part.b[1]-part.a[1]);
        const fs=Math.max(0,Math.min(1,(f*len-start)/size));

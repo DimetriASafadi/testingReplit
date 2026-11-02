@@ -1272,3 +1272,17 @@ mtime_ms = 1793642288133
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/6f7aaca9-76bf-40e8-8ea6-1d71ca9ff599/d8e9cb27-6776-4bd1-814b-292a0be5b4cb"
 storage_version_token = "1793642578399501"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "q-GgCcKpOFhxYFfGf_AsU"
+uri = "file://generated-artifacts/new-gaza-2d-1.11-offline.apk"
+type = "unspecified"
+title = "نيو غزة — APK 1.11 أوفلاين"
+description = "تشمل إصلاح تحديث طبقة الأسفلت النهائية، وشاشة الاحتفال المحسنة، وأيقونة اللعبة الجديدة. نحو 30 ميجابايت؛ نفس توقيع النسخة السابقة للتثبيت كتحديث."
+logical_id = "65db5eea-639d-49a6-b555-a17c6788c97e"
+content_hash = "sha256:4def4cfb264007520939ac704b473d02f7bd8d285af6af1b7f4bb01dcd76632a"
+size = 31269535
+mtime_ms = 1793643641301
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/65db5eea-639d-49a6-b555-a17c6788c97e/e94f8863-1db0-45c1-9d91-6c5f09b02587"
+storage_version_token = "1793643720710310"
+content_type = "application/octet-stream"

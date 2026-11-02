@@ -21,6 +21,12 @@ Procedural ground performance must account for replayed draw commands, not only 
 
 **How to apply:** Separate ground-detail refresh from smooth vehicle/effect animation. Prefer bounded, mobile-sized raster sections for slowly changing surfaces; keep effects local to active machinery and verify cleanup across repeated jobs and district changes.
 
+Final asphalt updates require dirty-region invalidation AND stable world-aligned road pieces. Merely yielding between tiles does not make a whole-city repaint cheap.
+
+**Why:** The user reported another hitch at the final paving layer. A junction change altered merged-run signatures, which unnecessarily invalidated whole crossing streets even when only their end caps changed.
+
+**How to apply:** Compare short stable pieces and actual diagonal footprints, retain unaffected GPU textures, split planning from raster/upload work, preserve pending dirty tiles when plans change, and retain the visible fresh mat until its replacement is ready.
+
 Treat a late-game saved district—not a new empty district—as the startup/rendering acceptance case, especially the user's Android save at 93% progress.
 
 **Why:** The user reported that after force-closing and reopening the Android game at 93%, it stayed on “Preparing district ground.” A new-game screenshot does not exercise dense-save restoration.

@@ -13,8 +13,8 @@ android {
         applicationId "com.newgaza.citygame"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 11
-        versionName "1.10-offline"
+        versionCode 12
+        versionName "1.11-offline"
         manifestPlaceholders = [admobAppId: adAppId]
         buildConfigField 'boolean', 'ADS_TEST_MODE', "${adConfig.testMode}"
         buildConfigField 'boolean', 'ADS_UNDER_AGE', "${adConfig.android.underAgeOfConsent}"

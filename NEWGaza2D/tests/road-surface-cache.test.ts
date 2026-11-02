@@ -74,6 +74,13 @@ test('switching jobs/districts releases every old surface; repeated reset is saf
   }
   assert.equal(stats.created,stats.destroyed);
 });
+test('finished-coat handover retains the old mat without drawing or uploading it again',()=>{
+  const {cache,stats,textures}=fixture();
+  cache.begin();cache.paint('finishing',road,'1',0,()=>stats.draws++);cache.end();
+  for(let i=0;i<20;i++){cache.begin();cache.retain();cache.end();}
+  assert.equal(textures.size,1);assert.equal(stats.draws,1);assert.equal(stats.uploads,1);
+  cache.begin();cache.end();assert.equal(textures.size,0);assert.equal(stats.destroyed,1);
+});
 test('a system clock adjustment does not freeze the visible surface cache',()=>{
   const {cache,stats}=fixture();
   cache.begin();cache.paint('job',road,'1',1000,()=>stats.draws++);cache.end();
