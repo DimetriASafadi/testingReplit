@@ -1,4 +1,4 @@
-import { U, PLOT } from './art';
+import { LAND_WORLD_EDGE, PLOT_WORLD_W } from './lot-geometry';
 import manifest from './realistic-manifest.json';
 /** A plot is land: smaller buildings leave usable space rather than filling it. */
 export interface BuildingFootprint { factor: number; yard: 'garden' | 'patio' | 'service' | 'none' }
@@ -49,18 +49,38 @@ export function buildingMaxHeight(finalSprite: string) {
 export function buildingFootprint(finalSprite: string): Readonly<BuildingFootprint> {
   return COMPACT[finalSprite.replace(/_(front|back|right|left)$/, '')] ?? FULL_LOT;
 }
-/** Pure render geometry shared by sprites and their physical factory entrance. */
-export function buildingRenderScale(finalKey: string, m: { w: number; h: number; ground?: { w: number; h: number } }, base = .72) {
+/** Fraction of the actual 2x2 parcel's projected width/depth. Open-land uses
+ * nearly the whole lot; these are world dimensions, not PNG scale factors. */
+const LAND_COVERAGE: Record<string,number> = {
+  rpark:.90, club:.88, zoo:.92,
+  wheat:.92, citrus:.92, olive:.92, veg:.92, straw:.92, cattle:.92,
+  palms:.92, corn:.92, trees:.92, orn:.92, grapes:.92,
+  western:.66, luxury:.74, cafe:.56,
+};
+const stemOf = (key:string) => key === 'farm_cattle' ? 'cattle' : key.replace(/_(front|back|right|left)$/, '');
+/** Public/pure dimensions also used to test every catalog family's parcel fit.
+ * Keep the accepted small-house/villa garden proportions, not a giant house. */
+export function buildingLotDimensions(finalKey: string) {
+  const stem=stemOf(finalKey), house=['smallhouse','house','villa','tourist'].includes(stem);
+  const coverage=LAND_COVERAGE[stem] ?? (house ? .55 : .70)*buildingFootprint(finalKey).factor;
+  return {width:PLOT_WORLD_W*coverage,height:PLOT_WORLD_W*coverage/2};
+}
+/** Pure render geometry shared by sprites, construction, shadows and entrances.
+ * Height means structure ABOVE the back ground edge, not the whole image:
+ * counting the land diamond as building height disproportionately shrinks farms. */
+export function buildingRenderScale(finalKey: string, m: { w: number; h: number; ay?:number; ground?: { w: number; h: number } }, base = .72) {
   const metrics = manifest as Record<string, typeof m>;
-  const stem = finalKey === 'farm_cattle' ? 'cattle' : finalKey.replace(/_(front|back|right|left)$/, '');
+  const stem = stemOf(finalKey), target=buildingLotDimensions(finalKey);
   const faces = ['front', 'right', 'back', 'left'].map(face =>
     metrics[stem === 'cattle' && face === 'front' ? 'farm_cattle' : `${stem}_${face}`]).filter(Boolean);
   // One world scale for all views: a different silhouette/yard cannot make the
   // building suddenly grow or shrink when the player rotates it.
   const one = (v: typeof m) => {
     const gw = v.ground?.w ?? v.w, gh = v.ground?.h ?? gw / 2;
-    return Math.min(base * buildingFootprint(finalKey).factor, buildingMaxHeight(finalKey) / v.h,
-      (PLOT * U * 2) / gw, (PLOT * U) / gh);
+    const elevation=Math.max(1,v.h*(v.ay ?? 1-gh/(2*v.h))-gh/2);
+    return Math.min(target.width/gw*base/.72,target.height/gh*base/.72,
+      buildingMaxHeight(finalKey)/elevation,
+      PLOT_WORLD_W*LAND_WORLD_EDGE/gw,PLOT_WORLD_W*LAND_WORLD_EDGE/2/gh);
   };
   return Math.min(one(m), ...faces.map(one));
 }

@@ -6,6 +6,8 @@ import { CONVOY_GAP, CONVOY_SPEED, convoyMotion, fleetRoute, outgoingTravelDurat
 import type { Job } from '../src/model';
 import machinery from '../src/machinery-manifest.json';
 import { ORIENTATION_CYCLE, rotateLotPoint } from '../src/orientation';
+import { buildingRenderScale } from '../src/building-footprint';
+import manifest from '../src/realistic-manifest.json';
 test('new convoys use a faster constant ground speed, proportional to route length in both directions', () => {
   const kinds = ['excavator', 'bulldozer', 'truck'] as const;
   for (const district of newGame(100000).districts) {
@@ -43,7 +45,11 @@ test('factory door and vehicles share the same calibrated four-sided opening',()
   for(const orientation of ORIENTATION_CYCLE) {
     source.orientation=orientation;const g=depotGeometry(source);
     assert.ok(g.halfWidth >= 7 && g.halfWidth <= 15);
-    assert.ok(g.height >= 24 && g.height <= 32);
+    const side=orientation===0||orientation===1?'front':'right';
+    const m=manifest[`recycling_${side}`];
+    const scale=buildingRenderScale(`recycling_${side}`,m);
+    assert.ok(Math.abs(g.height-(side==='front'?35:39)*m.w/196*scale)<1e-8,
+      'door aperture must grow with the actual displayed factory, not a stale pixel cap');
     assert.deepEqual(g.outward, rotateLotPoint([0, 1], orientation));
     assert.equal(g.visible, orientation === 0 || orientation === 2);
     for(const kind of ['excavator','truck','bulldozer'] as const) {

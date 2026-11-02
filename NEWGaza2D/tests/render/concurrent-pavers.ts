@@ -43,12 +43,12 @@ class Review extends Phaser.Scene {
     const count=(map:Map<string,number>,owner:string)=>[...map].filter(([k])=>k.includes(`:paver-${owner}:`)).reduce((sum,[,n])=>sum+n,0);
     for(let i=0;i<200;i++)step(epoch+i*33);
     const beforeA={B:count(updates,'B'),C:count(updates,'C')};
-    d.pavedRoads.push(...streets[0].map(r=>r.id));
+    d.pavedRoads!.push(...streets[0].map(r=>r.id));
     for(let i=0;i<80;i++)step(epoch+10001+i*33);
     const duringA={B:count(updates,'B')-beforeA.B,C:count(updates,'C')-beforeA.C};
     const beforeB={A:count(creates,'A'),C:count(updates,'C')};
     d.roadWorks![1].workEnd=epoch+20000;
-    d.pavedRoads.push(...streets[1].map(r=>r.id));
+    d.pavedRoads!.push(...streets[1].map(r=>r.id));
     for(let i=0;i<80;i++)step(epoch+20001+i*33);
     const duringB={A:count(creates,'A')-beforeB.A,C:count(updates,'C')-beforeB.C};
     const passed=duringA.B===0&&duringA.C===0&&duringB.A===0&&duringB.C===0&&maxUploads<=1;

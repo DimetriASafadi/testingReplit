@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildingFootprint, buildingMaxHeight, buildingRenderScale } from '../src/building-footprint';
+import { buildingFootprint, buildingLotDimensions, buildingMaxHeight, buildingRenderScale } from '../src/building-footprint';
+import { LAND_WORLD_EDGE, PLOT_WORLD_W } from '../src/lot-geometry';
 import manifest from '../src/realistic-manifest.json';
 
 test('compact houses leave usable land while apartments and factories keep their full footprint', () => {
@@ -59,4 +60,42 @@ test('rotation preserves house scale and landscape category', () => {
     const f = buildingFootprint(`${stem}_front`).factor;
     assert.ok(f > 0 && f <= 1);
   }
+});
+test('every finished face fits the dressed parcel on both ground axes and respects structural height',()=>{
+  const sprites=manifest as Record<string,{w:number;h:number;ay:number;ground?:{w:number;h:number}}>;
+  for(const [key,m] of Object.entries(sprites)){
+    if(!/_(front|back|right|left)$/.test(key)&&key!=='farm_cattle')continue;
+    const scale=buildingRenderScale(key,m),target=buildingLotDimensions(key);
+    const gw=m.ground?.w??m.w,gh=m.ground?.h??gw/2;
+    assert.ok(gw*scale<=target.width+.001,key+' width');
+    assert.ok(gh*scale<=target.height+.001,key+' depth');
+    assert.ok(gw*scale<=PLOT_WORLD_W*LAND_WORLD_EDGE+.001,key+' parcel width');
+    assert.ok(gh*scale<=PLOT_WORLD_W*LAND_WORLD_EDGE/2+.001,key+' parcel depth');
+    assert.ok(Math.max(1,m.h*m.ay-gh/2)*scale<=buildingMaxHeight(key)+.001,key+' roof');
+  }
+});
+test('parks, sports fields and farms occupy most of their plot rather than a small central stamp',()=>{
+  const sprites=manifest as Record<string,{w:number;h:number;ay:number;ground?:{w:number;h:number}}>;
+  for(const stem of ['rpark','club','zoo','wheat','citrus','olive','veg','straw','cattle','palms','corn','trees','orn','grapes']){
+    for(const face of ['front','right','back','left']){
+      const key=stem==='cattle'&&face==='front'?'farm_cattle':`${stem}_${face}`,m=sprites[key];
+      const scale=buildingRenderScale(key,m);
+      assert.ok((m.ground?.w??m.w)*scale>=PLOT_WORLD_W*.85,key+' coverage');
+    }
+  }
+});
+test('restaurant sizes reflect their use while small-house gardens keep their accepted proportions',()=>{
+  assert.ok(buildingLotDimensions('western_front').width>buildingLotDimensions('falafel_front').width);
+  assert.ok(buildingLotDimensions('luxury_front').width>buildingLotDimensions('western_front').width);
+  const m=manifest.western_front,scale=buildingRenderScale('western_front',m);
+  assert.ok(m.ground.w*scale>=PLOT_WORLD_W*.65);
+  assert.ok(buildingLotDimensions('smallhouse_front').width<PLOT_WORLD_W*.35);
+  assert.ok(buildingLotDimensions('villa_front').width>buildingLotDimensions('smallhouse_front').width);
+});
+test('packing resolution does not change world dimensions of a sprite family',()=>{
+  // An unknown family lets the supplied metadata be the sole face. Doubling
+  // pixels and the ground diamond must halve scale, not enlarge the building.
+  const m={w:196,h:168,ay:119/168,ground:{w:196,h:98}};
+  const doubled={w:m.w*2,h:m.h*2,ay:m.ay,ground:{w:m.ground.w*2,h:m.ground.h*2}};
+  assert.equal(buildingRenderScale('sample_front',m),buildingRenderScale('sample_front',doubled)*2);
 });
