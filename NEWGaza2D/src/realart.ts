@@ -9,7 +9,7 @@ export interface SprMeta { w: number; h: number; ay: number; ground?: { w: numbe
 export const SPR = manifest as Record<string, SprMeta>;
 export const SPRITE_KEYS = Object.keys(SPR);
 export const GROUND_KEYS = ['earth', 'sand', 'asphalt', 'gravel', 'water'] as const;
-const ART_VERSION = 'four-sides-20261026-cattle';
+const ART_VERSION = 'four-sides-20261102-market';
 export const sprUrl = (k: string) => `${import.meta.env.BASE_URL}art/realistic/s/${k}.webp?v=${ART_VERSION}`;
 export const groundUrl = (k: string) => `${import.meta.env.BASE_URL}art/realistic/ground-${k}.jpg?v=${ART_VERSION}`;
 
@@ -20,6 +20,7 @@ const KEY: Record<string, string> = {
   zoo: 'zoo', falafel: 'falafel', shawarma: 'shawarma', western_food: 'western', luxury_restaurant: 'luxury', cafe: 'cafe', snack_kiosk: 'kiosk',
   school: 'school', hospital: 'hospital', sports_club: 'club', recreation_park: 'rpark', mosque: 'mosque', church: 'church',
   wheat: 'wheat', citrus: 'citrus', olive: 'olive', vegetables: 'veg', strawberry: 'straw', cattle: 'cattle', palms: 'palms', corn: 'corn', protective_trees: 'trees', ornamental_trees: 'orn',
+  supermarket: 'smarket', toy_shop: 'toys', juice_shop: 'juiceshop', drinks_factory: 'drinks', juice_factory: 'juicef', grapes: 'grapes',
 };
 export const isFarm = (id: string) => building(id).category === 'farm' || id === 'zoo';
 const reportedFaces = new Set<string>();

@@ -202,6 +202,35 @@ export class GameAudio {
     this.oneShots.add(source);
     source.onended=()=>{this.oneShots.delete(source);source.disconnect();g.disconnect();pan.disconnect();};source.start();
   }
+  private noise?: AudioBuffer;
+  /** One synthesized firework: rising whistle, burst, short crackle tail. Respects
+   * mute/effects/background/ad pause; returns nothing and tracks nodes as one-shots. */
+  private fireworkSources = new Set<AudioScheduledSourceNode>();
+  stopFireworks(){
+    for(const source of this.fireworkSources){try{source.stop();}catch{/* already ended */}}
+    this.fireworkSources.clear();
+  }
+  firework(pan=0,delay=0){
+    if(!this.available()||this.prefs.effects<=.001)return;
+    const ctx=this.context!,t=ctx.currentTime+Math.max(0,delay),vol=.32*this.prefs.effects;
+    if(!this.noise){const n=ctx.createBuffer(1,Math.round(ctx.sampleRate*1.2),ctx.sampleRate),d=n.getChannelData(0);
+      for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,1.6);this.noise=n;}
+    const out=ctx.createStereoPanner();out.pan.value=Math.max(-.9,Math.min(.9,pan));out.connect(this.compressor!);
+    const track=(s:AudioScheduledSourceNode,...extra:AudioNode[])=>{this.oneShots.add(s);this.fireworkSources.add(s);
+      s.onended=()=>{this.oneShots.delete(s);this.fireworkSources.delete(s);s.disconnect();extra.forEach(n=>n.disconnect());};};
+    const w=ctx.createOscillator(),wg=ctx.createGain();w.type='sine';
+    w.frequency.setValueAtTime(900,t);w.frequency.exponentialRampToValueAtTime(2100,t+.45);
+    wg.gain.setValueAtTime(0,t);wg.gain.linearRampToValueAtTime(vol*.12,t+.05);wg.gain.exponentialRampToValueAtTime(.0001,t+.48);
+    w.connect(wg);wg.connect(out);w.start(t);w.stop(t+.5);track(w,wg);
+    const b=ctx.createBufferSource(),bf=ctx.createBiquadFilter(),bg=ctx.createGain();b.buffer=this.noise;
+    bf.type='lowpass';bf.frequency.setValueAtTime(2600,t+.5);bf.frequency.exponentialRampToValueAtTime(300,t+1.5);
+    bg.gain.setValueAtTime(vol,t+.5);bg.gain.exponentialRampToValueAtTime(.0001,t+1.6);
+    b.connect(bf);bf.connect(bg);bg.connect(out);b.start(t+.5);b.stop(t+1.65);track(b,bf,bg,out);
+    const c=ctx.createBufferSource(),cf=ctx.createBiquadFilter(),cg=ctx.createGain();c.buffer=this.noise;
+    cf.type='highpass';cf.frequency.value=3200;cg.gain.setValueAtTime(0,t+.7);
+    for(let k=0;k<9;k++){const at=t+.72+k*.07+Math.random()*.03;cg.gain.setValueAtTime(vol*.5*(1-k/10),at);cg.gain.setValueAtTime(0,at+.015);}
+    c.connect(cf);cf.connect(cg);cg.connect(out);c.start(t+.7);c.stop(t+1.5);track(c,cf,cg);
+  }
   click(success=false){
     if(!this.available()||this.prefs.effects<=.001||this.context!.currentTime-this.uiAt<.07)return;
     const ctx=this.context!;this.uiAt=ctx.currentTime;

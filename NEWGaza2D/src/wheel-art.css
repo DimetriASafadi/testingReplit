@@ -71,12 +71,6 @@ dialog.wheel-modal .dlg-footer{display:none}
 .wz-spin:disabled{filter:saturate(.35) brightness(.9);cursor:not-allowed;font-size:1.1rem}
 .wz.is-ready .wz-spin{animation:pulse 1.8s ease-in-out infinite}
 @keyframes pulse{50%{transform:scale(1.03)}}
-.wz .odds{margin:2px 0;font-size:.82rem;padding:6px 10px;border-radius:12px;background:rgba(14,28,70,.72)}
-.wz .odds summary{cursor:pointer;font-weight:800;color:#ffd84a}
-.wz .odds ol{list-style:none;padding:0;margin:6px 0 0;display:grid;grid-template-columns:1fr 1fr;gap:3px 12px}
-.wz .odds li{display:flex;align-items:center;gap:6px;border-bottom:1px dashed rgba(255,255,255,.2);padding:2px 0}
-.wz .odds li i{width:9px;height:9px;border-radius:3px;flex:none}
-.wz .odds li span{flex:1}
 .wz .note.unavailable{font-size:.74rem;opacity:.85;margin:0;text-align:center;text-shadow:0 1px 2px #000}
 
 @media(max-height:520px) and (orientation:landscape){
@@ -88,6 +82,5 @@ dialog.wheel-modal .dlg-footer{display:none}
   .wheel-stage{width:min(calc(100dvh - 90px),300px);margin:4px 0}
   .wz-side{max-width:340px}
   .wz-spin{min-height:48px;font-size:1.2rem}
-  .wz .odds ol{grid-template-columns:1fr 1fr}
 }
 @media(prefers-reduced-motion:reduce){.wheel-fab.ready,.wheel-fab.ready .wf-disc,.bulb,.wz.is-ready .wz-spin,.wz.spinning .wheel-pointer{animation:none}}

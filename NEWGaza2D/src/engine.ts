@@ -31,7 +31,7 @@ export const factoryRotationBlocked = (state: GameState, plotId: number) =>
 export function newGame(now = Date.now()): GameState {
   const homes = BUILDINGS.filter(b => b.category === 'housing');
   return {
-    version: 1, reconstructionVersion:1, expansionVersion:1, pavers:[], exchanges:[], timerProfile: timingProfile(), coins: STARTING_COINS, gems: 0, inventory: { concrete: 0, iron: 0, wood: 0, other: 0, value: 0 },
+    version: 1, campaignVersion:1, reconstructionVersion:1, expansionVersion:1, pavers:[], exchanges:[], timerProfile: timingProfile(), coins: STARTING_COINS, gems: 0, inventory: { concrete: 0, iron: 0, wood: 0, other: 0, value: 0 },
     units: [], jobs: [], currentDistrict: null, lastSeen: now, sequence: 0,
     districts: DISTRICTS.map((d, index) => ({
       id: d.id, unlocked: index === 0, claimed: false, camera: null,
@@ -48,11 +48,11 @@ export function newGame(now = Date.now()): GameState {
 }
 /** Add the new chapter without replacing any existing district, depot or job. */
 export function expandDistrictSave(state: GameState): void {
-  if (state.districts.some(d => d.id === 'shati')) return;
+  if (state.campaignVersion===1 || state.districts.some(d => d.id === 'shati')) return;
   const added = newGame(state.lastSeen).districts.find(d => d.id === 'shati')!;
   if(state.reconstructionVersion!==1) added.projects=legacyProjects().map(p=>({id:p.id,status:'idle',startedAt:0,endsAt:0,incomeAt:0}));
   added.unlocked = state.districts.find(d => d.id === 'sheikh-ijlin')!.claimed;
-  state.districts.splice(DISTRICTS.findIndex(d => d.id === 'shati'), 0, added);
+   state.districts.splice(state.districts.findIndex(d => d.id === 'rashid'), 0, added);
 }
 function ensure(condition: unknown, message: string): asserts condition { if (!condition) throw new Error(message) }
 export function jobPhase(job: Job, now = Date.now()): 'travel' | 'work' | 'return' {
@@ -93,7 +93,8 @@ export function expandCitySave(state: GameState): void {
   const fresh = newGame(state.lastSeen);
   for (const [index, d] of state.districts.entries()) {
     if (!needsExpansion(d)) continue;
-    d.plots = fresh.districts[index].plots.map(p => p.id < d.plots.length
+    const template = fresh.districts.find(v=>v.id===d.id)?.plots ?? cityLayout(d.id).cells.map(c=>({...d.plots[c.id%d.plots.length],...c,layoutId:d.id}));
+    d.plots = template.map(p => p.id < d.plots.length
       ? { ...d.plots[p.id], x: p.x, y: p.y, layoutId: d.id } : p);
     d.camera = null;
   }
@@ -107,6 +108,7 @@ export function rubbleYield(price: number) {
 export class GameStore implements GameAPI {
   state: GameState;
   storageError: string | null = null;
+  migrationNotice: string | null = null;
   private listeners = new Set<() => void>();
   private savedAt = 0;
   constructor(private storage: Pick<Storage, 'getItem' | 'setItem'> = localStorage, now = Date.now()) {
@@ -116,7 +118,7 @@ export class GameStore implements GameAPI {
       try { const parsed: unknown = JSON.parse(raw); validateSave(parsed); expandDistrictSave(parsed); expandCitySave(parsed); validateSave(parsed); this.state = parsed }
       catch { throw new Error('تعذر التحقق من ملف الحفظ. لم نحذفه أو نستبدله؛ نزّل نسخة منه قبل اختيار بداية جديدة.') }
     } else this.state = newGame(now);
-    if(raw!==null && (this.state.reconstructionVersion!==1 || this.state.timerProfile!==timingProfile())) {
+    if(raw!==null && (this.state.campaignVersion!==1 || this.state.reconstructionVersion!==1 || this.state.timerProfile!==timingProfile())) {
       try { this.storage.setItem(UPGRADE_BACKUP_KEY,raw); }
       catch { throw new Error('تعذر حفظ نسخة احتياطية قبل تحديث التقدم. لم نغيّر الحفظ الأصلي؛ تحقق من مساحة التخزين.'); }
     }
@@ -124,6 +126,20 @@ export class GameStore implements GameAPI {
     migrateExpansion(this.state);
     migrateReconstruction(this.state, Math.max(now,this.state.lastSeen));
     applyTimingProfile(this.state, Math.max(now,this.state.lastSeen));
+    if(this.state.campaignVersion!==1) {
+      // Archived districts remain in the save for their jobs, equipment and
+      // paid construction; only the active chapter order changes.
+      const active=DISTRICTS.map(def=>this.state.districts.find(d=>d.id===def.id)!);
+      const archived=this.state.districts.filter(d=>!DISTRICTS.some(def=>def.id===d.id));
+      active[0].unlocked=true;
+      for(let i=1;i<active.length;i++)if(active[i-1].claimed)active[i].unlocked=true;
+      this.state.districts=[...active,...archived];
+      if(archived.some(d=>d.id===this.state.currentDistrict)) {
+        this.state.currentDistrict=null;
+        this.migrationNotice='تم تحديث ترتيب الأحياء. حُفظ تقدم الحي السابق وآلياته بأمان؛ اختر حيًا متاحًا من الخريطة.';
+      }
+      this.state.campaignVersion=1;
+    }
     balanceFleetDepots(this.state);
     this.tick(now);
     recoverAd(this.state, this.state.lastSeen);
@@ -204,7 +220,7 @@ export class GameStore implements GameAPI {
       }
     }
     this.state.jobs = this.state.jobs.filter(j => now < j.returnEnd);
-    for(const d of this.state.districts) if(!d.completionRewarded && !d.claimed && districtComplete(d)) {
+    for(const d of this.state.districts) if(DISTRICTS.some(def=>def.id===d.id) && !d.completionRewarded && !d.claimed && districtComplete(d)) {
       this.state.coins+=DISTRICTS.find(def=>def.id===d.id)!.reward;
       this.state.gems+=DISTRICT_GEMS;d.completionRewarded=true;changed=true;
     }
@@ -288,7 +304,7 @@ export class GameStore implements GameAPI {
         }
         case 'enter': {
           const d = this.state.districts.find(d => d.id === action.districtId);
-          ensure(d?.unlocked, 'أكمل الحي السابق واستلم مكافأته أولًا');
+          ensure(d?.unlocked && DISTRICTS.some(def=>def.id===d.id), 'أكمل الحي السابق واستلم مكافأته أولًا');
           this.state.currentDistrict = d.id; break;
         }
         case 'camera': {
@@ -461,7 +477,7 @@ export class GameStore implements GameAPI {
             this.state.coins+=DISTRICTS[index].reward;this.state.gems+=DISTRICT_GEMS;d.completionRewarded=true;
           }
           d.claimed = true;
-          if (index + 1 < this.state.districts.length) {this.state.districts[index + 1].unlocked = true;this.state.currentDistrict=this.state.districts[index + 1].id;}
+          if (index + 1 < DISTRICTS.length) {this.state.districts[index + 1].unlocked = true;this.state.currentDistrict=this.state.districts[index + 1].id;}
           else this.state.currentDistrict=null;
           break;
         }

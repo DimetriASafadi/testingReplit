@@ -25,6 +25,9 @@ const COMPACT: Record<string, Readonly<BuildingFootprint>> = {
   hospital: { factor: .9, yard: 'service' },
   mosque: { factor: .86, yard: 'service' },
   church: { factor: .84, yard: 'service' },
+  smarket: { factor: .84, yard: 'service' },
+  toys: { factor: .62, yard: 'patio' },
+  juiceshop: { factor: .62, yard: 'patio' },
 };
 /** Ground footprint and roof height are independent constraints. A one-storey
  * shop must not have an apartment tower's height merely because its PNG is tall. */
@@ -34,6 +37,7 @@ const HEIGHTS: Record<string, number> = {
   western: 84, kiosk: 78, cafe: 86, luxury: 127,
   muni: 145, tmall: 164, mmall: 164,
   school: 118, hospital: 176, mosque: 172, church: 136, club: 112, rpark: 124,
+  smarket: 112, toys: 80, juiceshop: 80, drinks: 142, juicef: 134,
   work: 124, food_factory: 112, water: 114,
   glass: 149, cement: 167, steel: 151, asphalt: 163,
   apt4: 174, h6: 187, complex: 181, modern: 187, trad: 164, tower: 187,

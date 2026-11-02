@@ -10,7 +10,7 @@ import { warehouseCapacity } from '../src/warehouse-capacity';
 
 function fixture(){
  let raw:string|null=null;const storage={getItem:()=>raw,setItem:(_k:string,v:string)=>{raw=v;}};
- const store=new GameStore(storage,Date.now()+100000);store.dispatch({type:'enter',districtId:'shujaiya'});
+ const store=new GameStore(storage,Date.now()+100000);store.dispatch({type:'enter',districtId:'zeitoun'});
  const d=store.state.districts[0];d.difficulty='easy';
  for(const [id,type]of [[0,'recycling'],[1,'equipment_store'],[2,'asphalt']] as const)Object.assign(d.plots[id],{status:'built',buildingId:type});
  return {store,d,storage};

@@ -6,6 +6,7 @@ export interface ProjectDef { id: string; name: string; cost: number; duration: 
 export interface Plot { id: number; x: number; y: number; layoutId?: string; status: 'rubble' | 'empty' | 'building' | 'built'; buildingId: string; orientation: Orientation; startedAt: number; endsAt: number; incomeAt: number; paidCost?: number; accelerated?: boolean; incomeFactor?: number }
 export interface ProjectState { id: string; status: 'idle' | 'building' | 'ready' | 'complete'; startedAt: number; endsAt: number; incomeAt: number; gemRewarded?: boolean }
 export type Difficulty = 'easy' | 'medium' | 'hard';
+export interface GameState { campaignVersion?: 1 }
 export interface RoadPreparation { unitId: string; warehouseId: number; route: [number,number][]; sandEnd: number; aggregateEnd: number; asphaltStart: number; dozerReturnEnd: number }
 export interface RoadWork { roadId: string; roadIds?: string[]; factoryId: number; machineId: string; start: number; arrival: number; workEnd: number; returnEnd: number; route: [number,number][]; preparation?: RoadPreparation }
 export interface DistrictState { id: string; unlocked: boolean; claimed: boolean; plots: Plot[]; projects: ProjectState[]; camera: { x: number; y: number; zoom: number } | null; difficulty?: Difficulty; difficultyChosen?: boolean; pavedRoads?: string[]; roadWorks?: RoadWork[]; celebrated?: boolean; completionRewarded?: boolean }

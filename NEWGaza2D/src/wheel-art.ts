@@ -4,6 +4,7 @@ import { WHEEL_PRIZES, WHEEL_SPIN_MS } from './rewards';
 import { ADS } from './ads/config';
 import { adUnavailable } from './ads/ledger';
 import { formatNumber as fmt } from './number-format';
+import { GEM_ICON_URL, GEMS_ICON_URL } from './gem-icon';
 
 /* Illustrated, fully vector "Luck Wheel": gold bulb ring, jewel pointer, star hub,
    N dimensional wedges with painted icons. The disc is a persistent node rotated by
@@ -29,7 +30,6 @@ function meta(p: Prize) {
   if (p.wood) return { n: p.wood, u: 'وحدة خشب', icon: 'wood', name: `${fmt(p.wood)} خشب` };
   return { n: 0, u: 'حظ أوفر', icon: 'none', name: 'لا جائزة' };
 }
-const rare = (p: Prize) => p.weight <= 2 && (p.coins >= 1000 || p.gems >= 5);
 
 export const wheelSpinning = (st: GameState, now: number) => !!st.wheel?.startedAt && now < st.wheel.startedAt + WHEEL_SPIN_MS;
 export const wheelReady = (st: GameState, now: number) => !wheelSpinning(st, now) && (now >= (st.wheel?.nextAt ?? 0) || !!st.ads?.spinCredits);
@@ -49,10 +49,9 @@ function discSvg() {
   const segs = Array.from({ length: SEG }, (_, i) => {
     const p = P(i), m = meta(p), a0 = i * STEP - STEP / 2, a1 = i * STEP + STEP / 2;
     const d = `M0 0L${pt(r, a0)}A${r} ${r} 0 0 1 ${pt(r, a1)}Z`;
-    const badge = rare(p) ? `<g class="rb"><rect x="-11" y="-47" width="22" height="6.4" rx="3.2"/><text y="-42.4" text-anchor="middle">نسبة قليلة</text></g>` : '';
     return `<path d="${d}" fill="url(#wg${i})"/><path d="M${pt(r - 3, a0 + 1)}A${r - 3} ${r - 3} 0 0 1 ${pt(r - 3, a1 - 1)}" class="gl"/>
-      <g transform="rotate(${i * STEP})"><image href="${base}${m.icon}.webp" x="-13" y="-92" width="26" height="26" preserveAspectRatio="xMidYMid meet"/>
-      <text y="-57" text-anchor="middle" class="wl">${fmt(m.n)}</text><text y="-50.5" text-anchor="middle" class="wu">${m.u}</text>${badge}</g>`;
+      <g transform="rotate(${i * STEP})"><image href="${m.icon === 'gem' ? GEM_ICON_URL() : m.icon === 'gems' ? GEMS_ICON_URL() : `${base}${m.icon}.webp`}" x="-13" y="-92" width="26" height="26" preserveAspectRatio="xMidYMid meet"/>
+      <text y="-57" text-anchor="middle" class="wl">${fmt(m.n)}</text><text y="-50.5" text-anchor="middle" class="wu">${m.u}</text></g>`;
   }).join('');
   const lines = Array.from({ length: SEG }, (_, i) => `<line x1="0" y1="0" x2="${pt(r, i * STEP + STEP / 2).replace(' ', '" y2="')}"/>`).join('');
   return `<svg viewBox="-101 -101 202 202" aria-hidden="true"><defs>${defs}</defs>${segs}<g class="sep">${lines}</g><circle r="100" class="inner-shade"/></svg>`;
@@ -105,7 +104,6 @@ export function wheelHtml(st: GameState, now: number) {
   const w = st.wheel, spin = wheelSpinning(st, now), ready = wheelReady(st, now);
   const shown = w?.startedAt && !spin ? P(w.result) : null;
   const sm = shown ? meta(shown) : null;
-  const odds = Array.from({ length: SEG }, (_, i) => { const p = P(i); return `<li><i style="background:${COLORS[i][0]}"></i><span>${meta(p).name}</span><bdi class="num">${fmt(p.weight)}%</bdi></li>`; }).join('');
   return `<div class="wz${spin ? ' spinning' : ''}${ready ? ' is-ready' : ''}" style="background-image:linear-gradient(rgba(10,24,64,.35),rgba(10,24,64,.1) 45%,rgba(30,20,8,.45)),url('${ART()}bg.webp')">
     <header class="wz-head"><div class="wz-plank"><b>دولاب الحظ</b></div><p class="wz-ribbon">حظك اليوم… فرصة رائعة!</p>
       <button class="wz-close" data-a="close-dlg" data-k="wz-close" aria-label="إغلاق دولاب الحظ"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg></button></header>
@@ -113,10 +111,9 @@ export function wheelHtml(st: GameState, now: number) {
       <div class="wz-ring">${ringSvg()}</div><div class="wheel-host" data-wheel-host></div>
       <div class="wz-hub">${hubSvg()}</div><div class="wheel-pointer">${pointerSvg()}</div></div>
     <div class="wz-side">
-      <p class="wheel-status" role="status">${spin ? 'الدولاب يدور… الجائزة محددة ومحفوظة مسبقًا.' : sm && shown ? `آخر نتيجة: <b>${sm.name}</b>${sm.n ? ' · أُضيفت إلى رصيدك' : ''}` : 'دوران مجاني كل ساعتين.'}</p>
+      <p class="wheel-status" role="status">${spin ? 'الدولاب يدور…' : sm && shown ? `آخر نتيجة: <b>${sm.name}</b>${sm.n ? ' · أُضيفت إلى رصيدك' : ''}` : 'دوران مجاني كل ساعتين.'}</p>
       <p class="wheel-timer">${ready ? st.ads?.spinCredits?'دورة إضافية محفوظة وجاهزة للاستخدام':'الدوران المجاني متاح الآن' : spin ? '&nbsp;' : `الدوران التالي بعد <bdi class="num">${clock((w?.nextAt ?? 0) - now)}</bdi>`}</p>
       <button class="wz-spin" data-a="spin" data-k="spin" ${ready ? '' : 'disabled'}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 01-14 5M4 12a8 8 0 0114-5M18 3v4h-4M6 21v-4h4"/></svg><span>${spin ? 'يدور…' : ready ? 'أدر الآن' : 'انتظر العداد'}</span></button>
-      <details class="odds"><summary>الاحتمالات</summary><ol>${odds}</ol></details>
       ${!ready&&!spin?`<button class="btn gold" data-a="reward-ad" data-id="wheel" ${adReason?'disabled':''}>شاهد إعلانًا · دورة إضافية</button><p class="ad-status">${adReason||'لا تؤخر الدورة الإضافية موعد دورانك المجاني.'}</p>`:''}
       ${ADS.testMode?'<p class="note">وضع إعلانات الاختبار</p>':''}
       <button class="btn ghost ad-privacy" data-a="ad-privacy">خصوصية الإعلانات</button>

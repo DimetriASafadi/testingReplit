@@ -9,6 +9,8 @@ import { cityLayout } from './city-layout';
 import { pavingPlan, runOutline, nodeOutlines, ROAD_HALF, type PavingPlan } from './road-paving';
 import { RoadPreparationAnimation } from './road-preparation-animation';
 import { RoadSurfaceCache, type SurfaceBrush } from './road-surface-cache';
+import { tentSpot } from './district-life';
+import { districtEnvironment } from './district-environment';
 
 const iso=(x:number,y:number)=>({x:(x-y)*U,y:(x+y)*U/2});
 type P=[number,number];
@@ -25,6 +27,7 @@ export class RoadAnimation {
  private work?:Phaser.GameObjects.Graphics;
  private fx?:Phaser.GameObjects.Graphics;
  private signature='';
+ private coatWork?: Generator<void>;
  private did='';
  private actors=new Map<string,{img:Phaser.GameObjects.Image;under:Phaser.GameObjects.Graphics;over:Phaser.GameObjects.Graphics}>();
  private tents:Phaser.GameObjects.Image[]=[];
@@ -35,14 +38,14 @@ export class RoadAnimation {
  sounds:FleetSound[]=[];
   constructor(private scene:Phaser.Scene){this.fresh=new RoadSurfaceCache(scene,-798925);}
  reset(){this.fresh.reset();this.preparation?.destroy();this.preparation=undefined;this.clearCoat();this.work?.destroy();this.fx?.destroy();for(const a of this.actors.values()){a.img.destroy();a.under.destroy();a.over.destroy();}for(const t of this.tents)t.destroy();this.actors.clear();this.tents=[];this.did='';this.signature='';this.sounds=[];this.nextProgress=0;}
- private clearCoat(){for(const img of this.pavement)img.destroy();for(const key of this.pavedKeys)this.scene.textures.remove(key);this.pavement=[];this.pavedKeys=[];}
+ private clearCoat(){this.coatWork?.return(undefined);this.coatWork=undefined;for(const img of this.pavement)img.destroy();for(const key of this.pavedKeys)this.scene.textures.remove(key);this.pavement=[];this.pavedKeys=[];}
  private quad(r:RoadSegment,f0:number,f1:number,w=HALF){
   const dx=r.b[0]-r.a[0],dy=r.b[1]-r.a[1],len=Math.hypot(dx,dy),ox=-dy/len*w,oy=dx/len*w;
   const s=[r.a[0]+dx*f0,r.a[1]+dy*f0],e=[r.a[0]+dx*f1,r.a[1]+dy*f1];
   return [iso(s[0]+ox,s[1]+oy),iso(e[0]+ox,e[1]+oy),iso(e[0]-ox,e[1]-oy),iso(s[0]-ox,s[1]-oy)];
  }
   /** Rasterize directly into bounded tiles, never two whole-city scratch canvases. */
- private paintCoat(d:DistrictState){
+ private *paintCoat(d:DistrictState):Generator<void>{
   const l=cityLayout(d.id),max=l.extent,K=.5;
   const ox=iso(-1,max+1).x,oy=iso(-1,-1).y,w=Math.ceil((iso(max+1,-1).x-ox)*K),h=Math.ceil((iso(max+1,max+1).y-oy)*K);
   const plan:PavingPlan=pavingPlan(l.roadX,l.roadY,roadsFor(d.id),new Set(d.pavedRoads??[]));
@@ -51,9 +54,8 @@ export class RoadAnimation {
   const trace=(ctx:CanvasRenderingContext2D,ps:[number,number][][])=>{ctx.beginPath();for(const poly of ps)poly.forEach(([x,y],i)=>{const[a,b]=pt(x,y);i?ctx.lineTo(a,b):ctx.moveTo(a,b);});};
   const fillEach=(ctx:CanvasRenderingContext2D,ps:[number,number][][],col:string)=>{ctx.fillStyle=col;for(const poly of ps){trace(ctx,[poly]);ctx.closePath();ctx.fill();}};
    if(!polys.length){this.clearCoat();return;}
-    this.clearCoat();
-    for(let y=0;y<h;y+=1024)for(let x=0;x<w;x+=1024){
-    const key=`paved:${d.id}:${x}:${y}`,tw=Math.min(1024,w-x),th=Math.min(1024,h-y),pad=20;
+    for(let y=0;y<h;y+=512)for(let x=0;x<w;x+=512){
+    const key=`paved:${d.id}:${x}:${y}`,tw=Math.min(512,w-x),th=Math.min(512,h-y),pad=20;
     const cv=document.createElement('canvas');cv.width=tw;cv.height=th;const c=cv.getContext('2d')!;
     c.translate(-x,-y);
   // 1. dusty shoulder: opaque union on a scratch canvas, blurred, composited once at low alpha (no double-alpha edges)
@@ -81,9 +83,12 @@ export class RoadAnimation {
   for(const r of plan.runs){const P=(s:number,o:number)=>r.axis==='x'?pt(r.fixed+o,s):pt(s,r.fixed+o);
    for(const o of [-ROAD_HALF+.03,ROAD_HALF-.03])for(const [e0,e1] of r.edges){const a=P(e0,o),b=P(e1,o);c.strokeStyle='rgba(190,182,154,.55)';c.lineWidth=.9;c.beginPath();c.moveTo(...a);c.lineTo(...b);c.stroke();}
    for(const [a0,b0] of r.dashes){const a=P(a0,0),b=P(b0,0);c.strokeStyle='rgba(222,209,164,.82)';c.lineWidth=1.1;c.beginPath();c.moveTo(...a);c.lineTo(...b);c.stroke();}}
+     const previous=this.pavedKeys.indexOf(key);
+     if(previous>=0){this.pavement[previous].destroy();this.scene.textures.remove(key);this.pavedKeys.splice(previous,1);this.pavement.splice(previous,1);}
      this.pavedKeys.push(key);
      if(!this.scene.textures.addCanvas(key,cv))throw new Error('تعذر تجهيز سطح الشوارع');
      this.pavement.push(this.scene.add.image(ox+x/K,oy+y/K,key).setOrigin(0,0).setScale(1/K).setDepth(-799000));
+     yield;
    }
  }
  /** Hot fresh mat from road start to the screed edge (fraction fs). No paint. */
@@ -128,13 +133,14 @@ export class RoadAnimation {
    this.reset();this.did=d.id;this.work=this.scene.add.graphics().setDepth(-798900);this.fx=this.scene.add.graphics().setDepth(4e5);
    const max=cityLayout(d.id).extent;
     for(let i=0;i<28;i++){
-     const t=(i+1)/29,point=i%2?iso(-3.5-(i%3)*1.6,t*max):iso(t*max,-4-(i%3)*1.4);
+     const point=iso(...tentSpot(i,max,28,districtEnvironment(d.id).style==='coastal'));
     const img=this.scene.add.image(point.x,point.y,tentTexture(this.scene,i)).setOrigin(TENT_ORIGIN.x,TENT_ORIGIN.y).setScale(.85+(i%3)*.08).setDepth(point.y);
     this.tents.push(img);
    }
   }
   const sig=(d.pavedRoads??[]).join('|');
-  if(sig!==this.signature){this.signature=sig;this.paintCoat(d);}
+  if(sig!==this.signature){this.signature=sig;this.coatWork?.return(undefined);this.coatWork=this.paintCoat(d);}
+  if(this.coatWork?.next().done)this.coatWork=undefined;
   if(now>=this.nextProgress){this.nextProgress=now+500;this.tentAlpha=Math.pow(1-districtProgress(d)/100,1.2);}
   const target=this.tentAlpha;
   for(const t of this.tents)t.setAlpha(Math.abs(t.alpha-target)<.005?target:t.alpha+(target-t.alpha)*.045);

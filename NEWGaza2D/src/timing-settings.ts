@@ -5,6 +5,7 @@ export const FINAL_TIMING = {
   flagSeconds: 4 * 3600,
   incomeMs: 10 * 60_000,
   wheelMs: 2 * 60 * 60_000,
+  adBatchMs: 5 * 60 * 60_000,
 } as const;
 export const TEST_DURATION_MS = 30_000;
 export let TEST_TIMERS = true;

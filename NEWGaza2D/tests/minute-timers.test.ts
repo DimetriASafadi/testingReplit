@@ -16,7 +16,7 @@ class MemoryStorage {
 function setup() {
   const storage = new MemoryStorage(), store = new GameStore(storage);
   store.state.coins=1000000;store.state.districts[0].difficulty='easy';
-  store.dispatch({ type: 'enter', districtId: 'shujaiya' });
+  store.dispatch({ type: 'enter', districtId: 'zeitoun' });
   return { store, storage };
 }
 test('construction, projects and income all use the 30-second testing profile', () => {

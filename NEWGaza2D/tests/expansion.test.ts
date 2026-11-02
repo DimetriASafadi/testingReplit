@@ -13,7 +13,7 @@ const setup=()=>{
  let raw:string|null=null;let fail=false;
  const storage={getItem:()=>raw,setItem:(_k:string,v:string)=>{if(fail)throw Error('quota');raw=v;}};
  const store=new GameStore(storage,Date.now()+100000);
- store.dispatch({type:'enter',districtId:'shujaiya'});
+ store.dispatch({type:'enter',districtId:'zeitoun'});
  const d=store.state.districts[0];
  Object.assign(d.plots[1],{status:'built',buildingId:'equipment_store'});
  Object.assign(d.plots[2],{status:'built',buildingId:'recycling'});

@@ -22,6 +22,7 @@ const FLAVORS: Record<string, ParcelFlavor> = {
   school: 'school', hospital: 'medical', mosque: 'worship', church: 'worship', sports_club: 'leisure', recreation_park: 'leisure',
   housing_4: 'housing', housing_6: 'housing', housing_complex: 'housing', modern_housing: 'housing', traditional_housing: 'housing', housing_tower: 'housing',
   work: 'industry', equipment_store: 'industry', recycling: 'industry', glass: 'industry', cement: 'industry', steel: 'industry', asphalt: 'industry', food_factory: 'industry', water_treatment: 'industry', wood_factory: 'industry', household_shop: 'retail',
+  supermarket: 'retail', toy_shop: 'retail', juice_shop: 'dining', drinks_factory: 'industry', juice_factory: 'industry',
   municipality: 'civic', traditional_mall: 'civic', modern_mall: 'civic',
 };
 export function parcelFlavor(buildingId: string, yard: 'garden' | 'patio' | 'service' | 'none'): ParcelFlavor {

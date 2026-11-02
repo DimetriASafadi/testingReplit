@@ -18,7 +18,7 @@ for (const testMode of [true, false]) {
   test(`displayed building payout equals single, bulk and disposal calculation (${testMode ? 'minute' : 'normal'})`, () => {
     setMinuteTestTimers(testMode);
     const now = Date.now() + 600000, storage = new Storage(), store = new GameStore(storage, now);
-    store.dispatch({ type: 'enter', districtId: 'shujaiya' });
+    store.dispatch({ type: 'enter', districtId: 'zeitoun' });
     const d = store.state.districts[0], plot = d.plots[0], period = buildingIncomePeriod();
     Object.assign(plot, { status: 'built', buildingId: 'food_shop', startedAt: now - period * 6,
       endsAt: now - period * 5, incomeAt: now - period * 3.25 });
@@ -44,7 +44,7 @@ for (const testMode of [true, false]) {
   test(`collect all is district-scoped, persistent and exactly once (${testMode ? 'minute' : 'normal'} timers)`, () => {
     setMinuteTestTimers(testMode);
     const now = Date.now() + 600000, storage = new Storage(), store = new GameStore(storage, now);
-    store.dispatch({ type: 'enter', districtId: 'shujaiya' });
+    store.dispatch({ type: 'enter', districtId: 'zeitoun' });
     const d = store.state.districts[0], other = store.state.districts[1];
     const period = buildingIncomePeriod();
     const home = building('food_shop');
@@ -93,11 +93,12 @@ test('only economic producers earn income; saved homes cannot pay through any co
     'food_shop','clothes_shop','shoe_shop','traditional_mall','modern_mall',
     'falafel','shawarma','western_food','luxury_restaurant','cafe','snack_kiosk',
     'sports_club','recreation_park','wood_factory','household_shop',
+    'supermarket','toy_shop','juice_shop','drinks_factory','juice_factory','grapes',
   ];
   assert.deepEqual(BUILDINGS.filter(b => b.income > 0).map(b => b.id).sort(), producers.sort());
   setMinuteTestTimers(true);
   const now = Date.now() + 600000, storage = new Storage(), store = new GameStore(storage, now);
-  store.dispatch({ type: 'enter', districtId: 'shujaiya' });
+  store.dispatch({ type: 'enter', districtId: 'zeitoun' });
   const d = store.state.districts[0], homes = BUILDINGS.filter(b => b.category === 'housing');
   for (const [i, def] of homes.entries()) Object.assign(d.plots[i], {
     status: 'built', buildingId: def.id, startedAt: now - 360000, endsAt: now - 300000, incomeAt: now - 240000,

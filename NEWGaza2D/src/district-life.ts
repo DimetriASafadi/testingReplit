@@ -40,8 +40,9 @@ export function preloadLifeArt(scene: Phaser.Scene) {
 const hash = (n: number) => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
 
 /** Shared exterior tent placement (lot coordinates). RoadAnimation should use this so people and tents agree. */
-export function tentSpot(i: number, max: number, count = 28): P2 {
+export function tentSpot(i: number, max: number, count = 28, coastal=false): P2 {
   const t = (i + 1) / (count + 1);
+  if(coastal)return [max+3.5+(i%3)*1.6,t*max];
   return i % 2 ? [-3.5 - (i % 3) * 1.6, t * max] : [t * max, -4 - (i % 3) * 1.4];
 }
 /** Front entrance of a plot's building, in lot coordinates, honoring orientation. */
@@ -134,7 +135,7 @@ export class DistrictLife {
     const env = districtEnvironment(d.id);
     // Residents around the tent camp (mirrors RoadAnimation tent placement).
     for (let i = 0; i < MAX_RESIDENTS; i++) {
-      const tent = tentSpot(Math.floor(i * 28 / MAX_RESIDENTS), max, 28);
+      const tent = tentSpot(Math.floor(i * 28 / MAX_RESIDENTS), max, 28,env.style==='coastal');
       const r: Resident = { ...this.person('civilian', i % 5), tent, threshold: 40 + i * 58 / (MAX_RESIDENTS - 1), moveStart: 0, route: null, len: 0, home: '', done: false, last: tent };
       this.residents.push(r);
     }

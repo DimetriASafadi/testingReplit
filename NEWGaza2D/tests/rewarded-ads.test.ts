@@ -7,6 +7,38 @@ import { validateSave } from '../src/save';
 import { WHEEL_COOLDOWN, WHEEL_SPIN_MS } from '../src/rewards';
 import { wheelCooldown } from '../src/timing-settings';
 import { webAdProvider } from '../src/ads/web';
+import { setTestTimers } from '../src/timing-settings';
+import { adUnavailable, adBatchRemaining, cancelAd } from '../src/ads/ledger';
+import { applyTimingProfile } from '../src/game-timing';
+
+test('five shared currency ads survive reload, wait after fifth, and repeat',()=>{
+  setTestTimers(true);
+  let s=newGame(1_000_000);
+  for(let i=0;i<5;i++){
+    const placement=i%2?'coins':'gems';
+    const cancelled=beginAd(s,placement,s.lastSeen);cancelAd(s,cancelled);
+    assert.equal(adBatchRemaining(s,s.lastSeen),5-i);
+    const id=beginAd(s,placement,s.lastSeen);
+    markAdEarned(s,id);settleEarnedAd(s,s.lastSeen);
+    markAdEarned(s,id);settleEarnedAd(s,s.lastSeen);
+    validateSave(s);s=JSON.parse(JSON.stringify(s));
+  }
+  assert.equal(s.ads!.batchUsed,5);assert.equal(s.ads!.batchNextAt,1_030_000);
+  assert.match(adUnavailable(s,'coins',s.lastSeen),/تتجدد/);
+  assert.match(adUnavailable(s,'gems',s.lastSeen),/تتجدد/);
+  s.lastSeen=1_030_000;
+  const id=beginAd(s,'coins',s.lastSeen);markAdEarned(s,id);recoverAd(s,s.lastSeen);
+  assert.equal(s.ads!.batchUsed,1);assert.equal(s.ads!.batchNextAt,0);
+  validateSave(s);
+  setTestTimers(false);
+  s=newGame(2_000_000);
+  for(let i=0;i<5;i++){const id=beginAd(s,'coins',s.lastSeen);markAdEarned(s,id);settleEarnedAd(s,s.lastSeen);}
+  assert.equal(s.ads!.batchNextAt,2_000_000+5*3600000);
+  setTestTimers(true);applyTimingProfile(s,s.lastSeen);
+  assert.equal(s.ads!.batchNextAt,s.lastSeen+30000);
+  setTestTimers(false);applyTimingProfile(s,s.lastSeen);
+  assert.equal(s.ads!.batchNextAt,s.lastSeen+5*3600000);
+});
 
 function fixture() {
   let value: string | null = null, writes = 0, failAt = Infinity;
@@ -28,10 +60,10 @@ test('only earned requests credit once and cooldown applies across placements', 
   const id = store.beginRewardedAd('coins');
   store.earnedRewardedAd(id); store.earnedRewardedAd(id);
   assert.equal(store.state.coins, coins + ADS.rewards.coins);
-  assert.throws(() => store.beginRewardedAd('gems'), /ثانية/);
+  assert.equal(store.state.ads?.batchUsed,1);
   const restored = new GameStore(storage, store.state.lastSeen); restored.earnedRewardedAd(id);
   assert.equal(restored.state.coins, coins + ADS.rewards.coins);
-  restored.tick(restored.state.ads!.nextAt);
+  restored.tick(restored.state.lastSeen);
   const next = restored.beginRewardedAd('gems'); restored.earnedRewardedAd(next);
   assert.equal(restored.state.gems, ADS.rewards.gems);
   validateSave(restored.state);

@@ -19,7 +19,7 @@ class Storage {
 beforeEach(()=>setTestTimers(true));
 function fixture() {
   const storage=new Storage(),now=Date.now()+100000,store=new GameStore(storage,now);
-  store.dispatch({type:'enter',districtId:'shujaiya'});
+  store.dispatch({type:'enter',districtId:'zeitoun'});
   const d=store.state.districts[0];d.difficultyChosen=true;
   for(const [id,buildingId]of [[0,'recycling'],[1,'equipment_store'],[2,'asphalt']]as const)
     Object.assign(d.plots[id],{status:'built',buildingId});
@@ -86,12 +86,12 @@ test('legacy project replacement preserves earned funds, refunds unfinished remo
   const raw=JSON.stringify(s);storage.setItem(SAVE_KEY,raw);
   const restored=new GameStore(storage,now),nd=restored.state.districts[0];
   assert.equal(storage.getItem(UPGRADE_BACKUP_KEY),raw);
-  assert.equal(restored.state.coins,expected);assert.equal(restored.state.gems,6);
+  assert.equal(restored.state.coins,expected);assert.equal(restored.state.gems,2);
   assert.deepEqual(nd.projects.map(p=>p.id),projects().map(p=>p.id));
   assert.equal(nd.projects.find(p=>p.id==='water')!.endsAt,now+22500);
   assert.equal(nd.projects.find(p=>p.id==='commerce')!.status,'complete');
   const second=new GameStore(storage,now+1000);
-  assert.equal(second.state.coins,expected);assert.equal(second.state.gems,6);
+  assert.equal(second.state.coins,expected);assert.equal(second.state.gems,2);
   assert.equal(second.state.districts[0].projects.find(p=>p.id==='water')!.endsAt,now+22500);
   validateSave(second.state);
 });
@@ -108,14 +108,14 @@ test('completed neighborhoods reward automatically once and claiming only unlock
   d.pavedRoads=roadsFor(d.id).map(r=>r.id);
   assert.ok(districtComplete(d));const coins=store.state.coins;
   store.tick(store.state.lastSeen);
-  assert.equal(store.state.coins,coins+DISTRICTS[0].reward);assert.equal(store.state.gems,15);
+  assert.equal(store.state.coins,coins+DISTRICTS[0].reward);assert.equal(store.state.gems,10);
   assert.equal(d.completionRewarded,true);assert.equal(d.claimed,false);
   store.dispatch({type:'celebrated'});
   const loaded=new GameStore(storage,store.state.lastSeen+1000);
   assert.equal(loaded.state.coins,store.state.coins);
   loaded.dispatch({type:'claim'});
   assert.equal(loaded.state.coins,coins+DISTRICTS[0].reward);
-  assert.equal(loaded.state.currentDistrict,'tuffah');
+  assert.equal(loaded.state.currentDistrict,'shujaiya');
 });
 test('test work is 30 seconds for every difficulty; production configuration retains final settings',()=>{
   const d=newGame().districts[0];

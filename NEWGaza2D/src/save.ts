@@ -1,4 +1,4 @@
-import { BUILDINGS, DISTRICTS, EQUIPMENT, projects, legacyProjects } from './catalog';
+import { BUILDINGS, DISTRICTS, LEGACY_DISTRICTS, EQUIPMENT, projects, legacyProjects } from './catalog';
 import type { GameState } from './model';
 import { cityLayout, LOT_COUNT } from './city-layout';
 import { isOrientation } from './orientation';
@@ -26,6 +26,9 @@ export function validateSave(value: unknown): asserts value is GameState {
       s.wheel.bonus===true?s.wheel.nextAt>s.wheel.startedAt&&s.wheel.nextAt<=s.wheel.startedAt+WHEEL_COOLDOWN:s.wheel.bonus===undefined&&s.wheel.nextAt===s.wheel.startedAt+WHEEL_COOLDOWN)&&integer(s.wheel.result)&&!!WHEEL_PRIZES[s.wheel.result]);
   if(s.ads!==undefined){
     const a=s.ads;require(a&&typeof a==='object'&&!Array.isArray(a)&&integer(a.nextAt)&&[0,1].includes(a.spinCredits));
+    require(a.batchUsed===undefined || (integer(a.batchUsed)&&a.batchUsed<=5));
+    require(a.batchNextAt===undefined || integer(a.batchNextAt));
+    require((a.batchUsed??0)<5 ? !a.batchNextAt : (a.batchNextAt??0)>0);
     const id=(v:unknown)=>typeof v==='string'&&/^ad-[1-9]\d*$/.test(v)&&Number(v.slice(3))<=s.sequence;
     require(a.lastClaimId===undefined||id(a.lastClaimId));
     if(a.pending){const p=a.pending;require(id(p.id)&&p.id!==a.lastClaimId&&isAdPlacement(p.placement)&&['requested','earned'].includes(p.status)&&integer(p.createdAt)&&p.createdAt<=s.lastSeen);}
@@ -39,8 +42,11 @@ export function validateSave(value: unknown): asserts value is GameState {
   require(s.inventory.value === s.inventory.concrete * 20 + s.inventory.iron * 60 + s.inventory.wood * 35 + s.inventory.other * 10);
   require(Array.isArray(s.districts));
   // Only the exact former roster is accepted, not arbitrary missing/unknown districts.
-  const roster = s.districts.length === DISTRICTS.length - 1 && !s.districts.some(d => d?.id === 'shati')
-    ? DISTRICTS.filter(d => d.id !== 'shati') : DISTRICTS;
+   require(s.campaignVersion===undefined || s.campaignVersion===1);
+   const roster = s.campaignVersion===1
+     ? [...DISTRICTS,...LEGACY_DISTRICTS.filter(def=>!DISTRICTS.some(d=>d.id===def.id) && s.districts.some(d=>d?.id===def.id))]
+     : s.districts.length === LEGACY_DISTRICTS.length - 1 && !s.districts.some(d => d?.id === 'shati')
+     ? LEGACY_DISTRICTS.filter(d => d.id !== 'shati') : LEGACY_DISTRICTS;
   require(s.districts.length === roster.length);
   require(Array.isArray(s.units) && Array.isArray(s.jobs));
   const unique = (ids: string[]) => ids.every(id => typeof id === 'string' && id.length > 0) && new Set(ids).size === ids.length;
@@ -71,7 +77,7 @@ export function validateSave(value: unknown): asserts value is GameState {
     require(!d.claimed || d.unlocked);
     const predecessor = s.districts[i - 1];
     // Grandfather access to Rashid earned before Shati was inserted.
-    require(d.unlocked === (i === 0 || predecessor.claimed) ||
+    require(s.campaignVersion===1 ? (i!==0 || d.unlocked) : d.unlocked === (i === 0 || predecessor.claimed) ||
       (d.id === 'rashid' && d.unlocked && predecessor?.id === 'shati' && predecessor.unlocked));
     require(d.camera === null || (typeof d.camera === 'object' && Number.isFinite(d.camera.x) && Number.isFinite(d.camera.y) && d.camera.zoom >= MIN_CAMERA_ZOOM && d.camera.zoom <= 4));
     require(Array.isArray(d.plots) && [64, LOT_COUNT].includes(d.plots.length) && Array.isArray(d.projects) &&

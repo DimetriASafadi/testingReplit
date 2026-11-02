@@ -4,7 +4,7 @@ import { DISTRICTS } from '../src/catalog';
 import { districtEnvironment } from '../src/district-environment';
 
 test('every district has a distinct deterministic environment, with sea restricted to coastal identities', () => {
-  const coast = new Set(['rimal', 'sheikh-ijlin', 'shati', 'rashid']);
+  const coast = new Set(['rimal', 'nasr', 'shati', 'karama', 'tel-al-hawa']);
   const seeds = new Set<number>();
   for (const d of DISTRICTS) {
     const env = districtEnvironment(d.id);
@@ -21,7 +21,7 @@ test('eastern farmland and central urban surroundings are distinct rather than t
   assert.ok(districtEnvironment('shujaiya').farmland >= .7);
   assert.equal(districtEnvironment('tuffah').vegetation, 'citrus');
   assert.equal(districtEnvironment('zeitoun').vegetation, 'olive');
-  for (const id of ['old-city', 'daraj', 'nasr', 'tel-al-hawa', 'sabra', 'sheikh-radwan']) {
+  for (const id of ['old-city', 'daraj', 'sabra', 'sheikh-radwan']) {
     assert.equal(districtEnvironment(id).style, 'urban');
   }
   assert.equal(districtEnvironment('old-city').historic, true);

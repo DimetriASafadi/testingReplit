@@ -18,7 +18,7 @@ export function footprint(meta: SprMeta) {
 
 /** Plot is 1.4 iso units at U=64 and SC=.88: half-diagonal ~102 sprite px. */
 export function farmFootprint(meta: SprMeta) { const hw = Math.min(meta.w * 0.47, 102); return { cx: meta.w / 2, cy: meta.h * meta.ay, hw, hh: hw * 0.5 }; }
-const TREES = ['citrus', 'olive', 'palms', 'protective_trees', 'ornamental_trees'];
+const TREES = ['citrus', 'olive', 'palms', 'protective_trees', 'ornamental_trees', 'grapes'];
 /** plant lattice in plot-local (u,v) in [-1,1]; shared by canvas stages and SiteAnimation */
 export function farmLattice(id: string) {
   const tree = TREES.includes(id), herd = id === 'cattle' || id === 'zoo'; const spots: [number, number][] = [];

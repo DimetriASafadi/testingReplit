@@ -17,7 +17,7 @@ test('published four-face sprites share parcel/scale across every family', () =>
   const sprites = manifest as Record<string, { w: number; h: number; ay: number; ground?: { w: number; h: number } }>;
   const fronts = Object.keys(sprites).filter(k => k.endsWith('_front') && !['ind_front', 'shop_front'].includes(k));
   fronts.push('farm_cattle');
-  assert.equal(fronts.length, 50); // + wood_factory, household_shop
+  assert.equal(fronts.length, 56); // Six new campaign building families.
   const pending: string[] = [];
   for (const front of fronts) {
     const stem = front === 'farm_cattle' ? 'cattle' : front.replace(/_front$/, '');

@@ -32,6 +32,8 @@ import { DEVICE_RENDER_PROFILE, PIXEL_DENSITY as DENSITY } from './render-qualit
 import { isAdPlacement } from './ads/config';
 import { connectDiagnostics, diagnosticEvent, openDiagnostics } from './performance-diagnostics';
 import { progressFingerprint } from './performance-samples';
+import { gemIconHtml } from './gem-icon';
+import { closeCelebration } from './expansion-ui';
 
 const app = document.getElementById('app')!;
 const stage = document.getElementById('stage')!;
@@ -62,7 +64,7 @@ window.addEventListener('city-art-incomplete', () => {
 });
 function dur(ms: number) { const s = Math.max(0, Math.ceil(ms / 1000)); const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60; return h ? `${fmt(h)} س ${fmt(m)} د` : m ? `${fmt(m)} د ${fmt(x)} ث` : `${fmt(x)} ث`; }
 const secs = (s: number) => dur(cur()?actualWorkDuration(cur()!,s*1000):s*1000);
-const gemIcon = `<img class="gem-icon" src="${import.meta.env.BASE_URL}art/gem.svg" alt="" />`;
+const gemIcon = gemIconHtml();
 const resourceIcon = (name: 'iron' | 'concrete' | 'wood' | 'coins' | 'other') =>
   `<img class="resource-icon resource-${name}" src="${import.meta.env.BASE_URL}art/ui-resources/${name}.webp" width="160" height="160" alt="" aria-hidden="true" draggable="false"/>`;
 const navigationIcon = (name: 'fleet' | 'mats' | 'projects' | 'progress' | 'save') =>
@@ -140,7 +142,7 @@ function region(id: string, html: string, cls = '') {
 // ---------- WORLD SCREEN ----------
 function renderWorld() {
   const st = S(); const base = import.meta.env.BASE_URL;
-  const sel = ui.selDistrict ?? st.districts.find(d => d.unlocked && !d.claimed)?.id ?? DISTRICTS[0].id;
+  const sel = DISTRICTS.some(d=>d.id===ui.selDistrict) ? ui.selDistrict! : DISTRICTS.find(def=>st.districts.some(d=>d.id===def.id && d.unlocked && !d.claimed))?.id ?? DISTRICTS[0].id;
   ui.selDistrict = sel;
   const order = DISTRICTS.map(d => PIN[d.id]).filter(Boolean);
   const pins = DISTRICTS.map((d, i) => { const ds = st.districts.find(x => x.id === d.id); const s = !ds ? 'locked' : ds.claimed ? 'claimed' : ds.unlocked ? 'open' : 'locked'; const [x, y] = PIN[d.id] ?? [50, 50];
@@ -152,10 +154,10 @@ function renderWorld() {
       <img src="${base}art/world-map.jpg" alt="خريطة مرسومة لساحل غزة وأحيائها" onerror="this.style.background='#16747a'" />
       <svg class="route" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polyline points="${order.map(([x, y]) => `${x},${y}`).join(' ')}" fill="none" stroke="#f1e6d0" stroke-width=".35" stroke-dasharray="1 1" opacity=".8"/></svg>
       ${pins}</div>
-      <div class="map-title"><h1>نيو غزة</h1><p>اختر حيًا على الخريطة. كل حي يُستلم بعد إزالة أنقاضه وبناء كل قطعه وسفلتة شوارعه وإكمال مشاريعه التسعة، فيُفتح الحي التالي حتى كورنيش شارع الرشيد.</p></div>
+      <div class="map-title"><h1>نيو غزة</h1><p>اختر حيًا على الخريطة. يُستلم الحي بعد بناء كل قطعه وسفلتة شوارعه وإكمال مشاريعه، فيُفتح الحي التالي حتى حي الكرامة.</p></div>
     </div>
     <aside class="world-side" data-sk="world">
-      <div class="chip-row"><button class="chip" data-a="dlg" data-id="coins" data-k="w-coins" aria-label="الرصيد: ${fmt(st.coins)}، فتح متجر المال">${resourceIcon('coins')} <b class="num">${fmt(st.coins)}</b></button><button class="chip gem-wallet" data-a="dlg" data-id="gems" data-k="w-gems" aria-label="الجواهر: ${fmt(st.gems)}، فتح متجر الجواهر">${gemIcon}<b class="num">${fmt(st.gems)}</b></button><span class="chip">أحياء مستلمة <b class="num">${fmt(st.districts.filter(d => d.claimed).length)}/${fmt(DISTRICTS.length)}</b></span></div>
+      <div class="chip-row"><button class="chip" data-a="dlg" data-id="coins" data-k="w-coins" aria-label="الرصيد: ${fmt(st.coins)}، فتح متجر المال">${resourceIcon('coins')} <b class="num">${fmt(st.coins)}</b></button><button class="chip gem-wallet" data-a="dlg" data-id="gems" data-k="w-gems" aria-label="الجواهر: ${fmt(st.gems)}، فتح متجر الجواهر">${gemIcon}<b class="num">${fmt(st.gems)}</b></button><span class="chip">أحياء مستلمة <b class="num">${fmt(DISTRICTS.filter(def=>st.districts.some(d=>d.id===def.id&&d.claimed)).length)}/${fmt(DISTRICTS.length)}</b></span></div>
       <div class="district-card"><small>المرحلة ${fmt(idx + 1)} من ${fmt(DISTRICTS.length)}${idx === DISTRICTS.length - 1 ? ' — الختام' : ''}</small><h2>${esc(def.name)}</h2><p>${status}</p>
         ${ds ? `<div class="meter" aria-label="تقدم الحي"><i style="transform:scaleX(${districtProgress(ds) / 100})"></i></div><p class="num" style="font-size:.85rem">${fmt(districtProgress(ds))}٪</p>` : ''}
         <p>مكافأة الاستلام: <b class="num">${fmt(def.reward)}</b>${ds?.difficultyChosen ? ` · الصعوبة: ${difficultyOf(ds).name}` : ''}</p>
@@ -382,7 +384,7 @@ function dialogHtml(st: GameState, now: number): [string, string] {
       <div class="check ${paved >= roads ? 'ok' : ''}"><i></i>مقاطع الشوارع المسفلتة: <span class="num">${fmt(paved)}/${fmt(roads)}</span></div>
       <div class="check ${done === d.projects.length ? 'ok' : ''}"><i></i>المشاريع المكتملة: <span class="num">${fmt(done)}/${fmt(d.projects.length)}</span></div>
       <div class="check ${!jobs ? 'ok' : ''}"><i></i>لا مهام إزالة أو سفلتة جارية في الحي</div>
-      <p>${d.completionRewarded ? 'أُضيفت مكافأة الإنجاز إلى رصيدك:' : 'مكافأة الإنجاز:'} <b class="num">${fmt(def.reward)}</b> عملة + ${gemIcon} <b class="num">15</b> جوهرة</p>
+      <p>${d.completionRewarded ? 'أُضيفت مكافأة الإنجاز إلى رصيدك:' : 'مكافأة الإنجاز:'} <b class="num">${fmt(def.reward)}</b> عملة + ${gemIcon} <b class="num">10</b> جواهر</p>
       <p class="note">${last ? 'هذا الحي الختامي: يعرض الاستلام خاتمة الرحلة.' : `بعد الاستلام تنتقل مباشرة إلى حي ${esc(DISTRICTS[idx + 1].name)}.`}</p>
       <button class="btn gold" data-a="claim" data-k="claim" ${ok ? '' : 'disabled'}>${d.claimed ? 'تم الاستلام' : last ? 'استلام الحي الختامي' : 'استلام الحي والانتقال للتالي'}</button>`];
   }
@@ -417,18 +419,23 @@ function expansionChecks() {
     const p = WHEEL_PRIZES[w.result]; toast(p.coins ? `ربحت ${fmt(p.coins)} عملة` : p.gems ? `ربحت ${fmt(p.gems)} جواهر` : p.iron ? `ربحت ${fmt(p.iron)} وحدة حديد` : p.wood ? `ربحت ${fmt(p.wood)} وحدة خشب` : 'حظًا أوفر في الدورة القادمة');
   }
   if (d && !d.claimed && !d.celebrated && !celebratedNow.has(d.id) && districtComplete(d)) {
-    celebratedNow.add(d.id); celebrate(dName(d.id),DISTRICTS.find(def=>def.id===d.id)!.reward,15); gameAudio.click(true);
+    celebratedNow.add(d.id); celebrate(dName(d.id),DISTRICTS.find(def=>def.id===d.id)!.reward,10);
     try { store.dispatch({ type: 'celebrated' }); } catch { /* ack retried next session */ }
   }
 }
 
 // ---------- master render ----------
 let scene: CityScene | null = null;
+let celebrationDistrict: string | null = null;
 // Consent update is asynchronous and never blocks the opening game screen.
 // Native consent/ad initialization is deferred until the player requests an ad.
 // Offline startup must never depend on a network SDK.
 function render() {
   const st = S();
+  if(celebrationDistrict!==st.currentDistrict){closeCelebration();celebrationDistrict=st.currentDistrict;}
+  // Hiding the canvas DOM element does not stop Phaser rendering its display
+  // list. Disable scene visibility while the world map owns the screen.
+  scene?.sys.setVisible(!!st.currentDistrict);
   if(!st.currentDistrict)cityLoading=false;
   syncMusic();
   gameAudio.mode(st);
@@ -540,7 +547,7 @@ document.addEventListener('click', e => {
       if (act({ type: 'claim' })) {
         ui.dialog = null; ui.plot = null; scene?.select(null); resetScroll('body', 'cat', 'detail', 'dlg');
         const to = S().currentDistrict;
-        toast(last ? 'اكتمل إعمار غزة من الكرامة حتى كورنيش الرشيد. شكرًا لصبرك.' : to && to !== from ? `تم الاستلام · مرحبًا في ${dName(to)}` : 'تم استلام الحي');
+        toast(last ? 'اكتمل إعمار أحياء غزة من الزيتون حتى الكرامة. شكرًا لصبرك.' : to && to !== from ? `تم الاستلام · مرحبًا في ${dName(to)}` : 'تم استلام الحي');
       }
       break;
     }
@@ -633,6 +640,7 @@ game.registry.set('hooks', {
 });
 game.events.once('booted', () => {
   bootLoading = false;
+  if(store.migrationNotice){toast(store.migrationNotice);store.migrationNotice=null;}
   scene = game.scene.getScene('city') as CityScene;
   document.getElementById('boot')?.classList.add('done');
   render();

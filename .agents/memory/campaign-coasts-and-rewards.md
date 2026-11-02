@@ -9,6 +9,12 @@ Requested campaign order: الزيتون، الشجاعية، التفاح، ا�
 
 **How to apply:** Migrate by district identity, preserve earned access and balances, and resolve active work in removed districts without losing or permanently reserving machines.
 
+Keep removed districts archived with their original plots and pending work, rather than deleting or renaming them into active districts.
+
+**Why:** A global fleet can still be returning from a removed district; destroying its origin loses the mission's delivery/return context and may strand paid equipment.
+
+**How to apply:** Exclude archives from map pins, active chapter counts, handover progression and new district-completion rewards, but continue settling their existing jobs exactly once. New active districts must not inherit archived plot positions.
+
 Nasr, Karama and Tel al-Hawa must have seaside environments like Rimal; tents must never sit in the sea.
 
 **Why:** The user explicitly confirmed all three in addition to Rimal. This is requested game scenery, not a claim about real geography.

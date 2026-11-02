@@ -4,11 +4,13 @@ import { FINAL_TIMING } from './timing-settings';
 export const EQUIPMENT: Record<EquipmentKind, { name: string; cost: number }> = {
   excavator: { name: 'حفار', cost: 8000 }, bulldozer: { name: 'جرافة', cost: 5000 }, truck: { name: 'شاحنة نقل', cost: 6000 },
 };
-export const DISTRICTS = [
+export const LEGACY_DISTRICTS = [
   ['shujaiya','الشجاعية'],['tuffah','التفاح'],['sheikh-radwan','الشيخ رضوان'],['daraj','الدرج'],
   ['karama','الكرامة'],['old-city','البلدة القديمة'],['nasr','النصر'],['sabra','الصبرة'],
  ['zeitoun','الزيتون'],['rimal','الرمال'],['tel-al-hawa','تل الهوا'],['sheikh-ijlin','الشيخ عجلين'],['shati','حي الشاطئ'],['rashid','شارع الرشيد'],
 ].map(([id,name],i)=>({id,name,reward:id==='rashid'?1000000:100000+([0,1,2,3,3,4,5,5,6,7,8,9,10][i])*25000}));
+export const DISTRICTS = ['zeitoun','shujaiya','tuffah','daraj','old-city','sabra','tel-al-hawa','rimal','nasr','sheikh-radwan','shati','karama']
+  .map(id=>({...LEGACY_DISTRICTS.find(d=>d.id===id)!,...(id==='tel-al-hawa'?{name:'تل الهوى'}:{}),reward:100000}));
 const rows: Array<[BuildingDef['category'], string[], string[], number[], number[]]> = [
  ['equipment',['work','equipment_store','recycling'],['مبنى عمل','مخزن معدات','مصنع إعادة التدوير'],[2,1,2],[2000,4000,15000]],
  ['industry',['glass','cement','steel','asphalt','food_factory','water_treatment'],['مصنع زجاج','مصنع أسمنت','مصنع الحديد والصلب','مصنع أسفلت','مصنع الأغذية','محطة معالجة المياه'],[2,2,2,2,2,2],[9000,10000,11000,12000,13000,14000]],
@@ -20,6 +22,9 @@ const rows: Array<[BuildingDef['category'], string[], string[], number[], number
  ['leisure',['sports_club','recreation_park'],['نادي رياضي','منتزه ترفيهي'],[2,1],[8000,6000]],
  ['industry',['wood_factory'],['مصنع أخشاب'],[2],[12000]],
  ['commerce',['household_shop'],['متجر أدوات منزلية'],[1],[6500]],
+ ['commerce',['supermarket','toy_shop','juice_shop'],['سوبر ماركت','محل ألعاب','محل عصائر'],[1,1,1],[9000,6000,4500]],
+ ['industry',['drinks_factory','juice_factory'],['مصنع مشروبات','مصنع عصائر'],[2,2],[14000,13000]],
+ ['farm',['grapes'],['أرض عنب'],[1],[1600]],
 ];
 // Economic producers only; category membership alone can include public services or decoration.
 const incomeBuildings = new Set([
@@ -28,6 +33,7 @@ const incomeBuildings = new Set([
  'food_shop','clothes_shop','shoe_shop','traditional_mall','modern_mall',
  'falafel','shawarma','western_food','luxury_restaurant','cafe','snack_kiosk',
  'sports_club','recreation_park','wood_factory','household_shop',
+ 'supermarket','toy_shop','juice_shop','drinks_factory','juice_factory','grapes',
 ]);
 export const BUILDINGS: BuildingDef[] = rows.flatMap(([category,ids,names,floors,costs]) => ids.map((id,i)=>({
  id,name:names[i],category,floors:floors[i],cost:costs[i],duration:constructionSeconds(id,category,floors[i]),income:incomeBuildings.has(id)?Math.max(100,Math.floor(costs[i]/12)):0,

@@ -69,6 +69,11 @@ export function applyTimingProfile(state: GameState, now: number) {
     w.nextAt=now+Math.max(1,Math.round(Math.min(1,(w.nextAt-now)/old)*wheelCooldown()));
     w.cooldownMs=w.nextAt-w.startedAt;
   }
+  if(state.ads?.batchNextAt && state.ads.batchNextAt>now) {
+    const old=state.timerProfile==='test-30s'?30_000:FINAL_TIMING.adBatchMs;
+    const remaining=Math.min(1,(state.ads.batchNextAt-now)/old);
+    state.ads.batchNextAt=now+Math.max(1,Math.round(remaining*effectiveDuration(FINAL_TIMING.adBatchMs)));
+  }
   state.timerProfile = wanted;
 }
 import { projects } from './catalog';

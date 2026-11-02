@@ -80,7 +80,7 @@ for p in (a.only or PREFIXES):
     src=FF/"clean"/f"{p}-corrected.png"
     if not src.exists(): src=FF/"clean"/f"{p}.png"
     if not src.exists(): continue
-    sh=Image.open(src).convert("RGBA");W2,H2=sh.size;faces={};errs=[];W=man[front_key(p)]["w"];gh=man[front_key(p)].get("ground",{}).get("h",W/2)
+    sh=Image.open(src).convert("RGBA");W2,H2=sh.size;faces={};errs=[];fm=man.get(front_key(p),{"w":NEW_W.get(p,196)});W=fm["w"];gh=fm.get("ground",{}).get("h",W/2)
     # When preserving legacy front/back, their accepted published files are the
     # source of truth. Some old four-view sheets contain overhead or duplicated
     # panels, so do not let those unused panels reject or replace new side art.
