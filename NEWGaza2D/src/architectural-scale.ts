@@ -5,7 +5,7 @@
  */
 export const STOREY_WORLD_PX = 12;
 export const DOOR_WORLD_PX = 8;
-type Reference = { width:number; pixels:number; unit:'storey'|'door' };
+type Reference = { width:number; pixels:number; unit:'storey'|'door'|'basin' };
 const floor=(width:number,pixels:number):Reference=>({width,pixels,unit:'storey'});
 const door=(width:number,pixels:number):Reference=>({width,pixels,unit:'door'});
 const REFERENCE:Record<string,Reference>={
@@ -21,11 +21,13 @@ const REFERENCE:Record<string,Reference>={
   muni:floor(196,28), tmall:floor(196,25), mmall:floor(196,25),
   mosque:door(196,15), church:door(196,18),
   smarket:door(200,22), toys:door(196,21), juiceshop:door(196,21),
-  work:floor(196,26), food_factory:door(196,20), water:door(196,19),
+  // Water is an open process plant, not a tiny building measured by a guessed
+  // service door. One clarification basin is ~13m across (52 world pixels).
+  work:floor(196,26), food_factory:door(196,20), water:{width:196,pixels:60,unit:'basin'},
   drinks:door(196,19), juicef:door(196,19),
 };
 export function architecturalScale(stem:string,imageWidth:number):number{
   const r=REFERENCE[stem];
-  return r?(r.unit==='storey'?STOREY_WORLD_PX:DOOR_WORLD_PX)/(r.pixels*imageWidth/r.width):Infinity;
+  return r?(r.unit==='storey'?STOREY_WORLD_PX:r.unit==='basin'?52:DOOR_WORLD_PX)/(r.pixels*imageWidth/r.width):Infinity;
 }
 export function architecturalReference(stem:string):Readonly<Reference>|undefined{return REFERENCE[stem];}

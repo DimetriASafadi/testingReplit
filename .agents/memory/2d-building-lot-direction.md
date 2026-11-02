@@ -30,3 +30,11 @@ The user expanded rotation from front/rear to four genuine faces of every buildi
 **How to apply:** Compare all four poses in the actual city with neighboring roads and lots, not only isolated previews; rotation changes visible faces, not sunlight. Preserve old saved front/rear meanings when extending the orientation format.
 
 **Why preserve saved meanings:** Players already saved rear-facing buildings before quarter-turn views existed. Re-numbering directions sequentially would silently turn their existing buildings to a different face.
+
+## Industrial campuses
+
+Open process plants need a reference from their equipment (such as a treatment basin), not a guessed service-door measurement. Keep appropriately small office/workshop buildings at human scale and furnish the rest of the site with the factory's own materials and service equipment.
+
+**Why:** On 2026-11-02 the user singled out the tiny water plant beside equipment warehouses and requested consistent industrial proportions plus meaningful use of each factory lot. A generic industrial yard also incorrectly reused the same contents across unlike factories.
+
+**How to apply:** Compare industrial types side by side and at phone zoom. Use distinct storage, tanks, pipes, aggregate, glass racks or lumber as appropriate, outside the calibrated core. Keep warehouse/recycler approaches and actual docking gates clear; if their artwork is resized, verify shared vehicle/door geometry rather than changing only the image. Bake site dressing into bounded shared textures, without fake parked fleet vehicles or per-frame props.

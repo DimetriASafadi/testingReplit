@@ -7,6 +7,8 @@ import type { Orientation } from './model';
 import { addTrimmedTexture } from './trimmed-texture';
 import { rotateLotPoint } from './orientation';
 import { drawCourtyard } from './courtyard-art';
+import { drawIndustrialYard } from './industrial-yard';
+import { industrialKit } from './industrial-layout';
 import { dressParcel, drawKerbParking, drawSidewalk, parcelFlavor, YARD_W, YARD_EDGE, drawPlanters, drawShadeSeating, drawBench } from './parcel-dressing';
 const TEX_W = YARD_W;
 
@@ -32,8 +34,9 @@ export function lotYardKey(yard: YardKind | 'none', factor: number, orient: Orie
 export function lotLandscape(scene: Phaser.Scene, yard: YardKind | 'none', factor: number, orient: Orientation, level: YardLevel, n: number, buildingId='',radius=factor*.55): LotYard {
   n %= 3; // cache variants must not depend on which plot was built first
   const flavor=parcelFlavor(buildingId,yard), dining=flavor==='dining';
+  const EDGE=flavor==='industry'?.84/.72:YARD_EDGE;
   const dressed=!['garden','retail','dining'].includes(flavor);
-  const key = lotYardKey(yard, factor, orient, level, n,flavor,radius), fkey = key + ':f';
+  const key = lotYardKey(yard, factor, orient, level, n,flavor==='industry'?`industry-${industrialKit(buildingId)}`:flavor,radius), fkey = key + ':f';
   if (scene.textures.exists(key)) return { back: key, front: scene.textures.exists(fkey) ? fkey : undefined };
   const tex = (k: string) => scene.textures.exists(k) ? scene.textures.get(k).getSourceImage() as HTMLImageElement : null;
   const r = seeded(n * 97 + Math.round(factor * 100) + 5);
@@ -46,6 +49,15 @@ export function lotLandscape(scene: Phaser.Scene, yard: YardKind | 'none', facto
     x.fillStyle = tint; x.fillRect(0, 0, TEX_W, TEX_H); x.restore();
   };
   const full = yard === 'none', h0 = radius, a = h0 - 0.1, patio = yard !== 'garden', service = yard === 'service';
+  if(level===2&&flavor==='industry'){
+    // One contained industrial campus, not a generic park/huge soil skirt.
+    x.save();trace(roundRect(-EDGE,-EDGE,EDGE,EDGE,.18).map(m));x.clip();
+    tile(roundRect(-EDGE,-EDGE,EDGE,EDGE,.18).map(m),'g:gravel',4,1,'rgba(157,155,142,.76)');
+    drawSidewalk(x,EDGE-.02,.10,tex('exp:paver'));
+    x.restore(); // Only the soil is clipped; upright tanks can rise above it.
+    drawIndustrialYard(x,m,buildingId,radius,EDGE);
+    addTrimmedTexture(scene,key,c);return{back:key};
+  }
   // soil bed under the whole lot, feathered into the dusty skirt
   tile(roundRect(-EDGE, -EDGE, EDGE, EDGE, 0.22).map(m), 'g:earth', 4, level ? .5 : .42, 'rgba(165,148,120,.2)', 3);
   tile(roundRect(-EDGE + .1, -EDGE + .1, EDGE - .1, EDGE - .1, 0.2).map(m), 'g:sand', 4, .32, 'rgba(190,172,140,.12)', 4);

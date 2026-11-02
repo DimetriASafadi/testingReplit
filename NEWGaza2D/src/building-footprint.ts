@@ -54,10 +54,13 @@ export function buildingFootprint(finalSprite: string): Readonly<BuildingFootpri
  * nearly the whole lot; these are world dimensions, not PNG scale factors. */
 const LAND_COVERAGE: Record<string,number> = {
   rpark:.90, club:.88, zoo:.92,
-  wheat:.92, citrus:.92, olive:.92, veg:.92, straw:.92, cattle:.92,
-  palms:.92, corn:.92, trees:.92, orn:.92, grapes:.92,
+  // The finished block kerb starts .12 units inside the lot and rounds its
+  // corners by .2. A .82 half-edge fits its corners as well as straight sides.
+  wheat:.82, citrus:.82, olive:.82, veg:.82, straw:.82, cattle:.82,
+  palms:.82, corn:.82, trees:.82, orn:.82, grapes:.82,
   western:.66, luxury:.74, cafe:.56,
   tower:.92,
+  water:.76, glass:.72, cement:.76, steel:.74, asphalt:.72,
 };
 const stemOf = (key:string) => key === 'farm_cattle' ? 'cattle' : key.replace(/_(front|back|right|left)$/, '');
 /** Public/pure dimensions also used to test every catalog family's parcel fit.

@@ -39,6 +39,12 @@ Use camera-aligned ground with physically scaled, upright plants and projected f
 
 **How to apply:** Compose plants/infrastructure offline, rotate their ground coordinates for the four views, and keep screen-space verticals upright. Already canonical ground must bypass legacy photograph reprojection. Bake plant shadows once; do not cast an additional building-shaped shadow from the whole soil diamond. Retain isolated canopy cutouts for courtyard planting rather than cropping arbitrary pixels from a complete farm whose packing can change.
 
+Vegetation must remain visibly green, lively and legible at close phone zoom; match soil to the dusty environment separately instead of desaturating the leaves with it. Bound completed farmland against the actual pavement's rounded corners, not just the logical lot rectangle, and don't leave a larger soil underlay beneath it.
+
+**Why:** On 2026-11-02 the user rejected the muted, indistinct tree canopies and showed soil projecting beyond the pavement. A distant overview on simple rectangular roads had concealed both defects.
+
+**How to apply:** Compare plant details and greens at near zoom, using the real pavement inset/corner geometry. Keep texture resolution appropriate for close inspection and the mobile budget; gain detail in pre-baked images, not extra per-plant runtime objects.
+
 Use bounded background-cleanup batches, collect individual results, and retry only failed images.
 
 **Why:** A wide simultaneous cleanup batch returned rate-limit errors while most images succeeded; failing the aggregate hid those successful results.

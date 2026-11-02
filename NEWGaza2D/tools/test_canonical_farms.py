@@ -2,7 +2,7 @@
 import json
 import unittest
 from PIL import Image
-from build_canonical_farms import ROOT, OUT, FARMS, FACES, project, rotate
+from build_canonical_farms import ROOT, OUT, FARMS, FACES, W, D, project, rotate
 from calibrate_ground_camera import measure
 
 
@@ -14,7 +14,7 @@ class CanonicalFarmTest(unittest.TestCase):
             self.assertAlmostEqual(abs((c[1]-b[1])/(c[0]-b[0])),.5)
             foot,tip=project(.4,.3,turn=turn),project(.4,.3,30,turn)
             self.assertEqual(foot[0],tip[0])
-            self.assertEqual(foot[1]-tip[1],30)
+            self.assertEqual(foot[1]-tip[1],30*D)
         self.assertEqual(rotate(.4,.3,3),(.3,-.4)) # game's right orientation
 
     def test_every_published_view_has_a_real_ground_contact_and_pixel_aligned_edges(self):
@@ -30,9 +30,9 @@ class CanonicalFarmTest(unittest.TestCase):
                     self.assertEqual(meta,public[key])
                     self.assertEqual((meta['w'],meta['h']),image.size)
                     self.assertEqual(meta['canonicalFarm'],1)
-                    self.assertEqual(meta['ground'],{'w':256,'h':128})
-                    self.assertLessEqual(max(image.size),256)
-                    contact=meta['h']*meta['ay']+64
+                    self.assertEqual(meta['ground'],{'w':W,'h':W/2})
+                    self.assertLessEqual(max(image.size),384)
+                    contact=meta['h']*meta['ay']+W/4
                     self.assertAlmostEqual(contact,image.height-1,delta=1)
                     edge=measure(image)
                     self.assertAlmostEqual(edge['left'],.5,delta=.035)

@@ -15,7 +15,8 @@ import shutil
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "public/art/realistic"
 KIT = ROOT / "art-src/farm-kit"
-W, H, CY = 256, 256, 144
+W, H, CY = 384, 384, 216
+D = W/256  # More foliage detail; physical size is still defined by the ground.
 NAMES = ["olive", "citrus", "palm", "cypress", "orn", "wheat",
          "corn", "veg", "straw", "vine", "tank", "cow"]
 FARMS = ["wheat", "citrus", "olive", "veg", "straw", "cattle",
@@ -35,7 +36,7 @@ def rotate(u, v, turn):
 
 def project(u, v, z=0, turn=0):
     u, v = rotate(u, v, turn)
-    return W/2+64*(u-v), CY+32*(u+v)-z
+    return W/2+64*D*(u-v), CY+32*D*(u+v)-z*D
 
 
 def extract(path):
@@ -53,8 +54,18 @@ def extract(path):
             raise ValueError(f"Missing botanical cutout: {name}")
         cell = cell.crop(bbox)
         cell.thumbnail((256, 256), Image.Resampling.LANCZOS)
-        cell = ImageEnhance.Color(cell).enhance(.79)
-        cell = ImageEnhance.Brightness(cell).enhance(.94)
+        cell = ImageEnhance.Color(cell).enhance(1.24)
+        cell = ImageEnhance.Brightness(cell).enhance(1.04)
+        if name not in ["wheat","cow","tank"]:
+            # Preserve fruit, blossoms, bark and silver olive highlights; enrich
+            # foliage rather than applying a green tint to the entire asset.
+            pixels=[]
+            for r,g,b,a in cell.get_flattened_data():
+                if g>=r*.93 and g>b*1.05:
+                    r,g,b=round(r*.93),min(255,round(g*1.11+2)),round(b*.88)
+                pixels.append((r,g,b,a))
+            cell.putdata(pixels)
+        cell=ImageEnhance.Contrast(cell).enhance(1.09)
         cell.save(KIT / f"{name}.png")
 
 
@@ -62,13 +73,25 @@ def soil(image, stem, turn):
     mask = Image.new("L", image.size)
     polygon = [project(-1, -1), project(1, -1), project(1, 1), project(-1, 1)]
     ImageDraw.Draw(mask).polygon(polygon, fill=255)
-    texture = Image.open(OUT / "ground-earth.jpg").convert("RGB").resize((256, 256))
+    texture = Image.open(OUT / "ground-earth.jpg").convert("RGB").resize((W, W))
     texture = ImageEnhance.Color(texture).enhance(.35)
     texture = Image.blend(texture, Image.new("RGB", texture.size, SOIL[stem]), .64)
     plane = texture.transform(image.size, Image.Transform.AFFINE,
-                              (1, 2, 128-W/2-2*CY, -1, 2, 128+W/2-2*CY),
+                              (1, 2, -2*CY, -1, 2, W-2*CY),
                               Image.Resampling.BICUBIC).convert("RGBA")
     image.paste(plane, (0, 0), mask)
+    if stem in ["olive","citrus","palms","trees","orn","grapes"]:
+        # Low ground cover between irrigated rows, not another layer of trees.
+        cover=Image.new("RGBA",image.size)
+        cd=ImageDraw.Draw(cover)
+        for row in range(7):
+            v=-.85+row*.255
+            poly=[project(u,y,turn=turn) for u,y in
+                  [(-.9,v),(.72,v),(.72,v+.15),(-.9,v+.15)]]
+            cd.polygon(poly,fill=(94,130,57,55 if stem!="palms" else 28))
+        cover=cover.filter(ImageFilter.GaussianBlur(1.3*D))
+        cover.putalpha(Image.composite(cover.getchannel("A"),Image.new("L",image.size),mask))
+        image.alpha_composite(cover)
     d = ImageDraw.Draw(image)
     d.line(polygon+[polygon[0]], fill="#baae97", width=1)
     # All soil rows and service paths share the same camera projection.
@@ -127,7 +150,7 @@ def render(stem, turn, assets):
     if stem in ["olive", "citrus", "palms", "trees", "orn"]:
         asset = {"palms": "palm", "trees": "cypress"}.get(stem, stem)
         count = 3 if stem == "palms" else 5 if stem in ["trees","orn"] else 4
-        height = {"olive": 32, "citrus": 28, "palms": 47, "trees": 36, "orn": 21}[stem]
+        height = {"olive": 40, "citrus": 35, "palms": 54, "trees": 39, "orn": 28}[stem]
         for row in range(count):
             for col in range(count):
                 u = -.73+col*(1.30/max(1, count-1))+rng.uniform(-.025, .025)
@@ -160,7 +183,7 @@ def render(stem, turn, assets):
         if asset.startswith("__"):
             continue
         px, py = project(u, v, turn=turn)
-        shadow.ellipse((px, py-.6, px+height*.38+2, py+height*.13+1), fill=(40, 39, 28, 50))
+        shadow.ellipse((px, py-.6*D, px+(height*.38+2)*D, py+(height*.13+1)*D), fill=(40, 39, 28, 50))
     image = Image.alpha_composite(image, shadows.filter(ImageFilter.GaussianBlur(.6)))
     # Painter order is determined AFTER rotating the world positions.
     nodes.sort(key=lambda node: sum(rotate(node[0], node[1], turn)))
@@ -178,8 +201,9 @@ def render(stem, turn, assets):
         if asset=="vine":
             # Trellis carries foliage, not a floating transplanted tree trunk.
             source=source.crop((0,0,source.width,round(source.height*.76)))
-        size = (max(1, round(source.width*height/source.height)), max(1, round(height)))
-        plant = source.resize(size, Image.Resampling.LANCZOS)
+        size = (max(1, round(source.width*height*D/source.height)), max(1, round(height*D)))
+        plant = source.resize(size, Image.Resampling.LANCZOS).filter(
+            ImageFilter.UnsharpMask(radius=.6,percent=110,threshold=2))
         px, py = project(u, v, z, turn)
         image.alpha_composite(plant, (round(px-plant.width/2), round(py-plant.height)))
     # A light low boundary, with an opening at the rotated service entrance.

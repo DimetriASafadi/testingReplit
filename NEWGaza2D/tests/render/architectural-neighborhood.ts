@@ -7,12 +7,20 @@ import type { Plot } from '../../src/model';
 import { preloadFarmCanopies } from '../../src/farm-canopies';
 import { newGame } from '../../src/engine';
 import { roadsFor } from '../../src/roads';
+import { cityLayout } from '../../src/city-layout';
+import { roundRect } from '../../src/ground';
 const state=newGame(Date.now()),district=state.districts[0];
 state.currentDistrict=district.id;
 district.difficultyChosen=true;
 const xs=[...new Set(district.plots.map(p=>p.x))].sort((a,b)=>a-b).slice(0,4);
 const ys=[...new Set(district.plots.map(p=>p.y))].sort((a,b)=>a-b).slice(0,4);
-const ids=new URLSearchParams(location.search).has('farms')?[
+const reviewParams=new URLSearchParams(location.search);
+const ids=reviewParams.has('industry')?[
+  'equipment_store','water_treatment','recycling','cement',
+  'glass','steel','asphalt','food_factory',
+  'drinks_factory','juice_factory','wood_factory','work',
+  'traditional_housing','housing_6','villa','small_house',
+]:reviewParams.has('farms')?[
   'housing_tower','housing_6','medium_house','palms',
   'olive','citrus','protective_trees','ornamental_trees',
   'wheat','corn','vegetables','strawberry',
@@ -25,7 +33,7 @@ const ids=new URLSearchParams(location.search).has('farms')?[
 ];
 district.plots=district.plots.filter(p=>xs.includes(p.x)&&ys.includes(p.y));
 district.plots.sort((a,b)=>a.y-b.y||a.x-b.x).forEach((p,i)=>{
-  p.status='built';p.buildingId=ids[i%ids.length];p.orientation=0;
+  p.status='built';p.buildingId=ids[i%ids.length];p.orientation=(Number(reviewParams.get('face'))||0) as 0|1|2|3;
 });
 district.pavedRoads=roadsFor(district.id).map(r=>r.id);
 const width=window.innerWidth,height=window.innerHeight;
@@ -33,7 +41,10 @@ const cx=(xs[0]+xs.at(-1)!)/2+1,cy=(ys[0]+ys.at(-1)!)/2+1;
 const camera=()=>{
   const scene=game.scene.getScene('city') as CityScene;
   const span=(xs.at(-1)!-xs[0]+ys.at(-1)!-ys[0]+4)*64;
-  scene.cameras.main.centerOn((cx-cy)*64,(cx+cy)*32-35)
+  if(new URLSearchParams(location.search).has('close')){
+    const x=width<600?xs[1]+1:(xs[0]+xs[1])/2+1,y=reviewParams.has('industry')?ys[0]+1:width<600?ys[1]+1:(ys[1]+ys[2])/2+1;
+    scene.cameras.main.centerOn((x-y)*64,(x+y)*32-15).setZoom(width<600?1.65:1.25);
+  }else scene.cameras.main.centerOn((cx-cy)*64,(cx+cy)*32-35)
     .setZoom(width<600?.7:Math.min(.8,(width-30)/span));
   document.documentElement.dataset.ready='true';
   document.getElementById('loading')?.remove();
@@ -58,6 +69,13 @@ class ReviewCity extends CityScene{
     for(let i=0;i<3;i++){
       quad(xs[i]+2,ys[0]-.35,xs[i+1],ys.at(-1)!+2.35);
       quad(xs[0]-.35,ys[i]+2,xs.at(-1)!+2.35,ys[i+1]);
+    }
+    // Use the production block kerb dimensions/rounded corners, not only broad
+    // rectangular roads: the previous overview concealed farmland overhang.
+    for(const block of cityLayout(district.id).blocks){
+      const points=roundRect(block.x0+.12,block.y0+.12,block.x1-.12,block.y1-.12,.2).map(([x,y])=>iso(x,y));
+      graphics.fillStyle(0xa89f8e).fillPoints(points,true)
+        .lineStyle(1.3,0xc3b8a2).strokePoints(points,true);
     }
     const actual=this as unknown as {syncPlot(p:Plot,now:number):void};
     for(const p of district.plots)actual.syncPlot(p,Date.now());

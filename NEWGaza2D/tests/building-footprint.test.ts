@@ -82,7 +82,17 @@ test('parks, sports fields and farms occupy most of their plot rather than a sma
     for(const face of ['front','right','back','left']){
       const key=stem==='cattle'&&face==='front'?'farm_cattle':`${stem}_${face}`,m=sprites[key];
       const scale=buildingRenderScale(key,m);
-      assert.ok((m.ground?.w??m.w)*scale>=PLOT_WORLD_W*.85,key+' coverage');
+      const farm=!['rpark','club','zoo'].includes(stem);
+      assert.ok((m.ground?.w??m.w)*scale>=PLOT_WORLD_W*(farm?.80:.85),key+' coverage');
+      if(farm){
+        const halfEdge=(m.ground?.w??m.w)*scale/PLOT_WORLD_W;
+        assert.ok(halfEdge<=.82+.00001,key+' inside rounded kerb');
+        // Production pavement: .12 inset, .2 corner radius. Checking just
+        // the rectangular sides missed the soil overhang at the round corners.
+        const cornerCentre=1-.12-.2;
+        assert.ok(Math.hypot(halfEdge-cornerCentre,halfEdge-cornerCentre)<=.2,
+          key+' soil corner remains within the curved pavement');
+      }
     }
   }
 });

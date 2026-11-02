@@ -495,7 +495,7 @@ export class CityScene extends Phaser.Scene {
       // All land lies under the common shadow layer. Per-plot depth here
       // would slice a tall building's cast shadow at the next lot boundary.
       v.img.setDepth(t==='e'?-200005:t==='r' && Number(b)>0?-185000:c.y);
-      if (t !== 'e') {
+      if (t !== 'e'&&!bakedFarmShadows) {
         const skirt = this.skirtTex(p.id % 3, false, t !== 'r');
         if (!v.skirt) v.skirt = this.add.image(c.x, c.y, skirt).setOrigin(0.5, ANCHOR_LOT / TEX_H).setDepth(-210000).setScale(SC);
         else v.skirt.setTexture(skirt);
@@ -535,6 +535,11 @@ export class CityScene extends Phaser.Scene {
 
   /** compact buildings only: bounded courtyard on the free part of the lot; removed for ruins/empty plots */
   private syncYard(v: PlotView, p: Plot, c: { x: number; y: number }, fp: { factor: number; yard: string } | null, level: 0 | 1 | 2, orient: Orientation) {
+    if(level===2&&SPR[builtKey(p.buildingId,orient)].canonicalFarm===1){
+      // Complete farmland owns its soil. The old .918-wide underlay extended
+      // beyond the visible image and the actual rounded pavement boundary.
+      v.yard?.destroy();v.yardFront?.destroy();v.yard=v.yardFront=undefined;return;
+    }
     if (isFarm(p.buildingId) && (p.status === 'built' || p.status === 'building')) {
       const fk = farmLandscape(this, p.buildingId, orient, level);
       v.yardFront?.destroy(); v.yardFront = undefined;
