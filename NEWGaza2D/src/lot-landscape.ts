@@ -6,6 +6,7 @@ import { roundRect, seeded } from './ground';
 import type { Orientation } from './model';
 import { addTrimmedTexture } from './trimmed-texture';
 import { rotateLotPoint } from './orientation';
+import { drawCourtyard } from './courtyard-art';
 import { dressParcel, drawKerbParking, drawSidewalk, parcelFlavor, YARD_W, YARD_EDGE, drawPlanters, drawShadeSeating, drawBench } from './parcel-dressing';
 const TEX_W = YARD_W;
 
@@ -22,17 +23,17 @@ export interface LotYard { back: string; front?: string }
 const ANCHOR = 380, EDGE = YARD_EDGE;
 const pr = (lx: number, ly: number): Pt => [TEX_W / 2 + (lx - ly) * U, ANCHOR + (lx + ly) * U / 2];
 /** photo canopy clumps cut from the existing SPR tree sprites: [sprite, cx, cy, radius] */
-const CLUMPS: [string, number, number, number][] = [['orn_front', 92, 37, 26], ['orn_front', 152, 52, 24], ['citrus_front', 100, 44, 24], ['olive_front', 92, 34, 18]];
+const CLUMPS: [string, number, number, number][] = [['canopy:orn', 32, 32, 30], ['canopy:orn', 32, 32, 27], ['canopy:citrus', 32, 32, 30], ['canopy:olive', 32, 32, 30]];
 
-export function lotYardKey(yard: YardKind | 'none', factor: number, orient: Orientation, level: YardLevel, n: number, flavor='default') {
-  return `yard2:${yard}:${Math.round(factor * 100)}:${orient}:${level}:${n % 3}:${flavor}`;
+export function lotYardKey(yard: YardKind | 'none', factor: number, orient: Orientation, level: YardLevel, n: number, flavor='default',radius=factor*.55) {
+  return `yard2:${yard}:${Math.round(factor * 100)}:${orient}:${level}:${n % 3}:${flavor}:r${Math.ceil(radius*25)}`;
 }
 
-export function lotLandscape(scene: Phaser.Scene, yard: YardKind | 'none', factor: number, orient: Orientation, level: YardLevel, n: number, buildingId=''): LotYard {
+export function lotLandscape(scene: Phaser.Scene, yard: YardKind | 'none', factor: number, orient: Orientation, level: YardLevel, n: number, buildingId='',radius=factor*.55): LotYard {
   n %= 3; // cache variants must not depend on which plot was built first
   const flavor=parcelFlavor(buildingId,yard), dining=flavor==='dining';
   const dressed=!['garden','retail','dining'].includes(flavor);
-  const key = lotYardKey(yard, factor, orient, level, n,flavor), fkey = key + ':f';
+  const key = lotYardKey(yard, factor, orient, level, n,flavor,radius), fkey = key + ':f';
   if (scene.textures.exists(key)) return { back: key, front: scene.textures.exists(fkey) ? fkey : undefined };
   const tex = (k: string) => scene.textures.exists(k) ? scene.textures.get(k).getSourceImage() as HTMLImageElement : null;
   const r = seeded(n * 97 + Math.round(factor * 100) + 5);
@@ -44,7 +45,7 @@ export function lotLandscape(scene: Phaser.Scene, yard: YardKind | 'none', facto
     if (img) { const k = U * tile / 1024; x.setTransform(k, k / 2, -k, k / 2, TEX_W / 2 + n * 29, ANCHOR - 17 * n); x.fillStyle = x.createPattern(img, 'repeat')!; x.fillRect(-4000, -4000, 8000, 8000); x.setTransform(1, 0, 0, 1, 0, 0); }
     x.fillStyle = tint; x.fillRect(0, 0, TEX_W, TEX_H); x.restore();
   };
-  const full = yard === 'none', h0 = factor * 0.55, a = h0 - 0.1, patio = yard !== 'garden', service = yard === 'service';
+  const full = yard === 'none', h0 = radius, a = h0 - 0.1, patio = yard !== 'garden', service = yard === 'service';
   // soil bed under the whole lot, feathered into the dusty skirt
   tile(roundRect(-EDGE, -EDGE, EDGE, EDGE, 0.22).map(m), 'g:earth', 4, level ? .5 : .42, 'rgba(165,148,120,.2)', 3);
   tile(roundRect(-EDGE + .1, -EDGE + .1, EDGE - .1, EDGE - .1, 0.2).map(m), 'g:sand', 4, .32, 'rgba(190,172,140,.12)', 4);
@@ -74,9 +75,10 @@ export function lotLandscape(scene: Phaser.Scene, yard: YardKind | 'none', facto
     drawSidewalk(x, EDGE - .02, .13, tex('exp:paver'));
   }
   const front: Pt[] = [];
-  if (level === 2 && full && flavor === 'housing') drawKerbParking(x, m([.7, .7]), n, EDGE);
-  if (level === 2 && full && dressed) dressParcel(x, m, flavor, EDGE - .12, n, true);
-  if (level === 2 && full && flavor === 'housing') {
+  if(level===2&&flavor!=='industry')drawCourtyard(x,m,h0,EDGE,n,flavor==='housing'||flavor==='garden');
+  if (level === 2 && full && flavor === 'housing' && h0<.98) drawKerbParking(x, m([.7, .7]), n, EDGE);
+  if (level === 2 && full && dressed && (h0<.98||flavor==='industry')) dressParcel(x, m, flavor, EDGE - .12, n, true);
+  if (level === 2 && full && flavor === 'housing' && h0<.98) {
     // Apartment block fills ~±.82 lot units; the screen-back bands (-x/-y, behind the
     // building, opposite the kerb parking) get planted beds, canopy and a shaded bench.
     const id = (p: Pt) => p;
@@ -117,19 +119,19 @@ export function lotLandscape(scene: Phaser.Scene, yard: YardKind | 'none', facto
       const E = EDGE - .02; seg([-E, -E], [E, -E]); seg([-E, -E], [-E, E]); seg([E, -E], [E, E]); seg([-E, E], [a + .04, E]); seg([a + .26, E], [E, E]);
     }
     // shrubs and small trees only in free land: outside the house footprint, clear of pad and path
-    const R = full ? .9 : factor * 0.74, spots: Pt[] = [], cap = service ? 7 : patio ? 6 : 14;
+    const R = h0+.10, spots: Pt[] = [], cap = service ? 7 : patio ? 6 : 14;
     const nearEntry = (px: number, py: number) => px > a - .22 && py > a - .22 && px < a + (patio ? .75 : .5) && (patio || py > a - .22);
     for (let i = 0; i < 160 && spots.length < cap; i++) {
       const px = (r() * 2 - 1) * (EDGE - .1), py = (r() * 2 - 1) * (EDGE - .1);
       if (Math.max(Math.abs(px), Math.abs(py)) < R || (!full && nearEntry(px, py))) continue;
       // full lots: back bands only (screen-space, not rotated), clear of parking/entrance
-      if (full && (px > -.6 && py > -.6)) continue;
+      if (full && h0>.8 && (px > -.6 && py > -.6)) continue;
       if (spots.some(q => Math.hypot(q[0] - px, q[1] - py) < .3)) continue;
       spots.push([px, py]);
     }
     spots.sort((p, q) => (p[0] + p[1]) - (q[0] + q[1]));
     const clumps = CLUMPS.map(([k, cx, cy, rad]) => {
-      const img = tex('s:' + k); if (!img) return null; const cc = makeCanvas(rad * 2, rad * 2), g = cc.getContext('2d')!;
+      const img = tex(k); if (!img) return null; const cc = makeCanvas(rad * 2, rad * 2), g = cc.getContext('2d')!;
       g.drawImage(img, cx - rad, cy - rad, rad * 2, rad * 2, 0, 0, rad * 2, rad * 2);
       const gr = g.createRadialGradient(rad, rad, rad * .5, rad, rad, rad); gr.addColorStop(0, 'white'); gr.addColorStop(1, 'rgba(255,255,255,0)');
       g.globalCompositeOperation = 'destination-in'; g.fillStyle = gr; g.fillRect(0, 0, rad * 2, rad * 2); return cc;

@@ -13,10 +13,11 @@ import { SiteAnimation } from '../site-animation';
 import { FleetAnimation, preloadMachinery } from '../fleet-animation';
 import { districtEnvironment } from '../district-environment';
 import { paintSurroundings, TERRAIN_BACKDROP } from '../district-terrain';
-import { buildingFootprint } from '../building-footprint';
+import { buildingFootprint, buildingYardRadius } from '../building-footprint';
 import { buildingShadow } from '../building-shadow';
 import { lotLandscape } from '../lot-landscape';
 import { farmLandscape } from '../farm-landscape';
+import { preloadFarmCanopies } from '../farm-canopies';
 import { ENVIRONMENT_IDS, environmentUrl, groundStamp } from '../environment-art';
 import { clearingProgress, clearingStage } from '../clearing-progress';
 import { CLEARING_META, CLEARING_SIZE, clearingCanvas, preloadClearing } from '../clearing-art';
@@ -482,13 +483,15 @@ export class CityScene extends Phaser.Scene {
       const [t, id, a, b] = key.split(':'); const tk = this.plotTex(t, id, a, b, p.id);
       if (v) { this.applyTex(v.img, tk); v.key = key; v.bar?.destroy(); v.bar = undefined; }
       else { const img = this.place(tk, c.x, c.y, c.y); v = { key, img }; this.views.set(p.id, v); }
-      if(t==='b'||t==='c'){
+      const bakedFarmShadows=t==='b'&&SPR[builtKey(id,Number(a) as 0|1|2|3)].canonicalFarm===1;
+      if((t==='b'||t==='c')&&!bakedFarmShadows){
         const finalKey=builtKey(id,Number(a) as 0|1),s=buildingShadow(this,finalKey);
         if(!v.shadow)v.shadow=this.add.image(c.x,c.y,s.key).setDepth(-190000);
         else v.shadow.setTexture(s.key);
         v.shadow.setOrigin(s.originX,s.originY).setScale(builtScale(finalKey));
         v.shadow.setAlpha(t==='b'?1:Math.min(1,.18+Number(b)*.14));
       }
+      if(bakedFarmShadows&&v.shadow){v.shadow.destroy();v.shadow=undefined;}
       // All land lies under the common shadow layer. Per-plot depth here
       // would slice a tall building's cast shadow at the next lot boundary.
       v.img.setDepth(t==='e'?-200005:t==='r' && Number(b)>0?-185000:c.y);
@@ -520,6 +523,13 @@ export class CityScene extends Phaser.Scene {
       });
       v.coin = this.add.image(c.x, c.y - 126, coin).setOrigin(.5, 16 / 44).setDepth(6e5);
     } else if (!ready && v.coin) { v.coin.destroy(); v.coin = undefined; }
+    if(v.coin){
+      // Farm heights are intentionally distinct from tower/building heights.
+      // Keep the collectible next to the actual field, not suspended far above it.
+      const restY=p.buildingId&&isFarm(p.buildingId)&&p.buildingId!=='zoo'
+        ?c.y-v.img.displayHeight*v.img.originY-12:c.y-126;
+      if(v.coin.getData('restY')!==restY){v.coin.setData('restY',restY);v.coin.y=restY;}
+    }
   }
 
 
@@ -532,7 +542,7 @@ export class CityScene extends Phaser.Scene {
       return;
     }
     if (!fp || building(p.buildingId).category==='farm' || p.buildingId==='zoo') { v.yard?.destroy(); v.yardFront?.destroy(); v.yard = v.yardFront = undefined; return; }
-    const y = lotLandscape(this, fp.yard as 'none'|'garden'|'patio'|'service', fp.factor, orient, level, p.id,p.buildingId);
+    const y = lotLandscape(this, fp.yard as 'none'|'garden'|'patio'|'service', fp.factor, orient, level, p.id,p.buildingId,buildingYardRadius(builtKey(p.buildingId,orient)));
     if (!v.yard) v.yard = this.add.image(c.x, c.y, y.back).setOrigin(0.5, ANCHOR_LOT / TEX_H).setDepth(-200000).setScale(SC); else v.yard.setTexture(y.back);
     if (y.front) { if (!v.yardFront) v.yardFront = this.add.image(c.x, c.y, y.front).setOrigin(0.5, ANCHOR_LOT / TEX_H).setDepth(c.y + 2).setScale(SC); else v.yardFront.setTexture(y.front); }
     else { v.yardFront?.destroy(); v.yardFront = undefined; }
@@ -589,7 +599,8 @@ export class CityScene extends Phaser.Scene {
     const visible = this.cameras.main.worldView;
     for (const [id, v] of this.views) if (v.coin) {
       const p = d.plots[id], c = iso(p.x + 1, p.y + 1);
-      if (visible.contains(c.x, c.y - 126)) v.coin.y = c.y - 126 + Math.sin(now / 573 + id * .7) * 6;
+      const restY=(v.coin.getData('restY') as number|undefined)??c.y-126;
+      if (visible.contains(c.x, restY)) v.coin.y = restY + Math.sin(now / 573 + id * .7) * 6;
     }
     this.siteAnimation.update([...d.plots, ...this.projectPlots], now);
     this.fleetAnimation.update(st, now, this.roadStage);
@@ -735,6 +746,7 @@ export class BootScene extends Phaser.Scene {
     preloadClearing(this);
     preloadExpansionArt(this);
     preloadLifeArt(this);
+    preloadFarmCanopies(this);
   }
   create() {
     if (this.failedFiles.size) {

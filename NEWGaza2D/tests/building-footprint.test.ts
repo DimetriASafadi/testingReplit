@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildingFootprint, buildingLotDimensions, buildingMaxHeight, buildingRenderScale } from '../src/building-footprint';
+import { buildingFootprint, buildingLotDimensions, buildingMaxHeight, buildingRenderScale,buildingYardRadius } from '../src/building-footprint';
+import { architecturalReference,architecturalScale,STOREY_WORLD_PX } from '../src/architectural-scale';
+import { courtyardZones } from '../src/courtyard-layout';
 import { LAND_WORLD_EDGE, PLOT_WORLD_W } from '../src/lot-geometry';
 import manifest from '../src/realistic-manifest.json';
 
@@ -88,9 +90,35 @@ test('restaurant sizes reflect their use while small-house gardens keep their ac
   assert.ok(buildingLotDimensions('western_front').width>buildingLotDimensions('falafel_front').width);
   assert.ok(buildingLotDimensions('luxury_front').width>buildingLotDimensions('western_front').width);
   const m=manifest.western_front,scale=buildingRenderScale('western_front',m);
-  assert.ok(m.ground.w*scale>=PLOT_WORLD_W*.65);
+  assert.ok(m.ground.w*scale>=PLOT_WORLD_W*.30);
   assert.ok(buildingLotDimensions('smallhouse_front').width<PLOT_WORLD_W*.35);
   assert.ok(buildingLotDimensions('villa_front').width>buildingLotDimensions('smallhouse_front').width);
+});
+test('facade units, not equal PNG width, establish a shared human/architectural scale',()=>{
+  const sprites=manifest as Record<string,{w:number;h:number;ay:number;ground?:{w:number;h:number}}>;
+  const rises:Record<string,number>={};
+  for(const stem of ['smallhouse','house','villa','apt4','h6','complex','modern','trad','tower','tourist']){
+    const m=sprites[`${stem}_front`],scale=buildingRenderScale(`${stem}_front`,m),r=architecturalReference(stem)!;
+    const floorPitch=r.pixels*m.w/r.width*scale;
+    assert.ok(floorPitch>=STOREY_WORLD_PX*.85&&floorPitch<=STOREY_WORLD_PX*1.001,stem+' actual floor pitch');
+    rises[stem]=(m.h*m.ay-(m.ground?.h??m.w/2)/2)*scale;
+    assert.equal(architecturalScale(stem,m.w),architecturalScale(stem,m.w*2)*2);
+  }
+  assert.ok(rises.trad<rises.apt4,'three-floor facade cannot dominate the four-floor block');
+  assert.ok(rises.apt4<rises.h6&&rises.h6<rises.modern&&rises.modern<rises.tower);
+  assert.ok(rises.tower>rises.trad*3,'high-rise must visibly read as much taller than three floors');
+});
+test('courtyard furniture bands stay inside the parcel and outside the actual reserved building',()=>{
+  for(const key of ['trad_front','apt4_front','smallhouse_front','house_front','h6_front','tower_front','western_front']){
+    const radius=buildingYardRadius(key),zones=courtyardZones(radius,1.30555556);
+    if(key==='trad_front'||key==='smallhouse_front')assert.equal(zones.length,4,key+' uses all four free bands');
+    for(const z of zones){
+      assert.ok(z.x0>=-1.30556&&z.x1<=1.30556&&z.y0>=-1.30556&&z.y1<=1.30556);
+      assert.ok(z.x0<z.x1&&z.y0<z.y1);
+      assert.ok(z.x1<=-radius||z.x0>=radius||z.y1<=-radius||z.y0>=radius,key+' core clearance');
+    }
+    assert.equal(radius,buildingYardRadius(key.replace('_front','_right')));
+  }
 });
 test('packing resolution does not change world dimensions of a sprite family',()=>{
   // An unknown family lets the supplied metadata be the sole face. Doubling

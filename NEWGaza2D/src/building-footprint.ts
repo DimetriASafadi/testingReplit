@@ -1,4 +1,5 @@
 import { LAND_WORLD_EDGE, PLOT_WORLD_W } from './lot-geometry';
+import { architecturalScale } from './architectural-scale';
 import manifest from './realistic-manifest.json';
 /** A plot is land: smaller buildings leave usable space rather than filling it. */
 export interface BuildingFootprint { factor: number; yard: 'garden' | 'patio' | 'service' | 'none' }
@@ -56,6 +57,7 @@ const LAND_COVERAGE: Record<string,number> = {
   wheat:.92, citrus:.92, olive:.92, veg:.92, straw:.92, cattle:.92,
   palms:.92, corn:.92, trees:.92, orn:.92, grapes:.92,
   western:.66, luxury:.74, cafe:.56,
+  tower:.92,
 };
 const stemOf = (key:string) => key === 'farm_cattle' ? 'cattle' : key.replace(/_(front|back|right|left)$/, '');
 /** Public/pure dimensions also used to test every catalog family's parcel fit.
@@ -78,9 +80,22 @@ export function buildingRenderScale(finalKey: string, m: { w: number; h: number;
   const one = (v: typeof m) => {
     const gw = v.ground?.w ?? v.w, gh = v.ground?.h ?? gw / 2;
     const elevation=Math.max(1,v.h*(v.ay ?? 1-gh/(2*v.h))-gh/2);
-    return Math.min(target.width/gw*base/.72,target.height/gh*base/.72,
+    return Math.min(architecturalScale(stem,v.w)*base/.72,
+      target.width/gw*base/.72,target.height/gh*base/.72,
       buildingMaxHeight(finalKey)/elevation,
       PLOT_WORLD_W*LAND_WORLD_EDGE/gw,PLOT_WORLD_W*LAND_WORLD_EDGE/2/gh);
   };
   return Math.min(one(m), ...faces.map(one));
+}
+
+const yardRadii=new Map<string,number>();
+/** Reserved central square in yard-canvas coordinates, shared by all faces.
+ * Quantized upward so no accessory intrudes and the texture cache stays bounded. */
+export function buildingYardRadius(finalKey:string):number{
+  const stem=stemOf(finalKey),cached=yardRadii.get(stem);
+  if(cached!==undefined)return cached;
+  const metrics=manifest as Record<string,{w:number;h:number;ay:number;ground?:{w:number;h:number}}>;
+  const m=metrics[finalKey];if(!m)return .65;
+  const radius=Math.min(1.24,Math.ceil(((m.ground?.w??m.w)*buildingRenderScale(finalKey,m)/(PLOT_WORLD_W*.72)+.10)*25)/25);
+  yardRadii.set(stem,radius);return radius;
 }

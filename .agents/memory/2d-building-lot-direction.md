@@ -9,6 +9,14 @@ The buildable square is a land parcel, not a requirement to enlarge every buildi
 
 **How to apply:** Preserve that accepted small-house yard approach and adapt accessories to each building's use, rather than putting generic gardens around every industry or shop. Fit the ground footprint in both axes, independently of image resolution and structural height. Judge height above the rear ground edge, not total PNG height (which includes the land diamond). Keep a shared scale across all faces and use that same geometry for construction, shadows and factory entrances.
 
+## Architectural size is separate from parcel coverage
+
+Establish a human-scale reference using visible facade floors and doors. Plot coverage is an upper bound, not the desired scale of every building; smaller structures need landscaped/functional yards using the remainder of the square.
+
+**Why:** The user repeated on 2026-11-02 that the three-floor traditional building must not dwarf higher apartment blocks. Equalizing PNG/platform widths retained wildly different native floor sizes. They explicitly asked to fill the whole lot with either an appropriately large building or a properly furnished courtyard, not inflate small buildings.
+
+**How to apply:** Calibrate new art against neighboring housing using actual floor/door spacing, not source bounds or catalog floor counts alone. Reserve the actual scaled building footprint before placing beds, seating, parking and entry paths. Bake furniture into bounded shared yard textures, not live per-frame scene objects. Inspect mixed types adjacent in the real plot renderer at phone scale; isolated image comparisons missed the original inconsistency.
+
 Use the whole available land parcel around the building, not only the small painted platform attached to its sprite.
 
 **Why:** The user repeated this request after the initial landscaping update, showing an apartment and villa with large empty bands between their furnished platforms and the roads.

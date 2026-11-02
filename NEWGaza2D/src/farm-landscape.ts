@@ -42,6 +42,13 @@ export function farmLandscape(scene: Phaser.Scene, buildingId: string, orient: O
   const earth = scene.textures.exists('g:earth') ? scene.textures.get('g:earth').getSourceImage() as HTMLImageElement : null;
   if (earth) { x.globalAlpha = .45; const k = U * 3 / 1024; x.setTransform(k, k / 2, -k, k / 2, TEX_W / 2, ANCHOR); x.fillStyle = x.createPattern(earth, 'repeat')!; x.fillRect(-4000, -4000, 8000, 8000); x.setTransform(1, 0, 0, 1, 0, 0); }
   x.globalAlpha = 1;
+  if(level===2&&buildingId!=='zoo'){
+    // Finished canonical artwork already contains its exact soil, planting,
+    // irrigation and service lane. A second crop lattice caused cross-hatched
+    // rows and duplicate miniature trees around the old oversized photograph.
+    trace(plot);x.strokeStyle='rgba(111,101,81,.28)';x.lineWidth=1;x.stroke();
+    x.restore();addTrimmedTexture(scene,key,c);return key;
+  }
   // tillage furrows along the rotated lot x axis (orientation-aware)
   const step = crop === 'orchard' || crop === 'palm' || crop === 'vine' ? .2 : .1;
   for (let t = -E + step / 2; t < E; t += step) {

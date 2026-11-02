@@ -19,11 +19,25 @@ Pack newly authored sprites first, grade their colors second, align planted scen
 
 **How to apply:** Treat artwork and its ground-contact metadata as one export. Correct planted bases offline while retaining upper canopy proportions; do not add per-frame image warping or pixel readback to fix asset perspective. After regeneration, verify both orientations in the actual city, not only the isolated image.
 
+Ground-camera corrections must be the final geometry export after older grading/ground/seam stages. Fit visible floor edges and their contact point, not an assumed bounding-box diamond. Do not use an x-by-y shear to fit a floor: it makes upright walls lean.
+
+**Why:** On 2026-11-02 the user clarified that apparent tilt was an image-perspective problem, not a size problem; enlarging the park revealed that its floor edges were steeper than the map. Older geometry stages can restore those source images and undo a later correction.
+
+**How to apply:** Keep the unprojected source and calibrate all four faces together. Do not guess a transform from occluded/irregular silhouettes, or capture already corrected output as a fresh baseline. Regenerate ambiguous art rather than distorting it automatically. Validate actual floor-edge alignment against the camera after exporting.
+
 Ground overlays must be below the shared cast-shadow layer, not sorted individually with buildings.
 
 **Why:** Per-parcel ground depth can cut a neighboring tall building's projected shadow at the parcel boundary, making disconnected shadow fragments.
 
 **How to apply:** Keep architectural/foreground occlusion separate from ground compositing; inspect shadows across empty adjacent land as well as under their own building.
+
+## Agriculture: separate upright plants from the ground plane
+
+Use camera-aligned ground with physically scaled, upright plants and projected field infrastructure. Do not shear a whole orchard photograph to correct its floor, or add a second planting grid underneath finished farmland.
+
+**Why:** The user reiterated on 2026-11-02 that agricultural elements looked tilted and disproportionate. Correcting ground and foliage together distorts trunks/canopies, while overlapping source rows and procedural rows makes the layout incoherent.
+
+**How to apply:** Compose plants/infrastructure offline, rotate their ground coordinates for the four views, and keep screen-space verticals upright. Already canonical ground must bypass legacy photograph reprojection. Bake plant shadows once; do not cast an additional building-shaped shadow from the whole soil diamond. Retain isolated canopy cutouts for courtyard planting rather than cropping arbitrary pixels from a complete farm whose packing can change.
 
 Use bounded background-cleanup batches, collect individual results, and retry only failed images.
 

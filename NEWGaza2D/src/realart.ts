@@ -5,11 +5,11 @@ import type { Orientation } from './model';
 import { ORIENTATION_FACES } from './orientation';
 import { availableBuildingFace } from './artwork-face';
 
-export interface SprMeta { w: number; h: number; ay: number; ground?: { w: number; h: number } }
+export interface SprMeta { w: number; h: number; ay: number; ground?: { w: number; h: number }; canonicalFarm?: number }
 export const SPR = manifest as Record<string, SprMeta>;
 export const SPRITE_KEYS = Object.keys(SPR);
 export const GROUND_KEYS = ['earth', 'sand', 'asphalt', 'gravel', 'water'] as const;
-const ART_VERSION = 'four-sides-20261102-market';
+const ART_VERSION = 'canonical-farms-20261102';
 export const sprUrl = (k: string) => `${import.meta.env.BASE_URL}art/realistic/s/${k}.webp?v=${ART_VERSION}`;
 export const groundUrl = (k: string) => `${import.meta.env.BASE_URL}art/realistic/ground-${k}.jpg?v=${ART_VERSION}`;
 
