@@ -36,3 +36,4 @@
 - [Rewarded ad scope](rewarded-ad-scope.md) — user explicitly wants Android and browser, real test inventory first, and centralized production identifiers.
 - [Mobile render budget](mobile-render-budget.md) — keep saved zoom density-independent; evict unused procedural stages instead of degrading all artwork.
 - [Android build environment](android-build-environment.md) — temporary SDKs may disappear; verify retained signing identity before promising an in-place APK update.
+- [Campaign coasts and rewards](campaign-coasts-and-rewards.md) — new district order, coastal scenery, fixed rewards, five-ad batches and blue gem/celebration direction.
