@@ -1244,3 +1244,31 @@ mtime_ms = 1793611617946
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/0a8ebb2b-2bbb-431b-a9cb-6d5c1d8684e3/b8ec09c9-6e30-47ff-8c21-121b746af42e"
 storage_version_token = "1793611647175539"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "GXgsyMdob2pVfUtVsAPjm"
+uri = "file://NEWGaza2D/public/art/branding/new-gaza-icon-transparent.png"
+type = "image"
+title = "أيقونة نيو غزة — PNG شفافة"
+description = "الأيقونة الأصلية بخلفية شفافة بدقة 1024×1024، مع الحفاظ على تفاصيل الشعار."
+logical_id = "970e1600-eb45-4efc-9ee4-96e3369a1446"
+content_hash = "sha256:0434531eaeaed68e3b6b867ac80dda8d8aa0affaa5e64c44ab866499c1f50980"
+size = 1208390
+mtime_ms = 1793642286001
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/970e1600-eb45-4efc-9ee4-96e3369a1446/c8d0d4a7-ad8a-42d1-a18c-e7e0dad652f8"
+storage_version_token = "1793642576983023"
+content_type = "image/png"
+
+[[outputs]]
+id = "eNbfhInDwpXcnDp4nsUn3"
+uri = "file://generated-artifacts/new-gaza-icons.zip"
+type = "unspecified"
+title = "أيقونة نيو غزة — جميع المقاسات"
+description = "حزمة PNG شفافة من 16 إلى 1024 بكسل، وتشمل نسخة 512×512 للمتجر."
+logical_id = "6f7aaca9-76bf-40e8-8ea6-1d71ca9ff599"
+content_hash = "sha256:27bf506648afcbee75922459b82b22b975c3ebee146de78aed36f39aa5901632"
+size = 2483990
+mtime_ms = 1793642288133
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:67206ede-b403-45fe-ba16-f810e4518565/6f7aaca9-76bf-40e8-8ea6-1d71ca9ff599/d8e9cb27-6776-4bd1-814b-292a0be5b4cb"
+storage_version_token = "1793642578399501"
+content_type = "application/octet-stream"

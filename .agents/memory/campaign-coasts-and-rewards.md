@@ -32,3 +32,9 @@ Hide wheel probability values from display. Use the wheel's blue gem artwork thr
 **Why:** The user confirmed probability-display hiding and requested consistent blue gems and a professional animated success screen, while emphasizing performance.
 
 **How to apply:** Hiding odds must not alter prize weights or save-before-animation safety. Keep celebration rewards data-driven and effects bounded, with mute and reduced-motion support.
+
+Completion reward artwork must match the top HUD's coin and single-blue-gem images, presented in circular medallions rather than separate wheel prize piles.
+
+**Why:** The user rejected the celebration's different coin/gem piles and reported overlapping content and a weak festive appearance in the Android screenshot.
+
+**How to apply:** Use the HUD asset sources for rewards, preserve a distinct saturated festive palette, and ensure the celebration covers the HUD with nonoverlapping safe-area layouts in portrait and landscape.

@@ -30,74 +30,74 @@ button.pill:focus-visible,button.chip:focus-visible{outline:2px solid #f2b632;ou
 .item:has(.paver-thumb){grid-template-columns:auto auto 1fr auto}
 
 
-/* ---------- district completion: festive reward card ---------- */
-.celebration{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:max(14px,env(safe-area-inset-top)) 14px max(14px,env(safe-area-inset-bottom));background:radial-gradient(ellipse at 50% 40%,rgba(24,60,120,.55),rgba(8,20,48,.86));transition:opacity .3s;overflow:auto}
+/* ---------- district completion: festive red / gold / navy reward card ---------- */
+dialog.celebration{position:fixed;inset:0;width:100vw;height:100dvh;max-width:none;max-height:none!important;margin:0;border:0;border-radius:0;box-shadow:none;overflow:auto;overscroll-behavior:contain;
+  display:grid!important;place-items:center;padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));
+  background:radial-gradient(ellipse at 50% 35%,#16306b 0,#0b1a40 55%,#050d24 100%);color:#fff;transition:opacity .3s;animation:none;z-index:2147483000}
+dialog.celebration::backdrop{background:#050d24}
+dialog.celebration.fallback{z-index:2147483000}
 .celebration.out{opacity:0;pointer-events:none}
-.celebration canvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
-.cel-card{--cel-red:#d8262f;--cel-red2:#8f1018;--cel-gold:#ffd23f;--cel-gold2:#c47a06;position:relative;width:min(420px,100%);margin-top:58px;padding:84px 16px 14px;border-radius:26px;
-  background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,248,226,.5) 38%,rgba(255,248,226,.86) 62%),var(--cel-scene) center 40%/cover,#bfe3ff;
-  border:5px solid #ffc943;box-shadow:inset 0 0 0 3px #fff3c2,0 0 0 3px #a8620a,0 26px 60px rgba(4,12,40,.6);text-align:center;color:#2a1c0c;animation:cel-in .6s cubic-bezier(.2,1.35,.4,1) both}
-.cel-x{position:absolute;top:-14px;inset-inline-end:-10px;z-index:5;width:44px;height:44px;border-radius:50%;border:3px solid #fff;background:radial-gradient(circle at 40% 30%,#ff6a6a,#c4161f 65%,#7c0a10);box-shadow:0 4px 0 #6d0a10,0 8px 16px rgba(0,0,0,.35);display:grid;place-items:center;cursor:pointer}
-.cel-x svg{width:22px;height:22px;fill:none;stroke:#fff;stroke-width:3.6;stroke-linecap:round}
-.cel-crown{position:absolute;top:-62px;left:50%;width:280px;height:100px;transform:translateX(-50%);pointer-events:none}
-.cel-crown .s{position:absolute;display:block;filter:drop-shadow(0 3px 0 #a8620a) drop-shadow(0 6px 10px rgba(0,0,0,.3))}
-.cel-crown .s svg{width:100%;height:100%;fill:#ffd23f;stroke:#fff7c8;stroke-width:1.2}
-.cel-crown .s1{width:52px;height:52px;left:58px;top:26px;transform:rotate(-14deg)}.cel-crown .s2{width:72px;height:72px;left:104px;top:0}.cel-crown .s3{width:52px;height:52px;right:58px;top:26px;transform:rotate(14deg)}
-.cel-crown .lr{position:absolute;top:22px;width:34px;height:58px}.cel-crown .lr.l{left:16px;transform:rotate(-12deg)}.cel-crown .lr.r{right:16px;transform:scaleX(-1) rotate(-12deg)}
-.cel-crown .lr svg{width:100%;height:100%}.cel-crown .stem{fill:none;stroke:#a8620a;stroke-width:2.4}.cel-crown .lv ellipse{fill:#f2c23a;stroke:#a8620a;stroke-width:1.2}
-.cel-ribbon{position:absolute;top:-6px;left:50%;width:calc(100% + 40px);max-width:500px;transform:translateX(-50%);padding:12px 44px 14px;background:linear-gradient(180deg,#ff4a52,var(--cel-red) 55%,#b0141d);border-radius:14px;box-shadow:inset 0 -4px 0 rgba(0,0,0,.18),inset 0 2px 0 rgba(255,255,255,.35),0 6px 0 var(--cel-red2),0 12px 18px rgba(0,0,0,.25);z-index:3}
-.cel-ribbon::before,.cel-ribbon::after{content:"";position:absolute;top:14px;width:34px;height:100%;background:#a8131b;z-index:-1;clip-path:polygon(0 0,100% 0,100% 100%,0 100%,30% 50%)}
-.cel-ribbon::before{left:-24px}.cel-ribbon::after{right:-24px;transform:scaleX(-1)}
-.cel-ribbon h2{margin:0;font-family:var(--display);font-weight:900;font-size:clamp(1.25rem,5.4vw,1.75rem);line-height:1.25;color:#fff;text-shadow:0 2px 0 #7a0a10,0 0 1px #7a0a10,0 3px 6px rgba(0,0,0,.3)}
-.cel-medal{position:relative;margin:4px auto 6px;width:max-content;padding:4px 30px 8px;border-radius:999px;background:linear-gradient(180deg,#fff7b8,var(--cel-gold) 45%,#f2a81c);border:4px solid #fff3b0;box-shadow:0 0 0 3px var(--cel-gold2),0 6px 0 #8a4d04,0 12px 20px rgba(0,0,0,.25);animation:cel-pop .5s .35s both}
-.cel-medal bdi{display:block;font-family:var(--display);font-weight:900;font-size:clamp(2.4rem,11vw,3.4rem);line-height:1.1;color:#fffbe6;-webkit-text-stroke:2px #9a5404;paint-order:stroke fill;text-shadow:0 4px 0 #9a5404}
-.cel-body{display:flex;flex-direction:column;gap:10px;align-items:stretch}
-.cel-msg{padding:4px 6px}
-.cel-hey{display:block;font-family:var(--display);font-weight:900;font-size:clamp(1.5rem,6.4vw,2rem);color:var(--cel-red);text-shadow:0 2px 0 #fff,0 0 8px rgba(255,255,255,.9)}
-.cel-msg p{margin:4px 0 2px;font-weight:800;font-size:clamp(.92rem,3.8vw,1.06rem);line-height:1.6;color:#1e2a50;text-shadow:0 1px 0 rgba(255,255,255,.9)}
-.cel-name{color:#0f5a32}
-.cel-rule{display:flex;align-items:center;justify-content:center;gap:8px}.cel-rule::before,.cel-rule::after{content:"";width:62px;height:3px;border-radius:3px;background:linear-gradient(90deg,transparent,var(--cel-red))}.cel-rule::after{transform:scaleX(-1)}
-.cel-rule svg{width:22px;height:18px;fill:var(--cel-red)}
-.cel-prize{position:relative;padding:22px 10px 10px;border-radius:20px;background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(234,244,255,.92));border:3px solid #ffc943;box-shadow:0 0 0 2px #c47a06,0 8px 16px rgba(10,30,70,.2);margin-top:10px}
-.cel-tag{position:absolute;top:-18px;left:50%;transform:translateX(-50%);padding:3px 22px 5px;border-radius:12px;font-family:var(--display);font-size:1.12rem;font-weight:900;color:#5a2c00;background:linear-gradient(180deg,#fff2a8,#ffcb3a);border:2px solid #c47a06;box-shadow:0 3px 0 #8a4d04;white-space:nowrap}
-.cel-tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.cel-tile{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 6px 0;border-radius:16px;overflow:hidden;animation:cel-pop .45s .55s both}
-.cel-tile.gem{background:linear-gradient(180deg,#e6f3ff,#bfe0ff);box-shadow:inset 0 0 0 2px #7fb8ff}
-.cel-tile.coin{background:linear-gradient(180deg,#fff8de,#ffe7a3);box-shadow:inset 0 0 0 2px #f0bc45;animation-delay:.68s}
-.cel-tile img{width:clamp(56px,17vw,78px);height:clamp(56px,17vw,78px);object-fit:contain;filter:drop-shadow(0 4px 6px rgba(0,0,0,.2))}
-.cel-tile bdi{font-family:var(--display);font-weight:900;font-size:clamp(1.35rem,6vw,1.75rem);line-height:1.1;font-variant-numeric:tabular-nums;min-width:3ch;color:#fff;-webkit-text-stroke:2px #3a2410;paint-order:stroke fill}
-.cel-tile.gem bdi{-webkit-text-stroke-color:#0d3d8a}
-.cel-tile span{align-self:stretch;margin-top:4px;padding:3px 0 5px;font-weight:900;color:#fff;font-size:.95rem}
-.cel-tile.gem span{background:linear-gradient(180deg,#3a8cff,#1652c4)}.cel-tile.coin span{background:linear-gradient(180deg,#ffb62e,#d97a06)}
-.cel-foot{display:flex;flex-direction:column-reverse;align-items:center;gap:10px;margin-top:14px}
-.cel-scroll{display:inline-block;padding:6px 26px;font-family:var(--display);font-weight:800;font-size:.95rem;color:#5a3a12;background:linear-gradient(180deg,#fff4d4,#f2dcaa);border:1.5px solid #c99a50;border-radius:6px;box-shadow:0 3px 0 rgba(140,96,30,.45);clip-path:polygon(0 0,100% 0,96% 50%,100% 100%,0 100%,4% 50%)}
-.cel-ok{display:inline-flex;align-items:center;justify-content:center;gap:12px;min-width:min(260px,100%);min-height:58px;padding:6px 34px;border-radius:999px;border:3px solid #eaffc4;cursor:pointer;
-  background:linear-gradient(180deg,#8ee04a,#3fae22 50%,#25881a);box-shadow:0 0 0 3px #f5c43c,0 6px 0 #1a5e10,0 12px 20px rgba(0,0,0,.28);color:#fff;font-family:var(--display);font-weight:900;font-size:1.6rem;text-shadow:0 2px 0 #1a5e10;transition:transform .12s}
-.cel-ok svg{width:30px;height:30px;fill:none;stroke:#fff;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 2px 0 #1a5e10)}
+.celebration canvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:3}
+.cel-card{--red:#e01e2b;--red2:#8e0b14;--gold:#ffc61a;--gold2:#b06a00;--navy:#0d2257;position:relative;z-index:2;width:min(440px,100%);padding:18px 16px 16px;border-radius:24px;text-align:center;
+  background:linear-gradient(180deg,rgba(13,34,87,.55) 0,rgba(13,34,87,.25) 30%,rgba(255,247,226,.94) 52%,#fff7e2 100%),var(--cel-scene) center 30%/cover,var(--navy);
+  border:4px solid var(--gold);box-shadow:inset 0 0 0 2px #fff1b8,0 0 0 3px var(--gold2),0 24px 60px rgba(0,0,0,.6);color:#1b1f3a;animation:cel-in .55s cubic-bezier(.2,1.3,.4,1) both}
+.cel-x{position:absolute;top:10px;inset-inline-end:10px;z-index:4;width:44px;height:44px;border-radius:50%;border:3px solid #fff;background:radial-gradient(circle at 40% 30%,#ff5a63,var(--red) 60%,var(--red2));box-shadow:0 3px 0 var(--red2),0 6px 12px rgba(0,0,0,.35);display:grid;place-items:center;cursor:pointer;padding:0}
+.cel-x svg{width:20px;height:20px;fill:none;stroke:#fff;stroke-width:3.6;stroke-linecap:round}
+.cel-hero{display:flex;flex-direction:column;align-items:center;gap:8px;padding:0 44px}
+.cel-stars{display:flex;align-items:flex-end;gap:6px;height:48px}
+.cel-stars i{display:block;width:30px;height:30px;filter:drop-shadow(0 2px 0 var(--gold2)) drop-shadow(0 4px 6px rgba(0,0,0,.35))}
+.cel-stars i.big{width:46px;height:46px}
+.cel-stars svg{width:100%;height:100%;fill:var(--gold);stroke:#fff6c8;stroke-width:1.2}
+.cel-title{margin:0;padding:8px 18px 10px;max-width:100%;border-radius:14px;font-family:var(--display);font-weight:900;font-size:clamp(1.1rem,5.6vw,1.6rem);line-height:1.3;color:#fff;
+  background:linear-gradient(180deg,#ff4651,var(--red) 55%,#b3101b);box-shadow:inset 0 2px 0 rgba(255,255,255,.35),0 4px 0 var(--red2),0 8px 14px rgba(0,0,0,.3);text-shadow:0 2px 0 var(--red2);overflow-wrap:anywhere}
+.cel-medal{padding:2px 26px 6px;border-radius:999px;background:linear-gradient(180deg,#fff3a6,var(--gold) 50%,#f09a00);border:3px solid #fff3b0;box-shadow:0 0 0 3px var(--gold2),0 5px 0 #7a4300;animation:cel-pop .5s .3s both}
+.cel-medal bdi{display:block;font-family:var(--display);font-weight:900;font-size:clamp(2rem,10vw,2.8rem);line-height:1.1;color:#fff;-webkit-text-stroke:2px #8a4a00;paint-order:stroke fill}
+.cel-body{display:flex;flex-direction:column;gap:14px;margin-top:12px}
+.cel-hey{display:block;font-family:var(--display);font-weight:900;font-size:clamp(1.35rem,6vw,1.8rem);color:var(--red)}
+.cel-msg p{margin:4px 0 0;font-weight:800;font-size:clamp(.9rem,3.8vw,1.02rem);line-height:1.6;color:var(--navy)}
+.cel-name{color:var(--red)}
+.cel-prize{position:relative;padding:22px 8px 12px;border-radius:18px;background:linear-gradient(180deg,#14306e,var(--navy));border:3px solid var(--gold);box-shadow:0 0 0 2px var(--gold2)}
+.cel-tag{position:relative;display:table;margin:0 auto 12px;padding:2px 20px 4px;border-radius:10px;font-family:var(--display);font-size:1.05rem;font-weight:900;color:var(--red2);background:linear-gradient(180deg,#fff2a8,var(--gold));border:2px solid var(--gold2);white-space:nowrap}
+.cel-rewards{display:flex;justify-content:center;gap:clamp(14px,6vw,36px)}
+.cel-reward{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;animation:cel-pop .45s .5s both}
+.cel-reward.coin{animation-delay:.62s}
+.cel-medallion{display:grid;place-items:center;width:clamp(64px,19vw,84px);aspect-ratio:1;border-radius:50%;padding:8px}
+.cel-reward.coin .cel-medallion{background:radial-gradient(circle at 35% 25%,#b65cf2,#6525a6);box-shadow:inset 0 0 0 2px #fff8,0 0 0 4px var(--gold),0 0 0 6px var(--gold2),0 6px 12px rgba(0,0,0,.4)}
+.cel-reward.gem .cel-medallion{background:radial-gradient(circle at 35% 25%,#eaf5ff,#9fd0ff);box-shadow:inset 0 0 0 2px #fff,0 0 0 4px #2f86ff,0 0 0 6px #0b3f9e,0 6px 12px rgba(0,0,0,.4)}
+.cel-medallion img{width:100%;height:100%;object-fit:contain;border-radius:50%;pointer-events:none}
+.cel-reward bdi{margin-top:6px;font-family:var(--display);font-weight:900;font-size:clamp(1.2rem,5.6vw,1.6rem);line-height:1.1;color:#fff;font-variant-numeric:tabular-nums}
+.cel-reward.coin bdi{color:var(--gold)}.cel-reward.gem bdi{color:#8fd0ff}
+.cel-lbl{font-size:.85rem;font-weight:900;color:#dfe7ff}
+.cel-foot{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:16px}
+.cel-ok{display:inline-flex;align-items:center;justify-content:center;gap:10px;width:min(260px,100%);min-height:54px;padding:4px 24px;border-radius:999px;border:3px solid #fff3b0;cursor:pointer;
+  background:linear-gradient(180deg,#ff4651,var(--red) 55%,#b3101b);box-shadow:0 0 0 3px var(--gold),0 5px 0 var(--red2),0 10px 18px rgba(0,0,0,.3);color:#fff;font-family:var(--display);font-weight:900;font-size:1.45rem;text-shadow:0 2px 0 var(--red2);transition:transform .12s}
+.cel-ok svg{width:26px;height:26px;fill:none;stroke:#fff;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
 .cel-ok:active{transform:translateY(3px)}.cel-ok:focus-visible,.cel-x:focus-visible{outline:3px solid #fff;outline-offset:3px}
-.celebration:not(.still) .cel-crown .s2{animation:cel-star 2.4s .8s ease-in-out infinite}
-/* landscape: scene on the left, message and rewards side by side, like a wide reward board */
+.cel-scroll{font-family:var(--display);font-weight:800;font-size:.9rem;color:var(--navy)}
+@media (max-width:360px){.cel-card{padding:14px 10px 12px}.cel-hero{padding:0 40px}.cel-x{top:8px;inset-inline-end:8px}}
+@media (orientation:portrait) and (max-height:720px){
+  .cel-card{padding:10px 12px}.cel-hero{gap:6px}.cel-stars{height:32px}.cel-stars i{width:24px;height:24px}.cel-stars i.big{width:32px;height:32px}
+  .cel-title{font-size:1.1rem;padding:6px 12px}.cel-medal bdi{font-size:1.7rem}.cel-body{margin-top:10px;gap:10px}
+  .cel-hey{font-size:1.2rem}.cel-msg p{font-size:.85rem;line-height:1.4}.cel-prize{padding:10px 8px}.cel-tag{margin-bottom:10px;font-size:1rem}
+  .cel-medallion{width:58px}.cel-reward bdi{font-size:1.2rem}.cel-foot{margin-top:10px;gap:8px}.cel-ok{min-height:44px;font-size:1.2rem}
+}
+/* wide landscape: message + rewards side by side */
 @media (orientation:landscape) and (min-width:620px){
-  .cel-card{width:min(860px,100%);margin-top:62px;padding:80px 22px 16px}
-  .cel-body{flex-direction:row-reverse;align-items:center;gap:16px}
-  .cel-msg{flex:1.2;padding-left:28%}
-  .cel-prize{flex:1;max-width:330px;margin-top:6px}
-  .cel-foot{flex-direction:row;justify-content:center;gap:22px}
-  .cel-card{background:linear-gradient(90deg,rgba(255,250,232,0) 0,rgba(255,250,232,.2) 26%,rgba(255,250,232,.82) 46%,rgba(255,250,232,.7)),var(--cel-scene) left 46%/cover,#bfe3ff}
+  .cel-card{width:min(760px,100%)}
+  .cel-body{flex-direction:row;align-items:center;gap:18px}.cel-msg{flex:1}.cel-prize{flex:1;max-width:340px}
 }
-/* short landscape phones: compress vertical rhythm so the button stays on screen */
+/* short landscape: compact hero, all in view */
 @media (orientation:landscape) and (max-height:480px){
-  .celebration{place-items:start center}
-  .cel-card{margin-top:46px;padding-top:58px;padding-bottom:10px}
-  .cel-crown{top:-48px;transform:translateX(-50%) scale(.78)}
-  .cel-ribbon{padding:7px 40px 9px}.cel-medal{margin:0 auto 2px;padding:0 22px 4px}.cel-medal bdi{font-size:2.2rem}
-  .cel-hey{font-size:1.35rem}.cel-msg p{font-size:.88rem;line-height:1.45}
-  .cel-tile img{width:48px;height:48px}.cel-tile bdi{font-size:1.25rem}
-  .cel-foot{margin-top:8px}.cel-ok{min-height:48px;font-size:1.3rem}
+  dialog.celebration{place-items:start center}
+  .cel-card{padding:10px 14px}
+  .cel-hero{flex-direction:row;justify-content:center;gap:10px;padding:0 48px}
+  .cel-stars{display:none}.cel-title{font-size:1.1rem;padding:5px 14px 6px}
+  .cel-medal{padding:0 16px 2px}.cel-medal bdi{font-size:1.5rem}
+  .cel-body{margin-top:8px;gap:10px}.cel-hey{font-size:1.2rem}.cel-msg p{font-size:.85rem;line-height:1.45}
+  .cel-prize{padding:16px 6px 8px}.cel-medallion{width:54px}.cel-reward bdi{font-size:1.15rem;margin-top:3px}
+  .cel-foot{flex-direction:row;justify-content:center;gap:16px;margin-top:8px}.cel-ok{min-height:44px;font-size:1.15rem;width:auto}
 }
-@media (orientation:landscape) and (max-height:480px) and (max-width:619px){.cel-msg{padding-left:0}}
-@keyframes cel-in{from{opacity:0;transform:translateY(18px) scale(.9)}to{opacity:1;transform:none}}
+@keyframes cel-in{from{opacity:0;transform:translateY(18px) scale(.92)}to{opacity:1;transform:none}}
 @keyframes cel-pop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
-@keyframes cel-star{0%,100%{transform:scale(1)}50%{transform:scale(1.08) rotate(4deg)}}
-.celebration.still .cel-card,.celebration.still .cel-medal,.celebration.still .cel-tile{animation:none}
-@media(prefers-reduced-motion:reduce){.cel-card,.cel-medal,.cel-tile,.cel-crown .s2{animation:none!important}.celebration{transition:none}.cel-ok{transition:none}}
+.celebration.still .cel-card,.celebration.still .cel-medal,.celebration.still .cel-reward{animation:none}
+@media(prefers-reduced-motion:reduce){.cel-card,.cel-medal,.cel-reward{animation:none!important}.celebration,.cel-ok{transition:none}}

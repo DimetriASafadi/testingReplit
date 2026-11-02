@@ -8,7 +8,7 @@ import { localUnit, roadUnitBusy, warehousePlots } from './warehouse-capacity';
 import { unitInJob } from './fleet-depots';
 import { TEST_TIMERS } from './timing-settings';
 import { gameAudio } from './game-audio';
-import { COIN_ICON_URL, GEMS_ICON_URL } from './gem-icon';
+import { GEM_ICON_URL, HUD_COIN_ICON_URL } from './gem-icon';
 
 /* Shared expansion surfaces: difficulty, wheel, stores, roads, celebration.
    Everything here is pure HTML for the stable dom-patch renderer, except the
@@ -92,81 +92,92 @@ export function roadHtml(st: GameState, d: DistrictState, roadId: string, hasAsp
 /** Visual-only district completion overlay. Credits nothing; the caller owns rewards.
  *  Shows the actual reward values (defaults: 100000 coins, 10 blue gems). */
 let celebrationCleanup: (() => void) | null = null;
-/** Close and fully tear down any open celebration (timers, rAF, listeners, sound). Safe to call anytime, e.g. on map/district change. */
+/** Close and fully tear down any open celebration (timers, rAF, listeners, sound). Safe to call anytime. */
 export function closeCelebration() { celebrationCleanup?.(); document.querySelector('.celebration')?.remove(); }
 const STAR = '<svg viewBox="0 0 24 24"><path d="M12 1.8l3.1 6.5 7.1.9-5.2 4.9 1.3 7-6.3-3.4-6.3 3.4 1.3-7L1.8 9.2l7.1-.9z"/></svg>';
-const LAUREL = '<svg viewBox="0 0 40 64"><path class="stem" d="M30 62C14 50 10 30 18 4"/><g class="lv"><ellipse cx="13" cy="50" rx="7" ry="3.4" transform="rotate(-30 13 50)"/><ellipse cx="10" cy="38" rx="7" ry="3.4" transform="rotate(-50 10 38)"/><ellipse cx="11" cy="26" rx="7" ry="3.4" transform="rotate(-70 11 26)"/><ellipse cx="16" cy="14" rx="6" ry="3" transform="rotate(-85 16 14)"/><ellipse cx="27" cy="44" rx="6.5" ry="3.2" transform="rotate(25 27 44)"/><ellipse cx="25" cy="31" rx="6" ry="3" transform="rotate(10 25 31)"/><ellipse cx="24" cy="19" rx="5.5" ry="2.8" transform="rotate(-5 24 19)"/></g></svg>';
+/** Static celebration card markup (no side effects). Used by celebrate() and usable for screenshot fixtures. */
+export function celebrationMarkup(name: string, rewardCoins = 100000, rewardGems = 10, reduced = false) {
+  const coins = Math.max(0, Math.round(rewardCoins)), gems = Math.max(0, Math.round(rewardGems));
+  const B = import.meta.env.BASE_URL;
+  const medal = (cls: string, img: string, label: string, v: number) => v ? `<div class="cel-reward ${cls}" data-testid="reward-${cls}">
+      <span class="cel-medallion"><img src="${img}" alt="" width="160" height="160" decoding="async" draggable="false"></span>
+      <bdi class="num" data-to="${v}">${fmt(reduced ? v : 0)}</bdi><span class="cel-lbl">${label}</span></div>` : '';
+  return `<canvas aria-hidden="true"></canvas>
+    <div class="cel-card" style="--cel-scene:url('${B}art/celebration/scene.webp')">
+      <button class="cel-x" type="button" aria-label="إغلاق" data-k="celebration-x" data-testid="button-celebration-close-x"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg></button>
+      <div class="cel-hero">
+        <div class="cel-stars" aria-hidden="true"><i>${STAR}</i><i class="big">${STAR}</i><i>${STAR}</i></div>
+        <h2 id="cel-title" class="cel-title">تم إكمال الحي بنجاح!</h2>
+        <div class="cel-medal" aria-label="نسبة الإنجاز مئة بالمئة"><bdi class="num">100%</bdi></div>
+      </div>
+      <div class="cel-body">
+        <div class="cel-msg"><b class="cel-hey">مبروك لك!</b>
+          <p>لقد أعدت بناء <bdi class="cel-name">${esc(name)}</bdi> من جديد، وساهمت في نهضة مدينة غزة.</p></div>
+        ${coins || gems ? `<div class="cel-prize" aria-live="polite"><b class="cel-tag">مكافأتك</b><div class="cel-rewards">${medal('gem', GEM_ICON_URL(), gems > 2 ? 'جواهر' : 'جوهرة', gems)}${medal('coin', HUD_COIN_ICON_URL(), 'عملة', coins)}</div></div>` : ''}
+      </div>
+      <div class="cel-foot">
+        <button class="cel-ok" type="button" data-k="celebration-close" data-testid="button-celebration-ok"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12.5l5 5 10-11"/></svg><span>رائع!</span></button>
+        <span class="cel-scroll">معًا.. نعيد بناء غزة أجمل</span></div>
+    </div>`;
+}
 export function celebrate(name: string, rewardCoins = 100000, rewardGems = 10) {
   closeCelebration();
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const coins = Math.max(0, Math.round(rewardCoins)), gems = Math.max(0, Math.round(rewardGems));
-  const box = document.createElement('div'); box.className = 'celebration' + (reduce ? ' still' : '');
-  box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-labelledby', 'cel-title');
-  box.dataset.testid = 'dialog-celebration';
-  const B = import.meta.env.BASE_URL;
-  const tile = (cls: string, img: string, label: string, v: number) => v ? `<div class="cel-tile ${cls}" data-testid="reward-${cls}">
-      <img src="${img}" alt="" decoding="async"><bdi class="num" data-to="${v}">${fmt(reduce ? v : 0)}</bdi><span>${label}</span></div>` : '';
-  box.innerHTML = `<canvas aria-hidden="true"></canvas>
-    <div class="cel-card" style="--cel-scene:url('${B}art/celebration/scene.webp')">
-      <button class="cel-x" type="button" aria-label="إغلاق" data-k="celebration-x" data-testid="button-celebration-close-x"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg></button>
-      <div class="cel-crown" aria-hidden="true"><i class="s s1">${STAR}</i><i class="s s2">${STAR}</i><i class="s s3">${STAR}</i><i class="lr l">${LAUREL}</i><i class="lr r">${LAUREL}</i></div>
-      <div class="cel-ribbon"><h2 id="cel-title">تم إكمال الحي بنجاح!</h2></div>
-      <div class="cel-medal" aria-label="نسبة الإنجاز مئة بالمئة"><bdi class="num">100%</bdi></div>
-      <div class="cel-body">
-        <div class="cel-msg"><b class="cel-hey">مبروك لك!</b>
-          <p>لقد أعدت بناء <bdi class="cel-name">${esc(name)}</bdi> من جديد، وساهمت في نهضة مدينة غزة.</p>
-          <i class="cel-rule" aria-hidden="true"><svg viewBox="0 0 24 20"><path d="M12 19L2.6 9.6A5.3 5.3 0 0112 3.4a5.3 5.3 0 019.4 6.2z"/></svg></i></div>
-        ${coins || gems ? `<div class="cel-prize" aria-live="polite"><b class="cel-tag">مكافأتك</b><div class="cel-tiles">${tile('gem', GEMS_ICON_URL(), gems > 2 ? 'جواهر' : 'جوهرة', gems)}${tile('coin', COIN_ICON_URL(), 'عملة', coins)}</div></div>` : ''}
-      </div>
-      <div class="cel-foot"><span class="cel-scroll">معًا.. نعيد بناء غزة أجمل</span>
-        <button class="cel-ok" type="button" data-k="celebration-close" data-testid="button-celebration-ok"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12.5l5 5 10-11"/></svg><span>رائع!</span></button></div>
-    </div>`;
+  const box = document.createElement('dialog'); box.className = 'celebration' + (reduce ? ' still' : '');
+  box.setAttribute('aria-labelledby', 'cel-title'); box.dataset.testid = 'dialog-celebration';
+  box.innerHTML = celebrationMarkup(name, rewardCoins, rewardGems, reduce);
   document.body.appendChild(box);
+  // Native modal dialog = browser top layer, above HUD, other dialogs and any z-index.
+  try { box.showModal(); } catch { box.setAttribute('open', ''); box.classList.add('fallback'); }
   const timers: number[] = []; let raf = 0, done = false;
+  const nums = Array.from(box.querySelectorAll<HTMLElement>('[data-to]'));
+  const cv = box.querySelector('canvas')!;
   const stopFx = () => { cancelAnimationFrame(raf); raf = 0; timers.forEach(clearTimeout); timers.length = 0;
     gameAudio.stopFireworks();
-    const cv = box.querySelector('canvas'); cv?.getContext('2d')?.clearRect(0, 0, cv.width, cv.height);
+    cv.getContext('2d')?.clearRect(0, 0, cv.width, cv.height);
     for (const n of nums) n.textContent = fmt(Number(n.dataset.to)); };
   const vis = () => { if (document.hidden) stopFx(); };
   const close = () => {
     if (done) return; done = true; stopFx();
     document.removeEventListener('keydown', key, true); document.removeEventListener('visibilitychange', vis);
     celebrationCleanup = null; box.classList.add('out');
-    setTimeout(() => box.remove(), reduce ? 0 : 320);
+    setTimeout(() => { try { box.close(); } catch { /* noop */ } box.remove(); }, reduce ? 0 : 320);
   };
   const key = (e: KeyboardEvent) => { if (e.key === 'Escape' || e.key === 'Enter') { e.preventDefault(); close(); } };
   celebrationCleanup = close;
+  box.addEventListener('cancel', e => { e.preventDefault(); close(); });
   document.addEventListener('keydown', key, true); document.addEventListener('visibilitychange', vis);
   box.addEventListener('click', e => { if (e.target === box || (e.target as HTMLElement).closest('.cel-ok,.cel-x')) { gameAudio.click(true); close(); } });
-  const nums = Array.from(box.querySelectorAll<HTMLElement>('[data-to]'));
   (box.querySelector('.cel-ok') as HTMLButtonElement).focus({ preventScroll: true });
   if (reduce) { gameAudio.firework(0); return; }
-  // Fireworks: a bounded particle pool, five bursts over ~4 s, then the canvas goes idle.
-  const cv = box.querySelector('canvas')!, ctx = cv.getContext('2d');
+  // Finite fireworks + confetti: bounded pool, five bursts over ~3 s, then idle forever.
+  const ctx = cv.getContext('2d');
   const dpr = Math.min(2, devicePixelRatio || 1), W = innerWidth, H = innerHeight;
   if (ctx) { cv.width = W * dpr; cv.height = H * dpr; ctx.scale(dpr, dpr); }
-  const cols = ['#ffd84a', '#ff5a6e', '#4fb6ff', '#7be07a', '#ff9f3a', '#e98cff', '#fff6d8'];
-  type P = { x: number; y: number; vx: number; vy: number; life: number; c: string; s: number };
-  const parts: P[] = [], MAX = 420;
+  const cols = ['#ffd23f', '#ff3b4a', '#3d8bff', '#fff3c2', '#ff9f1c', '#5ec8ff'];
+  type P = { x: number; y: number; vx: number; vy: number; life: number; c: string; s: number; conf: boolean; r: number };
+  const parts: P[] = [], MAX = 460;
   const burst = (k: number) => {
-    const x = W * (.15 + ((k * .37) % .7)), y = H * (.12 + ((k * .23) % .26)), n = W < 520 ? 48 : 70, c0 = cols[k % cols.length], c1 = cols[(k + 3) % cols.length];
-    for (let i = 0; i < n && parts.length < MAX; i++) { const a = (i / n) * Math.PI * 2, s = 1.6 + Math.random() * 3.2;
-      parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 1, c: i % 3 ? c0 : c1, s: 1.4 + Math.random() * 1.8 }); }
+    const x = W * (.18 + ((k * .37) % .64)), y = H * (.1 + ((k * .19) % .22)), n = W < 520 ? 44 : 64, c0 = cols[k % cols.length], c1 = cols[(k + 2) % cols.length];
+    for (let i = 0; i < n && parts.length < MAX; i++) { const a = (i / n) * Math.PI * 2, s = 1.6 + Math.random() * 3;
+      parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 1, c: i % 3 ? c0 : c1, s: 1.6 + Math.random() * 1.8, conf: false, r: 0 }); }
+    for (let i = 0; i < 14 && parts.length < MAX; i++) parts.push({ x: Math.random() * W, y: -10, vx: (Math.random() - .5) * 1.4, vy: 1 + Math.random() * 1.6, life: 1.6, c: cols[i % cols.length], s: 5 + Math.random() * 3, conf: true, r: Math.random() * 6 });
     gameAudio.firework((x / W - .5) * 1.4);
   };
-  [0, 650, 1300, 2100, 2900].forEach((ms, k) => timers.push(window.setTimeout(() => { if (!done && !document.hidden) { burst(k); if (!raf) raf = requestAnimationFrame(tick); } }, ms + 200)));
+  [0, 600, 1200, 1900, 2600].forEach((ms, k) => timers.push(window.setTimeout(() => { if (!done && !document.hidden) { burst(k); if (!raf) raf = requestAnimationFrame(tick); } }, ms + 250)));
   const t0 = performance.now(), ease = (t: number) => 1 - Math.pow(1 - t, 3);
   const tick = (t: number) => {
     raf = 0; if (done || !box.isConnected) return;
-    const k = Math.min(1, Math.max(0, (t - t0 - 650) / 1300));
+    const k = Math.min(1, Math.max(0, (t - t0 - 600) / 1300));
     for (const n of nums) n.textContent = fmt(Math.round(Number(n.dataset.to) * ease(k)));
     let alive = 0;
-    if (ctx) { ctx.clearRect(0, 0, W, H); ctx.globalCompositeOperation = 'lighter';
-      for (let i = parts.length - 1; i >= 0; i--) { const p = parts[i]; p.life -= .014; if (p.life <= 0) { parts.splice(i, 1); continue; }
-        alive++; p.x += p.vx; p.y += p.vy; p.vy += .045; p.vx *= .975; p.vy *= .975;
-        ctx.globalAlpha = Math.min(1, p.life * 1.4); ctx.fillStyle = p.c; ctx.fillRect(p.x - p.s / 2, p.y - p.s / 2, p.s, p.s); }
-      ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; }
-    if (alive || k < 1 || timers.some(Boolean) && t - t0 < 3600) raf = requestAnimationFrame(tick);
+    if (ctx) { ctx.clearRect(0, 0, W, H);
+      for (let i = parts.length - 1; i >= 0; i--) { const p = parts[i]; p.life -= p.conf ? .008 : .015; if (p.life <= 0 || p.y > H + 20) { parts.splice(i, 1); continue; }
+        alive++; p.x += p.vx; p.y += p.vy;
+        if (p.conf) { p.r += .12; ctx.globalAlpha = Math.min(1, p.life); ctx.fillStyle = p.c; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2 * Math.abs(Math.cos(p.r))+1); ctx.restore(); }
+        else { p.vy += .045; p.vx *= .975; p.vy *= .975; ctx.globalAlpha = Math.min(1, p.life * 1.4); ctx.fillStyle = p.c; ctx.fillRect(p.x - p.s / 2, p.y - p.s / 2, p.s, p.s); } }
+      ctx.globalAlpha = 1; }
+    if (alive || k < 1 || (timers.length && t - t0 < 3400)) raf = requestAnimationFrame(tick);
   };
   raf = requestAnimationFrame(tick);
 }
