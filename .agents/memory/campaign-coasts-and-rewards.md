@@ -33,8 +33,8 @@ Hide wheel probability values from display. Use the wheel's blue gem artwork thr
 
 **How to apply:** Hiding odds must not alter prize weights or save-before-animation safety. Keep celebration rewards data-driven and effects bounded, with mute and reduced-motion support.
 
-Completion reward artwork must match the top HUD's coin and single-blue-gem images, presented in circular medallions rather than separate wheel prize piles.
+Completion reward artwork must match the top HUD's coin and single-blue-gem images, presented in circular medallions rather than separate wheel prize piles. The HUD gem must also be circular like the other resources, never a square tile.
 
-**Why:** The user rejected the celebration's different coin/gem piles and reported overlapping content and a weak festive appearance in the Android screenshot.
+**Why:** The user rejected the celebration's different coin/gem piles and reported overlapping content and a weak festive appearance in the Android screenshot. On 2026-11-03 they repeated the circular-frame requirement for both rewards, explicitly included the HUD gem, and requested slightly larger celebration stars.
 
 **How to apply:** Use the HUD asset sources for rewards, preserve a distinct saturated festive palette, and ensure the celebration covers the HUD with nonoverlapping safe-area layouts in portrait and landscape.

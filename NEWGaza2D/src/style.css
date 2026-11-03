@@ -109,16 +109,16 @@ h1,h2,h3{font-family:var(--display);margin:0;font-weight:700}
 .resource-wood{--resource-light:#a5eb64;--resource-dark:#387c21}
 .resource-other{--resource-light:#61bafd;--resource-dark:#11467c}
 .wallet .resource-icon{width:24px;height:24px}
-.gem-icon{width:24px;height:24px;flex:none;vertical-align:middle}
+.gem-icon{width:24px;height:24px;flex:none;vertical-align:middle;object-fit:cover;border-radius:50%;border:1px solid #b8e8ff;background:#79baf1;box-shadow:0 1px 3px #0003}
 .gem-wallet{display:inline-flex;align-items:center;gap:4px}
 .gem-build{width:100%;margin-top:8px;background:linear-gradient(145deg,#6a40ad,#402777);color:#fff;box-shadow:0 3px 0 #231744;flex-wrap:wrap;padding:6px 10px}
 .gem-help{display:block;text-align:center;margin-top:6px;line-height:1.5}
 .project-gems{display:flex;align-items:center;gap:4px;color:#dfc3ff;font-size:.7rem}
 .project-gems .gem-icon{width:18px;height:18px}
-@media(max-width:480px){.wallet .pill{padding-inline:6px;gap:3px;font-size:.72rem}.wallet .gem-icon{width:22px;height:22px}}
+@media(max-width:480px){.wallet .pill{padding-inline:6px;gap:3px;font-size:.72rem}.wallet .gem-icon{width:24px;height:24px}}
 .mat-title{display:flex;align-items:center;gap:8px}
 .mat .resource-icon{width:40px;height:40px}
-@media(max-width:360px){.wallet .resource-icon{width:20px;height:20px}.wallet .pill{gap:4px}}
+@media(max-width:360px){.wallet .resource-icon,.wallet .gem-icon{width:20px;height:20px}.wallet .pill{gap:4px}}
 .objective{position:fixed;top:calc(env(safe-area-inset-top) + 72px);right:12px;max-width:340px;background:rgba(251,244,228,.95);border-radius:var(--r);padding:12px 14px;box-shadow:var(--shadow);border-inline-start:5px solid var(--gold);font-size:.9rem;animation:slideIn .5s}
 .objective h3{font-size:1rem;margin-bottom:4px}
 .objective ol{margin:6px 0 0;padding-inline-start:18px}

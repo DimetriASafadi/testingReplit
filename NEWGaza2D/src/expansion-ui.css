@@ -44,9 +44,9 @@ dialog.celebration.fallback{z-index:2147483000}
 .cel-x{position:absolute;top:10px;inset-inline-end:10px;z-index:4;width:44px;height:44px;border-radius:50%;border:3px solid #fff;background:radial-gradient(circle at 40% 30%,#ff5a63,var(--red) 60%,var(--red2));box-shadow:0 3px 0 var(--red2),0 6px 12px rgba(0,0,0,.35);display:grid;place-items:center;cursor:pointer;padding:0}
 .cel-x svg{width:20px;height:20px;fill:none;stroke:#fff;stroke-width:3.6;stroke-linecap:round}
 .cel-hero{display:flex;flex-direction:column;align-items:center;gap:8px;padding:0 44px}
-.cel-stars{display:flex;align-items:flex-end;gap:6px;height:48px}
-.cel-stars i{display:block;width:30px;height:30px;filter:drop-shadow(0 2px 0 var(--gold2)) drop-shadow(0 4px 6px rgba(0,0,0,.35))}
-.cel-stars i.big{width:46px;height:46px}
+.cel-stars{display:flex;align-items:flex-end;gap:6px;height:58px}
+.cel-stars i{display:block;width:36px;height:36px;filter:drop-shadow(0 2px 0 var(--gold2)) drop-shadow(0 4px 6px rgba(0,0,0,.35))}
+.cel-stars i.big{width:55px;height:55px}
 .cel-stars svg{width:100%;height:100%;fill:var(--gold);stroke:#fff6c8;stroke-width:1.2}
 .cel-title{margin:0;padding:8px 18px 10px;max-width:100%;border-radius:14px;font-family:var(--display);font-weight:900;font-size:clamp(1.1rem,5.6vw,1.6rem);line-height:1.3;color:#fff;
   background:linear-gradient(180deg,#ff4651,var(--red) 55%,#b3101b);box-shadow:inset 0 2px 0 rgba(255,255,255,.35),0 4px 0 var(--red2),0 8px 14px rgba(0,0,0,.3);text-shadow:0 2px 0 var(--red2);overflow-wrap:anywhere}
@@ -61,10 +61,10 @@ dialog.celebration.fallback{z-index:2147483000}
 .cel-rewards{display:flex;justify-content:center;gap:clamp(14px,6vw,36px)}
 .cel-reward{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;animation:cel-pop .45s .5s both}
 .cel-reward.coin{animation-delay:.62s}
-.cel-medallion{display:grid;place-items:center;width:clamp(64px,19vw,84px);aspect-ratio:1;border-radius:50%;padding:8px}
+.cel-medallion{--medal-size:clamp(64px,19vw,84px);position:relative;display:block;flex:none;width:var(--medal-size);height:var(--medal-size);min-width:0;min-height:0;border-radius:50%;padding:0}
 .cel-reward.coin .cel-medallion{background:radial-gradient(circle at 35% 25%,#b65cf2,#6525a6);box-shadow:inset 0 0 0 2px #fff8,0 0 0 4px var(--gold),0 0 0 6px var(--gold2),0 6px 12px rgba(0,0,0,.4)}
 .cel-reward.gem .cel-medallion{background:radial-gradient(circle at 35% 25%,#eaf5ff,#9fd0ff);box-shadow:inset 0 0 0 2px #fff,0 0 0 4px #2f86ff,0 0 0 6px #0b3f9e,0 6px 12px rgba(0,0,0,.4)}
-.cel-medallion img{width:100%;height:100%;object-fit:contain;border-radius:50%;pointer-events:none}
+.cel-medallion img{position:absolute;inset:8px;width:calc(100% - 16px);height:calc(100% - 16px);min-width:0;min-height:0;object-fit:cover;border-radius:50%;pointer-events:none}
 .cel-reward bdi{margin-top:6px;font-family:var(--display);font-weight:900;font-size:clamp(1.2rem,5.6vw,1.6rem);line-height:1.1;color:#fff;font-variant-numeric:tabular-nums}
 .cel-reward.coin bdi{color:var(--gold)}.cel-reward.gem bdi{color:#8fd0ff}
 .cel-lbl{font-size:.85rem;font-weight:900;color:#dfe7ff}
@@ -76,10 +76,10 @@ dialog.celebration.fallback{z-index:2147483000}
 .cel-scroll{font-family:var(--display);font-weight:800;font-size:.9rem;color:var(--navy)}
 @media (max-width:360px){.cel-card{padding:14px 10px 12px}.cel-hero{padding:0 40px}.cel-x{top:8px;inset-inline-end:8px}}
 @media (orientation:portrait) and (max-height:720px){
-  .cel-card{padding:10px 12px}.cel-hero{gap:6px}.cel-stars{height:32px}.cel-stars i{width:24px;height:24px}.cel-stars i.big{width:32px;height:32px}
+  .cel-card{padding:10px 12px}.cel-hero{gap:6px}.cel-stars{height:40px}.cel-stars i{width:29px;height:29px}.cel-stars i.big{width:39px;height:39px}
   .cel-title{font-size:1.1rem;padding:6px 12px}.cel-medal bdi{font-size:1.7rem}.cel-body{margin-top:10px;gap:10px}
   .cel-hey{font-size:1.2rem}.cel-msg p{font-size:.85rem;line-height:1.4}.cel-prize{padding:10px 8px}.cel-tag{margin-bottom:10px;font-size:1rem}
-  .cel-medallion{width:58px}.cel-reward bdi{font-size:1.2rem}.cel-foot{margin-top:10px;gap:8px}.cel-ok{min-height:44px;font-size:1.2rem}
+  .cel-medallion{--medal-size:58px}.cel-reward bdi{font-size:1.2rem}.cel-foot{margin-top:10px;gap:8px}.cel-ok{min-height:44px;font-size:1.2rem}
 }
 /* wide landscape: message + rewards side by side */
 @media (orientation:landscape) and (min-width:620px){
@@ -94,7 +94,7 @@ dialog.celebration.fallback{z-index:2147483000}
   .cel-stars{display:none}.cel-title{font-size:1.1rem;padding:5px 14px 6px}
   .cel-medal{padding:0 16px 2px}.cel-medal bdi{font-size:1.5rem}
   .cel-body{margin-top:8px;gap:10px}.cel-hey{font-size:1.2rem}.cel-msg p{font-size:.85rem;line-height:1.45}
-  .cel-prize{padding:16px 6px 8px}.cel-medallion{width:54px}.cel-reward bdi{font-size:1.15rem;margin-top:3px}
+  .cel-prize{padding:16px 6px 8px}.cel-medallion{--medal-size:54px}.cel-reward bdi{font-size:1.15rem;margin-top:3px}
   .cel-foot{flex-direction:row;justify-content:center;gap:16px;margin-top:8px}.cel-ok{min-height:44px;font-size:1.15rem;width:auto}
 }
 @keyframes cel-in{from{opacity:0;transform:translateY(18px) scale(.92)}to{opacity:1;transform:none}}
